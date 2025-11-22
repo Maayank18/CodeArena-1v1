@@ -309,6 +309,7 @@ import connectDB from './config/db.js';
 import roomRoutes from './routes/roomRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import problemRoutes from './routes/problemRoutes.js';
+import authRoutes from './routes/authRoutes.js'; // <--- 1. Import Routes
 import Problem from './models/Problem.js';
 
 dotenv.config();
@@ -330,6 +331,7 @@ const io = new Server(server, {
 app.use('/api/rooms', roomRoutes);
 app.use('/api/run', submissionRoutes);
 app.use('/api/problems', problemRoutes);
+app.use('/api/auth', authRoutes);
 
 // GAME STATE
 const rooms = new Map();

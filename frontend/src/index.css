@@ -62,3 +62,25 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
+
+/* Default (Light Mode) Variables */
+:root {
+  --bg-primary: #f3f4f6;
+  --bg-secondary: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+}
+
+/* Dark Mode Variables */
+.dark {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --text-primary: #d4d4d4;
+  --text-secondary: #9ca3af;
+  --border-color: #3e3e42;
+}
+
+body {
+  @apply bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300;
+}

@@ -317,9 +317,68 @@ const EditorPage = () => {
             socketRef.current.on('score_update', (newScores) => setScores(newScores));
             
             // NEW: Handle Game Over with Overlay
+            // socketRef.current.on('game_over', (data) => {
+            //     setGameOverData(data); // This triggers the blur screen
+            // });
+            // Inside useEffect...
+
+            // socketRef.current.on('game_over', (data) => {
+            //     setGameOverData(data); // Trigger the Blur/Winner UI
+
+            //     // 1. Get My Name
+            //     const myName = location.state?.username;
+
+            //     // 2. Get Score from SERVER data (Avoids stale state)
+            //     const myScore = data.scores[myName] || 0;
+
+            //     // 3. Find Opponent Name from SERVER data (Avoids stale clients state)
+            //     // The keys of data.scores are the usernames (e.g., ["PlayerA", "PlayerB"])
+            //     const allPlayers = Object.keys(data.scores);
+            //     const opponentName = allPlayers.find(name => name !== myName) || "Unknown";
+
+            //     // 4. Create Record
+            //     const matchData = {
+            //         date: new Date().toISOString(),
+            //         opponent: opponentName,
+            //         winner: data.winner,
+            //         score: myScore
+            //     };
+
+            //     // 5. Save to Local Storage
+            //     const history = JSON.parse(localStorage.getItem('codearena_history') || '[]');
+            //     history.unshift(matchData); // Add to top of list
+            //     localStorage.setItem('codearena_history', JSON.stringify(history));
+            // });
             socketRef.current.on('game_over', (data) => {
-                setGameOverData(data); // This triggers the blur screen
-            });
+            setGameOverData(data); 
+
+            const myName = location.state?.username;
+            const myScore = data.scores[myName] || 0;
+            const allPlayers = Object.keys(data.scores);
+            const opponentName = allPlayers.find(name => name !== myName) || "Unknown";
+
+            // 1. Save History (Keep existing logic)
+            const matchData = {
+                date: new Date().toISOString(),
+                opponent: opponentName,
+                winner: data.winner,
+                score: myScore
+            };
+            const history = JSON.parse(localStorage.getItem('codearena_history') || '[]');
+            history.unshift(matchData);
+            localStorage.setItem('codearena_history', JSON.stringify(history));
+
+            // 2. UPDATE USER STATS (NEW FIX)
+            const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+            if (user.stats) {
+                user.stats.matchesPlayed += 1;
+                if (data.winner === myName) {
+                    user.stats.wins += 1;
+                }
+                // Save back to storage so Dashboard sees it
+                localStorage.setItem('codearena_user', JSON.stringify(user));
+            }
+        });
 
             socketRef.current.on('player_joined', ({ username, side }) => {
                 setClients((prev) => {
@@ -411,8 +470,14 @@ const EditorPage = () => {
                             ))}
                         </div>
 
-                        <button 
+                        {/* <button 
                             onClick={() => navigate('/')}
+                            className="bg-accent text-black font-bold py-3 px-8 rounded-lg hover:bg-green-400 transition-all"
+                        >
+                            Back to Home
+                        </button> */}
+                        <button 
+                            onClick={() => navigate('/dashboard')} // <--- CHANGE THIS from '/' to '/dashboard'
                             className="bg-accent text-black font-bold py-3 px-8 rounded-lg hover:bg-green-400 transition-all"
                         >
                             Back to Home
