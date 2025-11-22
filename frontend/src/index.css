@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Body Styles */
+body {
+  @apply bg-dark text-gray-300 font-sans h-screen overflow-hidden;
+  margin: 0;
+}
+
+/* ------------------------------------------------ */
+/* CUSTOM SCROLLBAR STYLING               */
+/* ------------------------------------------------ */
+
+/* 1. The standard scrollbar (for Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 8px;               /* Width of vertical scrollbar */
+  height: 8px;              /* Height of horizontal scrollbar */
+}
+
+/* 2. The Track (Background of the scrollbar) */
+::-webkit-scrollbar-track {
+  background: #1e1e1e;      /* Matches your editor background */
+}
+
+/* 3. The Thumb (The moving part) */
+::-webkit-scrollbar-thumb {
+  background: #444;         /* Dark grey */
+  border-radius: 4px;       /* Rounded corners */
+}
+
+/* 4. Hover effect */
+::-webkit-scrollbar-thumb:hover {
+  background: #666;         /* Lighter grey when you grab it */
+}
+
+/* 5. Corner (where vertical and horizontal meet) */
+::-webkit-scrollbar-corner {
+  background: #1e1e1e;
+}
+
+/* ------------------------------------------------ */
+/* UTILITY CLASSES                        */
+/* ------------------------------------------------ */
+
+/* Ensures the Center Pane scrolls correctly */
+.custom-scrollbar {
+    /* Forces the browser to use the styles above */
+    scrollbar-width: thin;          /* Firefox support */
+    scrollbar-color: #444 #1e1e1e;  /* Firefox support */
+}
+
+/* ------------------------------------------------ */
+/* ANIMATIONS                             */
+/* ------------------------------------------------ */
+
+/* Optional: A subtle fade-in for new content */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
