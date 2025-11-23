@@ -770,7 +770,7 @@ io.on('connection', async (socket) => {
       if (!roomId || !username) return;
 
       if (!rooms.has(roomId)) {
-        const problems = await Problem.aggregate([{ $sample: { size: 5 } }]);
+        const problems = await Problem.aggregate([{ $sample: { size: 1 } }]);
         rooms.set(roomId, {
           players: [],
           round: 1,

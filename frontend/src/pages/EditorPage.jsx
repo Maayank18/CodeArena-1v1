@@ -514,6 +514,16 @@ const EditorPage = () => {
                 });
             });
 
+            // 🔥 NEW: Update room state for other player (DO NOT set mySide here)
+            socketRef.current.on('room_state', (data) => {
+                setClients(data.players);
+                setProblem(data.problem);
+                setRound(data.round);
+                setTotalRounds(data.totalRounds);
+                setScores(data.scores);
+            });
+
+
             socketRef.current.on('new_round', (data) => {
                 toast.success(`Round ${data.round} Started!`);
                 setProblem(data.problem);
