@@ -902,42 +902,6 @@ io.on('connection', async (socket) => {
     }
   });
 
-
-  socket.on('level_completed', async ({ roomId, username }) => {
-    try {
-      const room = rooms.get(roomId);
-      if (!room || !room.isGameActive) return;
-
-      room.scores[username] = (room.scores[username] || 0) + 10;
-      io.to(roomId).emit('score_update', room.scores);
-
-      if (room.round < room.totalRounds) {
-        room.round++;
-        io.to(roomId).emit('new_round', {
-          round: room.round,
-          problem: room.problems[room.round - 1],
-          scores: room.scores,
-        });
-      } else {
-        room.isGameActive = false;
-        const winner = Object.keys(room.scores).reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
-
-        // Update DB
-        const updatePromises = Object.keys(room.scores).map(async (u) => {
-          await User.findOneAndUpdate({ username: u }, {
-            $inc: { 'stats.matchesPlayed': 1, 'stats.wins': u === winner ? 1 : 0 }
-          });
-        });
-        await Promise.all(updatePromises);
-
-        io.to(roomId).emit('game_over', { scores: room.scores, winner });
-        setTimeout(() => rooms.delete(roomId), 60000);
-      }
-    } catch (err) {
-      console.error("Level Completed Error:", err);
-    }
-  });
-
   // socket.on('disconnect', async (reason) => {
   //   console.log("User Disconnected", socket.id, "reason:", reason);
   //   try {

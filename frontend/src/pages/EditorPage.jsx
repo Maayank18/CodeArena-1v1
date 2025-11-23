@@ -667,7 +667,7 @@ const EditorPage = () => {
         return (
             <div className="h-screen bg-[#121212] text-white flex flex-col items-center justify-center gap-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-500 border-r-4 border-green-500/30"></div>
-                <h2 className="text-xl font-bold animate-pulse">Entering Battle Arena...</h2>
+                <h2 className="text-xl font-bold animate-pulse">Battle Arena...</h2>
                 <p className="text-gray-500 text-sm">Connecting to socket...</p>
             </div>
         );
