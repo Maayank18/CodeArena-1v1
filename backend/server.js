@@ -819,7 +819,7 @@ io.on('connection', async (socket) => {
           rooms.set(roomId, {
             players: [],
             round: 1,
-            totalRounds: 5,
+            totalRounds: 1, // testing purpose
             problems: problems,
             scores: {},
             isGameActive: true
