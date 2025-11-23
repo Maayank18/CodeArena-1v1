@@ -270,17 +270,17 @@ const rooms = new Map();
 io.on('connection', async (socket) => {
   console.log(`User Connected: ${socket.id}`);
     // --- FIX: Send Stats Immediately to the NEW User ---
-    try {
+        try {
         const totalUsers = await User.countDocuments();
         const statsData = {
             live: io.engine.clientsCount,
             total: totalUsers
         };
         
-        // 1. Send to the user who just connected (Immediate update)
+        // 1. Send to the specific user who just connected (Guaranteed delivery)
         socket.emit('site_stats', statsData);
         
-        // 2. Broadcast update to everyone else
+        // 2. Update everyone else
         socket.broadcast.emit('site_stats', statsData);
         
     } catch (err) {
