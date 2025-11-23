@@ -727,10 +727,16 @@ const EditorPage = () => {
     //     };
     // }, []);
 
+    // const getPlayerName = (side) => {
+    //     const player = clients.find(c => c.side === side);
+    //     return player ? player.username : "Waiting...";
+    // };
+
     const getPlayerName = (side) => {
-        const player = clients.find(c => c.side === side);
-        return player ? player.username : "Waiting...";
-    };
+    if (!clients || clients.length === 0) return "Waiting...";
+    const player = clients.find(c => c.side === side);
+    return player ? player.username : "Waiting...";
+};
 
     const copyRoomId = () => {
         navigator.clipboard.writeText(roomId);

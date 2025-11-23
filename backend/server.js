@@ -541,12 +541,92 @@ io.on('connection', async (socket) => {
   // ---------------------------------------------------------------------
   // ✅ FIXED JOIN_ROOM (THE ONLY MODIFIED PART)
   // ---------------------------------------------------------------------
-  socket.on('join_room', async (data) => {
+//   socket.on('join_room', async (data) => {
+//   try {
+//     const { roomId, username } = data;
+//     console.log(`🔵 join_room called: ${username} → room ${roomId}`);
+    
+//     if (!roomId || !username) return; 
+
+//     // Create room if doesn't exist
+//     if (!rooms.has(roomId)) {
+//       const problems = await Problem.aggregate([{ $sample: { size: 5 } }]);
+//       rooms.set(roomId, {
+//         players: [],
+//         round: 1,
+//         totalRounds: 5, 
+//         problems: problems, 
+//         scores: {},
+//         isGameActive: true 
+//       });
+//       console.log(`✅ Created new room: ${roomId}`);
+//     }
+
+//     const room = rooms.get(roomId);
+//     let playerIndex = room.players.findIndex(p => p.username === username);
+//     let side;
+//     let isReconnect = false;
+
+//     // Check if player already exists (reconnection)
+//     if (playerIndex !== -1) {
+//       console.log(`🔄 ${username} reconnecting, updating socket ID`);
+//       room.players[playerIndex].id = socket.id;
+//       side = room.players[playerIndex].side;
+//       isReconnect = true;
+//     } else {
+//       // New player joining
+//       if (room.players.length >= 2) {
+//         console.log(`❌ Room ${roomId} is full`);
+//         socket.emit('room_full');
+//         return;
+//       }
+//       side = room.players.length === 0 ? 'left' : 'right';
+//       room.players.push({ id: socket.id, username, side });
+//       room.scores[username] = 0;
+//       console.log(`✅ ${username} assigned to ${side} side`);
+//     }
+
+//     // Join the socket room FIRST
+//     socket.join(roomId);
+//     console.log(`🔗 ${username} joined socket room ${roomId}`);
+
+//     // Send room_joined ONLY to the joining/reconnecting player
+//     socket.emit('room_joined', { 
+//       roomId, 
+//       side: side,
+//       players: room.players,
+//       problem: room.problems[room.round - 1],
+//       round: room.round,
+//       totalRounds: room.totalRounds,
+//       scores: room.scores
+//     });
+//     console.log(`📤 Sent room_joined to ${username} with side: ${side}`);
+
+//     // If this is a NEW player (not reconnect), notify others
+//     if (!isReconnect) {
+//       socket.to(roomId).emit('player_joined', { 
+//         username, 
+//         side,
+//         players: room.players,
+//         scores: room.scores
+//       });
+//       console.log(`📢 Notified others in ${roomId} about ${username} joining`);
+//     }
+    
+//   } catch (err) {
+//     console.error("❌ Join Room Error:", err);
+//   }
+// });
+
+socket.on('join_room', async (data) => {
   try {
     const { roomId, username } = data;
-    console.log(`🔵 join_room called: ${username} → room ${roomId}`);
+    console.log(`🔵 [SERVER] join_room: ${username} → ${roomId} | socket: ${socket.id}`);
     
-    if (!roomId || !username) return; 
+    if (!roomId || !username) {
+      console.log('❌ Missing roomId or username');
+      return;
+    }
 
     // Create room if doesn't exist
     if (!rooms.has(roomId)) {
@@ -559,38 +639,41 @@ io.on('connection', async (socket) => {
         scores: {},
         isGameActive: true 
       });
-      console.log(`✅ Created new room: ${roomId}`);
+      console.log(`✅ [SERVER] Created room ${roomId}`);
     }
 
     const room = rooms.get(roomId);
+    console.log(`📊 [SERVER] Room ${roomId} before join:`, room.players.map(p => `${p.username}(${p.side})`));
+    
     let playerIndex = room.players.findIndex(p => p.username === username);
     let side;
     let isReconnect = false;
 
     // Check if player already exists (reconnection)
     if (playerIndex !== -1) {
-      console.log(`🔄 ${username} reconnecting, updating socket ID`);
+      console.log(`🔄 [SERVER] ${username} reconnecting`);
       room.players[playerIndex].id = socket.id;
       side = room.players[playerIndex].side;
       isReconnect = true;
     } else {
       // New player joining
       if (room.players.length >= 2) {
-        console.log(`❌ Room ${roomId} is full`);
+        console.log(`❌ [SERVER] Room ${roomId} is FULL`);
         socket.emit('room_full');
         return;
       }
       side = room.players.length === 0 ? 'left' : 'right';
       room.players.push({ id: socket.id, username, side });
       room.scores[username] = 0;
-      console.log(`✅ ${username} assigned to ${side} side`);
+      console.log(`✅ [SERVER] ${username} assigned to ${side}`);
     }
 
-    // Join the socket room FIRST
+    // Join socket room
     socket.join(roomId);
-    console.log(`🔗 ${username} joined socket room ${roomId}`);
+    console.log(`🔗 [SERVER] ${username} (${socket.id}) joined socket room ${roomId}`);
+    console.log(`📊 [SERVER] Room ${roomId} after join:`, room.players.map(p => `${p.username}(${p.side})`));
 
-    // Send room_joined ONLY to the joining/reconnecting player
+    // ✅ CRITICAL: Use socket.emit (NOT io.to().emit) to send ONLY to this socket
     socket.emit('room_joined', { 
       roomId, 
       side: side,
@@ -600,9 +683,9 @@ io.on('connection', async (socket) => {
       totalRounds: room.totalRounds,
       scores: room.scores
     });
-    console.log(`📤 Sent room_joined to ${username} with side: ${side}`);
+    console.log(`📤 [SERVER] Sent room_joined to ${username} ONLY (socket ${socket.id}) with side: ${side}`);
 
-    // If this is a NEW player (not reconnect), notify others
+    // ✅ Notify OTHER players (not the one who just joined)
     if (!isReconnect) {
       socket.to(roomId).emit('player_joined', { 
         username, 
@@ -610,14 +693,13 @@ io.on('connection', async (socket) => {
         players: room.players,
         scores: room.scores
       });
-      console.log(`📢 Notified others in ${roomId} about ${username} joining`);
+      console.log(`📢 [SERVER] Notified others in ${roomId} about ${username} joining`);
     }
     
   } catch (err) {
-    console.error("❌ Join Room Error:", err);
+    console.error("❌ [SERVER] Join Room Error:", err);
   }
 });
-
 
   // ---------------------------------------------------------------------
   // END OF FIXED PART
