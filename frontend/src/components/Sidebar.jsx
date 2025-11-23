@@ -117,9 +117,9 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 border-r border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col py-6 transition-colors duration-300">
+    <aside className="w-64 border-r border-white/10 bg-[#121212] flex flex-col py-6 transition-colors duration-300">
       <div className="px-4 mb-6">
-        <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider px-2">Main Menu</h3>
+        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-2">Main Menu</h3>
       </div>
       
       <div className="flex flex-col gap-1 px-3">
@@ -129,10 +129,10 @@ const Sidebar = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive 
-                  ? 'bg-accent text-black shadow-lg shadow-green-900/20' 
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
+                  ? 'bg-accent text-black shadow-lg shadow-green-900/20 font-bold' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
               }`}
             >
               <item.icon size={18} />
@@ -144,26 +144,22 @@ const Sidebar = () => {
 
       <div className="mt-auto px-4 space-y-4">
         
-        {/* --- METRICS SECTION --- */}
-        <div className="bg-[var(--bg-primary)] p-3 rounded-xl border border-[var(--border-color)] space-y-3">
-            
-            {/* 1. Total Users Visited */}
+        {/* --- METRICS SECTION (Updated Visuals) --- */}
+        <div className="bg-white/5 p-4 rounded-2xl border border-white/5 backdrop-blur-sm space-y-3">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                <div className="flex items-center gap-2 text-gray-400">
                     <Globe size={14} className="text-blue-400" />
                     <span className="text-xs font-bold">Total Users</span>
                 </div>
-                <span className="text-xs font-mono font-bold text-[var(--text-primary)]">
-                    {stats.total}+
+                <span className="text-xs font-mono font-bold text-white">
+                    {stats.total > 0 ? stats.total : '...'}
                 </span>
             </div>
 
-            {/* Separator Line */}
-            <div className="h-px bg-[var(--border-color)] w-full"></div>
+            <div className="h-px bg-white/10 w-full"></div>
 
-            {/* 2. Live Users (Pulsing) */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                <div className="flex items-center gap-2 text-gray-400">
                     <div className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -175,12 +171,11 @@ const Sidebar = () => {
                 </span>
             </div>
         </div>
-        {/* ----------------------- */}
 
-        <div className="p-4 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
-          <h4 className="text-[var(--text-primary)] font-bold text-sm mb-1">Pro Plan</h4>
-          <p className="text-xs text-[var(--text-secondary)] mb-3">Unlock more features</p>
-          <button className="w-full py-2 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-bold hover:opacity-80 transition-opacity">
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-900/20 to-blue-900/20 border border-white/10">
+          <h4 className="text-white font-bold text-sm mb-1">Pro Plan</h4>
+          <p className="text-xs text-gray-400 mb-3">Unlock advanced stats & private rooms</p>
+          <button className="w-full py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200 transition-colors">
             Upgrade
           </button>
         </div>

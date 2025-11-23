@@ -269,17 +269,34 @@ const rooms = new Map();
 
 io.on('connection', async (socket) => {
   console.log(`User Connected: ${socket.id}`);
+    // --- FIX: Send Stats Immediately to the NEW User ---
+    try {
+        const totalUsers = await User.countDocuments();
+        const statsData = {
+            live: io.engine.clientsCount,
+            total: totalUsers
+        };
+        
+        // 1. Send to the user who just connected (Immediate update)
+        socket.emit('site_stats', statsData);
+        
+        // 2. Broadcast update to everyone else
+        socket.broadcast.emit('site_stats', statsData);
+        
+    } catch (err) {
+        console.error("Error fetching stats:", err);
+    }
 
   // --- BROADCAST LIVE STATS (Live Count + Total Users) ---
-  try {
-    const totalUsers = await User.countDocuments();
-    io.emit('site_stats', {
-        live: io.engine.clientsCount,
-        total: totalUsers
-    });
-  } catch (err) {
-    console.error("Error fetching stats:", err);
-  }
+//   try {
+//     const totalUsers = await User.countDocuments();
+//     io.emit('site_stats', {
+//         live: io.engine.clientsCount,
+//         total: totalUsers
+//     });
+//   } catch (err) {
+//     console.error("Error fetching stats:", err);
+//   }
   // ------------------------------------------------------
 
   socket.on('join_room', async (data) => {
