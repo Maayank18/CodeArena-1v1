@@ -67,20 +67,20 @@
 //             socketRef.current.emit('join_room', { roomId, username: location.state?.username });
 
 //             // Listeners
-//             socketRef.current.on('room_joined', (data) => {
-//                 setClients(data.players);
-//                 setMySide(data.side);
-//                 setProblem(data.problem);
-//                 setRound(data.round);
-//                 setTotalRounds(data.totalRounds);
-//                 setScores(data.scores);
+            // socketRef.current.on('room_joined', (data) => {
+            //     setClients(data.players);
+            //     setMySide(data.side);
+            //     setProblem(data.problem);
+            //     setRound(data.round);
+            //     setTotalRounds(data.totalRounds);
+            //     setScores(data.scores);
                 
-//                 // Set Awareness (Cursor Color)
-//                 providerRef.current.awareness.setLocalStateField('user', {
-//                     name: location.state?.username,
-//                     color: data.side === 'left' ? '#007acc' : '#ff0000',
-//                 });
-//             });
+            //     // Set Awareness (Cursor Color)
+            //     providerRef.current.awareness.setLocalStateField('user', {
+            //         name: location.state?.username,
+            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
+            //     });
+            // });
 
 //             socketRef.current.on('new_round', (data) => {
 //                 toast.success(`Round ${data.round} Started!`);
@@ -500,6 +500,22 @@ const EditorPage = () => {
 
             socketRef.current.emit('join_room', { roomId, username: location.state?.username });
 
+            socketRef.current.on('room_joined', (data) => {
+                setClients(data.players);
+                setMySide(data.side);
+                setProblem(data.problem);
+                setRound(data.round);
+                setTotalRounds(data.totalRounds);
+                setScores(data.scores);
+                
+                // Set Awareness (Cursor Color)
+                providerRef.current.awareness.setLocalStateField('user', {
+                    name: location.state?.username,
+                    color: data.side === 'left' ? '#007acc' : '#ff0000',
+                });
+            });
+
+
             // socketRef.current.on('room_joined', (data) => {
             //     setClients(data.players);
             //     setMySide(data.side);
@@ -512,46 +528,48 @@ const EditorPage = () => {
             //         name: location.state?.username,
             //         color: data.side === 'left' ? '#007acc' : '#ff0000',
             //     });
-            // });/
-            socketRef.current.on('room_joined', (data) => {
-            console.log('room_joined received on', socketRef.current.id, 'payload:', data, 'localUsername:', location.state?.username);
-            // Update shared state always
-            setClients(data.players);
-            setProblem(data.problem);
-            setRound(data.round);
-            setTotalRounds(data.totalRounds);
-            setScores(data.scores);
+            // });
 
-            // Defensive: only set mySide if this join event was actually for THIS username
-            const myUsername = location.state?.username || JSON.parse(localStorage.getItem('codearena_user') || '{}')?.username;
-            if (myUsername && data.username === myUsername) {
-                console.log('room_joined is for me; setting mySide ->', data.side);
-                setMySide(data.side);
 
-                // Set awareness color for collaborative editor
-                try {
-                providerRef.current?.awareness?.setLocalStateField('user', {
-                    name: myUsername,
-                    color: data.side === 'left' ? '#007acc' : '#ff0000',
-                });
-                } catch (e) {
-                console.warn('awareness not available yet', e);
-                }
-            } else {
-                console.log('room_joined NOT for me — ignoring side. joiner:', data.username);
-            }
-            });
+            // socketRef.current.on('room_joined', (data) => {
+            // console.log('room_joined received on', socketRef.current.id, 'payload:', data, 'localUsername:', location.state?.username);
+            // // Update shared state always
+            // setClients(data.players);
+            // setProblem(data.problem);
+            // setRound(data.round);
+            // setTotalRounds(data.totalRounds);
+            // setScores(data.scores);
+
+            // // Defensive: only set mySide if this join event was actually for THIS username
+            // const myUsername = location.state?.username || JSON.parse(localStorage.getItem('codearena_user') || '{}')?.username;
+            // if (myUsername && data.username === myUsername) {
+            //     console.log('room_joined is for me; setting mySide ->', data.side);
+            //     setMySide(data.side);
+
+            //     // Set awareness color for collaborative editor
+            //     try {
+            //     providerRef.current?.awareness?.setLocalStateField('user', {
+            //         name: myUsername,
+            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
+            //     });
+            //     } catch (e) {
+            //     console.warn('awareness not available yet', e);
+            //     }
+            // } else {
+            //     console.log('room_joined NOT for me — ignoring side. joiner:', data.username);
+            // }
+            // });
 
 
             // 🔥 NEW: Update room state for other player (DO NOT set mySide here)
-            socketRef.current.on('room_state', (data) => {
-            console.log('room_state received', data);
-            setClients(data.players);
-            setProblem(data.problem);
-            setRound(data.round);
-            setTotalRounds(data.totalRounds);
-            setScores(data.scores);
-            });
+            // socketRef.current.on('room_state', (data) => {
+            // console.log('room_state received', data);
+            // setClients(data.players);
+            // setProblem(data.problem);
+            // setRound(data.round);
+            // setTotalRounds(data.totalRounds);
+            // setScores(data.scores);
+            // });
 
 
 
