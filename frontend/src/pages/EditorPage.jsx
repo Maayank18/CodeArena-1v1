@@ -637,12 +637,12 @@ const EditorPage = () => {
                 }
             });
 
-            socketRef.current.on('player_joined', ({ username, side }) => {
-                setClients((prev) => {
-                    if (prev.find(p => p.username === username)) return prev;
-                    return [...prev, { username, side }];
-                });
-            });
+            // socketRef.current.on('player_joined', ({ username, side }) => {
+            //     setClients((prev) => {
+            //         if (prev.find(p => p.username === username)) return prev;
+            //         return [...prev, { username, side }];
+            //     });
+            // });
         };
 
         if(location.state?.username) {
