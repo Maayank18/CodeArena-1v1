@@ -808,14 +808,157 @@ io.on('connection', async (socket) => {
 
   // ... rest of your socket logic (join_room, level_completed, disconnect etc)
   // keep the existing handlers exactly as you had them
-  socket.on('join_room', async (data) => { /* existing code */ });
-  socket.on('level_completed', async (data) => { /* existing code */ });
+  socket.on('join_room', async (data) => {
+    try {
+      const { roomId, username } = data;
+      if (!roomId || !username) return;
 
+      if (!rooms.has(roomId)) {
+        try {
+          const problems = await Problem.aggregate([{ $sample: { size: 5 } }]);
+          rooms.set(roomId, {
+            players: [],
+            round: 1,
+            totalRounds: 5,
+            problems: problems,
+            scores: {},
+            isGameActive: true
+          });
+        } catch (error) {
+          console.error("DB Error (problems sample):", error);
+          return;
+        }
+      }
+
+      const room = rooms.get(roomId);
+
+      let playerIndex = room.players.findIndex(p => p.username === username);
+      let side;
+
+      if (playerIndex !== -1) {
+        room.players[playerIndex].id = socket.id;
+        side = room.players[playerIndex].side;
+      } else {
+        if (room.players.length >= 2) {
+          socket.emit('room_full');
+          return;
+        }
+        side = room.players.length === 0 ? 'left' : 'right';
+        room.players.push({ id: socket.id, username, side });
+        room.scores[username] = 0;
+      }
+
+      socket.join(roomId);
+
+      io.to(roomId).emit('room_joined', {
+        roomId,
+        side: side,
+        players: room.players,
+        problem: room.problems[room.round - 1],
+        round: room.round,
+        totalRounds: room.totalRounds,
+        scores: room.scores
+      });
+
+      socket.to(roomId).emit('player_joined', { username, side });
+
+    } catch (err) {
+      console.error("Join Room Error:", err);
+    }
+  });
+
+  socket.on('level_completed', async ({ roomId, username }) => {
+    try {
+      const room = rooms.get(roomId);
+      if (!room || !room.isGameActive) return;
+
+      room.scores[username] = (room.scores[username] || 0) + 10;
+      io.to(roomId).emit('score_update', room.scores);
+
+      if (room.round < room.totalRounds) {
+        room.round++;
+        io.to(roomId).emit('new_round', {
+          round: room.round,
+          problem: room.problems[room.round - 1],
+          scores: room.scores,
+        });
+      } else {
+        room.isGameActive = false;
+        const winner = Object.keys(room.scores).reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
+
+        // Update DB
+        const updatePromises = Object.keys(room.scores).map(async (u) => {
+          await User.findOneAndUpdate({ username: u }, {
+            $inc: { 'stats.matchesPlayed': 1, 'stats.wins': u === winner ? 1 : 0 }
+          });
+        });
+        await Promise.all(updatePromises);
+
+        io.to(roomId).emit('game_over', { scores: room.scores, winner });
+        setTimeout(() => rooms.delete(roomId), 60000);
+      }
+    } catch (err) {
+      console.error("Level Completed Error:", err);
+    }
+  });
+
+
+  socket.on('level_completed', async ({ roomId, username }) => {
+    try {
+      const room = rooms.get(roomId);
+      if (!room || !room.isGameActive) return;
+
+      room.scores[username] = (room.scores[username] || 0) + 10;
+      io.to(roomId).emit('score_update', room.scores);
+
+      if (room.round < room.totalRounds) {
+        room.round++;
+        io.to(roomId).emit('new_round', {
+          round: room.round,
+          problem: room.problems[room.round - 1],
+          scores: room.scores,
+        });
+      } else {
+        room.isGameActive = false;
+        const winner = Object.keys(room.scores).reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
+
+        // Update DB
+        const updatePromises = Object.keys(room.scores).map(async (u) => {
+          await User.findOneAndUpdate({ username: u }, {
+            $inc: { 'stats.matchesPlayed': 1, 'stats.wins': u === winner ? 1 : 0 }
+          });
+        });
+        await Promise.all(updatePromises);
+
+        io.to(roomId).emit('game_over', { scores: room.scores, winner });
+        setTimeout(() => rooms.delete(roomId), 60000);
+      }
+    } catch (err) {
+      console.error("Level Completed Error:", err);
+    }
+  });
+
+  // socket.on('disconnect', async (reason) => {
+  //   console.log("User Disconnected", socket.id, "reason:", reason);
+  //   try {
+  //     const totalUsers = await User.countDocuments();
+  //     const statsData = { live: io.engine.clientsCount, total: totalUsers };
+  //     io.emit('site_stats', statsData);
+  //     console.log("Emitted site_stats after disconnect", statsData, "clientsCount:", io.engine.clientsCount);
+  //   } catch (e) {
+  //     console.error("Error fetching stats on disconnect:", e);
+  //   }
+  // });
   socket.on('disconnect', async (reason) => {
     console.log("User Disconnected", socket.id, "reason:", reason);
+
+    // Recompute and broadcast stats after disconnect
     try {
       const totalUsers = await User.countDocuments();
-      const statsData = { live: io.engine.clientsCount, total: totalUsers };
+      const statsData = {
+        live: io.engine.clientsCount,
+        total: totalUsers
+      };
       io.emit('site_stats', statsData);
       console.log("Emitted site_stats after disconnect", statsData, "clientsCount:", io.engine.clientsCount);
     } catch (e) {
