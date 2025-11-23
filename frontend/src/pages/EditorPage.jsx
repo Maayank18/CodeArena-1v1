@@ -485,48 +485,63 @@ const EditorPage = () => {
     const providerRef = useRef(null);
 
     useEffect(() => {
+    const init = async () => {
+        // 1️⃣ Initialize Yjs provider ONCE
         if (!providerRef.current) {
-            providerRef.current = new WebsocketProvider(import.meta.env.VITE_YJS_URL, roomId, ydocRef.current);
+            console.log('🟡 Initializing Yjs provider for room:', roomId);
+            providerRef.current = new WebsocketProvider(
+                import.meta.env.VITE_YJS_URL, 
+                roomId, 
+                ydocRef.current
+            );
         }
 
-        const init = async () => {
+        // 2️⃣ Initialize socket ONCE
+        if (!socketRef.current) {
+            console.log('🟡 Initializing socket connection');
             socketRef.current = io(import.meta.env.VITE_API_URL);
             
+            socketRef.current.on('connect', () => {
+                console.log('✅ Socket connected:', socketRef.current.id);
+            });
+
             socketRef.current.on('connect_error', (err) => {
-                console.error(err);
+                console.error('❌ Socket connection error:', err);
                 toast.error('Connection failed');
                 navigate('/');
             });
 
-            socketRef.current.emit('join_room', { roomId, username: location.state?.username });
-
-            // ✅ Handle YOUR join - this sets YOUR side ONCE
+            // 3️⃣ Register room_joined listener ONCE
             socketRef.current.on('room_joined', (data) => {
                 console.log('🟢 room_joined - MY side:', data.side, 'My username:', location.state?.username);
+                console.log('🟢 Full data:', JSON.stringify(data, null, 2));
+                
                 setClients(data.players);
-                setMySide(data.side);  // ✅ Set YOUR side here
+                setMySide(data.side);
                 setProblem(data.problem);
                 setRound(data.round);
                 setTotalRounds(data.totalRounds);
                 setScores(data.scores);
                 
-                providerRef.current.awareness.setLocalStateField('user', {
-                    name: location.state?.username,
-                    color: data.side === 'left' ? '#007acc' : '#ff0000',
-                });
+                // Set awareness
+                if (providerRef.current?.awareness) {
+                    providerRef.current.awareness.setLocalStateField('user', {
+                        name: location.state?.username,
+                        color: data.side === 'left' ? '#007acc' : '#ff0000',
+                    });
+                    console.log('✅ Awareness set');
+                }
             });
 
-            // ✅ Handle when OTHER player joins - NEVER touch mySide
+            // 4️⃣ Register player_joined listener ONCE
             socketRef.current.on('player_joined', ({ username, side, players, scores }) => {
-                console.log('🔵 player_joined - other player:', username, 'their side:', side, 'My side stays:', mySide);
-                setClients(players);  // Update player list
-                setScores(scores);    // Update scores
-                // ❌ NEVER EVER set mySide here!
+                console.log('🔵 player_joined - other player:', username, 'their side:', side);
+                setClients(players);
+                setScores(scores);
                 toast.success(`${username} joined the room!`);
             });
 
-
-
+            // 5️⃣ Register other listeners ONCE
             socketRef.current.on('new_round', (data) => {
                 toast.success(`Round ${data.round} Started!`);
                 setProblem(data.problem);
@@ -536,7 +551,9 @@ const EditorPage = () => {
                 setOutput(null);
             });
 
-            socketRef.current.on('score_update', (newScores) => setScores(newScores));
+            socketRef.current.on('score_update', (newScores) => {
+                setScores(newScores);
+            });
             
             socketRef.current.on('game_over', (data) => {
                 setGameOverData(data);
@@ -563,33 +580,152 @@ const EditorPage = () => {
                 }
             });
 
-            // socketRef.current.on('player_joined', ({ username, side }) => {
-            //     setClients((prev) => {
-            //         if (prev.find(p => p.username === username)) return prev;
-            //         return [...prev, { username, side }];
-            //     });
-            // });
-        };
+            // 6️⃣ Now emit join_room AFTER all listeners are registered
+            console.log('📤 Emitting join_room for:', location.state?.username);
+            socketRef.current.emit('join_room', { 
+                roomId, 
+                username: location.state?.username 
+            });
+        }
+    };
 
-        if(location.state?.username) {
+    if(location.state?.username) {
+        init();
+    } else {
+        const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
+        if (storedUser) {
+            location.state = { username: storedUser.username };
             init();
         } else {
-            // Fallback: If no state (e.g. direct link), redirect to login
-            // In a real app, you might fetch user from localStorage
-            const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
-            if (storedUser) {
-                 // If we have a user in storage, use it and re-run init
-                 location.state = { username: storedUser.username };
-                 init();
-            } else {
-                navigate('/login');
-            }
+            navigate('/login');
         }
+    }
 
-        return () => {
-            if(socketRef.current) socketRef.current.disconnect();
-        };
-    }, []);
+    // 7️⃣ Cleanup function
+    return () => {
+        console.log('🧹 Cleanup: removing listeners and disconnecting');
+        if(socketRef.current) {
+            socketRef.current.off('room_joined');
+            socketRef.current.off('player_joined');
+            socketRef.current.off('new_round');
+            socketRef.current.off('score_update');
+            socketRef.current.off('game_over');
+            socketRef.current.off('connect');
+            socketRef.current.off('connect_error');
+            socketRef.current.disconnect();
+        }
+        if(providerRef.current) {
+            providerRef.current.disconnect();
+        }
+    };
+}, []); // ❌ CRITICAL: Empty dependency array - only run ONCE
+
+    // useEffect(() => {
+    //     if (!providerRef.current) {
+    //         providerRef.current = new WebsocketProvider(import.meta.env.VITE_YJS_URL, roomId, ydocRef.current);
+    //     }
+
+    //     const init = async () => {
+    //         socketRef.current = io(import.meta.env.VITE_API_URL);
+            
+    //         socketRef.current.on('connect_error', (err) => {
+    //             console.error(err);
+    //             toast.error('Connection failed');
+    //             navigate('/');
+    //         });
+
+    //         socketRef.current.emit('join_room', { roomId, username: location.state?.username });
+
+    //         // ✅ Handle YOUR join - this sets YOUR side ONCE
+    //         socketRef.current.on('room_joined', (data) => {
+    //             console.log('🟢 room_joined - MY side:', data.side, 'My username:', location.state?.username);
+    //             setClients(data.players);
+    //             setMySide(data.side);  // ✅ Set YOUR side here
+    //             setProblem(data.problem);
+    //             setRound(data.round);
+    //             setTotalRounds(data.totalRounds);
+    //             setScores(data.scores);
+                
+    //             providerRef.current.awareness.setLocalStateField('user', {
+    //                 name: location.state?.username,
+    //                 color: data.side === 'left' ? '#007acc' : '#ff0000',
+    //             });
+    //         });
+
+    //         // ✅ Handle when OTHER player joins - NEVER touch mySide
+    //         socketRef.current.on('player_joined', ({ username, side, players, scores }) => {
+    //             console.log('🔵 player_joined - other player:', username, 'their side:', side, 'My side stays:', mySide);
+    //             setClients(players);  // Update player list
+    //             setScores(scores);    // Update scores
+    //             // ❌ NEVER EVER set mySide here!
+    //             toast.success(`${username} joined the room!`);
+    //         });
+
+
+
+    //         socketRef.current.on('new_round', (data) => {
+    //             toast.success(`Round ${data.round} Started!`);
+    //             setProblem(data.problem);
+    //             setRound(data.round);
+    //             setScores(data.scores);
+    //             setRunResults(null); 
+    //             setOutput(null);
+    //         });
+
+    //         socketRef.current.on('score_update', (newScores) => setScores(newScores));
+            
+    //         socketRef.current.on('game_over', (data) => {
+    //             setGameOverData(data);
+    //             const myName = location.state?.username;
+    //             const myScore = data.scores[myName] || 0;
+    //             const allPlayers = Object.keys(data.scores);
+    //             const opponentName = allPlayers.find(name => name !== myName) || "Unknown";
+
+    //             const matchData = {
+    //                 date: new Date().toISOString(),
+    //                 opponent: opponentName,
+    //                 winner: data.winner,
+    //                 score: myScore
+    //             };
+    //             const history = JSON.parse(localStorage.getItem('codearena_history') || '[]');
+    //             history.unshift(matchData);
+    //             localStorage.setItem('codearena_history', JSON.stringify(history));
+
+    //             const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+    //             if (user.stats) {
+    //                 user.stats.matchesPlayed += 1;
+    //                 if (data.winner === myName) user.stats.wins += 1;
+    //                 localStorage.setItem('codearena_user', JSON.stringify(user));
+    //             }
+    //         });
+
+    //         // socketRef.current.on('player_joined', ({ username, side }) => {
+    //         //     setClients((prev) => {
+    //         //         if (prev.find(p => p.username === username)) return prev;
+    //         //         return [...prev, { username, side }];
+    //         //     });
+    //         // });
+    //     };
+
+    //     if(location.state?.username) {
+    //         init();
+    //     } else {
+    //         // Fallback: If no state (e.g. direct link), redirect to login
+    //         // In a real app, you might fetch user from localStorage
+    //         const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
+    //         if (storedUser) {
+    //              // If we have a user in storage, use it and re-run init
+    //              location.state = { username: storedUser.username };
+    //              init();
+    //         } else {
+    //             navigate('/login');
+    //         }
+    //     }
+
+    //     return () => {
+    //         if(socketRef.current) socketRef.current.disconnect();
+    //     };
+    // }, []);
 
     const getPlayerName = (side) => {
         const player = clients.find(c => c.side === side);
