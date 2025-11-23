@@ -113,7 +113,7 @@ import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api.js'
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 // --- NEW IMPORTS ---
@@ -147,7 +147,7 @@ const Dashboard = () => {
 
         try {
             // 2. Perform Async Operation (Backend Call)
-            const response = await axios.post('/api/rooms');
+            const response = await api.post('/api/rooms');
             const newRoomId = response.data.roomId;
             
             // 3. Wait for 4 seconds for the effect

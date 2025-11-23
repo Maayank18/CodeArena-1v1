@@ -751,8 +751,10 @@ import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom'
 import { io } from 'socket.io-client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import axios from 'axios';
+import api from '../api.js'
+import dotenv from 'dotenv';
 import { Copy, CheckCircle, XCircle, Play } from 'lucide-react';
+dotenv.config();
 
 // --- TIMER COMPONENT ---
 const Timer = () => {
@@ -794,12 +796,12 @@ const EditorPage = () => {
     useEffect(() => {
         // Create Provider if it doesn't exist
         if (!providerRef.current) {
-            providerRef.current = new WebsocketProvider('ws://localhost:1234', roomId, ydocRef.current);
+            providerRef.current = new WebsocketProvider(import.meta.env.VITE_YJS_URL, roomId, ydocRef.current);
         }
 
         const init = async () => {
             // Connect to Backend
-            socketRef.current = io('http://localhost:5000');
+            socketRef.current = io(import.meta.env.VITE_API_URL);
             
             socketRef.current.on('connect_error', (err) => {
                 console.error(err);
@@ -905,7 +907,7 @@ const EditorPage = () => {
             // Loop through cases sequentially
             for (const [index, tc] of publicCases.entries()) {
                 try {
-                    const response = await axios.post('/api/run', {
+                    const response = await api.post('/api/run', {
                         language, code, stdin: tc.input
                     });
                     
@@ -947,7 +949,7 @@ const EditorPage = () => {
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
         
         try {
-            const response = await axios.post('/api/run/submit', {
+            const response = await api.post('/api/run/submit', {
                 language, code, problemId: problem._id 
             });
 
