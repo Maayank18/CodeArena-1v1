@@ -46,7 +46,7 @@ const EditorPage = () => {
     const ydocRef = useRef(new Y.Doc());
     const providerRef = useRef(null);
 
-    1. INITIALIZE CONNECTION
+    // 1. INITIALIZE CONNECTION
     useEffect(() => {
         // Create Provider if it doesn't exist
         if (!providerRef.current) {
