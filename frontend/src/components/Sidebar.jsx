@@ -352,7 +352,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     // Explicit fallback to localhost:5000 to ensure connection
-    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
     
     console.log("Sidebar connecting to:", socketUrl, "VITE_API_URL:", import.meta.env.VITE_API_URL);
 
