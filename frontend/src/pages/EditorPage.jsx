@@ -498,106 +498,32 @@ const EditorPage = () => {
                 navigate('/');
             });
 
-            // socketRef.current.emit('join_room', { roomId, username: location.state?.username });
-
-            // socketRef.current.on('room_joined', (data) => {
-            //     setClients(data.players);
-            //     setMySide(data.side);
-            //     setProblem(data.problem);
-            //     setRound(data.round);
-            //     setTotalRounds(data.totalRounds);
-            //     setScores(data.scores);
-                
-            //     // Set Awareness (Cursor Color)
-            //     providerRef.current.awareness.setLocalStateField('user', {
-            //         name: location.state?.username,
-            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
-            //     });
-            // });
-
             socketRef.current.emit('join_room', { roomId, username: location.state?.username });
 
-            // ✅ Handle your own join - this sets YOUR side
+            // ✅ Handle YOUR join - this sets YOUR side ONCE
             socketRef.current.on('room_joined', (data) => {
+                console.log('🟢 room_joined - MY side:', data.side, 'My username:', location.state?.username);
                 setClients(data.players);
-                setMySide(data.side);  // ✅ This is YOUR side only
+                setMySide(data.side);  // ✅ Set YOUR side here
                 setProblem(data.problem);
                 setRound(data.round);
                 setTotalRounds(data.totalRounds);
                 setScores(data.scores);
                 
-                // Set Awareness (Cursor Color)
                 providerRef.current.awareness.setLocalStateField('user', {
                     name: location.state?.username,
                     color: data.side === 'left' ? '#007acc' : '#ff0000',
                 });
             });
 
-            // ✅ Handle when OTHER player joins - DON'T change YOUR side
+            // ✅ Handle when OTHER player joins - NEVER touch mySide
             socketRef.current.on('player_joined', ({ username, side, players, scores }) => {
+                console.log('🔵 player_joined - other player:', username, 'their side:', side, 'My side stays:', mySide);
                 setClients(players);  // Update player list
                 setScores(scores);    // Update scores
-                // ❌ DON'T set mySide here - it's for the OTHER player
-                // ❌ DON'T set problem here - you already have it
-                
+                // ❌ NEVER EVER set mySide here!
                 toast.success(`${username} joined the room!`);
             });
-
-
-            // socketRef.current.on('room_joined', (data) => {
-            //     setClients(data.players);
-            //     setMySide(data.side);
-            //     setProblem(data.problem);
-            //     setRound(data.round);
-            //     setTotalRounds(data.totalRounds);
-            //     setScores(data.scores);
-                
-            //     providerRef.current.awareness.setLocalStateField('user', {
-            //         name: location.state?.username,
-            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
-            //     });
-            // });
-
-
-            // socketRef.current.on('room_joined', (data) => {
-            // console.log('room_joined received on', socketRef.current.id, 'payload:', data, 'localUsername:', location.state?.username);
-            // // Update shared state always
-            // setClients(data.players);
-            // setProblem(data.problem);
-            // setRound(data.round);
-            // setTotalRounds(data.totalRounds);
-            // setScores(data.scores);
-
-            // // Defensive: only set mySide if this join event was actually for THIS username
-            // const myUsername = location.state?.username || JSON.parse(localStorage.getItem('codearena_user') || '{}')?.username;
-            // if (myUsername && data.username === myUsername) {
-            //     console.log('room_joined is for me; setting mySide ->', data.side);
-            //     setMySide(data.side);
-
-            //     // Set awareness color for collaborative editor
-            //     try {
-            //     providerRef.current?.awareness?.setLocalStateField('user', {
-            //         name: myUsername,
-            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
-            //     });
-            //     } catch (e) {
-            //     console.warn('awareness not available yet', e);
-            //     }
-            // } else {
-            //     console.log('room_joined NOT for me — ignoring side. joiner:', data.username);
-            // }
-            // });
-
-
-            // 🔥 NEW: Update room state for other player (DO NOT set mySide here)
-            // socketRef.current.on('room_state', (data) => {
-            // console.log('room_state received', data);
-            // setClients(data.players);
-            // setProblem(data.problem);
-            // setRound(data.round);
-            // setTotalRounds(data.totalRounds);
-            // setScores(data.scores);
-            // });
 
 
 
