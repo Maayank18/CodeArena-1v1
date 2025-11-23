@@ -1009,7 +1009,10 @@ const EditorPage = () => {
                         </div>
                         {mySide === 'left' && (
                             <select className="bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                                <option value="cpp">C++</option><option value="python">Python</option><option value="javascript">JS</option>
+                                <option value="cpp">C++</option>
+                                <option value="java">Java</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JS</option>
                             </select>
                         )}
                     </div>
@@ -1139,7 +1142,10 @@ const EditorPage = () => {
                         </div>
                         {mySide === 'right' && (
                             <select className="bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                                <option value="cpp">C++</option><option value="python">Python</option><option value="javascript">JS</option>
+                                <option value="cpp">C++</option>
+                                <option value="java">Java</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JS</option>
                             </select>
                         )}
                     </div>

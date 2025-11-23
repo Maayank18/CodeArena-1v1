@@ -6,9 +6,10 @@
     "difficulty": "Easy",
     "constraints": ["2 <= n <= 10^4", "-10^9 <= nums[i] <= 10^9", "-10^9 <= target <= 10^9"],
     "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\n\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].trim().split(' ').map(Number);\n    const target = parseInt(input[2]);\n    \n    // Your logic here\n    // console.log(result);\n}\nsolve();",
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\n\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].trim().split(' ').map(Number);\n    const target = parseInt(input[2]);\n    \n    // Your logic here\n    \n}\nsolve();",
       "python": "import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    nums = [int(x) for x in data[1:n+1]]\n    target = int(data[n+1])\n    \n    # Your code here\n\nif __name__ == '__main__':\n    solve()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    int n;\n    if (!(cin >> n)) return 0;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    int target;\n    cin >> target;\n    \n    // Your code here\n    \n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    int n;\n    if (!(cin >> n)) return 0;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    int target;\n    cin >> target;\n    \n    // Your code here\n    \n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        int target = sc.nextInt();\n        \n        // Your logic here\n    }\n}"
     },
     "testCases": [
       { "input": "4\n2 7 11 15\n9", "output": "0 1", "isPublic": true },
@@ -24,7 +25,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\n\nfunction solve() {\n    const x = parseInt(input);\n    // Your code here\n    console.log(\"true\");\n}\nsolve();",
       "python": "import sys\n\ndef solve():\n    x = sys.stdin.read().strip()\n    # Your code here\n    print(\"true\")\n\nif __name__ == '__main__':\n    solve()",
-      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    long long x;\n    cin >> x;\n    // Your code here\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    long long x;\n    cin >> x;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        long x = sc.nextLong();\n        // Your logic here\n        System.out.println(\"true\");\n    }\n}"
     },
     "testCases": [
       { "input": "121", "output": "true", "isPublic": true },
@@ -41,7 +43,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n\n// Solve\nconsole.log(\"true\");",
       "python": "import sys\ns = sys.stdin.read().strip()\n# Solve\nprint(\"true\")",
-      "cpp": "#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\n\nint main() {\n    string s;\n    cin >> s;\n    // Code here\n    cout << \"true\";\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <stack>\n#include <string>\nusing namespace std;\n\nint main() {\n    string s;\n    cin >> s;\n    // Code here\n    cout << \"true\";\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        String s = sc.next();\n        // Your logic here\n        System.out.println(\"true\");\n    }\n}"
     },
     "testCases": [
       { "input": "()", "output": "true", "isPublic": true },
@@ -58,7 +61,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(lines[0]);\nconst nums = lines[1].split(' ').map(Number);\n// Solve",
       "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Solve",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Solve\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Solve\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your logic here\n    }\n}"
     },
     "testCases": [
       { "input": "9\n-2 1 -3 4 -1 2 1 -5 4", "output": "6", "isPublic": true },
@@ -74,7 +78,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Print result joined by space",
       "python": "import sys\nn = int(sys.stdin.read().strip())\n# Print result",
-      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Solve\n    return 0;\n}"
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Solve\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        // Your logic here\n    }\n}"
     },
     "testCases": [
       { "input": "3", "output": "1 2 Fizz", "isPublic": true },
@@ -90,7 +95,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\nconsole.log(s.split('').reverse().join(''));",
       "python": "import sys\ns = sys.stdin.read().strip()\nprint(s[::-1])",
-      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    reverse(s.begin(), s.end());\n    cout << s;\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    reverse(s.begin(), s.end());\n    cout << s;\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        String s = sc.next();\n        // Your logic here\n        System.out.println(new StringBuilder(s).reverse().toString());\n    }\n}"
     },
     "testCases": [
       { "input": "hello", "output": "olleh", "isPublic": true },
@@ -106,7 +112,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Solve",
       "python": "import sys\nn = int(sys.stdin.read().strip())\n# Solve",
-      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Solve\n    return 0;\n}"
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Solve\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        // Your logic here\n    }\n}"
     },
     "testCases": [
       { "input": "2", "output": "2", "isPublic": true },
@@ -122,7 +129,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = lines[1].split(' ').map(Number);\n// Solve",
       "python": "import sys\ndata = sys.stdin.read().split()\nnums = [int(x) for x in data[1:]]\n# Solve",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    int ans = 0;\n    for(int i=0; i<n; i++) { int x; cin >> x; ans ^= x; }\n    cout << ans;\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    int ans = 0;\n    for(int i=0; i<n; i++) { int x; cin >> x; ans ^= x; }\n    cout << ans;\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int ans = 0;\n        for(int i=0; i<n; i++) {\n            ans ^= sc.nextInt();\n        }\n        System.out.println(ans);\n    }\n}"
     },
     "testCases": [
       { "input": "3\n2 2 1", "output": "1", "isPublic": true },
@@ -138,7 +146,8 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = lines[1].split(' ').map(Number);\n// Solve",
       "python": "import sys\ndata = sys.stdin.read().split()\nnums = [int(x) for x in data[1:]]\n# Solve",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Solve\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <vector>\n#include <numeric>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Solve\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        // Your logic here\n    }\n}"
     },
     "testCases": [
       { "input": "3\n3 0 1", "output": "2", "isPublic": true },
@@ -154,11 +163,1384 @@
     "starterCode": {
       "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = lines[1].split(' ').map(Number);\n// Solve",
       "python": "import sys\ndata = sys.stdin.read().split()\nnums = [int(x) for x in data[1:]]\n# Solve",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    // Solve\n    return 0;\n}"
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    // Solve\n    return 0;\n}",
+      "java": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        // Your logic here\n    }\n}"
     },
     "testCases": [
       { "input": "4\n1 2 3 1", "output": "true", "isPublic": true },
       { "input": "4\n1 2 3 4", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Add Digits",
+    "slug": "add-digits",
+    "description": "Given an integer `num`, repeatedly add all its digits until the result has only one digit, and return it.\n\n**Input Format:**\n- A single integer `num`\n\n**Output Format:**\n- A single integer",
+    "difficulty": "Easy",
+    "constraints": ["0 <= num <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst num = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nnum = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int num; cin >> num;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int num = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "38", "output": "2", "isPublic": true },
+      { "input": "0", "output": "0", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Ugly Number",
+    "slug": "ugly-number",
+    "description": "An ugly number is a positive integer whose prime factors are limited to 2, 3, and 5. Given an integer `n`, return `true` if `n` is an ugly number.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["-2^31 <= n <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n        System.out.println(\"true\");\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6", "output": "true", "isPublic": true },
+      { "input": "1", "output": "true", "isPublic": true },
+      { "input": "14", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Power of Three",
+    "slug": "power-of-three",
+    "description": "Given an integer `n`, return `true` if it is a power of three. Otherwise, return `false`.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["-2^31 <= n <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "27", "output": "true", "isPublic": true },
+      { "input": "0", "output": "false", "isPublic": true },
+      { "input": "45", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Reverse Vowels of a String",
+    "slug": "reverse-vowels",
+    "description": "Given a string `s`, reverse only all the vowels in the string and return it. The vowels are 'a', 'e', 'i', 'o', and 'u', and they can appear in both lower and upper cases.\n\n**Input Format:**\n- A single string `s`\n\n**Output Format:**\n- The modified string",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 3 * 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "hello", "output": "holle", "isPublic": true },
+      { "input": "leetcode", "output": "leotcede", "isPublic": true }
+    ]
+  },
+  {
+    "title": "First Unique Character in a String",
+    "slug": "first-unique-char",
+    "description": "Given a string `s`, find the first non-repeating character in it and return its index. If it does not exist, return -1.\n\n**Input Format:**\n- A single string `s`\n\n**Output Format:**\n- Integer index",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "leetcode", "output": "0", "isPublic": true },
+      { "input": "loveleetcode", "output": "2", "isPublic": true },
+      { "input": "aabb", "output": "-1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Ransom Note",
+    "slug": "ransom-note",
+    "description": "Given two strings `ransomNote` and `magazine`, return `true` if `ransomNote` can be constructed by using the letters from `magazine` and `false` otherwise.\n\n**Input Format:**\n- Two space-separated strings: `ransomNote` `magazine`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [r, m] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nr, m = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    string r, m; cin >> r >> m;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String r = sc.next();\n        String m = sc.next();\n        // Your code here\n        System.out.println(\"true\");\n    }\n}"
+    },
+    "testCases": [
+      { "input": "a b", "output": "false", "isPublic": true },
+      { "input": "aa ab", "output": "false", "isPublic": true },
+      { "input": "aa aab", "output": "true", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Is Subsequence",
+    "slug": "is-subsequence",
+    "description": "Given two strings `s` and `t`, return `true` if `s` is a subsequence of `t`, or `false` otherwise.\n\n**Input Format:**\n- Two space-separated strings `s` and `t`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["0 <= s.length <= 100", "0 <= t.length <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [s, t] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\ns, t = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s, t; cin >> s >> t;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        String t = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "abc ahbgdc", "output": "true", "isPublic": true },
+      { "input": "axc ahbgdc", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Base 7",
+    "slug": "base-7",
+    "description": "Given an integer `num`, return a string of its base 7 representation.\n\n**Input Format:**\n- Single integer `num`\n\n**Output Format:**\n- String representation",
+    "difficulty": "Easy",
+    "constraints": ["-10^7 <= num <= 10^7"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst num = parseInt(fs.readFileSync(0, 'utf-8').trim());\nconsole.log(num.toString(7));",
+      "python": "import sys\nnum = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int num; cin >> num;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int num = sc.nextInt();\n        System.out.println(Integer.toString(num, 7));\n    }\n}"
+    },
+    "testCases": [
+      { "input": "100", "output": "202", "isPublic": true },
+      { "input": "-7", "output": "-10", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Perfect Number",
+    "slug": "perfect-number",
+    "description": "A perfect number is a positive integer that is equal to the sum of its positive divisors, excluding the number itself. Given an integer `num`, return `true` if `num` is a perfect number, otherwise return `false`.\n\n**Input Format:**\n- Single integer `num`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= num <= 10^8"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst num = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nnum = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int num; cin >> num;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int num = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "28", "output": "true", "isPublic": true },
+      { "input": "7", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Detect Capital",
+    "slug": "detect-capital",
+    "description": "We define the usage of capitals in a word to be right if one of the following cases holds:\n1. All letters in this word are capitals, like \"USA\".\n2. All letters in this word are not capitals, like \"leetcode\".\n3. Only the first letter in this word is capital, like \"Google\".\nGiven a string `word`, return `true` if the usage of capitals in it is right.\n\n**Input Format:**\n- Single string `word`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= word.length <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst word = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\nword = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <cctype>\nusing namespace std;\nint main() {\n    string word; cin >> word;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String word = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "USA", "output": "true", "isPublic": true },
+      { "input": "FlaG", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Reverse Words in a String III",
+    "slug": "reverse-words-iii",
+    "description": "Given a string `s`, reverse the order of characters in each word within a sentence while still preserving whitespace and initial word order.\n\n**Input Format:**\n- A single line string `s` containing words separated by spaces.\n\n**Output Format:**\n- The modified string.",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 5 * 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\nconsole.log(s.split(' ').map(w => w.split('').reverse().join('')).join(' '));",
+      "python": "import sys\ns = sys.stdin.read().strip()\nprint(' '.join(w[::-1] for w in s.split()))",
+      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\n#include <sstream>\nusing namespace std;\nint main() {\n    string line, word;\n    getline(cin, line);\n    stringstream ss(line);\n    bool first = true;\n    while(ss >> word) {\n        reverse(word.begin(), word.end());\n        if(!first) cout << \" \";\n        cout << word;\n        first = false;\n    }\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNext()) return;\n        String line = sc.nextLine();\n        String[] words = line.split(\" \");\n        for(int i=0; i<words.length; i++) {\n            System.out.print(new StringBuilder(words[i]).reverse().toString());\n            if(i < words.length - 1) System.out.print(\" \");\n        }\n    }\n}"
+    },
+    "testCases": [
+      { "input": "Let's take LeetCode contest", "output": "s'teL ekat edoCteeL tsetnoc", "isPublic": true },
+      { "input": "God Ding", "output": "doG gniD", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Self Dividing Numbers",
+    "slug": "self-dividing-numbers",
+    "description": "A self-dividing number is a number that is divisible by every digit it contains. Given two integers `left` and `right`, return a list of all the self-dividing numbers in the range `[left, right]`.\n\n**Input Format:**\n- Two integers `left` and `right`.\n\n**Output Format:**\n- Space-separated integers.",
+    "difficulty": "Easy",
+    "constraints": ["1 <= left <= right <= 10000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [left, right] = fs.readFileSync(0, 'utf-8').trim().split(' ').map(Number);\n// Your code here\n// console.log(result.join(' '));",
+      "python": "import sys\ndata = sys.stdin.read().split()\nleft, right = int(data[0]), int(data[1])\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int left, right; cin >> left >> right;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int left = sc.nextInt();\n        int right = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "1 22", "output": "1 2 3 4 5 6 7 8 9 11 12 15 22", "isPublic": true },
+      { "input": "47 85", "output": "48 55 66 77", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Binary Search",
+    "slug": "binary-search",
+    "description": "Given an array of integers `nums` which is sorted in ascending order, and an integer `target`, write a function to search `target` in `nums`. If `target` exists, then return its index. Otherwise, return -1.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` sorted integers\n- Third line: `target`\n\n**Output Format:**\n- Integer index",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(lines[0]);\nconst nums = lines[1].split(' ').map(Number);\nconst target = parseInt(lines[2]);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:n+1]]\ntarget = int(data[n+1])\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    int target; cin >> target;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        int target = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6\n-1 0 3 5 9 12\n9", "output": "4", "isPublic": true },
+      { "input": "6\n-1 0 3 5 9 12\n2", "output": "-1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Jewels and Stones",
+    "slug": "jewels-stones",
+    "description": "You're given strings `jewels` representing the types of stones that are jewels, and `stones` representing the stones you have. Each character in `stones` is a type of stone you have. You want to know how many of the stones you have are also jewels.\n\n**Input Format:**\n- Two strings `jewels` and `stones`.\n\n**Output Format:**\n- Single integer count.",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 50"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [jewels, stones] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nj, s = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    string j, s; cin >> j >> s;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String j = sc.next();\n        String s = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "aA aAAbbbb", "output": "3", "isPublic": true },
+      { "input": "z ZZ", "output": "0", "isPublic": true }
+    ]
+  },
+  {
+    "title": "To Lower Case",
+    "slug": "to-lower-case",
+    "description": "Given a string `s`, return the string after replacing every uppercase letter with the same lowercase letter.\n\n**Input Format:**\n- A single string `s`.\n\n**Output Format:**\n- Lowercase string.",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\nconsole.log(s.toLowerCase());",
+      "python": "import sys\ns = sys.stdin.read().strip()\nprint(s.lower())",
+      "cpp": "#include <iostream>\n#include <string>\n#include <cctype>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    for(char &c : s) c = tolower(c);\n    cout << s;\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        System.out.println(s.toLowerCase());\n    }\n}"
+    },
+    "testCases": [
+      { "input": "Hello", "output": "hello", "isPublic": true },
+      { "input": "LOVELY", "output": "lovely", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Robot Return to Origin",
+    "slug": "robot-origin",
+    "description": "There is a robot starting at the position (0, 0), the origin, on a 2D plane. Given a sequence of its moves, judge if this robot ends up at (0, 0) after it completes its moves. The move sequence is represented by a string `moves`, and the characters represent 'U' (Up), 'D' (Down), 'L' (Left), 'R' (Right).\n\n**Input Format:**\n- A single string `moves`.\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= moves.length <= 2 * 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst moves = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\nmoves = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string moves; cin >> moves;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String moves = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "UD", "output": "true", "isPublic": true },
+      { "input": "LL", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Sort Array By Parity",
+    "slug": "sort-parity",
+    "description": "Given an integer array `nums`, move all the even integers at the beginning of the array followed by all the odd integers. Return any array that satisfies this condition.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 5000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n3 1 2 4", "output": "2 4 3 1", "isPublic": true },
+      { "input": "1\n0", "output": "0", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Transpose Matrix",
+    "slug": "transpose-matrix",
+    "description": "Given a 2D integer array `matrix`, return the transpose of `matrix`.\n\n**Input Format:**\n- First line: `R` `C`\n- Next `R` lines: `C` integers each\n\n**Output Format:**\n- `C` lines with `R` integers each",
+    "difficulty": "Easy",
+    "constraints": ["1 <= R, C <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst [R, C] = input[0].split(' ').map(Number);\n// Read matrix\n// Your code here",
+      "python": "import sys\n# Read matrix logic required\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int R, C; cin >> R >> C;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int R = sc.nextInt();\n        int C = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2 3\n1 2 3\n4 5 6", "output": "1 4 \n2 5 \n3 6 ", "isPublic": true },
+      { "input": "2 2\n1 2\n3 4", "output": "1 3 \n2 4 ", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Third Maximum Number",
+    "slug": "third-max",
+    "description": "Given an integer array `nums`, return the third distinct maximum number in this array. If the third maximum does not exist, return the maximum number.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <set>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n3 2 1", "output": "1", "isPublic": true },
+      { "input": "2\n1 2", "output": "2", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Lemonade Change",
+    "slug": "lemonade-change",
+    "description": "At a lemonade stand, each lemonade costs $5. Customers are standing in a queue to buy from you, and order one at a time. Each customer will only buy one lemonade and pay with either a $5, $10, or $20 bill. You must provide the correct change to each customer so that the net transaction is that the customer pays $5. Return `true` if you can provide every customer with correct change.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (bills)\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst bills = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nbills = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> bills(n);\n    for(int i=0; i<n; i++) cin >> bills[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] bills = new int[n];\n        for(int i=0; i<n; i++) bills[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5\n5 5 5 10 20", "output": "true", "isPublic": true },
+      { "input": "5\n5 5 10 10 20", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Fibonacci Number",
+    "slug": "fibonacci-number",
+    "description": "The Fibonacci numbers, commonly denoted F(n) form a sequence, called the Fibonacci sequence, such that each number is the sum of the two preceding ones, starting from 0 and 1. Given `n`, calculate `F(n)`.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["0 <= n <= 30"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2", "output": "1", "isPublic": true },
+      { "input": "3", "output": "2", "isPublic": true },
+      { "input": "4", "output": "3", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Defanging an IP Address",
+    "slug": "defanging-ip",
+    "description": "Given a valid (IPv4) IP `address`, return a defanged version of that IP address. A defanged IP address replaces every period `.` with `[.]`.\n\n**Input Format:**\n- Single string `address`\n\n**Output Format:**\n- Defanged string",
+    "difficulty": "Easy",
+    "constraints": ["address is a valid IPv4 address"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "1.1.1.1", "output": "1[.]1[.]1[.]1", "isPublic": true },
+      { "input": "255.100.50.0", "output": "255[.]100[.]50[.]0", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Squares of a Sorted Array",
+    "slug": "squares-sorted-array",
+    "description": "Given an integer array `nums` sorted in non-decreasing order, return an array of the squares of each number sorted in non-decreasing order.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5\n-4 -1 0 3 10", "output": "0 1 9 16 100", "isPublic": true },
+      { "input": "5\n-7 -3 2 3 11", "output": "4 9 9 49 121", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Subtract the Product and Sum of Digits",
+    "slug": "subtract-product-sum",
+    "description": "Given an integer number `n`, return the difference between the product of its digits and the sum of its digits.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "234", "output": "15", "isPublic": true },
+      { "input": "4421", "output": "21", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Number of Steps to Reduce a Number to Zero",
+    "slug": "steps-reduce-zero",
+    "description": "Given an integer `num`, return the number of steps to reduce it to zero. In one step, if the current number is even, you have to divide it by 2, otherwise, you have to subtract 1 from it.\n\n**Input Format:**\n- Single integer `num`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["0 <= num <= 10^6"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst num = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nnum = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int num; cin >> num;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int num = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "14", "output": "6", "isPublic": true },
+      { "input": "8", "output": "4", "isPublic": true }
+    ]
+  },
+  {
+    "title": "How Many Numbers Are Smaller Than the Current Number",
+    "slug": "smaller-numbers-than-current",
+    "description": "Given the array `nums`, for each `nums[i]` find out how many numbers in the array are smaller than it. That is, for each `nums[i]` you have to count the number of valid `j`'s such that `j != i` and `nums[j] < nums[i]`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["2 <= n <= 500"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5\n8 1 2 2 3", "output": "4 0 1 1 3", "isPublic": true },
+      { "input": "4\n6 5 4 8", "output": "2 1 0 3", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Running Sum of 1d Array",
+    "slug": "running-sum-1d",
+    "description": "Given an array `nums`. We define a running sum of an array as `runningSum[i] = sum(nums[0]…nums[i])`. Return the running sum of `nums`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n1 2 3 4", "output": "1 3 6 10", "isPublic": true },
+      { "input": "5\n1 1 1 1 1", "output": "1 2 3 4 5", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Kids With the Greatest Number of Candies",
+    "slug": "kids-candies",
+    "description": "There are `n` kids with candies. You are given an integer array `candies`, where each `candies[i]` represents the number of candies the `i`th kid has, and an integer `extraCandies`. Return a boolean array of length `n` where `result[i]` is true if, after giving the `i`th kid all the `extraCandies`, they will have the greatest number of candies among all the kids, or false otherwise.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (candies)\n- Third line: `extraCandies`\n\n**Output Format:**\n- Space-separated \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["2 <= n <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst candies = input[1].trim().split(' ').map(Number);\nconst extra = parseInt(input[2]);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\ncandies = [int(x) for x in data[1:n+1]]\nextra = int(data[n+1])\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> candies(n);\n    for(int i=0; i<n; i++) cin >> candies[i];\n    int extra; cin >> extra;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] candies = new int[n];\n        for(int i=0; i<n; i++) candies[i] = sc.nextInt();\n        int extra = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5\n2 3 5 1 3\n3", "output": "true true true false true", "isPublic": true },
+      { "input": "3\n4 2 1\n1", "output": "true false false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Richest Customer Wealth",
+    "slug": "richest-customer",
+    "description": "You are given an `m x n` integer grid `accounts` where `accounts[i][j]` is the amount of money the `i`th customer has in the `j`th bank. Return the wealth that the richest customer has.\n\n**Input Format:**\n- First line: `m` `n`\n- Next `m` lines: `n` integers each\n\n**Output Format:**\n- Single integer (max wealth)",
+    "difficulty": "Easy",
+    "constraints": ["1 <= m, n <= 50"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst [m, n] = input[0].trim().split(' ').map(Number);\n// Read grid\n// Your code here",
+      "python": "import sys\n# Read m, n and grid\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int m, n; cin >> m >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int m = sc.nextInt();\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2 3\n1 2 3\n3 2 1", "output": "6", "isPublic": true },
+      { "input": "3 2\n1 5\n7 3\n3 5", "output": "10", "isPublic": true }
+    ]
+  },
+  {
+    "title": "XOR Operation in an Array",
+    "slug": "xor-operation",
+    "description": "You are given an integer `n` and an integer `start`. Define an array `nums` where `nums[i] = start + 2 * i`. Return the bitwise XOR of all elements of `nums`.\n\n**Input Format:**\n- Two integers `n` `start`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [n, start] = fs.readFileSync(0, 'utf-8').trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn, start = int(data[0]), int(data[1])\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n, start; cin >> n >> start;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int start = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5 0", "output": "8", "isPublic": true },
+      { "input": "4 3", "output": "8", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Water Bottles",
+    "slug": "water-bottles",
+    "description": "There are `numBottles` water bottles that are initially full of water. You can exchange `numExchange` empty water bottles from the market with one full water bottle. The operation of drinking a full water bottle turns it into an empty bottle. Return the maximum number of water bottles you can drink.\n\n**Input Format:**\n- Two integers `numBottles` `numExchange`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= numBottles <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [b, e] = fs.readFileSync(0, 'utf-8').trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nb, e = int(data[0]), int(data[1])\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int b, e; cin >> b >> e;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int b = sc.nextInt();\n        int e = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "9 3", "output": "13", "isPublic": true },
+      { "input": "15 4", "output": "19", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Three Consecutive Odds",
+    "slug": "three-consecutive-odds",
+    "description": "Given an integer array `arr`, return `true` if there are three consecutive odd numbers in the array. Otherwise, return `false`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= arr.length <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst arr = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\narr = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0; i<n; i++) cin >> arr[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for(int i=0; i<n; i++) arr[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n2 6 4 1", "output": "false", "isPublic": true },
+      { "input": "5\n1 2 34 3 4 5 7 23 12", "output": "true", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Thousand Separator",
+    "slug": "thousand-separator",
+    "description": "Given an integer `n`, add a dot (\".\") as the thousands separator and return it in string format.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- String",
+    "difficulty": "Easy",
+    "constraints": ["0 <= n <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "987", "output": "987", "isPublic": true },
+      { "input": "1234", "output": "1.234", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Reformat Date",
+    "slug": "reformat-date",
+    "description": "Given a date string in the form `Day Month Year`, where:\n- Day is in the set {\"1st\", \"2nd\", \"3rd\", \"4th\", ..., \"30th\", \"31st\"}.\n- Month is in the set {\"Jan\", \"Feb\", \"Mar\", \"Apr\", \"May\", \"Jun\", \"Jul\", \"Aug\", \"Sep\", \"Oct\", \"Nov\", \"Dec\"}.\n- Year is in the range [1900, 2100].\n\nConvert the date string to the format `YYYY-MM-DD`.\n\n**Input Format:**\n- Single string date (e.g. \"20th Oct 2052\")\n\n**Output Format:**\n- String YYYY-MM-DD",
+    "difficulty": "Easy",
+    "constraints": ["The given dates are guaranteed to be valid."],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst date = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ndate = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <sstream>\n#include <vector>\nusing namespace std;\nint main() {\n    string d, m, y; cin >> d >> m >> y;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String d = sc.next();\n        String m = sc.next();\n        String y = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "20th Oct 2052", "output": "2052-10-20", "isPublic": true },
+      { "input": "6th Jun 1933", "output": "1933-06-06", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Count Odd Numbers in an Interval Range",
+    "slug": "count-odds-interval",
+    "description": "Given two non-negative integers `low` and `high`. Return the count of odd numbers between `low` and `high` (inclusive).\n\n**Input Format:**\n- Two integers `low` `high`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["0 <= low <= high <= 10^9"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [low, high] = fs.readFileSync(0, 'utf-8').trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nlow, high = int(data[0]), int(data[1])\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int low, high; cin >> low >> high;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int low = sc.nextInt();\n        int high = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3 7", "output": "3", "isPublic": true },
+      { "input": "8 10", "output": "1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Matrix Diagonal Sum",
+    "slug": "matrix-diagonal-sum",
+    "description": "Given a square matrix `mat`, return the sum of the matrix diagonals. Only include the sum of all the elements on the primary diagonal and all the elements on the secondary diagonal that are not part of the primary diagonal.\n\n**Input Format:**\n- First line: `n`\n- Next `n` lines: `n` integers each\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\n// Read matrix\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<vector<int>> mat(n, vector<int>(n));\n    for(int i=0; i<n; i++) for(int j=0; j<n; j++) cin >> mat[i][j];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[][] mat = new int[n][n];\n        for(int i=0; i<n; i++) for(int j=0; j<n; j++) mat[i][j] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n1 2 3\n4 5 6\n7 8 9", "output": "25", "isPublic": true },
+      { "input": "4\n1 1 1 1\n1 1 1 1\n1 1 1 1\n1 1 1 1", "output": "8", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Shuffle String",
+    "slug": "shuffle-string",
+    "description": "You are given a string `s` and an integer array `indices` of the same length. The string `s` will be shuffled such that the character at the `i`th position moves to `indices[i]` in the shuffled string. Return the shuffled string.\n\n**Input Format:**\n- First line: string `s`\n- Second line: `n` integers (indices)\n\n**Output Format:**\n- String",
+    "difficulty": "Easy",
+    "constraints": ["s.length == indices.length == n"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst s = input[0].trim();\nconst indices = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\ns = data[0]\nindices = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    int n = s.length();\n    vector<int> indices(n);\n    for(int i=0; i<n; i++) cin >> indices[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        int n = s.length();\n        int[] indices = new int[n];\n        for(int i=0; i<n; i++) indices[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "codeleet\n4 5 6 7 0 2 1 3", "output": "leetcode", "isPublic": true },
+      { "input": "abc\n0 1 2", "output": "abc", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Find Numbers with Even Number of Digits",
+    "slug": "even-digits",
+    "description": "Given an array `nums` of integers, return how many of them contain an even number of digits.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 500"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5\n12 345 2 6 7896", "output": "2", "isPublic": true },
+      { "input": "4\n555 901 482 1771", "output": "1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Check If Two String Arrays are Equivalent",
+    "slug": "check-string-arrays",
+    "description": "Given two string arrays `word1` and `word2`, return `true` if the two arrays represent the same string, and `false` otherwise.\n\n**Input Format:**\n- First line: `n1`\n- Second line: `n1` strings (word1)\n- Third line: `n2`\n- Fourth line: `n2` strings (word2)\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n1 = parseInt(input[0]);\nconst word1 = input[1].trim().split(' ');\nconst n2 = parseInt(input[2]);\nconst word2 = input[3].trim().split(' ');\n// Your code here",
+      "python": "import sys\n# Read n1, word1, n2, word2\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\nint main() {\n    int n1; cin >> n1;\n    string s1 = \"\", temp;\n    for(int i=0; i<n1; i++) { cin >> temp; s1 += temp; }\n    int n2; cin >> n2;\n    string s2 = \"\";\n    for(int i=0; i<n2; i++) { cin >> temp; s2 += temp; }\n    // Compare s1 and s2\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n1 = sc.nextInt();\n        StringBuilder s1 = new StringBuilder();\n        for(int i=0; i<n1; i++) s1.append(sc.next());\n        int n2 = sc.nextInt();\n        StringBuilder s2 = new StringBuilder();\n        for(int i=0; i<n2; i++) s2.append(sc.next());\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2\nab c\n2\na bc", "output": "true", "isPublic": true },
+      { "input": "2\na cb\n2\nab c", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Shuffle the Array",
+    "slug": "shuffle-array",
+    "description": "Given the array `nums` consisting of `2n` elements in the form `[x1,x2,...,xn,y1,y2,...,yn]`. Return the array in the form `[x1,y1,x2,y2,...,xn,yn]`.\n\n**Input Format:**\n- First line: `n` (half length)\n- Second line: `2n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 500"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].trim().split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(2*n);\n    for(int i=0; i<2*n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[2*n];\n        for(int i=0; i<2*n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n2 5 1 3 4 7", "output": "2 3 5 4 1 7", "isPublic": true },
+      { "input": "2\n1 2 3 4", "output": "1 3 2 4", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Add Binary",
+    "slug": "add-binary",
+    "description": "Given two binary strings `a` and `b`, return their sum as a binary string.\n\n**Input Format:**\n- Two space-separated strings `a` and `b`.\n\n**Output Format:**\n- A binary string.",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [a, b] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\na, b = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nint main() {\n    string a, b; cin >> a >> b;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\nimport java.math.BigInteger;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String a = sc.next();\n        String b = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "11 1", "output": "100", "isPublic": true },
+      { "input": "1010 1011", "output": "10101", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Happy Number",
+    "slug": "happy-number",
+    "description": "Write an algorithm to determine if a number `n` is happy. A happy number is a number defined by the following process: Starting with any positive integer, replace the number by the sum of the squares of its digits. Repeat the process until the number equals 1 (where it will stay), or it loops endlessly in a cycle which does not include 1.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "19", "output": "true", "isPublic": true },
+      { "input": "2", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Isomorphic Strings",
+    "slug": "isomorphic-strings",
+    "description": "Given two strings `s` and `t`, determine if they are isomorphic. Two strings `s` and `t` are isomorphic if the characters in `s` can be replaced to get `t`.\n\n**Input Format:**\n- Two space-separated strings `s` and `t`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 5 * 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [s, t] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\ns, t = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    string s, t; cin >> s >> t;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        String t = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "egg add", "output": "true", "isPublic": true },
+      { "input": "foo bar", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Word Pattern",
+    "slug": "word-pattern",
+    "description": "Given a `pattern` and a string `s`, find if `s` follows the same pattern. Here follow means a full match, such that there is a bijection between a letter in `pattern` and a non-empty word in `s`.\n\n**Input Format:**\n- First line: string `pattern`\n- Second line: string `s` (space-separated words)\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 300"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst pattern = lines[0].trim();\nconst s = lines[1].trim();\n// Your code here",
+      "python": "import sys\nlines = sys.stdin.read().strip().split('\\n')\npattern = lines[0].strip()\ns = lines[1].strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\n#include <sstream>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    string pattern, s_line;\n    cin >> pattern;\n    getline(cin >> ws, s_line);\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNext()) return;\n        String pattern = sc.next();\n        sc.nextLine();\n        String s = sc.nextLine();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "abba\ndog cat cat dog", "output": "true", "isPublic": true },
+      { "input": "abba\ndog cat cat fish", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Power of Four",
+    "slug": "power-of-four",
+    "description": "Given an integer `n`, return `true` if it is a power of four. Otherwise, return `false`.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["-2^31 <= n <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "16", "output": "true", "isPublic": true },
+      { "input": "5", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Valid Palindrome II",
+    "slug": "valid-palindrome-ii",
+    "description": "Given a string `s`, return `true` if the `s` can be palindrome after deleting at most one character from it.\n\n**Input Format:**\n- A single string `s`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "aba", "output": "true", "isPublic": true },
+      { "input": "abca", "output": "true", "isPublic": true },
+      { "input": "abc", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Distribute Candies",
+    "slug": "distribute-candies",
+    "description": "Alice has `n` candies, where the `i`th candy is of type `candyType[i]`. Alice noticed that she started to gain weight, so she visited a doctor. The doctor advised Alice to only eat `n / 2` of the candies. Alice likes her candies very much, and she wants to eat the maximum number of different types of candies while still following the doctor's advice.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (types)\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["n is even", "2 <= n <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst types = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\ntypes = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <unordered_set>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> types(n);\n    for(int i=0; i<n; i++) cin >> types[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] types = new int[n];\n        for(int i=0; i<n; i++) types[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6\n1 1 2 2 3 3", "output": "3", "isPublic": true },
+      { "input": "4\n1 1 2 3", "output": "2", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Baseball Game",
+    "slug": "baseball-game",
+    "description": "You are keeping score for a baseball game with strange rules. The game consists of several rounds, where the scores of past rounds may affect future rounds' scores.\n\nAn integer `x` - Record a new score of `x`.\n`+` - Record a new score that is the sum of the previous two scores.\n`D` - Record a new score that is double the previous score.\n`C` - Invalidate the previous score, removing it from the record.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` space-separated operations\n\n**Output Format:**\n- Total score (integer)",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst ops = input[1].split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nops = data[1:]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\n#include <numeric>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<string> ops(n);\n    for(int i=0; i<n; i++) cin >> ops[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        String[] ops = new String[n];\n        for(int i=0; i<n; i++) ops[i] = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5\n5 2 C D +", "output": "30", "isPublic": true },
+      { "input": "5\n5 -2 4 C D", "output": "27", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Next Greater Element I",
+    "slug": "next-greater-element-i",
+    "description": "The next greater element of some element `x` in an array is the first greater element that is to the right of `x` in the same array.\n\n**Input Format:**\n- First line: `n1`\n- Second line: `n1` integers (nums1)\n- Third line: `n2`\n- Fourth line: `n2` integers (nums2)\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["nums1 is a subset of nums2"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n1 = parseInt(lines[0]);\nconst nums1 = lines[1].split(' ').map(Number);\nconst n2 = parseInt(lines[2]);\nconst nums2 = lines[3].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read n1, nums1, n2, nums2\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <stack>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    int n1; cin >> n1;\n    vector<int> nums1(n1);\n    for(int i=0; i<n1; i++) cin >> nums1[i];\n    int n2; cin >> n2;\n    vector<int> nums2(n2);\n    for(int i=0; i<n2; i++) cin >> nums2[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n1 = sc.nextInt();\n        int[] nums1 = new int[n1];\n        for(int i=0; i<n1; i++) nums1[i] = sc.nextInt();\n        int n2 = sc.nextInt();\n        int[] nums2 = new int[n2];\n        for(int i=0; i<n2; i++) nums2[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n4 1 2\n4\n1 3 4 2", "output": "-1 3 -1", "isPublic": true },
+      { "input": "2\n2 4\n4\n1 2 3 4", "output": "3 -1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Goat Latin",
+    "slug": "goat-latin",
+    "description": "You are given a string `sentence` that consist of words separated by spaces. Each word consists of lowercase and uppercase letters only. We would like to convert the sentence to \"Goat Latin\".\n\n**Input Format:**\n- A single string `sentence`\n\n**Output Format:**\n- The converted sentence",
+    "difficulty": "Easy",
+    "constraints": ["1 <= sentence.length <= 2000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <sstream>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    string s; getline(cin, s);\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNextLine()) return;\n        String s = sc.nextLine();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "I speak Goat Latin", "output": "Imaa peaksmaaa oatGmaaaa atinLmaaaaa", "isPublic": true },
+      { "input": "The quick brown fox jumped over the lazy dog", "output": "heTmaa uickqmaaa rownbmaaaa oxfmaaaaa umpedjmaaaaaa overmaaaaaaa hetmaaaaaaaa azylmaaaaaaaaa ogdmaaaaaaaaaa", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Buddy Strings",
+    "slug": "buddy-strings",
+    "description": "Given two strings `s` and `goal`, return `true` if you can swap two letters in `s` so the result is equal to `goal`, otherwise, return `false`.\n\n**Input Format:**\n- Two space-separated strings `s` `goal`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 2 * 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [s, goal] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\ns, goal = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std;\nint main() {\n    string s, goal; cin >> s >> goal;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        String goal = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "ab ba", "output": "true", "isPublic": true },
+      { "input": "ab ab", "output": "false", "isPublic": true },
+      { "input": "aa aa", "output": "true", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Monotonic Array",
+    "slug": "monotonic-array",
+    "description": "An array is monotonic if it is either monotone increasing or monotone decreasing.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n1 2 2 3", "output": "true", "isPublic": true },
+      { "input": "5\n6 5 4 4", "output": "true", "isPublic": true },
+      { "input": "3\n1 3 2", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Sort Array By Parity II",
+    "slug": "sort-parity-ii",
+    "description": "Given an array of integers `nums`, half of the integers in `nums` are odd, and the other half are even. Sort the array so that whenever `nums[i]` is odd, `i` is odd, and whenever `nums[i]` is even, `i` is even.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["2 <= n <= 2 * 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nnums = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n4 2 5 7", "output": "4 5 2 7", "isPublic": true },
+      { "input": "2\n2 3", "output": "2 3", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Unique Morse Code Words",
+    "slug": "unique-morse",
+    "description": "International Morse Code defines a standard encoding where each letter is mapped to a series of dots and dashes. Return the number of different transformations among all words we have.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` strings (space separated)\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst words = input[1].split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nwords = data[1:]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<string> words(n);\n    for(int i=0; i<n; i++) cin >> words[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        String[] words = new String[n];\n        for(int i=0; i<n; i++) words[i] = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\ngin zen gig msg", "output": "2", "isPublic": true },
+      { "input": "1\na", "output": "1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Flipping an Image",
+    "slug": "flipping-image",
+    "description": "Given an `n x n` binary matrix `image`, flip the image horizontally, then invert it, and return the resulting image. To flip an image horizontally means that each row of the image is reversed. To invert an image means that each 0 is replaced by 1, and each 1 is replaced by 0.\n\n**Input Format:**\n- First line: `n`\n- Next `n` lines: `n` integers each\n\n**Output Format:**\n- `n` lines with `n` integers each (space separated)",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 20"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\n// Read matrix\n// Your code here",
+      "python": "import sys\n# Read n and matrix\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<vector<int>> img(n, vector<int>(n));\n    for(int i=0; i<n; i++) for(int j=0; j<n; j++) cin >> img[i][j];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[][] img = new int[n][n];\n        for(int i=0; i<n; i++) for(int j=0; j<n; j++) img[i][j] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n1 1 0\n1 0 1\n0 0 0", "output": "1 0 0 \n0 1 0 \n1 1 1 ", "isPublic": true },
+      { "input": "4\n1 1 0 0\n1 0 0 1\n0 1 1 1\n1 0 1 0", "output": "1 1 0 0 \n0 1 1 0 \n0 0 0 1 \n1 0 1 0 ", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Height Checker",
+    "slug": "height-checker",
+    "description": "A school is trying to take an annual photo of all the students. The students are asked to stand in a single file line in non-decreasing order by height. Return the number of indices where the height does not match the expected height.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (heights)\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst heights = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\nheights = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> heights(n);\n    for(int i=0; i<n; i++) cin >> heights[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] heights = new int[n];\n        for(int i=0; i<n; i++) heights[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6\n1 1 4 2 1 3", "output": "3", "isPublic": true },
+      { "input": "5\n5 1 2 3 4", "output": "5", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Relative Sort Array",
+    "slug": "relative-sort-array",
+    "description": "Given two arrays `arr1` and `arr2`, the elements of `arr2` are distinct, and all elements in `arr2` are also in `arr1`. Sort the elements of `arr1` such that the relative ordering of items in `arr1` are the same as in `arr2`. Elements that don't appear in `arr2` should be placed at the end of `arr1` in ascending order.\n\n**Input Format:**\n- First line: `n1`\n- Second line: `n1` integers (arr1)\n- Third line: `n2`\n- Fourth line: `n2` integers (arr2)\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n1, n2 <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n1 = parseInt(lines[0]);\nconst arr1 = lines[1].split(' ').map(Number);\nconst n2 = parseInt(lines[2]);\nconst arr2 = lines[3].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read n1, arr1, n2, arr2\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <map>\nusing namespace std;\nint main() {\n    int n1; cin >> n1;\n    vector<int> arr1(n1);\n    for(int i=0; i<n1; i++) cin >> arr1[i];\n    int n2; cin >> n2;\n    vector<int> arr2(n2);\n    for(int i=0; i<n2; i++) cin >> arr2[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n1 = sc.nextInt();\n        int[] arr1 = new int[n1];\n        for(int i=0; i<n1; i++) arr1[i] = sc.nextInt();\n        int n2 = sc.nextInt();\n        int[] arr2 = new int[n2];\n        for(int i=0; i<n2; i++) arr2[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "11\n2 3 1 3 2 4 6 7 9 2 19\n6\n2 1 4 3 9 6", "output": "2 2 2 1 4 3 3 9 6 7 19", "isPublic": true },
+      { "input": "4\n28 6 22 8\n2\n22 28", "output": "22 28 6 8", "isPublic": true }
+    ]
+  },
+  {
+    "title": "N-th Tribonacci Number",
+    "slug": "nth-tribonacci",
+    "description": "The Tribonacci sequence Tn is defined as follows: T0 = 0, T1 = 1, T2 = 1, and Tn+3 = Tn + Tn+1 + Tn+2 for n >= 0. Given `n`, return the value of Tn.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["0 <= n <= 37"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4", "output": "4", "isPublic": true },
+      { "input": "25", "output": "1389537", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Find Lucky Integer in an Array",
+    "slug": "lucky-integer",
+    "description": "Given an array of integers `arr`, a lucky integer is an integer that has a frequency in the array equal to its value. Return the largest lucky integer in the array. If there is no lucky integer return -1.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 500"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst arr = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\nn = int(data[0])\narr = [int(x) for x in data[1:]]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0; i<n; i++) cin >> arr[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for(int i=0; i<n; i++) arr[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n2 2 3 4", "output": "2", "isPublic": true },
+      { "input": "5\n1 2 2 3 3", "output": "-1", "isPublic": true },
+      { "input": "7\n2 2 2 3 3 4 4", "output": "-1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Reformat The String",
+    "slug": "reformat-string",
+    "description": "You are given an alphanumeric string `s`. Reformat the string so that it has no two adjacent characters of the same type (letter/digit). Returns the reformatted string or empty string if impossible.\n\n**Input Format:**\n- Single string `s`\n\n**Output Format:**\n- Reformatted string (or empty)",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 500"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std;\nint main() {\n    string s; cin >> s;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "a0b1c2", "output": "0a1b2c", "isPublic": true },
+      { "input": "leetcode", "output": "", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Merge Sorted Array",
+    "slug": "merge-sorted-array",
+    "description": "You are given two integer arrays `nums1` and `nums2`, sorted in non-decreasing order, and two integers `m` and `n`, representing the number of elements in `nums1` and `nums2` respectively. Merge `nums1` and `nums2` into a single array sorted in non-decreasing order.\n\n**Input Format:**\n- First line: `m` `n`\n- Second line: `m` integers (nums1)\n- Third line: `n` integers (nums2)\n\n**Output Format:**\n- Space-separated integers (merged array)",
+    "difficulty": "Easy",
+    "constraints": ["0 <= m, n <= 200", "1 <= m + n <= 200"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst [m, n] = input[0].split(' ').map(Number);\nconst nums1 = m > 0 ? input[1].split(' ').map(Number) : [];\nconst nums2 = n > 0 ? input[m > 0 ? 2 : 1].split(' ').map(Number) : [];\n// Your code here",
+      "python": "import sys\n# Parsing logic for m, n, nums1, nums2\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int m, n; cin >> m >> n;\n    vector<int> nums1(m); for(int i=0; i<m; i++) cin >> nums1[i];\n    vector<int> nums2(n); for(int i=0; i<n; i++) cin >> nums2[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int m = sc.nextInt();\n        int n = sc.nextInt();\n        int[] nums1 = new int[m]; for(int i=0; i<m; i++) nums1[i] = sc.nextInt();\n        int[] nums2 = new int[n]; for(int i=0; i<n; i++) nums2[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3 3\n1 2 3\n2 5 6", "output": "1 2 2 3 5 6", "isPublic": true },
+      { "input": "1 0\n1\n", "output": "1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Contains Duplicate II",
+    "slug": "contains-duplicate-ii",
+    "description": "Given an integer array `nums` and an integer `k`, return `true` if there are two distinct indices `i` and `j` in the array such that `nums[i] == nums[j]` and `abs(i - j) <= k`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (nums)\n- Third line: `k`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= nums.length <= 10^5"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(lines[0]);\nconst nums = lines[1].split(' ').map(Number);\nconst k = parseInt(lines[2]);\n// Your code here",
+      "python": "import sys\n# Read n, nums, k\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    int k; cin >> k;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        int k = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n1 2 3 1\n3", "output": "true", "isPublic": true },
+      { "input": "4\n1 2 3 1\n2", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Pascal's Triangle II",
+    "slug": "pascals-triangle-ii",
+    "description": "Given an integer `rowIndex`, return the `rowIndex`-th (0-indexed) row of the Pascal's triangle.\n\n**Input Format:**\n- Single integer `rowIndex`\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["0 <= rowIndex <= 33"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst rowIndex = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nrowIndex = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int rowIndex; cin >> rowIndex;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int rowIndex = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3", "output": "1 3 3 1", "isPublic": true },
+      { "input": "0", "output": "1", "isPublic": true },
+      { "input": "1", "output": "1 1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Summary Ranges",
+    "slug": "summary-ranges",
+    "description": "You are given a sorted unique integer array `nums`. Return the smallest sorted list of ranges that cover all the numbers in the array exactly. For example, `[0,1,2,4,5,7]` becomes `[\"0->2\",\"4->5\",\"7\"]`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated strings (e.g., \"0->2 4->5 7\")",
+    "difficulty": "Easy",
+    "constraints": ["0 <= n <= 20"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = n > 0 ? input[1].split(' ').map(Number) : [];\n// Your code here",
+      "python": "import sys\n# Read n and nums\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6\n0 1 2 4 5 7", "output": "0->2 4->5 7", "isPublic": true },
+      { "input": "5\n0 2 3 4 6", "output": "0 2->4 6", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Teemo Attacking",
+    "slug": "teemo-attacking",
+    "description": "Teemo attacks an enemy. The attacks are given in an array `timeSeries` where `timeSeries[i]` is the time Teemo attacks. The poison lasts `duration` seconds. Return the total time the enemy is in a poisoned condition.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (timeSeries)\n- Third line: `duration`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= timeSeries.length <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst ts = input[1].split(' ').map(Number);\nconst d = parseInt(input[2]);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> ts(n);\n    for(int i=0; i<n; i++) cin >> ts[i];\n    int d; cin >> d;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] ts = new int[n];\n        for(int i=0; i<n; i++) ts[i] = sc.nextInt();\n        int d = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2\n1 4\n2", "output": "4", "isPublic": true },
+      { "input": "2\n1 2\n2", "output": "3", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Keyboard Row",
+    "slug": "keyboard-row",
+    "description": "Given an array of strings `words`, return the words that can be typed using letters of the alphabet on only one row of American keyboard (e.g., \"qwertyuiop\").\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` space-separated strings\n\n**Output Format:**\n- Space-separated strings",
+    "difficulty": "Easy",
+    "constraints": ["1 <= words.length <= 20"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst words = input[1].split(' ');\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<string> words(n);\n    for(int i=0; i<n; i++) cin >> words[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        String[] words = new String[n];\n        for(int i=0; i<n; i++) words[i] = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\nHello Alaska Dad Peace", "output": "Alaska Dad", "isPublic": true },
+      { "input": "2\nomk ab", "output": "", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Shortest Distance to a Character",
+    "slug": "shortest-distance-char",
+    "description": "Given a string `s` and a character `c` that occurs in `s`, return an array of integers where `answer[i]` is the distance from index `i` to the closest occurrence of character `c` in `s`.\n\n**Input Format:**\n- First line: `s`\n- Second line: `c`\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= s.length <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [s, c] = fs.readFileSync(0, 'utf-8').trim().split('\\n').map(x => x.trim());\n// Your code here",
+      "python": "import sys\n# Read s, c\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\n#include <algorithm>\n#include <climits>\nusing namespace std;\nint main() {\n    string s; char c; cin >> s >> c;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        String c = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "loveleetcode\ne", "output": "3 2 1 0 1 0 0 1 2 2 1 0", "isPublic": true },
+      { "input": "aaab\nb", "output": "3 2 1 0", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Binary Number with Alternating Bits",
+    "slug": "alternating-bits",
+    "description": "Given a positive integer, check whether it has alternating bits: namely, if two adjacent bits will always have different values.\n\n**Input Format:**\n- Single integer `n`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 2^31 - 1"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim());\n// Your code here",
+      "python": "import sys\nn = int(sys.stdin.read().strip())\n# Your code here",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "5", "output": "true", "isPublic": true },
+      { "input": "7", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Number of Segments in a String",
+    "slug": "number-of-segments",
+    "description": "Given a string `s`, return the number of segments in the string. A segment is defined to be a contiguous sequence of non-space characters.\n\n**Input Format:**\n- Single string `s` (read line)\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["0 <= s.length <= 300"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ns = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <sstream>\nusing namespace std;\nint main() {\n    string s, word;\n    getline(cin, s);\n    stringstream ss(s);\n    int count = 0;\n    while(ss >> word) count++;\n    cout << count;\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNextLine()) { System.out.println(0); return; }\n        String s = sc.nextLine();\n        String[] parts = s.trim().split(\"\\\\s+\");\n        if(s.trim().isEmpty()) System.out.println(0);\n        else System.out.println(parts.length);\n    }\n}"
+    },
+    "testCases": [
+      { "input": "Hello, my name is John", "output": "5", "isPublic": true },
+      { "input": "Hello", "output": "1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Set Mismatch",
+    "slug": "set-mismatch",
+    "description": "You have a set of integers `s`, which originally contains all the numbers from `1` to `n`. Unfortunately, due to some error, one of the numbers in `s` got duplicated to another number in the set, which results in repetition of one number and loss of another. Find the number that occurs twice and the number that is missing.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Two space-separated integers (duplicated missing)",
+    "difficulty": "Easy",
+    "constraints": ["2 <= n <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <numeric>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2\n1 2 2 4", "output": "2 3", "isPublic": true },
+      { "input": "2\n1 1", "output": "1 2", "isPublic": true }
+    ]
+  },
+  {
+    "title": "1-bit and 2-bit Characters",
+    "slug": "one-two-bit-characters",
+    "description": "We have two special characters: the first character can be represented by one bit `0`. The second character can be represented by two bits (`10` or `11`). Given a binary array `bits` that ends with `0`, return `true` if the last character must be a one-bit character.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers (bits)\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= len <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst bits = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> bits(n);\n    for(int i=0; i<n; i++) cin >> bits[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] bits = new int[n];\n        for(int i=0; i<n; i++) bits[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n1 0 0", "output": "true", "isPublic": true },
+      { "input": "4\n1 1 1 0", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Backspace String Compare",
+    "slug": "backspace-string-compare",
+    "description": "Given two strings `s` and `t`, return `true` if they are equal when both are typed into empty text editors. `#` means a backspace character.\n\n**Input Format:**\n- Two space-separated strings `s` `t`\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 200"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [s, t] = fs.readFileSync(0, 'utf-8').trim().split(' ');\n// Your code here",
+      "python": "import sys\ndata = sys.stdin.read().split()\ns, t = data[0], data[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <stack>\nusing namespace std;\nint main() {\n    string s, t; cin >> s >> t;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        String t = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "ab#c ad#c", "output": "true", "isPublic": true },
+      { "input": "ab## c#d#", "output": "true", "isPublic": true },
+      { "input": "a#c b", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Uncommon Words from Two Sentences",
+    "slug": "uncommon-words",
+    "description": "A word is uncommon if it appears exactly once in one of the sentences, and does not appear in the other sentence. Given two sentences `s1` and `s2`, return a list of all the uncommon words.\n\n**Input Format:**\n- First line: `s1`\n- Second line: `s2`\n\n**Output Format:**\n- Space-separated strings (sorted for consistent testing)",
+    "difficulty": "Easy",
+    "constraints": ["1 <= length <= 200"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst [s1, s2] = fs.readFileSync(0, 'utf-8').trim().split('\\n');\n// Your code here",
+      "python": "import sys\nlines = sys.stdin.read().strip().split('\\n')\ns1, s2 = lines[0], lines[1]\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\n#include <sstream>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\nint main() {\n    string s1, s2; \n    getline(cin, s1);\n    getline(cin, s2);\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s1 = sc.nextLine();\n        String s2 = sc.nextLine();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "this apple is sweet\nthis apple is sour", "output": "sour sweet", "isPublic": true },
+      { "input": "apple apple\nbanana", "output": "banana", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Fair Candy Swap",
+    "slug": "fair-candy-swap",
+    "description": "Alice and Bob have a different total number of candies. You are given two integer arrays `aliceSizes` and `bobSizes`. They want to exchange one candy box each so that after the exchange, they both have the same total amount of candy. Return an integer array `[aliceBox, bobBox]`.\n\n**Input Format:**\n- First line: `n` (Alice count)\n- Second line: `n` integers (Alice)\n- Third line: `m` (Bob count)\n- Fourth line: `m` integers (Bob)\n\n**Output Format:**\n- Two integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n, m <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst lines = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(lines[0]);\nconst alice = lines[1].split(' ').map(Number);\nconst m = parseInt(lines[2]);\nconst bob = lines[3].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <numeric>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> alice(n);\n    for(int i=0; i<n; i++) cin >> alice[i];\n    int m; cin >> m;\n    vector<int> bob(m);\n    for(int i=0; i<m; i++) cin >> bob[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] alice = new int[n]; for(int i=0; i<n; i++) alice[i] = sc.nextInt();\n        int m = sc.nextInt();\n        int[] bob = new int[m]; for(int i=0; i<m; i++) bob[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2\n1 1\n2\n2 2", "output": "1 2", "isPublic": true },
+      { "input": "2\n1 2\n2\n2 3", "output": "1 2", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Peak Index in a Mountain Array",
+    "slug": "peak-index-mountain",
+    "description": "An array `arr` is a mountain if it strictly increases then strictly decreases. Return the index `i` such that `arr[0] < arr[1] < ... < arr[i] > arr[i+1] > ... > arr[arr.length - 1]`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["3 <= n <= 10^4"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst arr = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0; i<n; i++) cin >> arr[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for(int i=0; i<n; i++) arr[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "3\n0 1 0", "output": "1", "isPublic": true },
+      { "input": "4\n0 2 1 0", "output": "1", "isPublic": true },
+      { "input": "3\n0 10 5", "output": "1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Sort Array by Increasing Frequency",
+    "slug": "sort-frequency",
+    "description": "Given an array of integers `nums`, sort the array in increasing order based on the frequency of the values. If multiple values have the same frequency, sort them in decreasing order.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 100"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst nums = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <unordered_map>\n#include <algorithm>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n);\n    for(int i=0; i<n; i++) cin >> nums[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6\n1 1 2 2 2 3", "output": "3 1 1 2 2 2", "isPublic": true },
+      { "input": "6\n2 3 1 3 2 1", "output": "1 3 2 2 3 1", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Unique Number of Occurrences",
+    "slug": "unique-occurrences",
+    "description": "Given an array of integers `arr`, return `true` if the number of occurrences of each value in the array is unique, or `false` otherwise.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst arr = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <unordered_map>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0; i<n; i++) cin >> arr[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for(int i=0; i<n; i++) arr[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "6\n1 2 2 1 1 3", "output": "true", "isPublic": true },
+      { "input": "2\n1 2", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Find Words That Can Be Formed by Characters",
+    "slug": "words-formed-by-chars",
+    "description": "You are given an array of strings `words` and a string `chars`. A string is good if it can be formed by characters from `chars` (each character can only be used once). Return the sum of lengths of all good strings in `words`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` strings (words)\n- Third line: `chars`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["1 <= n <= 1000"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst words = input[1].split(' ');\nconst chars = input[2].trim();\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\n#include <unordered_map>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<string> words(n);\n    for(int i=0; i<n; i++) cin >> words[i];\n    string chars; cin >> chars;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        String[] words = new String[n];\n        for(int i=0; i<n; i++) words[i] = sc.next();\n        String chars = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\ncat bt hat tree\natach", "output": "6", "isPublic": true },
+      { "input": "3\nhello world leetcode\nwelldonehoneyr", "output": "10", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Check if N and Its Double Exist",
+    "slug": "check-double-exist",
+    "description": "Given an array `arr` of integers, check if there exists two indices `i` and `j` such that `i != j` and `arr[i] == 2 * arr[j]`.\n\n**Input Format:**\n- First line: `n`\n- Second line: `n` integers\n\n**Output Format:**\n- \"true\" or \"false\"",
+    "difficulty": "Easy",
+    "constraints": ["2 <= n <= 500"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst n = parseInt(input[0]);\nconst arr = input[1].split(' ').map(Number);\n// Your code here",
+      "python": "import sys\n# Read input\n# Your code here",
+      "cpp": "#include <iostream>\n#include <vector>\n#include <unordered_set>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0; i<n; i++) cin >> arr[i];\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for(int i=0; i<n; i++) arr[i] = sc.nextInt();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "4\n10 2 5 3", "output": "true", "isPublic": true },
+      { "input": "4\n3 1 7 11", "output": "false", "isPublic": true }
+    ]
+  },
+  {
+    "title": "Day of the Year",
+    "slug": "day-of-year",
+    "description": "Given a string `date` representing a Gregorian calendar date formatted as `YYYY-MM-DD`, return the day number of the year.\n\n**Input Format:**\n- Single string `date`\n\n**Output Format:**\n- Single integer",
+    "difficulty": "Easy",
+    "constraints": ["date is valid"],
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst date = fs.readFileSync(0, 'utf-8').trim();\n// Your code here",
+      "python": "import sys\ndate = sys.stdin.read().strip()\n# Your code here",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string date; cin >> date;\n    // Your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String date = sc.next();\n        // Your code here\n    }\n}"
+    },
+    "testCases": [
+      { "input": "2019-01-09", "output": "9", "isPublic": true },
+      { "input": "2019-02-10", "output": "41", "isPublic": true }
     ]
   }
 ]

@@ -111,7 +111,7 @@ const Landing = () => {
     <div className="min-h-screen bg-dark text-white selection:bg-accent selection:text-black">
       {/* Header */}
       {/* FIX: Reduced padding from py-6 to py-4 for a more compact header */}
-      <header className="flex items-center justify-between px-10 py-4 border-b border-[#3e3e42] bg-dark/80 backdrop-blur-lg sticky top-0 z-50">
+      <header className="flex items-center justify-between px-7 py-1 border-b border-[#3e3e42] bg-dark/80 backdrop-blur-lg sticky top-0 z-50">
         <Logo />
         <div className="flex gap-4">
           <button onClick={() => navigate('/login')} className="px-6 py-2 rounded-lg font-bold text-gray-300 hover:text-white transition-colors">

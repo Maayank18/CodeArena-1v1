@@ -246,6 +246,7 @@ const CodeEditor = ({ roomId, side, isReadOnly, ydoc, provider, language }) => {
             case 'javascript': return javascript({ jsx: true });
             case 'python': return python();
             case 'cpp': return cpp();
+            case 'java': return java();
             default: return javascript();
         }
     };
