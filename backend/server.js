@@ -742,6 +742,7 @@ socket.on('join_room', async (data) => {
     socket.emit('room_joined', {
       roomId,
       side,
+      username,
       players: room.players,
       problem: room.problems[room.round - 1],
       round: room.round,
