@@ -480,6 +480,226 @@
 
 
 
+// import express from 'express';
+// import { createServer } from 'http';
+// import { Server } from 'socket.io';
+// import cors from 'cors';
+// import dotenv from 'dotenv';
+// import connectDB from './config/db.js';
+
+// import roomRoutes from './routes/roomRoutes.js';
+// import submissionRoutes from './routes/submissionRoutes.js';
+// import problemRoutes from './routes/problemRoutes.js';
+// import authRoutes from './routes/authRoutes.js';
+
+// import Problem from './models/Problem.js';
+// import User from './models/User.js';
+
+// dotenv.config();
+// connectDB();
+
+// const app = express();
+
+// // Ensure undefined FRONTEND_URL is filtered out
+// const ALLOWED_ORIGINS = [
+//   "http://localhost:5173",
+//   process.env.FRONTEND_URL
+// ].filter(Boolean);
+
+// app.use(cors({
+//   origin: ALLOWED_ORIGINS,
+//   methods: ["GET", "POST"],
+//   credentials: true
+// }));
+// app.use(express.json());
+
+// const server = createServer(app);
+
+// const io = new Server(server, {
+//   cors: {
+//     origin: ALLOWED_ORIGINS,
+//     methods: ["GET", "POST"],
+//     credentials: true
+//   }
+// });
+
+// app.use('/api/rooms', roomRoutes);
+// app.use('/api/run', submissionRoutes);
+// app.use('/api/problems', problemRoutes);
+// app.use('/api/auth', authRoutes);
+
+// // New: an HTTP endpoint that returns live + total counts (useful for debugging and fallback)
+// app.get('/api/stats', async (req, res) => {
+//   try {
+//     const total = await User.countDocuments();
+//     return res.json({ live: io.engine.clientsCount, total });
+//   } catch (err) {
+//     console.error("Error in /api/stats:", err);
+//     return res.status(500).json({ message: 'Failed to read stats' });
+//   }
+// });
+
+// const rooms = new Map();
+
+// // On server start: print initial DB user count (helps confirm DB config)
+// (async function logInitialCount() {
+//   try {
+//     const c = await User.countDocuments();
+//     console.log('Initial DB user count:', c);
+//   } catch (err) {
+//     console.error('Initial DB user count failed:', err);
+//   }
+// })();
+
+// io.on('connection', async (socket) => {
+//   console.log(`User Connected: ${socket.id}`);
+
+//   // Send initial stats directly to the connecting socket (no race)
+//   try {
+//     const totalUsers = await User.countDocuments();
+//     const statsData = {
+//       live: io.engine.clientsCount,
+//       total: totalUsers
+//     };
+
+//     // Guarantee connecting client receives the stats (avoid race)
+//     socket.emit('site_stats', statsData);
+
+//     // Notify everyone else about the updated stats
+//     socket.broadcast.emit('site_stats', statsData);
+
+//     console.log("Emitted initial site_stats", statsData, "clientsCount:", io.engine.clientsCount);
+//   } catch (err) {
+//     console.error("Error fetching stats on connection:", err);
+//   }
+
+//   socket.on('join_room', async (data) => {
+//     try {
+//       const { roomId, username } = data;
+//       if (!roomId || !username) return;
+
+//       if (!rooms.has(roomId)) {
+//         try {
+//           const problems = await Problem.aggregate([{ $sample: { size: 5 } }]);
+//           rooms.set(roomId, {
+//             players: [],
+//             round: 1,
+//             totalRounds: 5,
+//             problems: problems,
+//             scores: {},
+//             isGameActive: true
+//           });
+//         } catch (error) {
+//           console.error("DB Error (problems sample):", error);
+//           return;
+//         }
+//       }
+
+//       const room = rooms.get(roomId);
+
+//       let playerIndex = room.players.findIndex(p => p.username === username);
+//       let side;
+
+//       if (playerIndex !== -1) {
+//         room.players[playerIndex].id = socket.id;
+//         side = room.players[playerIndex].side;
+//       } else {
+//         if (room.players.length >= 2) {
+//           socket.emit('room_full');
+//           return;
+//         }
+//         side = room.players.length === 0 ? 'left' : 'right';
+//         room.players.push({ id: socket.id, username, side });
+//         room.scores[username] = 0;
+//       }
+
+//       socket.join(roomId);
+
+//       io.to(roomId).emit('room_joined', {
+//         roomId,
+//         side: side,
+//         players: room.players,
+//         problem: room.problems[room.round - 1],
+//         round: room.round,
+//         totalRounds: room.totalRounds,
+//         scores: room.scores
+//       });
+
+//       socket.to(roomId).emit('player_joined', { username, side });
+
+//     } catch (err) {
+//       console.error("Join Room Error:", err);
+//     }
+//   });
+
+//   socket.on('level_completed', async ({ roomId, username }) => {
+//     try {
+//       const room = rooms.get(roomId);
+//       if (!room || !room.isGameActive) return;
+
+//       room.scores[username] = (room.scores[username] || 0) + 10;
+//       io.to(roomId).emit('score_update', room.scores);
+
+//       if (room.round < room.totalRounds) {
+//         room.round++;
+//         io.to(roomId).emit('new_round', {
+//           round: room.round,
+//           problem: room.problems[room.round - 1],
+//           scores: room.scores,
+//         });
+//       } else {
+//         room.isGameActive = false;
+//         const winner = Object.keys(room.scores).reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
+
+//         // Update DB
+//         const updatePromises = Object.keys(room.scores).map(async (u) => {
+//           await User.findOneAndUpdate({ username: u }, {
+//             $inc: { 'stats.matchesPlayed': 1, 'stats.wins': u === winner ? 1 : 0 }
+//           });
+//         });
+//         await Promise.all(updatePromises);
+
+//         io.to(roomId).emit('game_over', { scores: room.scores, winner });
+//         setTimeout(() => rooms.delete(roomId), 60000);
+//       }
+//     } catch (err) {
+//       console.error("Level Completed Error:", err);
+//     }
+//   });
+
+//   socket.on('disconnect', async (reason) => {
+//     console.log("User Disconnected", socket.id, "reason:", reason);
+
+//     // Recompute and broadcast stats after disconnect
+//     try {
+//       const totalUsers = await User.countDocuments();
+//       const statsData = {
+//         live: io.engine.clientsCount,
+//         total: totalUsers
+//       };
+//       io.emit('site_stats', statsData);
+//       console.log("Emitted site_stats after disconnect", statsData, "clientsCount:", io.engine.clientsCount);
+//     } catch (e) {
+//       console.error("Error fetching stats on disconnect:", e);
+//     }
+//   });
+// });
+
+// const PORT = process.env.PORT || 5000;
+// server.listen(PORT, () => {
+//   console.log(`SERVER RUNNING ON PORT ${PORT}`);
+// });
+
+
+
+
+
+
+
+
+
+
+// server.js
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -492,6 +712,9 @@ import submissionRoutes from './routes/submissionRoutes.js';
 import problemRoutes from './routes/problemRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
+// Import your stats routes (you said you created this)
+import statsRoutes from './routes/statsRoutes.js';
+
 import Problem from './models/Problem.js';
 import User from './models/User.js';
 
@@ -500,7 +723,7 @@ connectDB();
 
 const app = express();
 
-// Ensure undefined FRONTEND_URL is filtered out
+// Make sure FRONTEND_URL (or other env) if undefined won't break things
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   process.env.FRONTEND_URL
@@ -508,13 +731,22 @@ const ALLOWED_ORIGINS = [
 
 app.use(cors({
   origin: ALLOWED_ORIGINS,
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
 app.use(express.json());
 
-const server = createServer(app);
+// Register standard API routes (stats route wired below AFTER io creation)
+app.use('/api/rooms', roomRoutes);
+app.use('/api/run', submissionRoutes);
+app.use('/api/problems', problemRoutes);
+app.use('/api/auth', authRoutes);
 
+// small health check
+app.get('/', (req, res) => res.send('OK'));
+
+// create HTTP server + socket.io
+const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: ALLOWED_ORIGINS,
@@ -523,25 +755,13 @@ const io = new Server(server, {
   }
 });
 
-app.use('/api/rooms', roomRoutes);
-app.use('/api/run', submissionRoutes);
-app.use('/api/problems', problemRoutes);
-app.use('/api/auth', authRoutes);
+// Attach io to app.locals so controllers (like statsController) can access io
+app.locals.io = io;
 
-// New: an HTTP endpoint that returns live + total counts (useful for debugging and fallback)
-app.get('/api/stats', async (req, res) => {
-  try {
-    const total = await User.countDocuments();
-    return res.json({ live: io.engine.clientsCount, total });
-  } catch (err) {
-    console.error("Error in /api/stats:", err);
-    return res.status(500).json({ message: 'Failed to read stats' });
-  }
-});
+// Now that io is available, mount stats route which may use req.app.locals.io
+app.use('/api/stats', statsRoutes);
 
-const rooms = new Map();
-
-// On server start: print initial DB user count (helps confirm DB config)
+// Optional: log initial DB count (helps confirm you are connected to the DB you expect)
 (async function logInitialCount() {
   try {
     const c = await User.countDocuments();
@@ -551,10 +771,13 @@ const rooms = new Map();
   }
 })();
 
+// Rooms map (existing app logic)
+const rooms = new Map();
+
 io.on('connection', async (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  // Send initial stats directly to the connecting socket (no race)
+  // --- Send initial stats directly to the connecting socket (no race) ---
   try {
     const totalUsers = await User.countDocuments();
     const statsData = {
@@ -562,7 +785,7 @@ io.on('connection', async (socket) => {
       total: totalUsers
     };
 
-    // Guarantee connecting client receives the stats (avoid race)
+    // Guarantee connecting client receives the stats
     socket.emit('site_stats', statsData);
 
     // Notify everyone else about the updated stats
@@ -572,6 +795,7 @@ io.on('connection', async (socket) => {
   } catch (err) {
     console.error("Error fetching stats on connection:", err);
   }
+  // --------------------------------------------------------------------
 
   socket.on('join_room', async (data) => {
     try {
