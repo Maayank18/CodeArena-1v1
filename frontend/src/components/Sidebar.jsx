@@ -347,32 +347,50 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Default to 0 so we can see if it updates
-  const [stats, setStats] = useState({ live: 0, total: 0 });
+  // Use null so we can show fallback while unknown
+  const [stats, setStats] = useState({ live: null, total: null });
 
   useEffect(() => {
     // Explicit fallback to localhost:5000 to ensure connection
     const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     
-    console.log("Sidebar connecting to:", socketUrl);
+    console.log("Sidebar connecting to:", socketUrl, "VITE_API_URL:", import.meta.env.VITE_API_URL);
 
-    // Create socket but don't connect immediately so we can attach listeners first
+    // 1) HTTP fallback: fetch /api/stats so we can display DB totals even if socket event missed
+    (async () => {
+      try {
+        const res = await fetch(`${socketUrl.replace(/\/$/, '')}/api/stats`);
+        if (res.ok) {
+          const d = await res.json();
+          console.log("HTTP /api/stats fallback result:", d);
+          if (d && typeof d === 'object') {
+            setStats(prev => ({
+              live: typeof d.live === 'number' ? d.live : prev.live,
+              total: typeof d.total === 'number' ? d.total : prev.total
+            }));
+          }
+        } else {
+          console.warn('/api/stats returned not ok', res.status);
+        }
+      } catch (err) {
+        console.warn('Failed fetching /api/stats fallback:', err);
+      }
+    })();
+
+    // 2) Socket: register handlers before connecting
     const socket = io(socketUrl, {
       autoConnect: false,
-      // optional: force websocket transport to reduce polling races
-      transports: ['websocket'],
+      transports: ['websocket'] // optional: prevents polling fallback which can sometimes hide transports
     });
 
-    // Logging & event handlers
     socket.on('connect', () => {
       console.log("Sidebar Socket Connected!", socket.id);
     });
 
     socket.on('site_stats', (data) => {
-      console.log("Received Stats:", data);
-      // Basic validation: ensure shape before setting
-      if (data && typeof data === 'object' && ('live' in data || 'total' in data)) {
-        setStats(prev => ({ 
+      console.log("Received Stats (socket):", data);
+      if (data && typeof data === 'object') {
+        setStats(prev => ({
           live: typeof data.live === 'number' ? data.live : prev.live,
           total: typeof data.total === 'number' ? data.total : prev.total
         }));
@@ -385,19 +403,16 @@ const Sidebar = () => {
       console.log("Sidebar Socket disconnected:", reason);
     });
 
-    // Connect after handlers are registered — prevents missing the initial emit
+    // connect after listeners attached
     socket.connect();
 
     return () => {
-      // Clean up listeners and disconnect
       try {
         socket.off('site_stats');
         socket.off('connect');
         socket.off('disconnect');
         socket.disconnect();
-      } catch (e) {
-        // ignore errors during cleanup
-      }
+      } catch (e) {}
     };
   }, []);
 
@@ -407,6 +422,9 @@ const Sidebar = () => {
     { name: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
     { name: 'Resources', icon: BookOpen, path: '/resources' },
   ];
+
+  // small helper to render fallback UI
+  const showNum = (n) => (n === null ? '—' : n);
 
   return (
     <aside className="w-64 border-r border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col py-6 transition-colors duration-300">
@@ -444,8 +462,7 @@ const Sidebar = () => {
                     <span className="text-xs font-bold">Total Users</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-[var(--text-primary)]">
-                    {/* Display the number directly */}
-                    {stats.total}
+                    {showNum(stats.total)}
                 </span>
             </div>
 
@@ -460,7 +477,7 @@ const Sidebar = () => {
                     <span className="text-xs font-bold">Online Now</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-accent">
-                    {stats.live}
+                    {showNum(stats.live)}
                 </span>
             </div>
         </div>
@@ -480,3 +497,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+

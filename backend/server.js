@@ -528,12 +528,33 @@ app.use('/api/run', submissionRoutes);
 app.use('/api/problems', problemRoutes);
 app.use('/api/auth', authRoutes);
 
+// New: an HTTP endpoint that returns live + total counts (useful for debugging and fallback)
+app.get('/api/stats', async (req, res) => {
+  try {
+    const total = await User.countDocuments();
+    return res.json({ live: io.engine.clientsCount, total });
+  } catch (err) {
+    console.error("Error in /api/stats:", err);
+    return res.status(500).json({ message: 'Failed to read stats' });
+  }
+});
+
 const rooms = new Map();
+
+// On server start: print initial DB user count (helps confirm DB config)
+(async function logInitialCount() {
+  try {
+    const c = await User.countDocuments();
+    console.log('Initial DB user count:', c);
+  } catch (err) {
+    console.error('Initial DB user count failed:', err);
+  }
+})();
 
 io.on('connection', async (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  // --- Send initial stats directly to the connecting socket (no race) ---
+  // Send initial stats directly to the connecting socket (no race)
   try {
     const totalUsers = await User.countDocuments();
     const statsData = {
@@ -541,17 +562,16 @@ io.on('connection', async (socket) => {
       total: totalUsers
     };
 
-    // Guarantee connecting client receives the stats
+    // Guarantee connecting client receives the stats (avoid race)
     socket.emit('site_stats', statsData);
 
-    // Notify everyone else of the updated stats
+    // Notify everyone else about the updated stats
     socket.broadcast.emit('site_stats', statsData);
 
     console.log("Emitted initial site_stats", statsData, "clientsCount:", io.engine.clientsCount);
   } catch (err) {
     console.error("Error fetching stats on connection:", err);
   }
-  // --------------------------------------------------------------------
 
   socket.on('join_room', async (data) => {
     try {
@@ -657,7 +677,6 @@ io.on('connection', async (socket) => {
         live: io.engine.clientsCount,
         total: totalUsers
       };
-      // Broadcast to everyone
       io.emit('site_stats', statsData);
       console.log("Emitted site_stats after disconnect", statsData, "clientsCount:", io.engine.clientsCount);
     } catch (e) {
