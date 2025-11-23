@@ -498,11 +498,29 @@ const EditorPage = () => {
                 navigate('/');
             });
 
+            // socketRef.current.emit('join_room', { roomId, username: location.state?.username });
+
+            // socketRef.current.on('room_joined', (data) => {
+            //     setClients(data.players);
+            //     setMySide(data.side);
+            //     setProblem(data.problem);
+            //     setRound(data.round);
+            //     setTotalRounds(data.totalRounds);
+            //     setScores(data.scores);
+                
+            //     // Set Awareness (Cursor Color)
+            //     providerRef.current.awareness.setLocalStateField('user', {
+            //         name: location.state?.username,
+            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
+            //     });
+            // });
+
             socketRef.current.emit('join_room', { roomId, username: location.state?.username });
 
+            // ✅ Handle your own join - this sets YOUR side
             socketRef.current.on('room_joined', (data) => {
                 setClients(data.players);
-                setMySide(data.side);
+                setMySide(data.side);  // ✅ This is YOUR side only
                 setProblem(data.problem);
                 setRound(data.round);
                 setTotalRounds(data.totalRounds);
@@ -513,6 +531,16 @@ const EditorPage = () => {
                     name: location.state?.username,
                     color: data.side === 'left' ? '#007acc' : '#ff0000',
                 });
+            });
+
+            // ✅ Handle when OTHER player joins - DON'T change YOUR side
+            socketRef.current.on('player_joined', ({ username, side, players, scores }) => {
+                setClients(players);  // Update player list
+                setScores(scores);    // Update scores
+                // ❌ DON'T set mySide here - it's for the OTHER player
+                // ❌ DON'T set problem here - you already have it
+                
+                toast.success(`${username} joined the room!`);
             });
 
 
