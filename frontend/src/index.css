@@ -2,85 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Body Styles */
+/* ========================================= */
+/* 1. THEME VARIABLES (Light & Dark Mode)    */
+/* ========================================= */
+
+/* Light Mode (Default) */
+:root {
+  --bg-primary: #f3f4f6;
+  --bg-secondary: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #d1d5db;
+}
+
+/* Dark Mode */
+.dark {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --text-primary: #ededed;
+  --text-secondary: #a1a1aa;
+  --border-color: #2d2d2d;
+}
+
+/* ========================================= */
+/* 2. GLOBAL STYLES                          */
+/* ========================================= */
+
 body {
-  @apply bg-dark text-gray-300 font-sans h-screen overflow-hidden;
+  /* FIX: Removed 'h-screen overflow-hidden' to allow natural scrolling */
+  /* Added 'min-h-screen' to ensure full background coverage */
+  @apply bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans min-h-screen transition-colors duration-300;
   margin: 0;
 }
 
-/* ------------------------------------------------ */
-/* CUSTOM SCROLLBAR STYLING               */
-/* ------------------------------------------------ */
-
-/* 1. The standard scrollbar (for Chrome, Edge, Safari) */
+/* ========================================= */
+/* 3. CUSTOM SCROLLBAR (Adaptive)            */
+/* ========================================= */
 ::-webkit-scrollbar {
-  width: 8px;               /* Width of vertical scrollbar */
-  height: 8px;              /* Height of horizontal scrollbar */
+  width: 8px;
+  height: 8px;
 }
-
-/* 2. The Track (Background of the scrollbar) */
 ::-webkit-scrollbar-track {
-  background: #1e1e1e;      /* Matches your editor background */
+  background: var(--bg-primary); 
 }
-
-/* 3. The Thumb (The moving part) */
 ::-webkit-scrollbar-thumb {
-  background: #444;         /* Dark grey */
-  border-radius: 4px;       /* Rounded corners */
+  background: var(--border-color); 
+  border-radius: 4px;
 }
-
-/* 4. Hover effect */
 ::-webkit-scrollbar-thumb:hover {
-  background: #666;         /* Lighter grey when you grab it */
+  background: var(--text-secondary); 
 }
-
-/* 5. Corner (where vertical and horizontal meet) */
 ::-webkit-scrollbar-corner {
-  background: #1e1e1e;
+  background: var(--bg-primary);
 }
 
-/* ------------------------------------------------ */
-/* UTILITY CLASSES                        */
-/* ------------------------------------------------ */
-
-/* Ensures the Center Pane scrolls correctly */
+/* Utility Class to force specific scroll behavior if needed elsewhere */
 .custom-scrollbar {
-    /* Forces the browser to use the styles above */
-    scrollbar-width: thin;          /* Firefox support */
-    scrollbar-color: #444 #1e1e1e;  /* Firefox support */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--bg-primary);
 }
 
-/* ------------------------------------------------ */
-/* ANIMATIONS                             */
-/* ------------------------------------------------ */
-
-/* Optional: A subtle fade-in for new content */
+/* ========================================= */
+/* 4. ANIMATIONS                             */
+/* ========================================= */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 .animate-fade-in {
   animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Default (Light Mode) Variables */
-:root {
-  --bg-primary: #f3f4f6;
-  --bg-secondary: #ffffff;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --border-color: #e5e7eb;
-}
-
-/* Dark Mode Variables */
-.dark {
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #252526;
-  --text-primary: #d4d4d4;
-  --text-secondary: #9ca3af;
-  --border-color: #3e3e42;
-}
-
-body {
-  @apply bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300;
 }
