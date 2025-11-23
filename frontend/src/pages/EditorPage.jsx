@@ -752,9 +752,7 @@ import { io } from 'socket.io-client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js'
-import dotenv from 'dotenv';
 import { Copy, CheckCircle, XCircle, Play } from 'lucide-react';
-dotenv.config();
 
 // --- TIMER COMPONENT ---
 const Timer = () => {
