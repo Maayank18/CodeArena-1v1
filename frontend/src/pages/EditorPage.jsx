@@ -254,10 +254,12 @@ const EditorPage = () => {
 
     if (!location.state) return <Navigate to="/" />;
     
-    // Loading Spinner
-    if (!mySide || !providerRef.current) {
-        return <div className="h-screen bg-dark text-white flex items-center justify-center">Connecting to Battle Arena...</div>;
-    }
+
+    // this was commented out to remove extra loading buffer and have a seamlessexperience 
+    // // Loading Spinner
+    // if (!mySide || !providerRef.current) {
+    //     return <div className="h-screen bg-dark text-white flex items-center justify-center">Connecting to Battle Arena...</div>;
+    // }
 
     return (
         <div className="relative h-screen w-screen bg-dark text-gray-300 overflow-hidden font-sans">
