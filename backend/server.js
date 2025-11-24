@@ -109,8 +109,8 @@ socket.on('join_room', async (data) => {
     }
 
     if (!rooms.has(roomId)) {
-      const problems = await Problem.aggregate([{ $sample: { size: 5 } }]);
-      rooms.set(roomId, { players: [], round: 1, totalRounds: 5, problems, scores: {}, isGameActive: true });
+      const problems = await Problem.aggregate([{ $sample: { size: 3 } }]);
+      rooms.set(roomId, { players: [], round: 1, totalRounds: 3, problems, scores: {}, isGameActive: true });
       console.log(`✅ [SERVER] Created room ${roomId}`);
     }
 
