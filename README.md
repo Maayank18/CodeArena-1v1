@@ -70,14 +70,18 @@ The application uses a Dual-Socket Architecture:
 
 ```mermaid
 graph TD
-  ClientA[Browser: Player A] -->|HTTP/REST| API[Express API]
-  ClientB[Browser: Player B] -->|HTTP/REST| API
-  ClientA -->|Socket.IO (Events)| GameServer[Game Logic Server]
-  ClientB -->|Socket.IO (Events)| GameServer
-  ClientA -->|WebSockets (CRDT)| YjsServer[Yjs Sync Server]
-  ClientB -->|WebSockets (CRDT)| YjsServer
-  API --> MongoDB[(MongoDB Atlas)]
-  API --> Piston[Piston Code Runner]
+    ClientA[Browser: Player A] -->|HTTP/REST| API[Express API]
+    ClientB[Browser: Player B] -->|HTTP/REST| API
+
+    ClientA -->|"Socket.IO Events"| GameServer[Game Logic Server]
+    ClientB -->|"Socket.IO Events"| GameServer
+
+    ClientA -->|"Yjs CRDT WebSocket"| YjsServer[Yjs Sync Server]
+    ClientB -->|"Yjs CRDT WebSocket"| YjsServer
+
+    API --> MongoDB[(MongoDB Atlas)]
+    API --> Piston[Piston Code Runner]
+```
 
 
 🚀 Installation & Local Setup
