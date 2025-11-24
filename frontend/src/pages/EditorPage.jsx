@@ -46,6 +46,9 @@ const EditorPage = () => {
     const ydocRef = useRef(new Y.Doc());
     const providerRef = useRef(null);
 
+    // latest addition
+    const mySideRef = useRef(null); // To access side inside socket listeners
+
     // 1. INITIALIZE CONNECTION
     useEffect(() => {
         // Create Provider if it doesn't exist
@@ -63,24 +66,6 @@ const EditorPage = () => {
                 navigate('/');
             });
 
-            // // Join Room
-            // socketRef.current.emit('join_room', { roomId, username: location.state?.username });
-
-            // // Listeners
-            // socketRef.current.on('room_joined', (data) => {
-            //     setClients(data.players);
-            //     setMySide(data.side);
-            //     setProblem(data.problem);
-            //     setRound(data.round);
-            //     setTotalRounds(data.totalRounds);
-            //     setScores(data.scores);
-                
-            //     // Set Awareness (Cursor Color)
-            //     providerRef.current.awareness.setLocalStateField('user', {
-            //         name: location.state?.username,
-            //         color: data.side === 'left' ? '#007acc' : '#ff0000',
-            //     });
-            // });
             socketRef.current.emit('join_room', { roomId, username: location.state?.username });
 
             // 1. HANDLE FULL STATE SYNC
@@ -91,9 +76,33 @@ const EditorPage = () => {
                 setTotalRounds(data.totalRounds);
                 setScores(data.scores);
                 
-                // CRITICAL FIX: Check if *I* am the one who joined to set my side
+                // // CRITICAL FIX: Check if *I* am the one who joined to set my side
+                // if (data.username === location.state?.username) {
+                //     setMySide(data.side);
+                // }
+
+                // Check if *I* am the one who joined
                 if (data.username === location.state?.username) {
                     setMySide(data.side);
+
+                    // ▼▼▼▼▼▼ NEW LOGIC START ▼▼▼▼▼▼
+                    mySideRef.current = data.side;
+                    
+                    // 1. Get the specific Yjs text type for YOUR side (e.g., "code-left")
+                    const yText = ydocRef.current.getText(`code-${data.side}`);
+
+                    // 2. Only insert starter code if the editor is currently empty
+                    // (This prevents overwriting code if you refresh the page)
+                    if (yText.toString().length === 0 && data.problem?.starterCode) {
+                        
+                        // 3. Clear any garbage (safety step)
+                        yText.delete(0, yText.length); 
+
+                        // 4. Insert the starter code (Defaulting to C++ here)
+                        const initialCode = data.problem.starterCode['cpp'] || ""; 
+                        yText.insert(0, initialCode);
+                    }
+                    // ▲▲▲▲▲▲ NEW LOGIC END ▲▲▲▲▲▲
                 }
             });
 
@@ -115,6 +124,22 @@ const EditorPage = () => {
                 setScores(data.scores);
                 setRunResults(null); 
                 setOutput(null);
+
+                // We need to know our side. Since we can't read state in a socket listener easily,
+                // we rely on the fact that we set `setMySide` earlier. 
+                // However, state is stale in listeners. 
+                // It is safer to use a Ref for side, or check the client list.
+                
+                // Assuming you added: const mySideRef = useRef(null); 
+                // and updated it inside room_joined: mySideRef.current = data.side;
+
+                if (mySideRef.current && data.problem?.starterCode) {
+                    const yText = ydocRef.current.getText(`code-${mySideRef.current}`);
+                    
+                    // For new rounds, we ALWAYS overwrite the code
+                    yText.delete(0, yText.length);
+                    yText.insert(0, data.problem.starterCode['cpp'] || "");
+                }
             });
 
             socketRef.current.on('score_update', (newScores) => setScores(newScores));
