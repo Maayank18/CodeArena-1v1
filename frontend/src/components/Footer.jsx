@@ -1,41 +1,51 @@
 import React from 'react';
-import { Linkedin, Mail, Heart } from 'lucide-react';
+import { Linkedin, Mail } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="w-full border-t border-[#3e3e42] bg-[#0d1117]/50 backdrop-blur-sm py-8 mt-auto">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer className="w-full border-t border-[#1f2937]/50 bg-opacity-20 backdrop-blur-md py-6 mt-auto">
+      <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Left Side: Branding/Copyright */}
-        <div className="flex items-center gap-2 text-gray-400 text-sm">
+        <div className="text-gray-500 text-sm font-medium">
           <span>© {new Date().getFullYear()} CodeArena 1v1.</span>
-          <span className="hidden md:inline">•</span>
-          <span className="flex items-center gap-1">
-            Crafted with <Heart className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" /> by
-          </span>
-          <span className="font-bold text-white tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-            Mayank Garg
-          </span>
         </div>
 
-        {/* Right Side: Social Links */}
-        <div className="flex items-center gap-6">
+        {/* Center: The "Designed by" Signature */}
+        <div className="text-sm font-medium flex items-center gap-1.5">
+          <span className="text-gray-500">Designed & Developed by</span>
           <a 
             href="https://www.linkedin.com/in/mayank-garg-120a77214/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="group flex items-center gap-2 text-gray-400 hover:text-[#0A66C2] transition-colors duration-300"
+            className="group relative inline-block"
           >
-            <Linkedin className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium hidden sm:block">LinkedIn</span>
+            <span className="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent font-bold hover:from-emerald-300 hover:to-blue-400 transition-all duration-300">
+              Mayank Garg
+            </span>
+            {/* Underline animation */}
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-400 to-blue-500 group-hover:w-full transition-all duration-300"></span>
+          </a>
+        </div>
+
+        {/* Right Side: Social Links (Minimalist) */}
+        <div className="flex items-center gap-5">
+          <a 
+            href="https://www.linkedin.com/in/mayank-garg-120a77214/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-500 hover:text-[#0A66C2] transition-colors duration-300"
+            aria-label="LinkedIn"
+          >
+            <Linkedin size={18} />
           </a>
 
           <a 
             href="mailto:gargmayank1805@gmail.com"
-            className="group flex items-center gap-2 text-gray-400 hover:text-emerald-400 transition-colors duration-300"
+            className="text-gray-500 hover:text-emerald-400 transition-colors duration-300"
+            aria-label="Email"
           >
-            <Mail className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium hidden sm:block">Get in Touch</span>
+            <Mail size={18} />
           </a>
         </div>
 
