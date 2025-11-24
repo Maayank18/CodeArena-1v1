@@ -147,7 +147,7 @@ socket.on('join_room', async (data) => {
       scores: room.scores,
     });
 
-    console.log(totalRounds); // just to check how many total rounds are there 
+
 
     if (!isReconnect) {
       socket.to(roomId).emit('player_joined', { username, side, players: room.players, scores: room.scores });
