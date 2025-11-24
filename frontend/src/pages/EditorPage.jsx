@@ -38,7 +38,8 @@ const EditorPage = () => {
     
     // Game State
     const [round, setRound] = useState(1);
-    const [totalRounds, setTotalRounds] = useState(5);
+    // i have set the rounds 3 here 
+    const [totalRounds, setTotalRounds] = useState(3);
     const [scores, setScores] = useState({}); 
     const [gameOverData, setGameOverData] = useState(null);
 
