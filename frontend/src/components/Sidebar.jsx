@@ -485,7 +485,7 @@ const Sidebar = () => {
         {/* Pro Plan Box */}
         <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
           <h4 className="text-[var(--text-primary)] font-bold text-sm mb-1">Pro Plan</h4>
-          <p className="text-xs text-[var(--text-secondary)] mb-3">Unlock Advanced Features</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-3">Unlock Advance Features</p>
           <button className="w-full py-2 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-bold hover:opacity-80 transition-opacity">
             Upgrade
           </button>
