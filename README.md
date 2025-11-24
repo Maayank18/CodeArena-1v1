@@ -151,10 +151,17 @@ VITE_YJS_URL: wss://your-yjs.onrender.com
 📸 Screenshots
 Landing Page
 A sleek entry point for users to Login or Sign Up.
+<img width="1907" height="1017" alt="image" src="https://github.com/user-attachments/assets/c7d527b1-04a2-4412-837c-e61cddbef3cc" />
+
+
 Dashboard
 Create or Join rooms, view stats, and see live user counts.
+<img width="1909" height="1010" alt="image" src="https://github.com/user-attachments/assets/d49b0f89-c720-4fc1-9979-1cacbc87a07c" />
+
 The Arena
 The core battle interface with real-time code sync and live judging.
+<img width="1909" height="1006" alt="image" src="https://github.com/user-attachments/assets/0e895576-d5f9-47c0-b086-6bb89db9bbc8" />
+
 
 🤝 Contributing
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
