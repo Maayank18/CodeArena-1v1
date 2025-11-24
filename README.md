@@ -68,7 +68,7 @@ The application uses a Dual-Socket Architecture:
 1. Game Logic Socket (Port 5000): Handles room joining, starting matches, scoring, and game-over states.
 2. Collaboration Socket (Port 10000): A dedicated y-websocket server handles the high-frequency keystroke synchronization to keep the editors perfectly synced without overloading the main game logic.
 
-```mermaid
+
 graph TD
   ClientA[Browser: Player A] -->|HTTP/REST| API[Express API]
   ClientB[Browser: Player B] -->|HTTP/REST| API
