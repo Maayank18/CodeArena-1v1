@@ -68,7 +68,7 @@ The application uses a Dual-Socket Architecture:
 1. Game Logic Socket (Port 5000): Handles room joining, starting matches, scoring, and game-over states.
 2. Collaboration Socket (Port 10000): A dedicated y-websocket server handles the high-frequency keystroke synchronization to keep the editors perfectly synced without overloading the main game logic.
 
-
+```mermaid
 graph TD
   ClientA[Browser: Player A] -->|HTTP/REST| API[Express API]
   ClientB[Browser: Player B] -->|HTTP/REST| API
@@ -87,12 +87,8 @@ Prerequisites
 -> MongoDB Atlas Account (or local MongoDB)
 
 
-1. Clone the Repository
--> git clone [https://github.com/Maayank18/CodeArena-1v1.git](https://github.com/Maayank18/CodeArena-1v1.git)
--> cd CodeArena-1v1
 
-
-2. Backend Setup
+1. Backend Setup
 cd backend
 npm install
 
@@ -113,14 +109,14 @@ JWT_SECRET=your_super_secret_key
 FRONTEND_URL=http://localhost:5173
 
 
-3. Collaboration Server Setup (Terminal 2)
+2. Collaboration Server Setup (Terminal 2)
 Open a new terminal to run the Yjs sync server.
 cd backend
 npm run yjs
 
 
 It should say: "running at 'localhost' on port 1234"
-4. Frontend Setup (Terminal 3)
+3. Frontend Setup (Terminal 3)
 cd frontend
 npm install
 npm run dev
