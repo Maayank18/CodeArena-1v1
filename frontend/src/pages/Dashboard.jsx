@@ -218,11 +218,15 @@ const Dashboard = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [loadingText, setLoadingText] = useState('');
 
-  // Rank Logic
+  // / Rank Logic - Expanded Progression updated for better experience
   const getRank = (matchesPlayed) => {
-    if (matchesPlayed < 20) return "Novice";
-    if (matchesPlayed < 50) return "Apprentice";
-    return "Adept";
+    if (matchesPlayed < 10) return { title: "Novice", color: "text-gray-400" };
+    if (matchesPlayed < 30) return { title: "Apprentice", color: "text-green-400" };
+    if (matchesPlayed < 50) return { title: "Specialist", color: "text-blue-400" };
+    if (matchesPlayed < 100) return { title: "Expert", color: "text-purple-400" };
+    if (matchesPlayed < 200) return { title: "Master", color: "text-orange-400" };
+    if (matchesPlayed < 500) return { title: "Grandmaster", color: "text-red-500" };
+    return { title: "Living Legend", color: "text-yellow-400 animate-pulse" }; // 500+
   };
   const currentRank = getRank(user?.stats?.matchesPlayed || 0);
 
