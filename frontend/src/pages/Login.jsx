@@ -363,7 +363,8 @@ const Login = () => {
 
         // ✅ CRITICAL FIX: Updated routes to match server.js ('/api/auth')
         // Your backend mounts authRoutes at '/api/auth', not '/api/users'
-        const endpoint = isRegister ? '/auth/register' : '/auth/login';
+        // debugged changes for the /api
+        const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
         
         try {
             const { data } = await api.post(endpoint, formData);
