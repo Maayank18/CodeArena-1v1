@@ -242,7 +242,7 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import api from '../utils/api'; 
+import api from '../api.js'; 
 import { Trophy, Medal, Flame, Search, AlertCircle } from 'lucide-react';
 import { getLevelInfo } from '../utils/levelSystem'; 
 import Avatar from '../components/Avatar'; 
