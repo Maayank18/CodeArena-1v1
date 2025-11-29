@@ -2,7 +2,7 @@
 
 export const getLevelInfo = (rating) => {
     // Default to 1200 if rating is missing
-    const currentRating = rating || 1200; 
+    const currentRating = rating || 1000; 
 
     if (currentRating < 1200) {
         return { level: 1, title: "Novice", color: "text-gray-400", nextThreshold: 1200 };

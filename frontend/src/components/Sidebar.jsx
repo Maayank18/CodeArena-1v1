@@ -417,8 +417,7 @@ const Sidebar = () => {
       {/* -------------------------------------------------------- */}
       {/* 🖥️ DESKTOP SIDEBAR (Hidden on Mobile) */}
       {/* -------------------------------------------------------- */}
-      {/* FIX: Added 'min-h-full' and removed fixed height constraints to let flexbox handle it */}
-      <aside className="hidden md:flex w-64 border-r border-[var(--border-color)] bg-[var(--bg-secondary)] flex-col py-6 transition-colors duration-300 h-full min-h-full height-auto">
+      <aside className="hidden md:flex w-64 border-r border-[var(--border-color)] bg-[var(--bg-secondary)] flex-col py-6 transition-colors duration-300 h-auto">
         <div className="px-4 mb-6">
           <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider px-2">Main Menu</h3>
         </div>
