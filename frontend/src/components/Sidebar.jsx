@@ -417,6 +417,7 @@ const Sidebar = () => {
       {/* -------------------------------------------------------- */}
       {/* 🖥️ DESKTOP SIDEBAR (Hidden on Mobile) */}
       {/* -------------------------------------------------------- */}
+      {/* FIX: Added 'min-h-full' and removed fixed height constraints to let flexbox handle it */}
       <aside className="hidden md:flex w-64 border-r border-[var(--border-color)] bg-[var(--bg-secondary)] flex-col py-6 transition-colors duration-300 h-full min-h-full">
         <div className="px-4 mb-6">
           <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider px-2">Main Menu</h3>
@@ -442,9 +443,9 @@ const Sidebar = () => {
           })}
         </div>
 
-        {/* METRICS SECTION - Pushed to bottom via flex-grow above */}
         <div className="mt-auto px-4 space-y-4">
           
+          {/* --- METRICS SECTION --- */}
           <div className="bg-[var(--bg-primary)] p-4 rounded-2xl border border-[var(--border-color)] space-y-3">
               <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-[var(--text-secondary)]">
@@ -472,6 +473,7 @@ const Sidebar = () => {
               </div>
           </div>
 
+          {/* Pro Plan Box */}
           <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
             <h4 className="text-[var(--text-primary)] font-bold text-sm mb-1">Pro Plan</h4>
             <p className="text-xs text-[var(--text-secondary)] mb-3">Unlock Advance Features</p>
