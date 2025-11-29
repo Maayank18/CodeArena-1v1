@@ -1,4 +1,3 @@
-// // RESPONSIVE DASHBOARD CODE 
 // import React, { useState, useEffect } from 'react';
 // import Navbar from '../components/Navbar';
 // import Sidebar from '../components/Sidebar';
@@ -7,7 +6,7 @@
 // import { v4 as uuidv4 } from 'uuid';
 // import toast from 'react-hot-toast';
 // import { Logo } from '../components/Logo';
-// import { Loader2 } from 'lucide-react'; 
+// import { Loader2, Trophy } from 'lucide-react'; 
 // import axios from 'axios';
 
 // const Dashboard = () => {
@@ -19,7 +18,7 @@
 //   const [isNavigating, setIsNavigating] = useState(false);
 //   const [loadingText, setLoadingText] = useState('');
 
-//   // --- FIXED RANKING LOGIC (Kept as is) ---
+//   // --- RANKING LOGIC ---
 //   const getRank = (matchesPlayed) => {
 //     if (matchesPlayed < 10) return { title: "Novice", color: "text-gray-400" };
 //     if (matchesPlayed < 30) return { title: "Apprentice", color: "text-green-400" };
@@ -98,17 +97,12 @@
 //     <div className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300 relative flex flex-col">
 //       <Navbar user={user} onLogout={handleLogout} />
       
-//       {/* RESPONSIVE LAYOUT WRAPPER 
-//           - Mobile: Height is calc(100vh - 64px navbar)
-//           - Desktop: Height is calc(100vh - 72px navbar)
-//       */}
+//       {/* RESPONSIVE LAYOUT WRAPPER */}
 //       <div className="flex flex-1 h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] overflow-hidden">
 //         <Sidebar />
         
 //         {/* MAIN SECTION */}
-//         {/* Added pb-20 on mobile to prevent content being hidden behind the Bottom Nav */}
 //         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] pb-20 md:pb-0 w-full">
-//           {/* Wrapper to handle footer positioning */}
 //           <div className="min-h-full flex flex-col">
             
 //             {/* Dashboard Content */}
@@ -182,12 +176,22 @@
 //                     <span className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Wins</span>
 //                   </div>
 
-//                   {/* Rank Card */}
+//                   {/* --- MODIFIED RANK CARD WITH ELO --- */}
 //                   <div className="col-span-2 bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center shadow-lg shadow-black/5">
                     
-//                     <h3 className={`text-xl md:text-2xl font-bold mb-1 ${currentRank.color} text-center`}>
-//                       {currentRank.title}
-//                     </h3>
+//                     <div className="flex items-center gap-3 mb-1">
+//                         <h3 className={`text-xl md:text-2xl font-bold ${currentRank.color} text-center`}>
+//                         {currentRank.title}
+//                         </h3>
+                        
+//                         {/* THE NEW ELO DISPLAY */}
+//                         <div className="flex items-center gap-1 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
+//                             <Trophy size={14} className="text-yellow-500" />
+//                             <span className="text-lg font-mono font-bold text-[var(--text-primary)]">
+//                                 {user.elo || 1000}
+//                             </span>
+//                         </div>
+//                     </div>
                     
 //                     <p className="text-[var(--text-secondary)] text-sm md:text-base">Current Rank</p>
 //                   </div>
@@ -195,7 +199,6 @@
 //               </div>
 //             </div>
 
-//             {/* Footer inside scrollable area */}
 //             <Footer />
             
 //           </div>
@@ -222,9 +225,6 @@
 
 
 
-
-
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
@@ -236,6 +236,9 @@ import { Logo } from '../components/Logo';
 import { Loader2, Trophy } from 'lucide-react'; 
 import axios from 'axios';
 
+// 1. IMPORT THE ELO SYSTEM
+import { getLevelInfo } from '../utils/levelSystem';
+
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -245,19 +248,9 @@ const Dashboard = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [loadingText, setLoadingText] = useState('');
 
-  // --- RANKING LOGIC ---
-  const getRank = (matchesPlayed) => {
-    if (matchesPlayed < 10) return { title: "Novice", color: "text-gray-400" };
-    if (matchesPlayed < 30) return { title: "Apprentice", color: "text-green-400" };
-    if (matchesPlayed < 50) return { title: "Specialist", color: "text-blue-400" };
-    if (matchesPlayed < 100) return { title: "Expert", color: "text-purple-400" };
-    if (matchesPlayed < 200) return { title: "Master", color: "text-orange-400" };
-    if (matchesPlayed < 500) return { title: "Grandmaster", color: "text-red-500" };
-    return { title: "Living Legend", color: "text-yellow-400 animate-pulse" }; // 500+
-  };
-
-  // Safe check for user stats
-  const currentRank = getRank(user?.stats?.matchesPlayed || 0);
+  // 2. FIXED: Use getLevelInfo directly (Removed old 'getRank' function)
+  // This ensures your Dashboard rank matches your ELO exactly.
+  const currentRank = getLevelInfo(user?.elo);
 
   useEffect(() => {
       const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
@@ -403,7 +396,7 @@ const Dashboard = () => {
                     <span className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Wins</span>
                   </div>
 
-                  {/* --- MODIFIED RANK CARD WITH ELO --- */}
+                  {/* Rank Card */}
                   <div className="col-span-2 bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center shadow-lg shadow-black/5">
                     
                     <div className="flex items-center gap-3 mb-1">
@@ -411,7 +404,6 @@ const Dashboard = () => {
                         {currentRank.title}
                         </h3>
                         
-                        {/* THE NEW ELO DISPLAY */}
                         <div className="flex items-center gap-1 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
                             <Trophy size={14} className="text-yellow-500" />
                             <span className="text-lg font-mono font-bold text-[var(--text-primary)]">
