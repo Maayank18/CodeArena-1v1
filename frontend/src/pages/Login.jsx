@@ -132,7 +132,7 @@
 // // explicit extension .jsx to ensure resolution
 // import { Logo } from '../components/Logo.jsx';
 // // explicit path to utils based on your project structure
-// import api from '../utils/api.js'; 
+
 // import toast from 'react-hot-toast';
 // import { User, Mail, Lock, Phone, ArrowRight } from 'lucide-react';
 
