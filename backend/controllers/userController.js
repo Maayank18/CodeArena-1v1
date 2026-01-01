@@ -26,7 +26,7 @@ export const getLeaderboard = async (req, res) => {
                 rank: index + 1,
                 _id: user._id,
                 username: user.username,
-                rating: user.rating || 1200,       // Needed for "Level 5 Coder" badge
+                rating: user.rating || 1000,       // Needed for "Level 5 Coder" badge
                 seasonScore: user.seasonScore || 0, // The main score
                 matchesPlayed: matches,
                 winRate: winRate + "%"

@@ -209,6 +209,93 @@ export const runCode = async (req, res) => {
     }  
 };
 
+// // @desc    Submit code against all test cases (Submit Button)
+// // @route   POST /api/run/submit
+// export const submitCode = async (req, res) => {
+//     const { language, code, problemId } = req.body;
+
+//     try {
+//         // 1. SAFETY CHECK: Validate problemId format
+//         // ✅ NOW THIS WORKS BECAUSE WE IMPORTED MONGOOSE
+//         if (!problemId || !mongoose.Types.ObjectId.isValid(problemId)) {
+//              return res.status(400).json({ message: "Invalid or missing Problem ID" });
+//         }
+
+//         // 2. Fetch Problem
+//         const problem = await Problem.findById(problemId);
+//         if (!problem) return res.status(404).json({ message: "Problem not found" });
+
+//         if (!problem.testCases || problem.testCases.length === 0) {
+//             return res.status(400).json({ message: "No test cases found for this problem." });
+//         }
+
+//         let passedCount = 0;
+//         let results = [];
+
+//         // 3. Loop through test cases
+//         for (const testCase of problem.testCases) {
+//             console.log(`Running test case input: ${testCase.input}`);
+
+//             try {
+//                 const result = await executeCode(language, code, testCase.input);
+                
+//                 // 4. SAFETY CHECK: Ensure Piston returned a valid 'run' object
+//                 if (!result || !result.run) {
+//                     throw new Error("Execution engine failed to return a valid response.");
+//                 }
+
+//                 // IMPROVED COMPARISON LOGIC
+//                 // We replace \r\n with \n to ensure Windows/Linux line endings match
+//                 const normalize = (str) => (str || "").trim().replace(/\r\n/g, "\n");
+
+//                 const actualOutput = normalize(result.run.stdout);
+//                 const expectedOutput = normalize(testCase.output);
+//                 const errorOutput = result.run.stderr || ""; 
+
+//                 // Passed if output matches AND no runtime errors
+//                 const passed = (actualOutput === expectedOutput) && !errorOutput;
+
+//                 if (passed) passedCount++;
+
+//                 results.push({
+//                     input: testCase.input,
+//                     expected: expectedOutput,
+//                     actual: actualOutput,
+//                     error: errorOutput,
+//                     passed: passed
+//                 });
+
+//             } catch (innerError) {
+//                 console.error(`Test Case Failed: ${innerError.message}`);
+//                 results.push({
+//                     input: testCase.input,
+//                     passed: false,
+//                     error: "Execution Error: " + innerError.message
+//                 });
+//             }
+//         }
+
+//         // 5. Calculate Score
+//         const isCorrect = passedCount === problem.testCases.length;
+//         const score = isCorrect ? 10 : 0;
+
+//         res.json({
+//             success: true,
+//             isCorrect, // Frontend looks for this to emit 'level_completed' socket event
+//             passedCount,
+//             totalTestCases: problem.testCases.length,
+//             score,
+//             results
+//         });
+
+//     } catch (error) {
+//         console.error("Submit API Error:", error);
+//         res.status(500).json({ message: "Server Error during submission", error: error.message });
+//     }
+// };
+
+
+
 // @desc    Submit code against all test cases (Submit Button)
 // @route   POST /api/run/submit
 export const submitCode = async (req, res) => {
@@ -216,12 +303,12 @@ export const submitCode = async (req, res) => {
 
     try {
         // 1. SAFETY CHECK: Validate problemId format
-        // ✅ NOW THIS WORKS BECAUSE WE IMPORTED MONGOOSE
         if (!problemId || !mongoose.Types.ObjectId.isValid(problemId)) {
-             return res.status(400).json({ message: "Invalid or missing Problem ID" });
+            return res.status(400).json({ message: "Invalid or missing Problem ID" });
         }
 
         // 2. Fetch Problem
+        // We fetch the problem from DB; ensure testCases are present.
         const problem = await Problem.findById(problemId);
         if (!problem) return res.status(404).json({ message: "Problem not found" });
 
@@ -230,62 +317,68 @@ export const submitCode = async (req, res) => {
         }
 
         let passedCount = 0;
-        let results = [];
+        let finalResults = [];
+        let isCorrect = true;
 
-        // 3. Loop through test cases
+        // 3. IMPROVED LOOP: Sequential Processing with Short-Circuiting
+        // To save Piston API limits and provide faster feedback, we stop at the first failure.
         for (const testCase of problem.testCases) {
-            console.log(`Running test case input: ${testCase.input}`);
-
             try {
                 const result = await executeCode(language, code, testCase.input);
                 
-                // 4. SAFETY CHECK: Ensure Piston returned a valid 'run' object
                 if (!result || !result.run) {
                     throw new Error("Execution engine failed to return a valid response.");
                 }
 
-                // IMPROVED COMPARISON LOGIC
-                // We replace \r\n with \n to ensure Windows/Linux line endings match
                 const normalize = (str) => (str || "").trim().replace(/\r\n/g, "\n");
-
                 const actualOutput = normalize(result.run.stdout);
                 const expectedOutput = normalize(testCase.output);
                 const errorOutput = result.run.stderr || ""; 
 
-                // Passed if output matches AND no runtime errors
+                // Check if this specific test case passed
                 const passed = (actualOutput === expectedOutput) && !errorOutput;
 
-                if (passed) passedCount++;
-
-                results.push({
-                    input: testCase.input,
-                    expected: expectedOutput,
-                    actual: actualOutput,
-                    error: errorOutput,
-                    passed: passed
-                });
+                if (passed) {
+                    passedCount++;
+                    finalResults.push({
+                        input: testCase.input,
+                        passed: true
+                    });
+                } else {
+                    // Short-circuit: Stop execution on first failure to save resources
+                    isCorrect = false;
+                    finalResults.push({
+                        input: testCase.input,
+                        expected: expectedOutput,
+                        actual: actualOutput,
+                        error: errorOutput || "Wrong Answer",
+                        passed: false
+                    });
+                    break; 
+                }
 
             } catch (innerError) {
-                console.error(`Test Case Failed: ${innerError.message}`);
-                results.push({
+                console.error(`Test Case Execution Error: ${innerError.message}`);
+                isCorrect = false;
+                finalResults.push({
                     input: testCase.input,
                     passed: false,
                     error: "Execution Error: " + innerError.message
                 });
+                break; // Stop on system error
             }
         }
 
-        // 5. Calculate Score
-        const isCorrect = passedCount === problem.testCases.length;
-        const score = isCorrect ? 10 : 0;
-
+        // 4. Final Response Construction
+        // isCorrect is only true if we passed ALL cases without breaking the loop.
         res.json({
             success: true,
-            isCorrect, // Frontend looks for this to emit 'level_completed' socket event
+            isCorrect: isCorrect && (passedCount === problem.testCases.length),
             passedCount,
             totalTestCases: problem.testCases.length,
-            score,
-            results
+            score: (isCorrect && passedCount === problem.testCases.length) ? 10 : 0,
+            // Only send back a limited number of results to keep the response light
+            results: finalResults 
         });
 
     } catch (error) {
