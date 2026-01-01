@@ -1,3 +1,51 @@
+// import mongoose from 'mongoose';
+
+// const matchSchema = new mongoose.Schema({
+//   roomId: {
+//     type: String,
+//     required: true
+//   },
+//   // We use an array for players so it's flexible (easy to find "my opponent")
+//   players: [{
+//     userId: { 
+//       type: mongoose.Schema.Types.ObjectId, 
+//       ref: 'User' 
+//     },
+//     username: { 
+//       type: String, 
+//       required: true 
+//     },
+//     avatar: String,       // Storing avatar here makes frontend display faster
+//     isWinner: Boolean,    // True if this specific player won
+//     score: Number,        // Points scored in the match
+//     oldElo: Number,       // ELO before match (For history tracking)
+//     newElo: Number        // ELO after match (To show +15 or -10)
+//   }],
+//   winner: {
+//     type: String, // Username of the winner for quick access
+//     required: true
+//   },
+//   // Useful metadata
+//   language: {
+//     type: String,
+//     default: 'javascript'
+//   },
+//   codeSnapshot: {
+//     type: String, // Optional: Save the winning code snippet?
+//     select: false // Don't fetch this by default to keep history load fast
+//   }
+// }, { 
+//   timestamps: true // Automatically adds 'createdAt' (Date) and 'updatedAt'
+// });
+
+// module.exports = mongoose.model('Match', matchSchema);
+
+
+
+
+
+
+// with updated anti cheat mechanism
 import mongoose from 'mongoose';
 
 const matchSchema = new mongoose.Schema({
@@ -5,7 +53,7 @@ const matchSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // We use an array for players so it's flexible (easy to find "my opponent")
+  // Flexible player array for easy history rendering
   players: [{
     userId: { 
       type: mongoose.Schema.Types.ObjectId, 
@@ -15,27 +63,43 @@ const matchSchema = new mongoose.Schema({
       type: String, 
       required: true 
     },
-    avatar: String,       // Storing avatar here makes frontend display faster
-    isWinner: Boolean,    // True if this specific player won
-    score: Number,        // Points scored in the match
-    oldElo: Number,       // ELO before match (For history tracking)
-    newElo: Number        // ELO after match (To show +15 or -10)
+    avatar: String,       // Cached for faster frontend rendering
+    isWinner: Boolean,    // Identifies win/loss status
+    score: Number,        // Points earned during rounds
+    oldElo: Number,       // Rating before match
+    newElo: Number,       // Rating after match
+    // ✅ ADDED: statusText to store "Unfair Practice" or "Opponent Disqualification"
+    statusText: { 
+      type: String, 
+      default: "" 
+    }
   }],
   winner: {
-    type: String, // Username of the winner for quick access
+    type: String, // Username of the winner
     required: true
+  },
+  // ✅ ADDED: Anti-Cheat Metadata
+  isDisqualified: {
+    type: Boolean,
+    default: false
+  },
+  disqualifiedPlayer: {
+    type: String, // Username of the cheater
+    default: null
   },
   // Useful metadata
   language: {
     type: String,
-    default: 'javascript'
+    default: 'cpp'
   },
   codeSnapshot: {
-    type: String, // Optional: Save the winning code snippet?
-    select: false // Don't fetch this by default to keep history load fast
+    type: String, 
+    select: false // Hidden from default queries to keep data transfer light
   }
 }, { 
-  timestamps: true // Automatically adds 'createdAt' (Date) and 'updatedAt'
+  timestamps: true // Tracks match date automatically
 });
 
-module.exports = mongoose.model('Match', matchSchema);
+// modern ES Module export
+const Match = mongoose.model('Match', matchSchema);
+export default Match;
