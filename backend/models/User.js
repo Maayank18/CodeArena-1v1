@@ -2,20 +2,45 @@
 // import bcrypt from 'bcryptjs';
 
 // const userSchema = new mongoose.Schema({
-//     fullName: { type: String, required: true }, // New
+//     // --- Identity ---
+//     fullName: { type: String, required: true },
 //     username: { type: String, required: true, unique: true },
 //     email: { type: String, required: true, unique: true },
-//     phone: { type: String, required: true },    // New
-//     password: { type: String, required: true, minlength: 7 }, // Min 7 chars
+//     phone: { type: String, required: true },
+//     password: { type: String, required: true, minlength: 7 },
+
+//     // --- 🏆 RANKING SYSTEM (New) ---
+    
+//     // 1. ELO RATING (Skill)
+//     // Starts at 1200. Used for Matchmaking and "Level 5 Coder" titles.
+//     // Index: true makes finding opponents fast.
+//     rating: { 
+//         type: Number, 
+//         default: 1000, 
+//         index: true 
+//     },
+
+//     // 2. SEASON SCORE (Grind)
+//     // Starts at 0. Resets monthly via Cron Job.
+//     // Used for the "Top 50" Leaderboard UI.
+//     seasonScore: { 
+//         type: Number, 
+//         default: 0, 
+//         index: true 
+//     },
+
+//     // --- Statistics ---
 //     stats: {
 //         wins: { type: Number, default: 0 },
+//         losses: { type: Number, default: 0 }, // Added: vital for Win Rate %
 //         matchesPlayed: { type: Number, default: 0 },
-//         score: { type: Number, default: 0 }
+//         // score: { type: Number, default: 0 } // DEPRECATED: We use rating/seasonScore now
 //     },
+
 //     createdAt: { type: Date, default: Date.now },
 // });
 
-// // Encrypt password
+// // --- Encryption Middleware (unchanged) ---
 // userSchema.pre('save', async function (next) {
 //     if (!this.isModified('password')) next();
 //     const salt = await bcrypt.genSalt(10);
@@ -30,6 +55,8 @@
 // export default User;
 
 
+
+
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -41,20 +68,24 @@ const userSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     password: { type: String, required: true, minlength: 7 },
 
-    // --- 🏆 RANKING SYSTEM (New) ---
-    
-    // 1. ELO RATING (Skill)
-    // Starts at 1200. Used for Matchmaking and "Level 5 Coder" titles.
-    // Index: true makes finding opponents fast.
+    // ***************************************************************
+    // ✅ KEEPING: Avatar field for high-tier Match History UI
+    // ***************************************************************
+    avatar: { 
+        type: String, 
+        default: function() {
+            return `https://api.dicebear.com/7.x/avataaars/svg?seed=${this.username}`;
+        }
+    },
+
+    // --- 🏆 RANKING SYSTEM ---
+    // rating (ELO) and seasonScore (Leaderboard) are now primary
     rating: { 
         type: Number, 
         default: 1000, 
         index: true 
     },
 
-    // 2. SEASON SCORE (Grind)
-    // Starts at 0. Resets monthly via Cron Job.
-    // Used for the "Top 50" Leaderboard UI.
     seasonScore: { 
         type: Number, 
         default: 0, 
@@ -64,17 +95,16 @@ const userSchema = new mongoose.Schema({
     // --- Statistics ---
     stats: {
         wins: { type: Number, default: 0 },
-        losses: { type: Number, default: 0 }, // Added: vital for Win Rate %
+        losses: { type: Number, default: 0 }, 
         matchesPlayed: { type: Number, default: 0 },
-        // score: { type: Number, default: 0 } // DEPRECATED: We use rating/seasonScore now
     },
 
     createdAt: { type: Date, default: Date.now },
 });
 
-// --- Encryption Middleware (unchanged) ---
+// --- Encryption Middleware ---
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) next();
+    if (!this.isModified('password')) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
