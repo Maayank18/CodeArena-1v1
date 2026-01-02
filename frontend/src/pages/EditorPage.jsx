@@ -1377,9 +1377,7 @@ const EditorPage = () => {
 
             socketRef.current.on('score_update', (newScores) => setScores(newScores));
             
-            // ***************************************************************
             // ✅ CORRECTED: RESTORED MISSING GAME_OVER LISTENER
-            // ***************************************************************
             socketRef.current.on('game_over', (data) => {
                 setGameOverData(data);
                 const myName = location.state?.username;
