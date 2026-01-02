@@ -9,6 +9,9 @@
 // import { Loader2, Trophy } from 'lucide-react'; 
 // import axios from 'axios';
 
+// // 1. IMPORT THE ELO SYSTEM
+// import { getLevelInfo } from '../utils/levelSystem';
+
 // const Dashboard = () => {
 //   const [user, setUser] = useState(null);
 //   const navigate = useNavigate();
@@ -18,19 +21,9 @@
 //   const [isNavigating, setIsNavigating] = useState(false);
 //   const [loadingText, setLoadingText] = useState('');
 
-//   // --- RANKING LOGIC ---
-//   const getRank = (matchesPlayed) => {
-//     if (matchesPlayed < 10) return { title: "Novice", color: "text-gray-400" };
-//     if (matchesPlayed < 30) return { title: "Apprentice", color: "text-green-400" };
-//     if (matchesPlayed < 50) return { title: "Specialist", color: "text-blue-400" };
-//     if (matchesPlayed < 100) return { title: "Expert", color: "text-purple-400" };
-//     if (matchesPlayed < 200) return { title: "Master", color: "text-orange-400" };
-//     if (matchesPlayed < 500) return { title: "Grandmaster", color: "text-red-500" };
-//     return { title: "Living Legend", color: "text-yellow-400 animate-pulse" }; // 500+
-//   };
-
-//   // Safe check for user stats
-//   const currentRank = getRank(user?.stats?.matchesPlayed || 0);
+//   // 2. FIXED: Use getLevelInfo directly (Removed old 'getRank' function)
+//   // This ensures your Dashboard rank matches your ELO exactly.
+//   const currentRank = getLevelInfo(user?.elo);
 
 //   useEffect(() => {
 //       const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
@@ -176,7 +169,7 @@
 //                     <span className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Wins</span>
 //                   </div>
 
-//                   {/* --- MODIFIED RANK CARD WITH ELO --- */}
+//                   {/* Rank Card */}
 //                   <div className="col-span-2 bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center shadow-lg shadow-black/5">
                     
 //                     <div className="flex items-center gap-3 mb-1">
@@ -184,7 +177,6 @@
 //                         {currentRank.title}
 //                         </h3>
                         
-//                         {/* THE NEW ELO DISPLAY */}
 //                         <div className="flex items-center gap-1 bg-black/20 px-3 py-1 rounded-lg border border-white/5">
 //                             <Trophy size={14} className="text-yellow-500" />
 //                             <span className="text-lg font-mono font-bold text-[var(--text-primary)]">
@@ -248,8 +240,7 @@ const Dashboard = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [loadingText, setLoadingText] = useState('');
 
-  // 2. FIXED: Use getLevelInfo directly (Removed old 'getRank' function)
-  // This ensures your Dashboard rank matches your ELO exactly.
+  // 2. FIXED: Use getLevelInfo directly
   const currentRank = getLevelInfo(user?.elo);
 
   useEffect(() => {
@@ -276,12 +267,14 @@ const Dashboard = () => {
     setIsNavigating(true);
     setLoadingText('Entering the Arena...');
 
-    setTimeout(() => {
-        navigate(`/editor/${roomIdInput}`, {
-            state: { username: user.username }
-        });
-        setIsNavigating(false);
-    }, 3000);
+    // ***************************************************************
+    // ✅ OPTIMIZATION: Removed artificial 3-second delay
+    // ***************************************************************
+    navigate(`/editor/${roomIdInput}`, {
+        state: { username: user.username }
+    });
+    // Navigation is async, but we set false for cleanup if needed
+    setIsNavigating(false);
   };
 
   const createRoom = async () => {
@@ -291,6 +284,7 @@ const Dashboard = () => {
     try {
         let newRoomId;
         try {
+            // Attempt to fetch from backend (wakes up the Render server)
             const response = await axios.post('https://codearena-1v1.onrender.com/api/rooms');
             newRoomId = response.data.roomId;
         } catch (err) {
@@ -298,15 +292,19 @@ const Dashboard = () => {
             newRoomId = uuidv4();
         }
 
-        setTimeout(() => {
-            navigate(`/editor/${newRoomId}`, {
-                state: { username: user.username }
-            });
-            setIsNavigating(false);
-        }, 3000);
+        // ***************************************************************
+        // ✅ OPTIMIZATION: Removed hardcoded 3000ms delay. 
+        // We now navigate the microsecond we receive the roomId.
+        // ***************************************************************
+        navigate(`/editor/${newRoomId}`, {
+            state: { username: user.username }
+        });
+        
+        setIsNavigating(false);
 
     } catch (error) {
         console.error("Navigation Error:", error);
+        toast.error("Failed to initialize. Check your connection.");
         setIsNavigating(false);
     }
   };
