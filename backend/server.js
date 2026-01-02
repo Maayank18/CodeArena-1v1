@@ -1053,23 +1053,27 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ 1. LIGHTWEIGHT HEALTH CHECK ROUTE (For Cron-Jobs)
-// This avoids database overhead to keep the "ping" extremely fast.
+// ✅ PLACE THIS AT THE VERY TOP (Right after const app = express())
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'warm', timestamp: new Date() });
 });
 
-// ✅ 2. INTERNAL SELF-PING (Keep-Alive Safety Net)
-// Prevents Render from sleeping by pinging the health route every 14 minutes.
+// ✅ UPDATED INTERNAL SELF-PING
 setInterval(async () => {
     try {
-        const url = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
-        await fetch(`${url}/api/health`);
-        console.log('💓 Heartbeat: Internal keep-alive successful.');
+        // We prioritize the Render URL directly to avoid any "undefined" issues
+        const url = "https://codearena-1v1.onrender.com"; 
+        const response = await fetch(`${url}/api/health`);
+        
+        if (response.ok) {
+            console.log('💓 Heartbeat: Internal keep-alive successful.');
+        } else {
+            console.warn(`💓 Heartbeat: Server responded with ${response.status}`);
+        }
     } catch (err) {
         console.error('💔 Heartbeat failed:', err.message);
     }
-}, 840000); 
+}, 840000); // 14 minutes
 
 app.use((req, res, next) => {
   console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl} Host:${req.headers.host}`);
