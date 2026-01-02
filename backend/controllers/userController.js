@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+// import User from '../models/User.js';
 
 // @desc    Get Global Leaderboard (Top 50)
 // @route   GET /api/users/leaderboard
