@@ -14,25 +14,17 @@
 
 import axios from 'axios';
 
-// // 1. CREATE INSTANCE
-// const api = axios.create({
-//     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-    
-//     // ROBUSTNESS: Fail fast if server is down. 
-//     // Don't let the app hang for 2 minutes. Wait 10 seconds, then error out.
-//     timeout: 10000, 
-    
-//     headers: {
-//         'Content-Type': 'application/json',
-//     },
-// });
-
-// src/api.js - REFINED
+// 1. CREATE INSTANCE
 const api = axios.create({
-    // Hard fallback to Render ensures it works on Vercel immediately
-    baseURL: (import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com') + '/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    
+    // ROBUSTNESS: Fail fast if server is down. 
+    // Don't let the app hang for 2 minutes. Wait 10 seconds, then error out.
     timeout: 10000, 
-    headers: { 'Content-Type': 'application/json' },
+    
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
 // 2. SECURITY: REQUEST INTERCEPTOR
