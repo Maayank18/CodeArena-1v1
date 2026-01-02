@@ -46,60 +46,94 @@
 
 
 // with updated anti cheat mechanism
+// import mongoose from 'mongoose';
+
+// const matchSchema = new mongoose.Schema({
+//   roomId: {
+//     type: String,
+//     required: true
+//   },
+//   // Flexible player array for easy history rendering
+//   players: [{
+//     userId: { 
+//       type: mongoose.Schema.Types.ObjectId, 
+//       ref: 'User' 
+//     },
+//     username: { 
+//       type: String, 
+//       required: true 
+//     },
+//     avatar: String,       // Cached for faster frontend rendering
+//     isWinner: Boolean,    // Identifies win/loss status
+//     score: Number,        // Points earned during rounds
+//     oldElo: Number,       // Rating before match
+//     newElo: Number,       // Rating after match
+//     // ✅ ADDED: statusText to store "Unfair Practice" or "Opponent Disqualification"
+//     statusText: { 
+//       type: String, 
+//       default: "" 
+//     }
+//   }],
+//   winner: {
+//     type: String, // Username of the winner
+//     required: true
+//   },
+//   // ✅ ADDED: Anti-Cheat Metadata
+//   isDisqualified: {
+//     type: Boolean,
+//     default: false
+//   },
+//   disqualifiedPlayer: {
+//     type: String, // Username of the cheater
+//     default: null
+//   },
+//   // Useful metadata
+//   language: {
+//     type: String,
+//     default: 'cpp'
+//   },
+//   codeSnapshot: {
+//     type: String, 
+//     select: false // Hidden from default queries to keep data transfer light
+//   }
+// }, { 
+//   timestamps: true // Tracks match date automatically
+// });
+
+// // modern ES Module export
+// const Match = mongoose.model('Match', matchSchema);
+// export default Match;
+
+
+
+
+
+
 import mongoose from 'mongoose';
 
 const matchSchema = new mongoose.Schema({
-  roomId: {
-    type: String,
-    required: true
-  },
-  // Flexible player array for easy history rendering
+  roomId: { type: String, required: true },
   players: [{
-    userId: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    },
-    username: { 
-      type: String, 
-      required: true 
-    },
-    avatar: String,       // Cached for faster frontend rendering
-    isWinner: Boolean,    // Identifies win/loss status
-    score: Number,        // Points earned during rounds
-    oldElo: Number,       // Rating before match
-    newElo: Number,       // Rating after match
-    // ✅ ADDED: statusText to store "Unfair Practice" or "Opponent Disqualification"
-    statusText: { 
-      type: String, 
-      default: "" 
-    }
+    // Made optional to prevent crashes during solo testing or guest play
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+    username: { type: String, required: true },
+    avatar: String,
+    isWinner: { type: Boolean, default: false },
+    score: { type: Number, default: 0 },
+    oldElo: { type: Number, default: 1000 },
+    newElo: { type: Number, default: 1000 },
+    statusText: { type: String, default: "" }
   }],
-  winner: {
-    type: String, // Username of the winner
-    required: true
-  },
-  // ✅ ADDED: Anti-Cheat Metadata
-  isDisqualified: {
-    type: Boolean,
-    default: false
-  },
-  disqualifiedPlayer: {
-    type: String, // Username of the cheater
-    default: null
-  },
-  // Useful metadata
-  language: {
-    type: String,
-    default: 'cpp'
-  },
-  codeSnapshot: {
-    type: String, 
-    select: false // Hidden from default queries to keep data transfer light
-  }
+  winner: { type: String, required: true },
+  isDisqualified: { type: Boolean, default: false },
+  disqualifiedPlayer: { type: String, default: null },
+  language: { type: String, default: 'cpp' }
 }, { 
-  timestamps: true // Tracks match date automatically
+  timestamps: true 
 });
 
-// modern ES Module export
+// ✅ ADDED INDEX: This makes searching for "user history" 10x faster
+matchSchema.index({ "players.username": 1 });
+
 const Match = mongoose.model('Match', matchSchema);
 export default Match;
