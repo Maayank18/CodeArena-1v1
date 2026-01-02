@@ -44,29 +44,57 @@ import User from '../models/User.js';
 
 
 
-// backend/controllers/userController.js
+// // backend/controllers/userController.js
+// export const getLeaderboard = async (req, res) => {
+//     try {
+//         const users = await User.find({})
+//             .sort({ seasonScore: -1, rating: -1 }) 
+//             .limit(50) 
+//             .select('username rating seasonScore stats avatar'); // ✅ ADDED avatar
+
+//         const leaderboard = users.map((user, index) => ({
+//             rank: index + 1,
+//             _id: user._id,
+//             username: user.username,
+//             avatar: user.avatar, // ✅ Pass avatar to frontend
+//             rating: user.rating || 1000,
+//             seasonScore: user.seasonScore || 0,
+//             matchesPlayed: user.stats?.matchesPlayed || 0,
+//             winRate: user.stats?.matchesPlayed > 0 
+//                 ? ((user.stats.wins / user.stats.matchesPlayed) * 100).toFixed(1) + "%" 
+//                 : "0%"
+//         }));
+
+//         res.json(leaderboard);
+//     } catch (error) {
+//         res.status(500).json({ message: "Server Error" });
+//     }
+// };
+
+
+
+
+import User from '../models/User.js';
+
+// 🏆 GET LEADERBOARD - Sorted by seasonScore
 export const getLeaderboard = async (req, res) => {
-    try {
-        const users = await User.find({})
-            .sort({ seasonScore: -1, rating: -1 }) 
-            .limit(50) 
-            .select('username rating seasonScore stats avatar'); // ✅ ADDED avatar
+  try {
+    console.log('[LEADERBOARD] Fetching top players...');
+    
+    const players = await User.find()
+      .select('username avatar rating seasonScore stats createdAt') // Only fetch needed fields
+      .sort({ seasonScore: -1 }) // Sort by season score (highest first)
+      .limit(100) // Limit to top 100 players
+      .lean(); // Faster read-only query
 
-        const leaderboard = users.map((user, index) => ({
-            rank: index + 1,
-            _id: user._id,
-            username: user.username,
-            avatar: user.avatar, // ✅ Pass avatar to frontend
-            rating: user.rating || 1000,
-            seasonScore: user.seasonScore || 0,
-            matchesPlayed: user.stats?.matchesPlayed || 0,
-            winRate: user.stats?.matchesPlayed > 0 
-                ? ((user.stats.wins / user.stats.matchesPlayed) * 100).toFixed(1) + "%" 
-                : "0%"
-        }));
-
-        res.json(leaderboard);
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
-    }
+    console.log(`[LEADERBOARD] Found ${players.length} players`);
+    
+    res.json(players);
+  } catch (error) {
+    console.error('❌ [LEADERBOARD] Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch leaderboard',
+      details: error.message 
+    });
+  }
 };

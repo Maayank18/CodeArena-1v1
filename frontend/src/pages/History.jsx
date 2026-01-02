@@ -305,6 +305,7 @@ import Sidebar from '../components/Sidebar';
 import { format } from 'date-fns';
 import { History as HistoryIcon, Trophy, XCircle, CheckCircle, Loader2, TrendingUp, TrendingDown, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
+import api from '../api.js';
 
 // 1. IMPORT NAVIGATION AND TOAST
 import { useNavigate } from 'react-router-dom';
@@ -331,9 +332,8 @@ const History = () => {
             if (u) {
                 setUser(u);
                 try {
-                    const API_URL = 'https://codearena-1v1.onrender.com'; 
-                    const response = await axios.get(`${API_URL}/api/matches/user/${u.username}`);
-                    setHistory(response.data);
+                    // ✅ USE THIS
+                    const response = await api.get(`/matches/user/${u.username}`);
                 } catch (error) {
                     console.error("Error fetching history:", error);
                 } finally {
