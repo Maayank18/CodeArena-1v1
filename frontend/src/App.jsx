@@ -40,28 +40,28 @@ import Leaderboard from './pages/Leaderboard';
 import Resources from './pages/Resources';
 
 function App() {
-    useEffect(() => {
-        /**
-         * ✅ SENIOR DEVELOPER OPTIMIZATION: GLOBAL WAKE-UP
-         * This fires a lightweight request to the backend immediately.
-         * By the time the user logs in or reaches the dashboard, the 
-         * Render "Cold Start" (8-15s) will already be completed.
-         */
-        const wakeUpServer = async () => {
-            const API_URL = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
-            try {
-                // We target the light health-check route to minimize server load
-                await axios.get(`${API_URL.replace(/\/$/, '')}/api/health`);
-                console.log("🚀 CodeArena Backend: Warm-up signal sent successfully.");
-            } catch (error) {
-                // If it fails (e.g., server still booting), the request itself 
-                // has already triggered the Render "Spin Up" process.
-                console.log("⏳ CodeArena Backend: Spinning up server...");
-            }
-        };
+    // useEffect(() => {
+    //     /**
+    //      * ✅ SENIOR DEVELOPER OPTIMIZATION: GLOBAL WAKE-UP
+    //      * This fires a lightweight request to the backend immediately.
+    //      * By the time the user logs in or reaches the dashboard, the 
+    //      * Render "Cold Start" (8-15s) will already be completed.
+    //      */
+    //     const wakeUpServer = async () => {
+    //         const API_URL = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
+    //         try {
+    //             // We target the light health-check route to minimize server load
+    //             await axios.get(`${API_URL.replace(/\/$/, '')}/api/health`);
+    //             console.log("🚀 CodeArena Backend: Warm-up signal sent successfully.");
+    //         } catch (error) {
+    //             // If it fails (e.g., server still booting), the request itself 
+    //             // has already triggered the Render "Spin Up" process.
+    //             console.log("⏳ CodeArena Backend: Spinning up server...");
+    //         }
+    //     };
 
-        wakeUpServer();
-    }, []);
+    //     wakeUpServer();
+    // }, []);
 
     return (
         <Routes>

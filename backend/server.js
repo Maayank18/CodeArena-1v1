@@ -1053,27 +1053,29 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ PLACE THIS AT THE VERY TOP (Right after const app = express())
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'warm', timestamp: new Date() });
-});
 
-// ✅ UPDATED INTERNAL SELF-PING
-setInterval(async () => {
-    try {
-        // We prioritize the Render URL directly to avoid any "undefined" issues
-        const url = "https://codearena-1v1.onrender.com"; 
-        const response = await fetch(`${url}/api/health`);
+// // NEED TO BE CROSSCHECKED 
+// // ✅ PLACE THIS AT THE VERY TOP (Right after const app = express())
+// app.get('/api/health', (req, res) => {
+//     res.status(200).json({ status: 'warm', timestamp: new Date() });
+// });
+
+// // ✅ UPDATED INTERNAL SELF-PING
+// setInterval(async () => {
+//     try {
+//         // We prioritize the Render URL directly to avoid any "undefined" issues
+//         const url = "https://codearena-1v1.onrender.com"; 
+//         const response = await fetch(`${url}/api/health`);
         
-        if (response.ok) {
-            console.log('💓 Heartbeat: Internal keep-alive successful.');
-        } else {
-            console.warn(`💓 Heartbeat: Server responded with ${response.status}`);
-        }
-    } catch (err) {
-        console.error('💔 Heartbeat failed:', err.message);
-    }
-}, 840000); // 14 minutes
+//         if (response.ok) {
+//             console.log('💓 Heartbeat: Internal keep-alive successful.');
+//         } else {
+//             console.warn(`💓 Heartbeat: Server responded with ${response.status}`);
+//         }
+//     } catch (err) {
+//         console.error('💔 Heartbeat failed:', err.message);
+//     }
+// }, 840000); // 14 minutes
 
 app.use((req, res, next) => {
   console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl} Host:${req.headers.host}`);
