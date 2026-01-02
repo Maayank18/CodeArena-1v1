@@ -174,9 +174,8 @@
 //                 setUser(u);
 //                 try {
 //                     // 2. FETCH FROM MONGODB API
-//                     const API_URL = 'https://codearena-1v1.onrender.com'; 
-                    
-//                     const response = await axios.get(`${API_URL}/api/matches/user/${u.username}`);
+                    // const API_URL = 'https://codearena-1v1.onrender.com'; 
+                    // const response = await axios.get(`${API_URL}/api/matches/user/${u.username}`);
 //                     setHistory(response.data);
 //                 } catch (error) {
 //                     console.error("Error fetching history:", error);
@@ -333,8 +332,10 @@ const History = () => {
                 setUser(u);
                 try {
                     // ✅ USE THIS
-                    const response = await api.get(`/matches/user/${u.username}`);
-                    setHistory(response.data);
+                    // const response = await api.get(`/matches/user/${u.username}`);
+                    // setHistory(response.data);
+                    const API_URL = 'https://codearena-1v1.onrender.com'; 
+                    const response = await axios.get(`${API_URL}/api/matches/user/${u.username}`);
                 } catch (error) {
                     console.error("Error fetching history:", error);
                 } finally {
