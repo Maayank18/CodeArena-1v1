@@ -941,9 +941,10 @@ const Dashboard = () => {
           try {
               // ✅ FIX: Added a small delay to ensure DB persistence completes
               // especially after a 'Delayed Justice' disqualification end.
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 1000));
 
-              const response = await api.get(`/users/profile/${storedUser.username}`);
+              // const response = await api.get(`/users/profile/${storedUser.username}`);
+              const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
               const updatedUser = response.data;
               
               // ✅ FIX: Deep merge to ensure nested 'stats' are preserved correctly
