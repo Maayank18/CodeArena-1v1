@@ -938,6 +938,9 @@ const Dashboard = () => {
               return;
           }
 
+          // 1. Set Local Data First (So you see the old stats for a split second)
+          setUser(storedUser);
+
           try {
               // ✅ FIX: Added a small delay to ensure DB persistence completes
               // especially after a 'Delayed Justice' disqualification end.
@@ -946,6 +949,10 @@ const Dashboard = () => {
               // const response = await api.get(`/users/profile/${storedUser.username}`);
               const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
               const updatedUser = response.data;
+
+              // 🔍 DEBUGGING LOGS (Check your Console!)
+              console.log("🔥 SERVER RESPONSE:", response.data);
+              console.log("🔥 SERVER STATS:", response.data.stats);
               
               // ✅ FIX: Deep merge to ensure nested 'stats' are preserved correctly
               const finalUser = { 
