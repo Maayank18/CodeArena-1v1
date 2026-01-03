@@ -1457,7 +1457,7 @@ import matchRoutes from './routes/matchRoutes.js';
 import Problem from './models/Problem.js';
 import User from './models/User.js';
 import Match from './models/Match.js';
-import { calculateElo } from './utils/elo.js';
+import { calculateMatchOutcome } from './utils/elo.js';
 
 dotenv.config();
 connectDB();
@@ -1694,8 +1694,41 @@ io.on('connection', async (socket) => {
           console.error("Final Level Error:", err);
       }
   });
+  // ✅ MODIFIED: Silent Flagging for Anti-Cheat
+  socket.on('cheating_detected', async ({ roomId, username, reason }) => {
+    try {
+      const room = rooms.get(roomId);
+      if (!room || !room.isGameActive) return;
 
-  // socket.on('level_completed', async ({ roomId, username }) => {
+      room.cheaters.add(username);
+      console.log(`⚠️ [SERVER] Cheat flagged: ${username} | Reason: ${reason}`);
+      
+      socket.emit('cheat_warning', { reason });
+    } catch (err) {
+      console.error("Cheating Detection Error:", err);
+    }
+  });
+
+  socket.on('disconnect', async () => {
+    try {
+      const totalUsers = await User.countDocuments();
+      const statsData = { live: io.engine.clientsCount, total: totalUsers };
+      io.emit('site_stats', statsData);
+    } catch (e) {
+      console.error("Error fetching stats on disconnect:", e);
+    }
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`SERVER RUNNING ON PORT ${PORT}`);
+});
+
+
+
+
+// socket.on('level_completed', async ({ roomId, username }) => {
   //   try {
   //       const room = rooms.get(roomId);
   //       if (!room || !room.isGameActive) return;
@@ -1805,34 +1838,3 @@ io.on('connection', async (socket) => {
   //       console.error("Final Level Error:", err);
   //   }
   // });
-
-  // ✅ MODIFIED: Silent Flagging for Anti-Cheat
-  socket.on('cheating_detected', async ({ roomId, username, reason }) => {
-    try {
-      const room = rooms.get(roomId);
-      if (!room || !room.isGameActive) return;
-
-      room.cheaters.add(username);
-      console.log(`⚠️ [SERVER] Cheat flagged: ${username} | Reason: ${reason}`);
-      
-      socket.emit('cheat_warning', { reason });
-    } catch (err) {
-      console.error("Cheating Detection Error:", err);
-    }
-  });
-
-  socket.on('disconnect', async () => {
-    try {
-      const totalUsers = await User.countDocuments();
-      const statsData = { live: io.engine.clientsCount, total: totalUsers };
-      io.emit('site_stats', statsData);
-    } catch (e) {
-      console.error("Error fetching stats on disconnect:", e);
-    }
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`SERVER RUNNING ON PORT ${PORT}`);
-});
