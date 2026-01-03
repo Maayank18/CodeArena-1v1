@@ -1447,7 +1447,7 @@ const EditorPage = () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange);
             window.removeEventListener("paste", handlePaste);
         };
-    }, [roomId, navigate, location.state, gameOverData]);
+    }, [roomId, navigate, location.state]);
 
     // --- HELPER FUNCTIONS ---
     const getPlayerName = (side) => {
