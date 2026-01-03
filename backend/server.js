@@ -1578,116 +1578,233 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('level_completed', async ({ roomId, username }) => {
-    try {
-        const room = rooms.get(roomId);
-        if (!room || !room.isGameActive) return;
+    socket.on('level_completed', async ({ roomId, username }) => {
+      try {
+          const room = rooms.get(roomId);
+          if (!room || !room.isGameActive) return;
 
-        room.scores[username] = (room.scores[username] || 0) + 10;
-        io.to(roomId).emit('score_update', room.scores);
+          // 1. Update In-Game Score (Standard 10pts per round)
+          room.scores[username] = (room.scores[username] || 0) + 10;
+          io.to(roomId).emit('score_update', room.scores);
 
-        if (room.round < room.totalRounds) {
-            room.round++;
-            io.to(roomId).emit('new_round', {
-                round: room.round,
-                problem: room.problems[room.round - 1],
-                scores: room.scores,
-            });
-        } else {
-            room.isGameActive = false;
-            
-            const players = Object.keys(room.scores);
-            let winnerUsername;
-            let isDisqualifiedMatch = room.cheaters && room.cheaters.size > 0;
+          // 2. Check if the game should continue or end
+          if (room.round < room.totalRounds) {
+              room.round++;
+              io.to(roomId).emit('new_round', {
+                  round: room.round,
+                  problem: room.problems[room.round - 1],
+                  scores: room.scores,
+              });
+          } else {
+              room.isGameActive = false;
+              
+              const players = Object.keys(room.scores);
+              if (players.length < 2) return; // Safety check for solo rooms
 
-            // ✅ DELAYED JUSTICE LOGIC
-            if (isDisqualifiedMatch) {
-                // Winner is the person who DID NOT cheat
-                winnerUsername = players.find(p => !room.cheaters.has(p)) || players[0];
-            } else {
-                // Normal highest score wins
-                winnerUsername = players.reduce((a, b) => room.scores[a] >= room.scores[b] ? a : b);
-            }
-            
-            const loserUsername = players.find(u => u !== winnerUsername);
-            let eloChanges = {};
+              // Fetch User records from Database
+              const user1 = await User.findOne({ username: players[0] });
+              const user2 = await User.findOne({ username: players[1] });
 
-            if (winnerUsername && loserUsername) {
-                try {
-                    const winner = await User.findOne({ username: winnerUsername });
-                    const loser = await User.findOne({ username: loserUsername });
+              if (!user1 || !user2) return;
 
-                    if (winner && loser) {
-                        // Standardized to use .rating field
-                        const winnerCurrentElo = winner.rating || 1000;
-                        const loserCurrentElo = loser.rating || 1000;
-                        const { newWinnerRating, newLoserRating, pointsExchanged } = calculateElo(winnerCurrentElo, loserCurrentElo);
+              // ✅ PREPARE DATA FOR THE DYNAMIC ANALYZER
+              const p1Input = {
+                  username: user1.username,
+                  rating: user1.rating || 1000,
+                  score: room.scores[user1.username] || 0,
+                  isCheater: room.cheaters.has(user1.username)
+              };
 
-                        await Match.create({
-                            roomId,
-                            winner: winnerUsername,
-                            isDisqualified: isDisqualifiedMatch,
-                            disqualifiedPlayer: isDisqualifiedMatch ? Array.from(room.cheaters)[0] : null,
-                            players: [
-                                { 
-                                  userId: winner._id, 
-                                  username: winnerUsername, 
-                                  avatar: winner.avatar, 
-                                  isWinner: true, 
-                                  score: room.scores[winnerUsername], 
-                                  oldElo: winnerCurrentElo, 
-                                  newElo: newWinnerRating,
-                                  statusText: isDisqualifiedMatch ? "Opponent Disqualified" : "" 
-                                },
-                                { 
-                                  userId: loser._id, 
-                                  username: loserUsername, 
-                                  avatar: loser.avatar, 
-                                  isWinner: false, 
-                                  score: room.scores[loserUsername], 
-                                  oldElo: loserCurrentElo, 
-                                  newElo: newLoserRating,
-                                  statusText: isDisqualifiedMatch ? "Disqualified" : "" // ✅ 'D' Letter trigger for UI
-                                }
-                            ]
-                        });
+              const p2Input = {
+                  username: user2.username,
+                  rating: user2.rating || 1000,
+                  score: room.scores[user2.username] || 0,
+                  isCheater: room.cheaters.has(user2.username)
+              };
 
-                        // Persistence
-                        winner.rating = newWinnerRating;
-                        winner.stats.wins += 1;
-                        winner.stats.matchesPlayed += 1;
-                        winner.seasonScore += 10; // ✅ Award leaderboard points
-                        await winner.save();
+              // ✅ RUN DYNAMIC ELO & SEASON POINT CALCULATION
+              const outcome = calculateMatchOutcome(p1Input, p2Input);
 
-                        loser.rating = newLoserRating;
-                        loser.stats.losses += 1;
-                        loser.stats.matchesPlayed += 1;
-                        await loser.save();
+              // ✅ PERSISTENCE: Player 1
+              user1.rating = outcome.p1.newRating;
+              user1.seasonScore = (user1.seasonScore || 0) + outcome.p1.seasonScore;
+              user1.stats.matchesPlayed += 1;
+              if (outcome.p1.status === "Winner" || outcome.p1.status === "Winner (Opponent DQ)") {
+                  user1.stats.wins += 1;
+              } else if (outcome.p1.status === "Loser") {
+                  user1.stats.losses += 1;
+              }
+              await user1.save();
 
-                        eloChanges = {
-                            winner: { username: winnerUsername, newRating: newWinnerRating, points: pointsExchanged },
-                            loser: { username: loserUsername, newRating: newLoserRating, points: -pointsExchanged }
-                        };
-                    }
-                } catch (dbErr) {
-                    console.error("Match persistence failed:", dbErr);
-                }
-            }
+              // ✅ PERSISTENCE: Player 2
+              user2.rating = outcome.p2.newRating;
+              user2.seasonScore = (user2.seasonScore || 0) + outcome.p2.seasonScore;
+              user2.stats.matchesPlayed += 1;
+              if (outcome.p2.status === "Winner" || outcome.p2.status === "Winner (Opponent DQ)") {
+                  user2.stats.wins += 1;
+              } else if (outcome.p2.status === "Loser") {
+                  user2.stats.losses += 1;
+              }
+              await user2.save();
 
-            io.to(roomId).emit('game_over', { 
-                scores: room.scores, 
-                winner: winnerUsername,
-                isDisqualified: isDisqualifiedMatch,
-                disqualifiedPlayer: isDisqualifiedMatch ? Array.from(room.cheaters)[0] : null,
-                eloChanges 
-            });
+              // ✅ CREATE MATCH RECORD FOR HISTORY
+              await Match.create({
+                  roomId,
+                  winner: outcome.p1.status.includes("Winner") ? user1.username : (outcome.p2.status.includes("Winner") ? user2.username : null),
+                  isDisqualified: room.cheaters.size > 0,
+                  disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
+                  players: [
+                      { 
+                          userId: user1._id, 
+                          username: user1.username, 
+                          avatar: user1.avatar, 
+                          isWinner: outcome.p1.status.includes("Winner"), 
+                          score: p1Input.score, 
+                          oldElo: p1Input.rating, 
+                          newElo: outcome.p1.newRating,
+                          statusText: p1Input.isCheater ? "Disqualified" : (outcome.p2.isCheater ? "Opponent DQ" : "")
+                      },
+                      { 
+                          userId: user2._id, 
+                          username: user2.username, 
+                          avatar: user2.avatar, 
+                          isWinner: outcome.p2.status.includes("Winner"), 
+                          score: p2Input.score, 
+                          oldElo: p2Input.rating, 
+                          newElo: outcome.p2.newRating,
+                          statusText: p2Input.isCheater ? "Disqualified" : (outcome.p1.isCheater ? "Opponent DQ" : "")
+                      }
+                  ]
+              });
 
-            setTimeout(() => rooms.delete(roomId), 60000);
-        }
-    } catch (err) {
-        console.error("Final Level Error:", err);
-    }
+              // ✅ EMIT FINAL RESULTS
+              io.to(roomId).emit('game_over', { 
+                  scores: room.scores, 
+                  winner: outcome.p1.status.includes("Winner") ? user1.username : user2.username,
+                  isDisqualified: room.cheaters.size > 0,
+                  eloChanges: {
+                      p1: { username: user1.username, newRating: outcome.p1.newRating, points: outcome.p1.pointsGained },
+                      p2: { username: user2.username, newRating: outcome.p2.newRating, points: outcome.p2.pointsGained }
+                  }
+              });
+
+              setTimeout(() => rooms.delete(roomId), 60000);
+          }
+      } catch (err) {
+          console.error("Final Level Error:", err);
+      }
   });
+
+  // socket.on('level_completed', async ({ roomId, username }) => {
+  //   try {
+  //       const room = rooms.get(roomId);
+  //       if (!room || !room.isGameActive) return;
+
+  //       room.scores[username] = (room.scores[username] || 0) + 10;
+  //       io.to(roomId).emit('score_update', room.scores);
+
+  //       if (room.round < room.totalRounds) {
+  //           room.round++;
+  //           io.to(roomId).emit('new_round', {
+  //               round: room.round,
+  //               problem: room.problems[room.round - 1],
+  //               scores: room.scores,
+  //           });
+  //       } else {
+  //           room.isGameActive = false;
+            
+  //           const players = Object.keys(room.scores);
+  //           let winnerUsername;
+  //           let isDisqualifiedMatch = room.cheaters && room.cheaters.size > 0;
+
+  //           // ✅ DELAYED JUSTICE LOGIC
+  //           if (isDisqualifiedMatch) {
+  //               // Winner is the person who DID NOT cheat
+  //               winnerUsername = players.find(p => !room.cheaters.has(p)) || players[0];
+  //           } else {
+  //               // Normal highest score wins
+  //               winnerUsername = players.reduce((a, b) => room.scores[a] >= room.scores[b] ? a : b);
+  //           }
+            
+  //           const loserUsername = players.find(u => u !== winnerUsername);
+  //           let eloChanges = {};
+
+  //           if (winnerUsername && loserUsername) {
+  //               try {
+  //                   const winner = await User.findOne({ username: winnerUsername });
+  //                   const loser = await User.findOne({ username: loserUsername });
+
+  //                   if (winner && loser) {
+  //                       // Standardized to use .rating field
+  //                       const winnerCurrentElo = winner.rating || 1000;
+  //                       const loserCurrentElo = loser.rating || 1000;
+  //                       const { newWinnerRating, newLoserRating, pointsExchanged } = calculateElo(winnerCurrentElo, loserCurrentElo);
+
+  //                       await Match.create({
+  //                           roomId,
+  //                           winner: winnerUsername,
+  //                           isDisqualified: isDisqualifiedMatch,
+  //                           disqualifiedPlayer: isDisqualifiedMatch ? Array.from(room.cheaters)[0] : null,
+  //                           players: [
+  //                               { 
+  //                                 userId: winner._id, 
+  //                                 username: winnerUsername, 
+  //                                 avatar: winner.avatar, 
+  //                                 isWinner: true, 
+  //                                 score: room.scores[winnerUsername], 
+  //                                 oldElo: winnerCurrentElo, 
+  //                                 newElo: newWinnerRating,
+  //                                 statusText: isDisqualifiedMatch ? "Opponent Disqualified" : "" 
+  //                               },
+  //                               { 
+  //                                 userId: loser._id, 
+  //                                 username: loserUsername, 
+  //                                 avatar: loser.avatar, 
+  //                                 isWinner: false, 
+  //                                 score: room.scores[loserUsername], 
+  //                                 oldElo: loserCurrentElo, 
+  //                                 newElo: newLoserRating,
+  //                                 statusText: isDisqualifiedMatch ? "Disqualified" : "" // ✅ 'D' Letter trigger for UI
+  //                               }
+  //                           ]
+  //                       });
+
+  //                       // Persistence
+  //                       winner.rating = newWinnerRating;
+  //                       winner.stats.wins += 1;
+  //                       winner.stats.matchesPlayed += 1;
+  //                       winner.seasonScore += 10; // ✅ Award leaderboard points
+  //                       await winner.save();
+
+  //                       loser.rating = newLoserRating;
+  //                       loser.stats.losses += 1;
+  //                       loser.stats.matchesPlayed += 1;
+  //                       await loser.save();
+
+  //                       eloChanges = {
+  //                           winner: { username: winnerUsername, newRating: newWinnerRating, points: pointsExchanged },
+  //                           loser: { username: loserUsername, newRating: newLoserRating, points: -pointsExchanged }
+  //                       };
+  //                   }
+  //               } catch (dbErr) {
+  //                   console.error("Match persistence failed:", dbErr);
+  //               }
+  //           }
+
+  //           io.to(roomId).emit('game_over', { 
+  //               scores: room.scores, 
+  //               winner: winnerUsername,
+  //               isDisqualified: isDisqualifiedMatch,
+  //               disqualifiedPlayer: isDisqualifiedMatch ? Array.from(room.cheaters)[0] : null,
+  //               eloChanges 
+  //           });
+
+  //           setTimeout(() => rooms.delete(roomId), 60000);
+  //       }
+  //   } catch (err) {
+  //       console.error("Final Level Error:", err);
+  //   }
+  // });
 
   // ✅ MODIFIED: Silent Flagging for Anti-Cheat
   socket.on('cheating_detected', async ({ roomId, username, reason }) => {
