@@ -241,7 +241,7 @@ const Login = () => {
         }
 
         setIsLoading(true);
-        const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+        const endpoint = isRegister ? '/auth/register' : '/auth/login';
         
         try {
             const { data } = await api.post(endpoint, formData);
