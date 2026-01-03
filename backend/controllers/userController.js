@@ -74,6 +74,33 @@
 
 
 
+// import User from '../models/User.js';
+
+// // 🏆 GET LEADERBOARD - Sorted by seasonScore
+// export const getLeaderboard = async (req, res) => {
+//   try {
+//     console.log('[LEADERBOARD] Fetching top players...');
+    
+//     const players = await User.find()
+//       .select('username avatar rating seasonScore stats createdAt') // Only fetch needed fields
+//       .sort({ seasonScore: -1 }) // Sort by season score (highest first)
+//       .limit(100) // Limit to top 100 players
+//       .lean(); // Faster read-only query
+
+//     console.log(`[LEADERBOARD] Found ${players.length} players`);
+    
+//     res.json(players);
+//   } catch (error) {
+//     console.error('❌ [LEADERBOARD] Error:', error);
+//     res.status(500).json({ 
+//       error: 'Failed to fetch leaderboard',
+//       details: error.message 
+//     });
+//   }
+// };
+
+
+
 import User from '../models/User.js';
 
 // 🏆 GET LEADERBOARD - Sorted by seasonScore
@@ -97,4 +124,31 @@ export const getLeaderboard = async (req, res) => {
       details: error.message 
     });
   }
+};
+
+/** * ✅ ADDED: SYNC LOGIC FOR DASHBOARD
+ * This handles the GET /api/users/profile/:username request
+ * needed to fix the "1000 Elo" sync issue.
+ */
+export const getUserProfile = async (req, res) => {
+    try {
+        const { username } = req.params;
+        console.log(`[PROFILE] Syncing data for: ${username}`);
+        
+        const user = await User.findOne({ username })
+            .select('username rating seasonScore stats avatar email fullName phone')
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
+    } catch (error) {
+        console.error("❌ [PROFILE] Sync error:", error);
+        res.status(500).json({ 
+            error: "Internal Server Error", 
+            details: error.message 
+        });
+    }
 };
