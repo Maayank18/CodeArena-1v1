@@ -1469,7 +1469,7 @@ const EditorPage = () => {
         try {
             for (const [index, tc] of publicCases.entries()) {
                 try {
-                    const response = await api.post('/api/run', { language, code, stdin: tc.input });
+                    const response = await api.post('/run', { language, code, stdin: tc.input });
                     const actualOutput = response.data.stdout ? response.data.stdout.trim() : "";
                     const expectedOutput = tc.output.trim();
                     const passed = actualOutput === expectedOutput;
@@ -1486,7 +1486,7 @@ const EditorPage = () => {
         setIsRunning(true);
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
         try {
-            const response = await api.post('/api/run/submit', { language, code, problemId: problem._id });
+            const response = await api.post('/run/submit', { language, code, problemId: problem._id });
             if (response.data.isCorrect) {
                 toast.success("Correct! +10 Points.", { icon: '🏆' });
                 socketRef.current.emit('level_completed', { roomId, username: location.state?.username });
