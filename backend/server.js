@@ -1203,11 +1203,11 @@ io.on('connection', async (socket) => {
       if (!roomId || !username) return;
 
       if (!rooms.has(roomId)) {
-        const problems = await Problem.aggregate([{ $sample: { size: 1 } }]);
+        const problems = await Problem.aggregate([{ $sample: { size: 2 } }]);
         rooms.set(roomId, { 
             players: [], 
             round: 1, 
-            totalRounds: 1, 
+            totalRounds: 2, 
             problems, 
             scores: {}, 
             isGameActive: true,
