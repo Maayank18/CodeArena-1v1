@@ -944,7 +944,7 @@ const Dashboard = () => {
               await new Promise(resolve => setTimeout(resolve, 1000));
 
               // const response = await api.get(`/users/profile/${storedUser.username}`);
-              const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
+              const response = await api.get(`/users/${storedUser.username}?t=${new Date().getTime()}`);
               const updatedUser = response.data;
               
               // ✅ FIX: Deep merge to ensure nested 'stats' are preserved correctly
