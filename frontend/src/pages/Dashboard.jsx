@@ -939,7 +939,7 @@ const Dashboard = () => {
           }
 
           // 1. Set Local Data First (So you see the old stats for a split second)
-          setUser(storedUser);
+          // setUser(storedUser);
 
           try {
               // ✅ FIX: Added a small delay to ensure DB persistence completes
