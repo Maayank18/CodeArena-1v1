@@ -930,44 +930,80 @@ const Dashboard = () => {
   const rankInfo = getLevelInfo(user?.rating || 1000);
 
   useEffect(() => {
-      const syncUserAndData = async () => {
-          const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
+      // const syncUserAndData = async () => {
+      //     const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
           
-          if (!storedUser) {
-              navigate('/login');
-              return;
-          }
+      //     if (!storedUser) {
+      //         navigate('/login');
+      //         return;
+      //     }
 
-          // 1. Set Local Data First (So you see the old stats for a split second)
-          // setUser(storedUser);
+      //     // 1. Set Local Data First (So you see the old stats for a split second)
+      //     // setUser(storedUser);
 
-          try {
-              // ✅ FIX: Added a small delay to ensure DB persistence completes
-              // especially after a 'Delayed Justice' disqualification end.
-              await new Promise(resolve => setTimeout(resolve, 1000));
+      //     try {
+      //         // ✅ FIX: Added a small delay to ensure DB persistence completes
+      //         // especially after a 'Delayed Justice' disqualification end.
+      //         await new Promise(resolve => setTimeout(resolve, 1000));
 
-              // const response = await api.get(`/users/profile/${storedUser.username}`);
-              const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
-              const updatedUser = response.data;
+      //         // const response = await api.get(`/users/profile/${storedUser.username}`);
+      //         const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
+      //         const updatedUser = response.data;
 
-              // 🔍 DEBUGGING LOGS (Check your Console!)
-              console.log("🔥 SERVER RESPONSE:", response.data);
-              console.log("🔥 SERVER STATS:", response.data.stats);
+      //         // 🔍 DEBUGGING LOGS (Check your Console!)
+      //         console.log("🔥 SERVER RESPONSE:", response.data);
+      //         console.log("🔥 SERVER STATS:", response.data.stats);
               
-              // ✅ FIX: Deep merge to ensure nested 'stats' are preserved correctly
-              const finalUser = { 
-                ...storedUser, 
-                ...updatedUser,
-                stats: { ...storedUser.stats, ...updatedUser.stats }
-              };
+      //         // ✅ FIX: Deep merge to ensure nested 'stats' are preserved correctly
+      //         const finalUser = { 
+      //           ...storedUser, 
+      //           ...updatedUser,
+      //           stats: { ...storedUser.stats, ...updatedUser.stats }
+      //         };
               
-              localStorage.setItem('codearena_user', JSON.stringify(finalUser));
-              setUser(finalUser);
-          } catch (err) {
-              console.error("Profile sync failed, using cached data", err);
-              setUser(storedUser);
-          }
-      };
+      //         localStorage.setItem('codearena_user', JSON.stringify(finalUser));
+      //         setUser(finalUser);
+      //     } catch (err) {
+      //         console.error("Profile sync failed, using cached data", err);
+      //         setUser(storedUser);
+      //     }
+      // };
+      const syncUserAndData = async () => {
+      const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
+      if (!storedUser) { navigate('/login'); return; }
+
+      // 1. Show what we have locally immediately (The "Correct" post-match data)
+      setUser(storedUser);
+
+      try {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // 2. Fetch from Server
+          const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
+          const serverUser = response.data;
+
+          // 3. SMART MERGE: Don't overwrite if server data looks "stale"
+          // If local has MORE matches than server, keep local stats (DB might be lagging)
+          const localStats = storedUser.stats || { matchesPlayed: 0 };
+          const serverStats = serverUser.stats || { matchesPlayed: 0 };
+
+          const finalStats = (localStats.matchesPlayed > serverStats.matchesPlayed) 
+              ? localStats 
+              : serverStats;
+
+          const finalUser = { 
+              ...storedUser, 
+              ...serverUser,
+              stats: finalStats // Use the "best" stats available
+          };
+          
+          localStorage.setItem('codearena_user', JSON.stringify(finalUser));
+          setUser(finalUser);
+      } catch (err) {
+          console.error("Profile sync failed, using cached data", err);
+          // Do NOT reset user here, just keep the local version
+      }
+  };
 
       syncUserAndData();
   }, [navigate]);
