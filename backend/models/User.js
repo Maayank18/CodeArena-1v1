@@ -176,5 +176,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Add this line to ensure stats object exists on creation
+userSchema.pre('save', function(next) {
+    if (!this.stats) {
+        this.stats = { wins: 0, losses: 0, matchesPlayed: 0 };
+    }
+    next();
+});
+
 const User = mongoose.model('User', userSchema);
 export default User;

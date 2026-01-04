@@ -2050,12 +2050,159 @@ const rooms = new Map();
 const roomTimers = new Map();
 
 // --- ⚡️ FIXED: SENIOR-LEVEL ROBUST GAME END LOGIC ⚡️ ---
+// const handleGameEnd = async (roomId, room) => {
+//     // 1. Prevent Double Execution (Race Condition Fix)
+//     if (!room.isGameActive) return;
+//     room.isGameActive = false;
+
+//     // Clear Timer immediately
+//     if (roomTimers.has(roomId)) {
+//         clearInterval(roomTimers.get(roomId));
+//         roomTimers.delete(roomId);
+//     }
+    
+//     const playerNames = Object.keys(room.scores);
+    
+//     // Fallback winner calculation
+//     let winnerName = playerNames.length > 0 
+//         ? playerNames.reduce((a, b) => room.scores[a] > room.scores[b] ? a : b)
+//         : null;
+
+//     let eloChanges = null;
+
+//     try {
+//         console.log(`[GAME END] Processing for: ${playerNames.join(' vs ')}`);
+
+//         // 2. Fetch Users (Using lean for performance)
+//         const user1Doc = await User.findOne({ username: playerNames[0] }).lean();
+//         const user2Doc = await User.findOne({ username: playerNames[1] }).lean();
+
+//         // 3. Prepare Data (With Defaults to prevent crashes)
+//         const p1Data = {
+//             username: playerNames[0],
+//             rating: user1Doc?.rating || 1000,
+//             score: Number(room.scores[playerNames[0]]) || 0,
+//             isCheater: room.cheaters.has(playerNames[0])
+//         };
+
+//         const p2Data = {
+//             username: playerNames[1] || "Opponent",
+//             rating: user2Doc?.rating || 1000,
+//             score: Number(room.scores[playerNames[1]]) || 0,
+//             isCheater: room.cheaters.has(playerNames[1])
+//         };
+
+//         // 4. Calculate Outcome
+//         const outcome = calculateMatchOutcome(p1Data, p2Data);
+
+//         // 🛡️ SANITIZATION: Ensure we never send NaN or undefined to DB
+//         const p1NewRating = Number(outcome.p1.newRating) || 1000;
+//         const p1SeasonPoints = Number(outcome.p1.seasonScore) || 0;
+//         const p2NewRating = Number(outcome.p2.newRating) || 1000;
+//         const p2SeasonPoints = Number(outcome.p2.seasonScore) || 0;
+
+//         let updatedUser1 = null;
+//         let updatedUser2 = null;
+
+//         // 5. ATOMIC DB UPDATES (Using findOneAndUpdate to handle missing stats)
+//         if (user1Doc) {
+//             updatedUser1 = await User.findOneAndUpdate(
+//                 { username: p1Data.username },
+//                 { 
+//                     $set: { rating: p1NewRating },
+//                     $inc: { 
+//                         seasonScore: p1SeasonPoints,
+//                         "stats.matchesPlayed": 1,
+//                         "stats.wins": outcome.p1.status.includes("Winner") ? 1 : 0,
+//                         "stats.losses": outcome.p1.status === "Loser" ? 1 : 0
+//                     }
+//                 },
+//                 { new: true }
+//             );
+//             console.log(`[DB] Updated P1: ${p1Data.username}`);
+//         }
+
+//         if (user2Doc) {
+//             updatedUser2 = await User.findOneAndUpdate(
+//                 { username: p2Data.username },
+//                 { 
+//                     $set: { rating: p2NewRating },
+//                     $inc: { 
+//                         seasonScore: p2SeasonPoints,
+//                         "stats.matchesPlayed": 1,
+//                         "stats.wins": outcome.p2.status.includes("Winner") ? 1 : 0,
+//                         "stats.losses": outcome.p2.status === "Loser" ? 1 : 0
+//                     }
+//                 },
+//                 { new: true }
+//             );
+//             console.log(`[DB] Updated P2: ${p2Data.username}`);
+//         }
+
+//         // 6. Save Match History
+//         // Ensure winnerName is never null if there is a winner status
+//         const officialWinner = outcome.p1.status.includes("Winner") ? p1Data.username : 
+//                                (outcome.p2.status.includes("Winner") ? p2Data.username : "Draw");
+
+//         await Match.create({
+//             roomId,
+//             winner: officialWinner, 
+//             isDisqualified: room.cheaters.size > 0,
+//             disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
+//             players: [
+//                 { 
+//                     userId: user1Doc?._id || null, 
+//                     username: p1Data.username, 
+//                     avatar: user1Doc?.avatar || "", 
+//                     isWinner: outcome.p1.status.includes("Winner"), 
+//                     score: p1Data.score, 
+//                     oldElo: p1Data.rating, 
+//                     newElo: p1NewRating, 
+//                     statusText: p1Data.isCheater ? "Disqualified" : "" 
+//                 },
+//                 { 
+//                     userId: user2Doc?._id || null, 
+//                     username: p2Data.username, 
+//                     avatar: user2Doc?.avatar || "", 
+//                     isWinner: outcome.p2.status.includes("Winner"), 
+//                     score: p2Data.score, 
+//                     oldElo: p2Data.rating, 
+//                     newElo: p2NewRating, 
+//                     statusText: p2Data.isCheater ? "Disqualified" : "" 
+//                 }
+//             ]
+//         });
+//         console.log(`[DB] Match History Created.`);
+
+//         // 7. Prepare Data for Frontend
+//         eloChanges = {
+//             p1: { username: p1Data.username, newRating: p1NewRating, points: outcome.p1.pointsGained },
+//             p2: { username: p2Data.username, newRating: p2NewRating, points: outcome.p2.pointsGained }
+//         };
+//         winnerName = officialWinner;
+
+//     } catch (err) {
+//         console.error("❌ CRITICAL DB ERROR in handleGameEnd:", err);
+//         // Important: Even if DB fails, we don't crash the socket server
+//     }
+
+//     // 8. EMIT GAME OVER TO CLIENTS
+//     io.to(roomId).emit('game_over', { 
+//         scores: room.scores, 
+//         winner: winnerName,
+//         isDisqualified: room.cheaters.size > 0,
+//         disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
+//         eloChanges: eloChanges
+//     });
+
+//     setTimeout(() => rooms.delete(roomId), 60000);
+// };
+
 const handleGameEnd = async (roomId, room) => {
-    // 1. Prevent Double Execution (Race Condition Fix)
+    // 1. Prevent Double Execution
     if (!room.isGameActive) return;
     room.isGameActive = false;
 
-    // Clear Timer immediately
     if (roomTimers.has(roomId)) {
         clearInterval(roomTimers.get(roomId));
         roomTimers.delete(roomId);
@@ -2073,11 +2220,12 @@ const handleGameEnd = async (roomId, room) => {
     try {
         console.log(`[GAME END] Processing for: ${playerNames.join(' vs ')}`);
 
-        // 2. Fetch Users (Using lean for performance)
-        const user1Doc = await User.findOne({ username: playerNames[0] }).lean();
-        const user2Doc = await User.findOne({ username: playerNames[1] }).lean();
+        // 2. Fetch Users (Case Insensitive to prevent "User Not Found" errors)
+        // We use regex to match username regardless of capitalization
+        const user1Doc = await User.findOne({ username: { $regex: new RegExp(`^${playerNames[0]}$`, "i") } });
+        const user2Doc = await User.findOne({ username: { $regex: new RegExp(`^${playerNames[1]}$`, "i") } });
 
-        // 3. Prepare Data (With Defaults to prevent crashes)
+        // 3. Prepare Data 
         const p1Data = {
             username: playerNames[0],
             rating: user1Doc?.rating || 1000,
@@ -2095,18 +2243,15 @@ const handleGameEnd = async (roomId, room) => {
         // 4. Calculate Outcome
         const outcome = calculateMatchOutcome(p1Data, p2Data);
 
-        // 🛡️ SANITIZATION: Ensure we never send NaN or undefined to DB
         const p1NewRating = Number(outcome.p1.newRating) || 1000;
         const p1SeasonPoints = Number(outcome.p1.seasonScore) || 0;
         const p2NewRating = Number(outcome.p2.newRating) || 1000;
         const p2SeasonPoints = Number(outcome.p2.seasonScore) || 0;
 
-        let updatedUser1 = null;
-        let updatedUser2 = null;
-
-        // 5. ATOMIC DB UPDATES (Using findOneAndUpdate to handle missing stats)
-        if (user1Doc) {
-            updatedUser1 = await User.findOneAndUpdate(
+        // 5. ATOMIC DB UPDATES
+        // We update based on the username string, even if userDoc was null (self-healing)
+        if (playerNames[0]) {
+             await User.findOneAndUpdate(
                 { username: p1Data.username },
                 { 
                     $set: { rating: p1NewRating },
@@ -2117,13 +2262,13 @@ const handleGameEnd = async (roomId, room) => {
                         "stats.losses": outcome.p1.status === "Loser" ? 1 : 0
                     }
                 },
-                { new: true }
+                { new: true } // Return updated doc
             );
-            console.log(`[DB] Updated P1: ${p1Data.username}`);
+            console.log(`[DB] Updated P1: ${p1Data.username} | Matches: +1`);
         }
 
-        if (user2Doc) {
-            updatedUser2 = await User.findOneAndUpdate(
+        if (playerNames[1]) {
+             await User.findOneAndUpdate(
                 { username: p2Data.username },
                 { 
                     $set: { rating: p2NewRating },
@@ -2136,11 +2281,10 @@ const handleGameEnd = async (roomId, room) => {
                 },
                 { new: true }
             );
-            console.log(`[DB] Updated P2: ${p2Data.username}`);
+            console.log(`[DB] Updated P2: ${p2Data.username} | Matches: +1`);
         }
 
         // 6. Save Match History
-        // Ensure winnerName is never null if there is a winner status
         const officialWinner = outcome.p1.status.includes("Winner") ? p1Data.username : 
                                (outcome.p2.status.includes("Winner") ? p2Data.username : "Draw");
 
@@ -2151,7 +2295,7 @@ const handleGameEnd = async (roomId, room) => {
             disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
             players: [
                 { 
-                    userId: user1Doc?._id || null, 
+                    userId: user1Doc?._id || null, // Might be null if guest, that's ok
                     username: p1Data.username, 
                     avatar: user1Doc?.avatar || "", 
                     isWinner: outcome.p1.status.includes("Winner"), 
@@ -2174,7 +2318,6 @@ const handleGameEnd = async (roomId, room) => {
         });
         console.log(`[DB] Match History Created.`);
 
-        // 7. Prepare Data for Frontend
         eloChanges = {
             p1: { username: p1Data.username, newRating: p1NewRating, points: outcome.p1.pointsGained },
             p2: { username: p2Data.username, newRating: p2NewRating, points: outcome.p2.pointsGained }
@@ -2183,15 +2326,11 @@ const handleGameEnd = async (roomId, room) => {
 
     } catch (err) {
         console.error("❌ CRITICAL DB ERROR in handleGameEnd:", err);
-        // Important: Even if DB fails, we don't crash the socket server
     }
 
-    // 8. EMIT GAME OVER TO CLIENTS
     io.to(roomId).emit('game_over', { 
         scores: room.scores, 
         winner: winnerName,
-        isDisqualified: room.cheaters.size > 0,
-        disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
         eloChanges: eloChanges
     });
 
@@ -2267,18 +2406,43 @@ io.on('connection', async (socket) => {
     } catch (err) { console.error('Join Error:', err); }
   });
 
+  // socket.on('level_completed', async ({ roomId, username }) => {
+  //     try {
+  //         const room = rooms.get(roomId);
+  //         if (!room || !room.isGameActive) return;
+  //         if(room.roundCompletions.has(username)) return;
+
+  //         room.scores[username] = (room.scores[username] || 0) + 10;
+  //         room.roundCompletions.add(username);
+  //         io.to(roomId).emit('score_update', room.scores);
+
+  //         // RACE MODE: First to finish ends the round
+  //         if (room.roundCompletions.size > 0) { 
+  //             if (room.round < room.totalRounds) {
+  //                 room.round++;
+  //                 room.roundCompletions.clear(); 
+  //                 io.to(roomId).emit('new_round', {
+  //                     round: room.round, problem: room.problems[room.round - 1], scores: room.scores,
+  //                 });
+  //             } else {
+  //                 await handleGameEnd(roomId, room);
+  //             }
+  //         }
+  //     } catch (err) { console.error("Level Complete Error:", err); }
+  // });
   socket.on('level_completed', async ({ roomId, username }) => {
       try {
           const room = rooms.get(roomId);
           if (!room || !room.isGameActive) return;
-          if(room.roundCompletions.has(username)) return;
+          if (room.roundCompletions.has(username)) return;
 
           room.scores[username] = (room.scores[username] || 0) + 10;
           room.roundCompletions.add(username);
           io.to(roomId).emit('score_update', room.scores);
 
-          // RACE MODE: First to finish ends the round
-          if (room.roundCompletions.size > 0) { 
+          // RACE MODE: Only the FIRST completion triggers the round change
+          // This prevents P1 triggering it, and then P2 triggering it again immediately
+          if (room.roundCompletions.size === 1) { 
               if (room.round < room.totalRounds) {
                   room.round++;
                   room.roundCompletions.clear(); 
