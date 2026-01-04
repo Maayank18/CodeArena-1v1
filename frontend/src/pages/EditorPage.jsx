@@ -1431,12 +1431,40 @@ const EditorPage = () => {
             }
         };
 
+        // const handlePaste = (e) => {
+        //     e.preventDefault();
+        //     toast.error("Unfair Practice: Paste is disabled!", {
+        //         icon: '🚫',
+        //         style: { borderRadius: '10px', background: '#333', color: '#fff' }
+        //     });
+        // };
+
+        // REPLACE your current handlePaste with this:
+
         const handlePaste = (e) => {
-            e.preventDefault();
-            toast.error("Unfair Practice: Paste is disabled!", {
-                icon: '🚫',
-                style: { borderRadius: '10px', background: '#333', color: '#fff' }
-            });
+            // 1. Get the text being pasted
+            const pastedData = e.clipboardData.getData('text');
+
+            // 2. Define a threshold (e.g., 50 characters)
+            // A variable name is usually < 30 chars. A full solution is usually > 50.
+            if (pastedData.length > 50) {
+                e.preventDefault();
+                
+                // Notify Server
+                if (socketRef.current && !gameOverData) {
+                    socketRef.current.emit('cheating_detected', { 
+                        roomId, 
+                        username: location.state?.username, 
+                        reason: "Massive Code Paste Detected" 
+                    });
+                }
+
+                toast.error("Anti-Cheat Warning: Large code pasting is not allowed!", {
+                    icon: '🚫',
+                    style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                });
+            }
+            // If length is <= 50, we do nothing, allowing the paste to happen naturally.
         };
 
         document.addEventListener("visibilitychange", handleVisibilityChange);
