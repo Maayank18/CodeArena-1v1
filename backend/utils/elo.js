@@ -37,8 +37,8 @@
 
 
 const K_FACTOR = 32;          // How fast ratings change
-const CHEATER_PENALTY = 60;   // Immediate Elo drop for cheaters
-const EFFORT_MULTIPLIER = 0.8; // Elo points awarded per 10 in-game points
+const CHEATER_PENALTY = 50;   // Immediate Elo drop for cheaters
+const EFFORT_MULTIPLIER = 5; // Elo points awarded per 10 in-game points
 
 /**
  * @param {Object} p1 - { username, rating, score, isCheater }
@@ -103,18 +103,50 @@ export const calculateMatchOutcome = (p1, p2) => {
     const finalP1Delta = p1Delta + p1EffortBonus;
     const finalP2Delta = p2Delta + p2EffortBonus;
 
+        // ✅ INSERT THIS HELPER FUNCTION
+        // updated part 
+    const getBasePoints = (result) => {
+        if (result === 1) return 25;   // Win
+        if (result === 0.5) return 15; // Draw (Better than loss!)
+        return 5;                      // Loss
+    };
+
     // ✅ FIX: Added 'status' property to the return objects
+    // return {
+    //     p1: { 
+    //         newRating: Math.max(0, p1Rating + finalP1Delta), 
+    //         pointsGained: finalP1Delta, 
+    //         seasonScore: (p1Actual === 1 ? 25 : 5) + p1.score,
+    //         status: p1Status 
+    //     },
+    //     p2: { 
+    //         newRating: Math.max(0, p2Rating + finalP2Delta), 
+    //         pointsGained: finalP2Delta, 
+    //         seasonScore: (p1Actual === 0 ? 25 : 5) + p2.score,
+    //         status: p2Status
+    //     }
+    // };
+    // ✅ UPDATE THE RETURN OBJECT
+    // updated part
     return {
         p1: { 
             newRating: Math.max(0, p1Rating + finalP1Delta), 
             pointsGained: finalP1Delta, 
-            seasonScore: (p1Actual === 1 ? 25 : 5) + p1.score,
+            
+            // 🔴 OLD LINE: seasonScore: (p1Actual === 1 ? 25 : 5) + p1.score,
+            // 🟢 NEW LINE:
+            seasonScore: getBasePoints(p1Actual) + p1.score,
+            
             status: p1Status 
         },
         p2: { 
             newRating: Math.max(0, p2Rating + finalP2Delta), 
             pointsGained: finalP2Delta, 
-            seasonScore: (p1Actual === 0 ? 25 : 5) + p2.score,
+            
+            // 🔴 OLD LINE: seasonScore: (p1Actual === 0 ? 25 : 5) + p2.score,
+            // 🟢 NEW LINE:
+            seasonScore: getBasePoints(1 - p1Actual) + p2.score,
+            
             status: p2Status
         }
     };
