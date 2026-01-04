@@ -1990,8 +1990,9 @@ io.on('connection', async (socket) => {
           room.roundCompletions.add(username); // Mark user as finished
           io.to(roomId).emit('score_update', room.scores);
 
-          // 2. CHECK: Have ALL players finished?
-          if (room.roundCompletions.size === room.players.length) {
+          // // 2. CHECK: Have ALL players finished?
+          // if (room.roundCompletions.size === room.players.length) {
+             if (room.roundCompletions.size > 0) {
               
               if (room.round < room.totalRounds) {
                   // --- NEXT ROUND ---
