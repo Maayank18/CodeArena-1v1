@@ -163,7 +163,7 @@ const handleGameEnd = async (roomId, room) => {
 
         // 5. Save Match History
         const officialWinner = outcome.p1.status.includes("Winner") ? p1Data.username : 
-                               (outcome.p2.status.includes("Winner") ? p2Data.username : "Draw");
+                               (outcome.p2.status.includes("Winner") ? p2Data.username : "Tie");
 
         await Match.create({
             roomId,
