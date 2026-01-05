@@ -47,14 +47,6 @@ const normalize = (str) => {
         .replace(/\r/g, "\n");
 };
 
-import mongoose from 'mongoose';
-import Problem from '../models/Problem.js';
-import { executeCode } from '../utils/pistonClient.js';
-
-const normalize = (str) => {
-    return (str || "").toString().trim().replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-};
-
 export const submitCode = async (req, res) => {
     const { language, code, problemId } = req.body;
 
