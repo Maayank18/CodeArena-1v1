@@ -66,20 +66,20 @@ const generateTwoSum = () => {
     cases.push({ input: "4\n0 4 3 0\n0", output: "0 3", isPublic: false }); // Zero handling
 
     // Random Hidden (20 cases)
-    for (let i = 0; i < 20; i++) {
-        const n = randInt(10, 50); 
-        const nums = Array.from({length: n}, () => randInt(-1000, 1000));
+    // for (let i = 0; i < 20; i++) {
+    //     const n = randInt(10, 50); 
+    //     const nums = Array.from({length: n}, () => randInt(-1000, 1000));
         
-        // Guarantee a valid pair exists
-        const idx1 = randInt(0, n - 2);
-        const idx2 = randInt(idx1 + 1, n - 1);
-        const target = nums[idx1] + nums[idx2];
+    //     // Guarantee a valid pair exists
+    //     const idx1 = randInt(0, n - 2);
+    //     const idx2 = randInt(idx1 + 1, n - 1);
+    //     const target = nums[idx1] + nums[idx2];
         
-        const input = `${n}\n${nums.join(' ')}\n${target}`;
-        const output = solvers["two-sum"](input); 
+    //     const input = `${n}\n${nums.join(' ')}\n${target}`;
+    //     const output = solvers["two-sum"](input); 
         
-        if(output) cases.push({ input, output, isPublic: false });
-    }
+    //     if(output) cases.push({ input, output, isPublic: false });
+    // }
     return cases;
 };
 
@@ -96,20 +96,20 @@ const generatePalindrome = () => {
     cases.push({ input: "10", output: "false", isPublic: false });
 
     // Random Hidden (20 cases)
-    for (let i = 0; i < 20; i++) {
-        const isPal = Math.random() > 0.5;
-        let num;
-        if (isPal) {
-            // Force palindrome creation
-            const half = randInt(100, 999).toString();
-            num = half + half.split('').reverse().join('');
-        } else {
-            // Random number (likely not palindrome)
-            num = randInt(10000, 999999).toString();
-        }
-        const output = solvers["palindrome-number"](num);
-        cases.push({ input: num, output, isPublic: false });
-    }
+    // for (let i = 0; i < 20; i++) {
+    //     const isPal = Math.random() > 0.5;
+    //     let num;
+    //     if (isPal) {
+    //         // Force palindrome creation
+    //         const half = randInt(100, 999).toString();
+    //         num = half + half.split('').reverse().join('');
+    //     } else {
+    //         // Random number (likely not palindrome)
+    //         num = randInt(10000, 999999).toString();
+    //     }
+    //     const output = solvers["palindrome-number"](num);
+    //     cases.push({ input: num, output, isPublic: false });
+    // }
     return cases;
 };
 
@@ -127,12 +127,12 @@ const generateFibonacci = () => {
     cases.push({ input: "30", output: "832040", isPublic: false }); // Large case
 
     // Random Hidden (20 cases)
-    for (let i = 0; i < 20; i++) {
-        // N between 2 and 40 (Safe for standard int)
-        const n = randInt(2, 40).toString();
-        const output = solvers["fibonacci-number"](n);
-        cases.push({ input: n, output, isPublic: false });
-    }
+    // for (let i = 0; i < 20; i++) {
+    //     // N between 2 and 40 (Safe for standard int)
+    //     const n = randInt(2, 40).toString();
+    //     const output = solvers["fibonacci-number"](n);
+    //     cases.push({ input: n, output, isPublic: false });
+    // }
     return cases;
 };
 
