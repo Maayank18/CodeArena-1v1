@@ -163,7 +163,7 @@ const handleGameEnd = async (roomId, room) => {
 
         // 5. Save Match History
         const officialWinner = outcome.p1.status.includes("Winner") ? p1Data.username : 
-                               (outcome.p2.status.includes("Winner") ? p2Data.username : "Tie");
+                               (outcome.p2.status.includes("Winner") ? p2Data.username : "Draw");
 
         await Match.create({
             roomId,
@@ -179,7 +179,7 @@ const handleGameEnd = async (roomId, room) => {
                     score: p1Data.score, 
                     oldElo: p1Data.rating, 
                     newElo: p1NewRating, 
-                    statusText: p1Data.isCheater ? "Disqualified" : "" 
+                    statusText: outcome.p1.status
                 },
                 { 
                     userId: user2Doc?._id || null, 
@@ -189,7 +189,7 @@ const handleGameEnd = async (roomId, room) => {
                     score: p2Data.score, 
                     oldElo: p2Data.rating, 
                     newElo: p2NewRating, 
-                    statusText: p2Data.isCheater ? "Disqualified" : "" 
+                    statusText: outcome.p2.status
                 }
             ]
         });

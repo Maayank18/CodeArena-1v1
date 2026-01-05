@@ -79,8 +79,8 @@ export const calculateMatchOutcome = (p1, p2) => {
 
     // 4. Scenario: FAIR PLAY (Dynamic Scoring)
     let p1Actual = 0.5; // Draw
-    let p1Status = "Tie";
-    let p2Status = "Tie";
+    let p1Status = "Draw";
+    let p2Status = "Draw";
 
     if (p1.score > p2.score) {
         p1Actual = 1;
