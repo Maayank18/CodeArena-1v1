@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import cron from 'node-cron'; // testing change 
+import axios from 'axios'; // testing change 
 
 import roomRoutes from './routes/roomRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
@@ -49,6 +51,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/matches', matchRoutes);
+
+cron.schedule('*/14 * * * *', async () => {
+    try {
+        // Replace with your actual Render backend URL
+        const response = await axios.get('https://your-backend-app.onrender.com/');
+        console.log(`Self-ping successful: ${response.status}`);
+    } catch (error) {
+        console.error('Self-ping failed:', error.message);
+    }
+});
 
 app.get('/', (req, res) => res.send('OK'));
 
