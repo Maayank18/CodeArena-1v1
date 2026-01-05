@@ -26,44 +26,6 @@ const Dashboard = () => {
   const rankInfo = getLevelInfo(user?.rating || 1000);
 
   useEffect(() => {
-      // const syncUserAndData = async () => {
-      //     const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
-          
-      //     if (!storedUser) {
-      //         navigate('/login');
-      //         return;
-      //     }
-
-      //     // 1. Set Local Data First (So you see the old stats for a split second)
-      //     // setUser(storedUser);
-
-      //     try {
-      //         // ✅ FIX: Added a small delay to ensure DB persistence completes
-      //         // especially after a 'Delayed Justice' disqualification end.
-      //         await new Promise(resolve => setTimeout(resolve, 1000));
-
-      //         // const response = await api.get(`/users/profile/${storedUser.username}`);
-      //         const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
-      //         const updatedUser = response.data;
-
-      //         // 🔍 DEBUGGING LOGS (Check your Console!)
-      //         console.log("🔥 SERVER RESPONSE:", response.data);
-      //         console.log("🔥 SERVER STATS:", response.data.stats);
-              
-      //         // ✅ FIX: Deep merge to ensure nested 'stats' are preserved correctly
-      //         const finalUser = { 
-      //           ...storedUser, 
-      //           ...updatedUser,
-      //           stats: { ...storedUser.stats, ...updatedUser.stats }
-      //         };
-              
-      //         localStorage.setItem('codearena_user', JSON.stringify(finalUser));
-      //         setUser(finalUser);
-      //     } catch (err) {
-      //         console.error("Profile sync failed, using cached data", err);
-      //         setUser(storedUser);
-      //     }
-      // };
       const syncUserAndData = async () => {
       const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
       if (!storedUser) { navigate('/login'); return; }
