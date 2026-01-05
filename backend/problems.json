@@ -2,1970 +2,424 @@
   {
     "title": "Two Sum",
     "slug": "two-sum",
-    "description": "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\n**Input Format:**\n- First line: Integer `n` (size of array)\n- Second line: `n` space-separated integers (`nums`)\n- Third line: Integer `target`\n\n**Output Format:**\n- Two space-separated integers representing the indices (0-indexed), sorted ascending.",
+    "description": "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\n**Input Format:**\n- Line 1: Size `n`\n- Line 2: Array integers\n- Line 3: Target integer\n\n**Output Format:**\n- Two indices separated by space (e.g. `0 1`)",
     "difficulty": "Easy",
-    "constraints": ["2 <= n <= 10^4", "-10^9 <= nums[i] <= 10^9"],
+    "constraints": [
+      "2 <= n <= 10^4",
+      "-10^9 <= nums[i] <= 10^9"
+    ],
+    "timeLimit": 5000,
+    "memoryLimit": 512,
     "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].trim().split(' ').map(Number);\n    const target = parseInt(input[2]);\n    // logic\n}\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    nums = [int(x) for x in data[1:n+1]]\n    target = int(data[n+1])\n    # logic\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n); for(int i=0; i<n; i++) cin >> nums[i];\n    int target; cin >> target;\n    // logic\n    return 0;\n}",
-      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        int target = sc.nextInt();\n        // logic\n    }\n}"
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].trim().split(' ').map(Number);\n    const target = parseInt(input[2]);\n    // Write your code here\n}\nsolve();",
+      "python": "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    nums = [int(x) for x in data[1:n+1]]\n    target = int(data[n+1])\n    # Write your code here\nif __name__ == '__main__': solve()",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n); for(int i=0; i<n; i++) cin >> nums[i];\n    int target; cin >> target;\n    // Write your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        int target = sc.nextInt();\n        // Write your code here\n    }\n}"
     },
     "testCases": [
-      { "input": "4\n2 7 11 15\n9", "output": "0 1", "isPublic": true },
-      { "input": "3\n3 2 4\n6", "output": "1 2", "isPublic": true },
-      { "input": "2\n3 3\n6", "output": "0 1", "isPublic": false }
+      {
+        "input": "4\n2 7 11 15\n9",
+        "output": "0 1",
+        "isPublic": true
+      },
+      {
+        "input": "3\n3 2 4\n6",
+        "output": "1 2",
+        "isPublic": true
+      },
+      {
+        "input": "2\n3 3\n6",
+        "output": "0 1",
+        "isPublic": false
+      },
+      {
+        "input": "4\n0 4 3 0\n0",
+        "output": "0 3",
+        "isPublic": false
+      },
+      {
+        "input": "50\n-679 528 -125 254 484 307 791 849 343 995 -729 124 941 409 -831 -192 458 600 112 736 -926 -907 585 -650 -66 596 132 -926 744 -714 570 649 -672 410 -531 -600 225 356 -472 -597 -231 31 831 -975 -585 -393 610 475 -281 -799\n231",
+        "output": "2 37",
+        "isPublic": false
+      },
+      {
+        "input": "42\n-683 -796 926 -673 -375 -576 719 -296 895 542 -440 -939 625 681 546 -294 -693 991 969 -555 98 -230 130 -598 20 256 -240 573 143 569 -449 881 732 -760 686 -696 725 -188 974 -969 330 -876\n-653",
+        "output": "3 24",
+        "isPublic": false
+      },
+      {
+        "input": "27\n-189 728 -320 -425 14 -433 -440 964 -389 189 -654 492 -698 216 561 726 -804 -707 210 743 -416 397 285 635 -426 680 -220\n-1124",
+        "output": "2 16",
+        "isPublic": false
+      },
+      {
+        "input": "10\n764 -785 -537 -532 -15 88 691 391 257 185\n876",
+        "output": "6 9",
+        "isPublic": false
+      },
+      {
+        "input": "13\n625 -624 479 951 771 -144 -419 520 -360 182 947 973 63\n-237",
+        "output": "6 9",
+        "isPublic": false
+      },
+      {
+        "input": "31\n986 -986 173 306 338 -353 442 -694 -890 -362 -539 -411 -416 -776 701 -234 791 650 284 626 308 574 -891 49 787 -422 883 136 108 162 -519\n-304",
+        "output": "5 23",
+        "isPublic": false
+      },
+      {
+        "input": "49\n295 519 -573 -485 202 -407 -170 -498 840 -779 470 -743 -512 -850 733 -848 500 -746 -146 182 595 857 568 853 592 -536 406 536 345 -673 176 34 -898 611 563 -796 -878 416 795 -751 282 143 584 194 572 530 -207 -88 -403\n-814",
+        "output": "15 31",
+        "isPublic": false
+      },
+      {
+        "input": "49\n-138 -737 981 -619 -657 -188 -141 60 747 977 161 -870 -571 -684 382 -713 -421 557 524 -882 -118 -633 750 -365 769 -464 -450 -222 557 991 -88 -657 607 -610 -200 -251 -653 -210 -350 -5 -940 -195 507 816 -773 -477 743 592 -483\n329",
+        "output": "16 22",
+        "isPublic": false
+      },
+      {
+        "input": "29\n-232 -774 -263 -99 -18 678 -393 -920 694 -663 -66 -759 -860 359 733 -411 435 302 -66 -527 -517 671 -713 948 -919 609 -445 672 541\n-759",
+        "output": "0 19",
+        "isPublic": false
+      },
+      {
+        "input": "49\n-836 -958 27 707 -931 -989 536 822 -508 -37 256 -962 -582 97 236 544 -550 -286 -233 -112 -932 -864 -655 -641 653 534 449 -411 172 967 -580 41 243 750 -575 62 -362 445 -991 736 252 -420 -611 984 117 -80 72 106 -334\n-415",
+        "output": "21 26",
+        "isPublic": false
+      },
+      {
+        "input": "41\n-562 200 -286 993 -62 537 61 -423 743 319 -473 -161 -826 445 301 922 495 697 512 833 48 533 -893 -26 869 208 -596 -352 119 -989 -37 396 858 154 -749 713 139 -37 -913 807 -934\n-1827",
+        "output": "22 40",
+        "isPublic": false
+      },
+      {
+        "input": "24\n622 427 -919 304 86 -602 6 521 -880 -786 94 -786 -55 17 -321 338 653 -167 -64 -332 579 511 -616 513\n-780",
+        "output": "6 9",
+        "isPublic": false
+      },
+      {
+        "input": "29\n-781 -342 548 -800 -956 -752 934 -443 766 642 -579 -645 189 451 -913 81 -521 -248 -370 -949 -132 -583 359 917 79 -213 -877 801 404\n-1126",
+        "output": "14 25",
+        "isPublic": false
+      },
+      {
+        "input": "41\n410 179 -589 -740 593 383 -336 -325 -142 505 -266 767 -263 369 523 283 667 357 -120 -327 -689 -725 264 -754 -81 -92 -954 -345 -8 191 322 -484 652 300 364 -541 214 331 844 -55 -779\n721",
+        "output": "17 34",
+        "isPublic": false
+      },
+      {
+        "input": "38\n-184 554 -302 836 546 82 -790 751 -59 -420 492 794 660 -618 -269 194 720 -242 320 -741 46 -618 -189 590 688 975 72 -169 -869 -400 985 -810 866 752 694 -832 411 -312\n-708",
+        "output": "5 6",
+        "isPublic": false
+      },
+      {
+        "input": "36\n526 902 -18 623 928 60 695 776 -502 -333 887 62 -353 253 407 -236 -952 -92 250 -306 -445 -636 -302 -458 257 -705 954 55 212 -1 412 55 63 -847 921 228\n-278",
+        "output": "9 27",
+        "isPublic": false
+      },
+      {
+        "input": "47\n-217 -560 606 640 -199 -911 275 732 -562 -497 529 -649 -908 -931 708 -744 -934 -623 -920 -887 75 -877 680 916 536 242 53 863 -546 -49 23 529 422 892 918 -691 577 890 593 96 372 536 -250 757 -421 -591 -78\n-325",
+        "output": "2 13",
+        "isPublic": false
+      },
+      {
+        "input": "27\n906 527 638 -644 -727 803 240 186 -22 268 523 155 298 -999 621 184 -578 723 -660 496 -553 341 -698 431 213 69 -917\n-848",
+        "output": "25 26",
+        "isPublic": false
+      },
+      {
+        "input": "39\n-806 -70 -569 755 -178 -861 556 -969 157 265 692 827 440 281 539 -955 854 -953 -89 -237 892 306 221 -313 618 765 -213 601 -411 730 -264 444 -922 924 304 88 553 -670 -995\n-96",
+        "output": "5 25",
+        "isPublic": false
+      },
+      {
+        "input": "21\n-38 -654 -639 546 -313 -713 -650 -45 -630 -749 7 788 863 -604 -367 -88 575 -372 472 255 249\n-133",
+        "output": "7 15",
+        "isPublic": false
+      }
     ]
   },
   {
     "title": "Palindrome Number",
     "slug": "palindrome-number",
-    "description": "Return `true` if `x` is a palindrome integer, and `false` otherwise.\n\n**Input Format:**\n- Single integer `x` ",
+    "description": "Given an integer `x`, return `true` if `x` is a palindrome, and `false` otherwise.\n\n**Input:**\n- An integer `x`\n\n**Output:**\n- `true` or `false`",
     "difficulty": "Easy",
-    "constraints": ["-2^31 <= x <= 2^31 - 1"],
+    "constraints": [
+      "-2^31 <= x <= 2^31 - 1"
+    ],
+    "timeLimit": 5000,
+    "memoryLimit": 512,
     "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() { const x = parseInt(input); }\nsolve();",
-      "python": "import sys\ndef solve():\n    input_data = sys.stdin.read().strip()\n    if not input_data: return\n    x = int(input_data)\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { long long x; cin >> x; return 0; }",
-      "java": "import java.util.*;\npublic class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); if(sc.hasNextLong()) { long x = sc.nextLong(); } } }"
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() {\n    const x = parseInt(input);\n    // Write your code here\n}\nsolve();",
+      "python": "import sys\ndef solve():\n    x = sys.stdin.read().strip()\n    # Write your code here\nif __name__ == '__main__': solve()",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    long long x; cin >> x;\n    // Write your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNext()) {\n            String x = sc.next();\n            // Write your code here\n        }\n    }\n}"
     },
     "testCases": [
-      { "input": "121", "output": "true", "isPublic": true },
-      { "input": "-121", "output": "false", "isPublic": true },
-      { "input": "0", "output": "true", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Valid Parentheses",
-    "slug": "valid-parentheses",
-    "description": "Determine if a string consisting of '(', ')', '{', '}', '[' and ']' is valid.\n\n**Input Format:**\n- Single string `s`",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); if(sc.hasNext()) { String s = sc.next(); } } }"
-    },
-    "testCases": [
-      { "input": "()", "output": "true", "isPublic": true },
-      { "input": "([)]", "output": "false", "isPublic": false },
-      { "input": "{[]}", "output": "true", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Maximum Subarray",
-    "slug": "maximum-subarray",
-    "description": "Find the contiguous subarray with the largest sum and return its sum.\n\n**Input Format:**\n- First line: Integer `n` \n- Second line: `n` integers",
-    "difficulty": "Medium",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "9\n-2 1 -3 4 -1 2 1 -5 4", "output": "6", "isPublic": true },
-      { "input": "5\n5 4 -1 7 8", "output": "23", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Fizz Buzz",
-    "slug": "fizz-buzz",
-    "description": "Return strings from 1 to `n`. Divisible by 3: 'Fizz', by 5: 'Buzz', by both: 'FizzBuzz'.\n\n**Input Format:**\n- Single integer `n`",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0).toString().trim());",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); int n = sc.nextInt(); } }"
-    },
-    "testCases": [
-      { "input": "3", "output": "1 2 Fizz", "isPublic": true },
-      { "input": "15", "output": "1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Reverse String",
-    "slug": "reverse-string",
-    "description": "Return the reverse of the input string.\n\n**Input Format:**\n- Single string `s`",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "hello", "output": "olleh", "isPublic": true },
-      { "input": "Hannah", "output": "hannaH", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Climbing Stairs",
-    "slug": "climbing-stairs",
-    "description": "Find distinct ways to climb `n` stairs if you climb 1 or 2 steps at a time.\n\n**Input Format:**\n- Single integer `n`",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2", "output": "2", "isPublic": true },
-      { "input": "45", "output": "1836311903", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Single Number",
-    "slug": "single-number",
-    "description": "Find the element that appears only once in an array where every other element appears twice.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n2 2 1", "output": "1", "isPublic": true },
-      { "input": "5\n4 1 2 1 2", "output": "4", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Missing Number",
-    "slug": "missing-number",
-    "description": "Return the only number missing from the range `[0, n]` present in the array.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n3 0 1", "output": "2", "isPublic": true },
-      { "input": "9\n9 6 4 2 3 5 7 0 1", "output": "8", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Contains Duplicate",
-    "slug": "contains-duplicate",
-    "description": "Return \"true\" if any value appears at least twice, and \"false\" if every element is distinct.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n1 2 3 1", "output": "true", "isPublic": true },
-      { "input": "4\n1 2 3 4", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Add Digits",
-    "slug": "add-digits",
-    "description": "Given an integer `num`, repeatedly add all its digits until the result has only one digit, and return it.\n\n**Input Format:**\n- Single integer `num` ",
-    "difficulty": "Easy",
-    "constraints": ["0 <= num <= 2^31 - 1"],
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() { const num = parseInt(input); }\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().strip()\n    if not data: return\n    num = int(data)\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int num; cin >> num; return 0; }",
-      "java": "import java.util.*;\npublic class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); if(sc.hasNextInt()) { int num = sc.nextInt(); } } }"
-    },
-    "testCases": [
-      { "input": "38", "output": "2", "isPublic": true },
-      { "input": "0", "output": "0", "isPublic": true },
-      { "input": "199", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Ugly Number",
-    "slug": "ugly-number",
-    "description": "An ugly number is a positive integer whose prime factors are limited to 2, 3, and 5. Return \"true\" if `n` is an ugly number, else \"false\".\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6", "output": "true", "isPublic": true },
-      { "input": "14", "output": "false", "isPublic": true },
-      { "input": "1", "output": "true", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Move Zeroes",
-    "slug": "move-zeroes",
-    "description": "Given an array `nums`, move all 0's to the end while maintaining the relative order of non-zero elements.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated integers\n\n**Output Format:**\n- Space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5\n0 1 0 3 12", "output": "1 3 12 0 0", "isPublic": true },
-      { "input": "1\n0", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Majority Element",
-    "slug": "majority-element",
-    "description": "The majority element is the element that appears more than ⌊n / 2⌋ times. Find it.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n3 2 3", "output": "3", "isPublic": true },
-      { "input": "7\n2 2 1 1 1 2 2", "output": "2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Best Time to Buy and Sell Stock",
-    "slug": "best-time-to-buy-sell-stock",
-    "description": "Find the maximum profit you can achieve by choosing a single day to buy one stock and choosing a different day in the future to sell it.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated prices",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n7 1 5 3 6 4", "output": "5", "isPublic": true },
-      { "input": "5\n7 6 4 3 1", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Valid Anagram",
-    "slug": "valid-anagram",
-    "description": "Return \"true\" if `t` is an anagram of `s`, and \"false\" otherwise.\n\n**Input Format:**\n- First line: `s` \n- Second line: `t` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s, t; cin >> s >> t; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "anagram\nnagaram", "output": "true", "isPublic": true },
-      { "input": "rat\ncar", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Power of Two",
-    "slug": "power-of-two",
-    "description": "Return \"true\" if `n` is a power of two, else \"false\".\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "1", "output": "true", "isPublic": true },
-      { "input": "16", "output": "true", "isPublic": true },
-      { "input": "3", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Search Insert Position",
-    "slug": "search-insert-position",
-    "description": "Return the index if the target is found. If not, return the index where it would be if it were inserted in order.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` sorted integers\n- Third line: `target` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n1 3 5 6\n5", "output": "2", "isPublic": true },
-      { "input": "4\n1 3 5 6\n2", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Merge Sorted Array",
-    "slug": "merge-sorted-array",
-    "description": "Merge two sorted arrays `nums1` and `nums2` into `nums1` as one sorted array.\n\n**Input Format:**\n- First line: `m` (elements in nums1)\n- Second line: `n` (elements in nums2)\n- Third line: `m` integers\n- Fourth line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int m, n; cin >> m >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n3\n1 2 3\n2 5 6", "output": "1 2 2 3 5 6", "isPublic": true },
-      { "input": "1\n0\n1\n", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Plus One",
-    "slug": "plus-one",
-    "description": "Increment the large integer represented as an array of digits by one and return the resulting array of digits.\n\n**Input Format:**\n- First line: `n` (number of digits)\n- Second line: `n` space-separated digits\n\n**Output Format:**\n- Space-separated digits",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n1 2 3", "output": "1 2 4", "isPublic": true },
-      { "input": "1\n9", "output": "1 0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Roman to Integer",
-    "slug": "roman-to-integer",
-    "description": "Convert a Roman numeral string to an integer.\n\n**Input Format:**\n- Single string `s` (e.g., \"LVIII\")",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "III", "output": "3", "isPublic": true },
-      { "input": "LVIII", "output": "58", "isPublic": true },
-      { "input": "MCMXCIV", "output": "1994", "isPublic": false }
-    ]
-  },
-  {
-    "title": "First Occurrence in String",
-    "slug": "first-occurrence-string",
-    "description": "Return the index of the first occurrence of `needle` in `haystack`, or -1 if it is not part of the string.\n\n**Input Format:**\n- First line: `haystack` \n- Second line: `needle` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string h, n; cin >> h >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "sadbutsad\nsad", "output": "0", "isPublic": true },
-      { "input": "leetcode\nleeto", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Remove Element",
-    "slug": "remove-element",
-    "description": "Remove all occurrences of `val` in `nums` in-place and return the new length.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers\n- Third line: `val` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n3 2 2 3\n3", "output": "2", "isPublic": true },
-      { "input": "8\n0 1 2 2 3 0 4 2\n2", "output": "5", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Longest Common Prefix",
-    "slug": "longest-common-prefix",
-    "description": "Find the longest common prefix string amongst an array of strings.\n\n**Input Format:**\n- First line: `n` \n- Next `n` lines: one string per line",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\nflower\nflow\nflight", "output": "fl", "isPublic": true },
-      { "input": "3\ndog\nracecar\ncar", "output": "", "isPublic": false }
-    ]
-  },
-  {
-    "title": "First Unique Character",
-    "slug": "first-unique-char",
-    "description": "Find the first non-repeating character in a string and return its index. If it does not exist, return -1.\n\n**Input Format:**\n- Single string `s` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "leetcode", "output": "0", "isPublic": true },
-      { "input": "loveleetcode", "output": "2", "isPublic": true },
-      { "input": "aabb", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Binary Search",
-    "slug": "binary-search",
-    "description": "Given a sorted array and a target, return the index of target if it exists, otherwise -1.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` sorted integers\n- Third line: `target` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n-1 0 3 5 9 12\n9", "output": "4", "isPublic": true },
-      { "input": "6\n-1 0 3 5 9 12\n2", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Sqrt(x)",
-    "slug": "sqrt-x",
-    "description": "Compute and return the square root of `x`, truncated to an integer.\n\n**Input Format:**\n- Single integer `x` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const x = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nx = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int x; cin >> x; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4", "output": "2", "isPublic": true },
-      { "input": "8", "output": "2", "isPublic": true },
-      { "input": "2147395600", "output": "46340", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Ransom Note",
-    "slug": "ransom-note",
-    "description": "Return \"true\" if `ransomNote` can be constructed from `magazine`, else \"false\".\n\n**Input Format:**\n- First line: `ransomNote` \n- Second line: `magazine` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string r, m; cin >> r >> m; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "a\nb", "output": "false", "isPublic": true },
-      { "input": "aa\naab", "output": "true", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Isomorphic Strings",
-    "slug": "isomorphic-strings",
-    "description": "Determine if two strings `s` and `t` are isomorphic.\n\n**Input Format:**\n- First line: `s` \n- Second line: `t` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s, t; cin >> s >> t; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "egg\nadd", "output": "true", "isPublic": true },
-      { "input": "foo\nbar", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Third Maximum Number",
-    "slug": "third-maximum-number",
-    "description": "Return the third maximum distinct number in an array. If it does not exist, return the maximum number.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n3 2 1", "output": "1", "isPublic": true },
-      { "input": "2\n1 2", "output": "2", "isPublic": true },
-      { "input": "4\n2 2 3 1", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Pascal's Triangle",
-    "slug": "pascals-triangle",
-    "description": "Given an integer `numRows`, return the first `numRows` of Pascal's triangle.\n\n**Input Format:**\n- Single integer `numRows` (e.g., 5)\n\n**Output Format:**\n- Each row on a new line, space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst numRows = parseInt(fs.readFileSync(0));\n// logic here",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().strip()\n    if not data: return\n    numRows = int(data)\n    # logic\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // logic\n    return 0;\n}",
-      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNextInt()) {\n            int n = sc.nextInt();\n            // logic\n        }\n    }\n}"
-    },
-    "testCases": [
-      { "input": "5", "output": "1\n1 1\n1 2 1\n1 3 3 1\n1 4 6 4 1", "isPublic": true },
-      { "input": "1", "output": "1", "isPublic": false }
+      {
+        "input": "121",
+        "output": "true",
+        "isPublic": true
+      },
+      {
+        "input": "-121",
+        "output": "false",
+        "isPublic": true
+      },
+      {
+        "input": "0",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "10",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "470288",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "877778",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "829928",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "459954",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "936792",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "319198",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "794837",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "761016",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "449944",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "963369",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "409030",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "947749",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "676226",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "265085",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "587785",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "529879",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "970079",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "222222",
+        "output": "true",
+        "isPublic": false
+      },
+      {
+        "input": "88423",
+        "output": "false",
+        "isPublic": false
+      },
+      {
+        "input": "889988",
+        "output": "true",
+        "isPublic": false
+      }
     ]
   },
   {
     "title": "Fibonacci Number",
     "slug": "fibonacci-number",
-    "description": "Calculate `F(n)`, where F(n) = F(n-1) + F(n-2) for n > 1, and F(0)=0, F(1)=1.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read().strip())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); int n = sc.nextInt(); } }"
-    },
-    "testCases": [
-      { "input": "2", "output": "1", "isPublic": true },
-      { "input": "4", "output": "3", "isPublic": true },
-      { "input": "30", "output": "832040", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Length of Last Word",
-    "slug": "length-of-last-word",
-    "description": "Return the length of the last word in the string.\n\n**Input Format:**\n- Single string `s` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; getline(cin, s); return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "Hello World", "output": "5", "isPublic": true },
-      { "input": "   fly me   to   the moon  ", "output": "4", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Intersection of Two Arrays",
-    "slug": "intersection-two-arrays",
-    "description": "Return an array of their unique intersection.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers\n- Third line: `m` \n- Fourth line: `m` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n1 2 2 1\n2\n2 2", "output": "2", "isPublic": true },
-      { "input": "3\n4 9 5\n5\n9 4 9 8 4", "output": "9 4", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Happy Number",
-    "slug": "happy-number",
-    "description": "Determine if a number is happy.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read().strip())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "19", "output": "true", "isPublic": true },
-      { "input": "2", "output": "false", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Excel Sheet Column Title",
-    "slug": "excel-column-title",
-    "description": "Convert integer `columnNumber` to its Excel column title.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "1", "output": "A", "isPublic": true },
-      { "input": "701", "output": "ZY", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Reverse Vowels of a String",
-    "slug": "reverse-vowels",
-    "description": "Reverse only the vowels in the string.\n\n**Input Format:**\n- Single string `s` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "hello", "output": "holle", "isPublic": true },
-      { "input": "leetcode", "output": "leotcede", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Is Subsequence",
-    "slug": "is-subsequence",
-    "description": "Return \"true\" if `s` is a subsequence of `t`.\n\n**Input Format:**\n- First line: `s` \n- Second line: `t` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s, t; cin >> s >> t; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "abc\nahbgdc", "output": "true", "isPublic": true },
-      { "input": "axc\nahbgdc", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Power of Three",
-    "slug": "power-of-three",
-    "description": "Return \"true\" if `n` is a power of three.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "27", "output": "true", "isPublic": true },
-      { "input": "0", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Counting Bits",
-    "slug": "counting-bits",
-    "description": "Return an array where `ans[i]` is the number of 1's in the binary representation of `i` for `0 <= i <= n`.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2", "output": "0 1 1", "isPublic": true },
-      { "input": "5", "output": "0 1 1 2 1 2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Arranging Coins",
-    "slug": "arranging-coins",
-    "description": "You have `n` coins and you want to build a staircase where the `i-th` row has exactly `i` coins. Return the number of complete rows of the staircase you will build.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0));\n// logic here",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().strip()\n    if not data: return\n    n = int(data)\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { long long n; cin >> n; return 0; }",
-      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNextLong()) {\n            long n = sc.nextLong();\n        }\n    }\n}"
-    },
-    "testCases": [
-      { "input": "5", "output": "2", "isPublic": true },
-      { "input": "8", "output": "3", "isPublic": true },
-      { "input": "2147483647", "output": "65535", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Can Place Flowers",
-    "slug": "can-place-flowers",
-    "description": "You have a flowerbed in which some plots are planted and some are not. Flowers cannot be planted in adjacent plots. Return \"true\" if `n` new flowers can be planted, else \"false\".\n\n**Input Format:**\n- First line: `size` of flowerbed\n- Second line: `size` space-separated integers (0 or 1)\n- Third line: `n` (new flowers)",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int sz; cin >> sz; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5\n1 0 0 0 1\n1", "output": "true", "isPublic": true },
-      { "input": "5\n1 0 0 0 1\n2", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Add Binary",
-    "slug": "add-binary",
-    "description": "Given two binary strings `a` and `b`, return their sum as a binary string.\n\n**Input Format:**\n- First line: string `a` \n- Second line: string `b` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string a, b; cin >> a >> b; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "11\n1", "output": "100", "isPublic": true },
-      { "input": "1010\n1011", "output": "10101", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Jewels and Stones",
-    "slug": "jewels-and-stones",
-    "description": "You're given strings `jewels` representing the types of stones that are jewels, and `stones` representing the stones you have. Return how many of your stones are jewels.\n\n**Input Format:**\n- First line: `jewels` \n- Second line: `stones` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string j, s; cin >> j >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "aA\naAAbbbb", "output": "3", "isPublic": true },
-      { "input": "z\nZZ", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Detect Capital",
-    "slug": "detect-capital",
-    "description": "Return \"true\" if the usage of capitals in a word is right (e.g., \"USA\", \"leetcode\", \"Google\"), else \"false\".\n\n**Input Format:**\n- Single string `word` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "USA", "output": "true", "isPublic": true },
-      { "input": "FlaG", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "To Lower Case",
-    "slug": "to-lower-case",
-    "description": "Return the string after replacing every uppercase letter with the corresponding lowercase letter.\n\n**Input Format:**\n- Single string `s` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "Hello", "output": "hello", "isPublic": true },
-      { "input": "LOVELY", "output": "lovely", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Perfect Number",
-    "slug": "perfect-number",
-    "description": "A perfect number is a positive integer that is equal to the sum of its positive divisors, excluding itself. Return \"true\" if `num` is a perfect number, else \"false\".\n\n**Input Format:**\n- Single integer `num` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "28", "output": "true", "isPublic": true },
-      { "input": "7", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Self Dividing Numbers",
-    "slug": "self-dividing-numbers",
-    "description": "Return a space-separated list of all self-dividing numbers in the range `[left, right]`.\n\n**Input Format:**\n- First line: `left` \n- Second line: `right` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int l, r; cin >> l >> r; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "1\n22", "output": "1 2 3 4 5 6 7 8 9 11 12 15 22", "isPublic": true },
-      { "input": "47\n85", "output": "48 55 66 77", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Rotate String",
-    "slug": "rotate-string",
-    "description": "Return \"true\" if `s` can become `goal` after some number of shifts on `s`.\n\n**Input Format:**\n- First line: `s` \n- Second line: `goal` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s, g; cin >> s >> g; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "abcde\ncdeab", "output": "true", "isPublic": true },
-      { "input": "abcde\nabced", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Hamming Distance",
-    "slug": "hamming-distance-re",
-    "description": "Return the number of positions at which the corresponding bits are different for integers `x` and `y`.\n\n**Input Format:**\n- First line: `x` \n- Second line: `y` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int x, y; cin >> x >> y; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "1\n4", "output": "2", "isPublic": true },
-      { "input": "3\n1", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Monotonic Array",
-    "slug": "monotonic-array",
-    "description": "Return \"true\" if the given array is monotonic (either monotone increasing or monotone decreasing), and \"false\" otherwise.\n\n**Input Format:**\n- First line: `n` (size of array)\n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].trim().split(' ').map(Number);\n    // logic\n}\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    nums = [int(x) for x in data[1:]]\n    # logic\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n); for(int i=0; i<n; i++) cin >> nums[i];\n    // logic\n    return 0;\n}",
-      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNextInt()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n    }\n}"
-    },
-    "testCases": [
-      { "input": "4\n1 2 2 3", "output": "true", "isPublic": true },
-      { "input": "3\n1 3 2", "output": "false", "isPublic": true },
-      { "input": "4\n6 5 4 4", "output": "true", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Find Pivot Index",
-    "slug": "find-pivot-index",
-    "description": "Return the pivot index where the sum of numbers to the left equals the sum of numbers to the right.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n1 7 3 6 5 6", "output": "3", "isPublic": true },
-      { "input": "3\n1 2 3", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Squares of a Sorted Array",
-    "slug": "squares-sorted-array",
-    "description": "Return an array of the squares of each number sorted in non-decreasing order.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` sorted integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5\n-4 -1 0 3 10", "output": "0 1 9 16 100", "isPublic": true },
-      { "input": "5\n-7 -3 2 3 11", "output": "4 9 9 49 121", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Transpose Matrix",
-    "slug": "transpose-matrix",
-    "description": "Return the transpose of a 2D matrix.\n\n**Input Format:**\n- First line: `r` and `c` \n- Next `r` lines: `c` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int r, c; cin >> r >> c; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3 3\n1 2 3\n4 5 6\n7 8 9", "output": "1 4 7\n2 5 8\n3 6 9", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Max Consecutive Ones",
-    "slug": "max-consecutive-ones",
-    "description": "Return the maximum number of consecutive 1's in the binary array.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers (0 or 1)",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n1 1 0 1 1 1", "output": "3", "isPublic": true },
-      { "input": "5\n1 0 1 1 0", "output": "2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Find the Difference",
-    "slug": "find-difference",
-    "description": "Return the letter that was added to string `t` compared to string `s`.\n\n**Input Format:**\n- First line: `s` \n- Second line: `t` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s, t; cin >> s >> t; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "abcd\nabcde", "output": "e", "isPublic": true },
-      { "input": " \ny", "output": "y", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Reverse Words in a String III",
-    "slug": "reverse-words-3",
-    "description": "Reverse characters in each word while preserving whitespace and word order.\n\n**Input Format:**\n- Single line string `s` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; getline(cin, s); return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "Let's take LeetCode contest", "output": "s'teL ekat edoCteeL tsetnoc", "isPublic": true },
-      { "input": "God Ding", "output": "doG gniD", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Running Sum of 1d Array",
-    "slug": "running-sum-1d",
-    "description": "Return the running sum where `ans[i] = sum(nums[0]…nums[i])`.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n1 2 3 4", "output": "1 3 6 10", "isPublic": true },
-      { "input": "5\n1 1 1 1 1", "output": "1 2 3 4 5", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Sort Array By Parity",
-    "slug": "sort-array-parity",
-    "description": "Move all even integers to the beginning of the array followed by all odds.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n3 1 2 4", "output": "2 4 3 1", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Steps to Reduce to Zero",
-    "slug": "steps-to-zero",
-    "description": "If even divide by 2, if odd subtract 1. Return steps to reach 0.\n\n**Input Format:**\n- Single integer `num` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "14", "output": "6", "isPublic": true },
-      { "input": "8", "output": "4", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Binary Gap",
-    "slug": "binary-gap",
-    "description": "Return the longest distance between two adjacent 1's in the binary representation of `n`.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "22", "output": "2", "isPublic": true },
-      { "input": "8", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Unique Occurrences",
-    "slug": "unique-occurrences",
-    "description": "Return \"true\" if the number of occurrences of each value in the array is unique.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n1 2 2 1 1 3", "output": "true", "isPublic": true },
-      { "input": "2\n1 2", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Keyboard Row",
-    "slug": "keyboard-row",
-    "description": "Return words that can be typed using letters of only one QWERTY row.\n\n**Input Format:**\n- First line: `n` \n- Next `n` lines: one word each",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\nHello\nAlaska\nDad\nPeace", "output": "Alaska Dad", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Distribute Candies",
-    "slug": "distribute-candies",
-    "description": "Return the max number of different types of candies Alice can eat if she eats only `n / 2`.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n1 1 2 2 3 3", "output": "3", "isPublic": true },
-      { "input": "4\n1 1 2 3", "output": "2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Next Greater Element I",
-    "slug": "next-greater-1",
-    "description": "For each `x` in `nums1`, find the next greater element in `nums2`.\n\n**Input Format:**\n- First line: `n1` and `n2` \n- Second line: `n1` integers\n- Third line: `n2` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n1, n2; cin >> n1 >> n2; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3 4\n4 1 2\n1 3 4 2", "output": "-1 3 -1", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Flipping an Image",
-    "slug": "flipping-image",
-    "description": "Given an `n x n` binary matrix `image`, flip the image horizontally, then invert it, and return the resulting image.\n\n**Input Format:**\n- First line: `n` (size of matrix)\n- Next `n` lines: `n` space-separated 0s or 1s",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const matrix = input.slice(1).map(row => row.split(' ').map(Number));\n}\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    n = int(data[0])\n    matrix = []\n    for i in range(n):\n        matrix.append([int(x) for x in data[1+i*n : 1+(i+1)*n]])\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; vector<vector<int>> m(n, vector<int>(n)); for(int i=0; i<n; i++) for(int j=0; j<n; j++) cin >> m[i][j]; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); int n = sc.nextInt(); } }"
-    },
-    "testCases": [
-      { "input": "3\n1 1 0\n1 0 1\n0 1 1", "output": "1 0 0\n0 1 0\n0 0 1", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Robot Return to Origin",
-    "slug": "robot-origin",
-    "description": "There is a robot starting at (0,0). Given a sequence of moves (U, D, L, R), return \"true\" if it ends at (0,0), else \"false\".\n\n**Input Format:**\n- Single string `moves` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "UD", "output": "true", "isPublic": true },
-      { "input": "LL", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Goat Latin",
-    "slug": "goat-latin",
-    "description": "Convert the sentence to 'Goat Latin' based on specific rules (vowels/consonants/suffix 'a').\n\n**Input Format:**\n- Single line sentence string ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; getline(cin, s); return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "I speak Goat Latin", "output": "Imaa speakmaaa Goatmaaaa Latinmaaaaa", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Lemonade Change",
-    "slug": "lemonade-change",
-    "description": "Each lemonade costs $5. Customers pay with a $5, $10, or $20 bill. Return \"true\" if you can provide every customer correct change.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers (5, 10, or 20)",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5\n5 5 5 10 20", "output": "true", "isPublic": true },
-      { "input": "5\n5 5 10 10 20", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Height Checker",
-    "slug": "height-checker",
-    "description": "Return the number of indices where `heights[i]` != `expected[i]` (sorted heights).\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n1 1 4 2 1 3", "output": "3", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Relative Sort Array",
-    "slug": "relative-sort-array",
-    "description": "Sort `arr1` such that the relative ordering of items in `arr1` are the same as in `arr2`.\n\n**Input Format:**\n- First line: `n1` and `n2` \n- Second line: `arr1` \n- Third line: `arr2` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n1, n2; cin >> n1 >> n2; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "11 6\n2 3 1 3 2 4 6 7 9 2 19\n2 1 4 3 9 6", "output": "2 2 2 1 4 3 3 9 6 7 19", "isPublic": true }
-    ]
-  },
-  {
-    "title": "N-th Tribonacci Number",
-    "slug": "tribonacci-number",
-    "description": "T0=0, T1=1, T2=1, and Tn+3 = Tn + Tn+1 + Tn+2. Return Tn.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4", "output": "4", "isPublic": true },
-      { "input": "25", "output": "1389537", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Check N and Its Double",
-    "slug": "check-double",
-    "description": "Return \"true\" if there exist two indices `i` and `j` such that `i != j` and `arr[i] == 2 * arr[j]`.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n10 2 5 3", "output": "true", "isPublic": true },
-      { "input": "4\n3 1 7 11", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "K Weakest Rows",
-    "slug": "weakest-rows",
-    "description": "Return the indices of the `k` weakest rows in a matrix ordered from weakest to strongest.\n\n**Input Format:**\n- First line: `m`, `n`, `k` \n- Next `m` lines: `n` integers (0 or 1)",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int m, n, k; cin >> m >> n >> k; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5 5 3\n1 1 0 0 0\n1 1 1 1 0\n1 0 0 0 0\n1 1 0 0 0\n1 1 1 1 1", "output": "2 0 3", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Lucky Numbers in Matrix",
-    "slug": "lucky-numbers",
-    "description": "Return all lucky numbers (min in row, max in col) in the matrix.\n\n**Input Format:**\n- First line: `m` and `n` \n- Next `m` lines: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int m, n; cin >> m >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3 3\n3 7 8\n9 11 13\n15 16 17", "output": "15", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Negative Numbers in Matrix",
-    "slug": "count-negatives",
-    "description": "Count the number of negative numbers in an `m x n` matrix sorted non-increasingly row-wise and column-wise.\n\n**Input Format:**\n- First line: `m` and `n` \n- Next `m` lines: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int m, n; cin >> m >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4 4\n4 3 2 -1\n3 2 1 -1\n1 1 -1 -2\n-1 -1 -2 -3", "output": "8", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Destination City",
-    "slug": "destination-city",
-    "description": "Given paths `[cityA, cityB]`, return the destination city (the city with no path leaving it).\n\n**Input Format:**\n- First line: `n` (number of paths)\n- Next `n` lines: `cityA cityB` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\nLondon NewYork\nNewYork Lima\nLima SaoPaulo", "output": "SaoPaulo", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Kids With Candies",
-    "slug": "kids-candies",
-    "description": "Return a space-separated boolean list indicating if giving the `i-th` kid `extraCandies` makes them have the most candies.\n\n**Input Format:**\n- First line: `n` (number of kids) and `extra` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n, e; cin >> n >> e; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5 3\n2 3 5 1 3", "output": "true true true false true", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Shuffle the Array",
-    "slug": "shuffle-array",
-    "description": "Given `[x1,x2,...,xn,y1,y2,...,yn]`, return the array in the form `[x1,y1,x2,y2,...,xn,yn]`.\n\n**Input Format:**\n- First line: `2n` (size) and `n` \n- Second line: `2n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int sz, n; cin >> sz >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6 3\n2 5 1 3 4 7", "output": "2 3 5 4 1 7", "isPublic": true }
-    ]
-  },
-  {
-    "title": "XOR Operation",
-    "slug": "xor-operation",
-    "description": "Define `nums[i] = start + 2*i`. Return the bitwise XOR of all elements of `nums`.\n\n**Input Format:**\n- First line: `n` and `start` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n, s; cin >> n >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5 0", "output": "8", "isPublic": true },
-      { "input": "4 3", "output": "8", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Water Bottles",
-    "slug": "water-bottles",
-    "description": "Given `numBottles` full water bottles and `numExchange` empty bottles for one full one, return the maximum number of water bottles you can drink.\n\n**Input Format:**\n- First line: `numBottles` \n- Second line: `numExchange` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');\nconst numBottles = parseInt(input[0]); const numExchange = parseInt(input[1]);",
-      "python": "import sys\ndata = sys.stdin.read().split()\nbottles, exchange = int(data[0]), int(data[1])",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int b, e; cin >> b >> e; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "9\n3", "output": "13", "isPublic": true },
-      { "input": "15\n4", "output": "19", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Three Consecutive Odds",
-    "slug": "three-consecutive-odds",
-    "description": "Return \"true\" if there are three consecutive odd numbers in the array, and \"false\" otherwise.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n2 6 4 1", "output": "false", "isPublic": true },
-      { "input": "7\n1 2 34 3 4 5 7 23 12", "output": "true", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Richest Customer Wealth",
-    "slug": "richest-customer-wealth",
-    "description": "Return the wealth that the richest customer has. Wealth is the sum of money in all their bank accounts.\n\n**Input Format:**\n- First line: `m` (customers) and `n` (accounts)\n- Next `m` lines: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int m, n; cin >> m >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2 3\n1 2 3\n3 2 1", "output": "6", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Matrix Diagonal Sum",
-    "slug": "matrix-diagonal-sum",
-    "description": "Return the sum of the matrix diagonals. If an element belongs to both diagonals, count it only once.\n\n**Input Format:**\n- First line: `n` (size of square matrix)\n- Next `n` lines: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n1 2 3\n4 5 6\n7 8 9", "output": "25", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Goal Parser Interpretation",
-    "slug": "goal-parser",
-    "description": "Interpret the string: G -> G, () -> o, (al) -> al.\n\n**Input Format:**\n- Single string `command` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "G()(al)", "output": "Goal", "isPublic": true },
-      { "input": "(al)G(al)()()G", "output": "alGalooG", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Merge Strings Alternately",
-    "slug": "merge-strings-alternately",
-    "description": "Merge strings by adding letters in alternating order, starting with word1.\n\n**Input Format:**\n- First line: `word1` \n- Second line: `word2` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s1, s2; cin >> s1 >> s2; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "abc\npqr", "output": "apbqcr", "isPublic": true },
-      { "input": "ab\npqrs", "output": "apbqrs", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Kth Missing Positive",
-    "slug": "kth-missing-positive",
-    "description": "Given a sorted array of positive integers, return the k-th positive integer that is missing from this array.\n\n**Input Format:**\n- First line: `n` and `k` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n, k; cin >> n >> k; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5 5\n2 3 4 7 11", "output": "9", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Sign of Product",
-    "slug": "sign-of-product",
-    "description": "Return 1 if product is positive, -1 if negative, and 0 if product is 0.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "7\n-1 -2 -3 -4 3 2 1", "output": "1", "isPublic": true },
-      { "input": "5\n1 5 0 2 -3", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Sorted and Rotated",
-    "slug": "sorted-rotated",
-    "description": "Return \"true\" if the array was originally sorted in non-decreasing order, then rotated some number of positions.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n3 4 1", "output": "true", "isPublic": true },
-      { "input": "4\n2 1 3 4", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Sum of Unique Elements",
-    "slug": "sum-unique",
-    "description": "Return the sum of all elements that appear exactly once in the array.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n1 2 3 2", "output": "4", "isPublic": true },
-      { "input": "5\n1 1 1 1 1", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "String Halves Alike",
-    "slug": "halves-alike",
-    "description": "Two halves are alike if they have the same number of vowels. Return \"true\" if alike, else \"false\".\n\n**Input Format:**\n- Single string `s` of even length",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "book", "output": "true", "isPublic": true },
-      { "input": "textbook", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Truncate Sentence",
-    "slug": "truncate-sentence",
-    "description": "Truncate the sentence such that it contains only the first `k` words.\n\n**Input Format:**\n- First line: sentence string `s` \n- Second line: integer `k` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split('\\n')",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; getline(cin, s); int k; cin >> k; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "Hello how are you Contestant\n4", "output": "Hello how are you", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Sorting the Sentence",
-    "slug": "sorting-sentence",
-    "description": "A sentence is shuffled by appending the 1-indexed word position to each word. Reconstruct and return the original sentence.\n\n**Input Format:**\n- Shuffled sentence string ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; getline(cin, s); return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "is2 sentence4 This1 a3", "output": "This is a sentence", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Check if Pangram",
-    "slug": "check-pangram",
-    "description": "A pangram is a sentence where every letter of the English alphabet appears at least once. Return \"true\" if pangram, else \"false\".\n\n**Input Format:**\n- Single string `sentence` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const s = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\ns = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "thequickbrownfoxjumpsoverthelazydog", "output": "true", "isPublic": true },
-      { "input": "leetcode", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Find the Middle Index in Array",
-    "slug": "find-middle-index",
-    "description": "Find the leftmost index where the sum of numbers to the left equals the sum of numbers to the right. If no such index exists, return -1.\n\n**Input Format:**\n- First line: `n` (size)\n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].split(' ').map(Number);\n    // logic\n}\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    nums = [int(x) for x in data[1:]]\n    # logic\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() { int n; cin >> n; vector<int> v(n); for(int i=0; i<n; i++) cin >> v[i]; return 0; }",
-      "java": "import java.util.*;\npublic class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); if(!sc.hasNextInt()) return; int n = sc.nextInt(); } }"
-    },
-    "testCases": [
-      { "input": "5\n2 3 -1 8 4", "output": "3", "isPublic": true },
-      { "input": "3\n1 -1 4", "output": "2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Check If Array Is Good",
-    "slug": "check-array-good",
-    "description": "An array of length `n` is good if it is a permutation of `[1, 2, ..., n-1, n-1]`. Return \"true\" if good, else \"false\".\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n1 3 3 2", "output": "true", "isPublic": true },
-      { "input": "3\n1 1", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Max Difference Increasing Elements",
-    "slug": "max-diff-increasing",
-    "description": "Return the maximum `nums[j] - nums[i]` such that `i < j` and `nums[i] < nums[j]`. If no such difference exists, return -1.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n7 1 5 4", "output": "4", "isPublic": true },
-      { "input": "3\n9 4 1", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Keep Multiplying Found Values",
-    "slug": "multiply-found-values",
-    "description": "If `original` is found in `nums`, multiply it by 2 and repeat. Return the final value.\n\n**Input Format:**\n- First line: `n` (size) and `original` \n- Second line: `n` space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n, orig; cin >> n >> orig; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5 3\n5 3 6 1 12", "output": "24", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Equal and Divisible Pairs",
-    "slug": "equal-divisible-pairs",
-    "description": "Return the number of pairs `(i, j)` where `0 <= i < j < n`, `nums[i] == nums[j]` and `(i * j)` is divisible by `k`.\n\n**Input Format:**\n- First line: `n` and `k` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n, k; cin >> n >> k; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "7 2\n3 1 2 2 2 1 3", "output": "4", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Minimum Cost to Move Chips",
-    "slug": "move-chips-cost",
-    "description": "Return the minimum cost needed to move all chips to the same position. Moving 2 units costs 0, moving 1 unit costs 1.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers representing chip positions",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n1 2 3", "output": "1", "isPublic": true },
-      { "input": "5\n2 2 2 3 3", "output": "2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Distance Value Between Two Arrays",
-    "slug": "distance-value-arrays",
-    "description": "Return the number of elements `arr1[i]` such that there is no element `arr2[j]` where `|arr1[i] - arr2[j]| <= d`.\n\n**Input Format:**\n- First line: `n1`, `n2`, `d` \n- Second line: `arr1` \n- Third line: `arr2` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n1, n2, d; cin >> n1 >> n2 >> d; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3 4 2\n4 5 8\n10 9 1 8", "output": "2", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Count Good Triplets",
-    "slug": "count-good-triplets",
-    "description": "Count triplets `(arr[i], arr[j], arr[k])` satisfying `|arr[i]-arr[j]| <= a`, `|arr[j]-arr[k]| <= b`, and `|arr[i]-arr[k]| <= c`.\n\n**Input Format:**\n- First line: `n, a, b, c` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n, a, b, c; cin >> n >> a >> b >> c; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6 7 2 3\n3 0 1 1 9 7", "output": "4", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Numbers Disappeared in Array",
-    "slug": "disappeared-numbers",
-    "description": "Given an array of `n` integers where `nums[i]` is in `[1, n]`, return all integers in `[1, n]` that do not appear in `nums`.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers\n\n**Output Format:**\n- Space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "8\n4 3 2 7 8 2 3 1", "output": "5 6", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Replace with Greatest on Right",
-    "slug": "replace-greatest-right",
-    "description": "Replace every element with the greatest element among the elements to its right, and replace the last element with -1.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "6\n17 18 5 4 6 1", "output": "18 6 6 6 1 -1", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Count Primes (Easy)",
-    "slug": "count-primes-easy",
-    "description": "Given an integer `n`, return the number of prime numbers that are strictly less than `n`.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0));\nfunction solve() {\n    // logic\n}\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().strip()\n    if not data: return\n    n = int(data)\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); if(sc.hasNextInt()) { int n = sc.nextInt(); } } }"
-    },
-    "testCases": [
-      { "input": "10", "output": "4", "isPublic": true },
-      { "input": "0", "output": "0", "isPublic": true },
-      { "input": "1", "output": "0", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Sum of Two No-Zero Integers",
-    "slug": "sum-no-zero",
-    "description": "Given an integer `n`, return any two integers `[A, B]` such that `A + B = n` and neither `A` nor `B` contains any 0 in their decimal representation.\n\n**Input Format:**\n- Single integer `n` \n\n**Output Format:**\n- Two space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2", "output": "1 1", "isPublic": true },
-      { "input": "11", "output": "2 9", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Matrix Obtained By Rotation",
-    "slug": "matrix-rotation",
-    "description": "Return \"true\" if matrix `mat` can be obtained by rotating matrix `target` in 90-degree increments (0, 90, 180, 270), else \"false\".\n\n**Input Format:**\n- First line: `n` (size of n x n matrix)\n- Next `n` lines: `mat` integers\n- Next `n` lines: `target` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2\n0 1\n1 0\n0 1\n1 0", "output": "true", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Greatest Common Divisor of Array",
-    "slug": "gcd-array",
-    "description": "Return the greatest common divisor of the smallest number and the largest number in `nums`.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <algorithm>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n2 5 10", "output": "2", "isPublic": true },
-      { "input": "3\n7 5 6", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Count Operations to Obtain Zero",
-    "slug": "count-operations-zero",
-    "description": "Given `num1` and `num2`, if `num1 >= num2`, subtract `num2` from `num1`, otherwise vice versa. Return the number of operations to make one of them 0.\n\n**Input Format:**\n- First line: `num1` \n- Second line: `num2` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n1, n2; cin >> n1 >> n2; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2\n3", "output": "3", "isPublic": true },
-      { "input": "10\n10", "output": "1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Find the Pivot Integer",
-    "slug": "pivot-integer",
-    "description": "Given `n`, find the pivot integer `x` such that the sum of all elements between 1 and `x` inclusively equals the sum of all elements between `x` and `n` inclusively. Return `x`, or -1.\n\n**Input Format:**\n- Single integer `n` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "8", "output": "6", "isPublic": true },
-      { "input": "1", "output": "1", "isPublic": true },
-      { "input": "4", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Difference of Two Arrays",
-    "slug": "diff-two-arrays",
-    "description": "Given two arrays, return a list of two lists: list[0] is distinct integers in nums1 not in nums2, and list[1] is vice-versa.\n\n**Input Format:**\n- First line: `n1` and `n2` \n- Second line: `nums1` \n- Third line: `nums2` \n\n**Output Format:**\n- Two lines: space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n1, n2; cin >> n1 >> n2; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3 3\n1 2 3\n2 4 6", "output": "1 3\n4 6", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Integers with Even Digit Sum",
-    "slug": "even-digit-sum",
-    "description": "Given `num`, return the count of positive integers less than or equal to `num` whose digit sum is even.\n\n**Input Format:**\n- Single integer `num` ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = parseInt(require('fs').readFileSync(0));",
-      "python": "import sys\nn = int(sys.stdin.read())",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4", "output": "2", "isPublic": true },
-      { "input": "30", "output": "14", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Minimum Sum After Splitting",
-    "slug": "min-sum-split",
-    "description": "Given a four-digit positive integer `num`. Split it into two new integers `new1` and `new2` by using the digits. Return the minimum possible sum.\n\n**Input Format:**\n- Single 4-digit integer ",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const n = require('fs').readFileSync(0, 'utf-8').trim();",
-      "python": "import sys\nn = sys.stdin.read().strip()",
-      "cpp": "#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std; int main() { string s; cin >> s; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2932", "output": "52", "isPublic": true },
-      { "input": "4009", "output": "13", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Distinct Integers After Reverse",
-    "slug": "distinct-reverse",
-    "description": "For each integer in the array, reverse its digits and add the result to the end of the array. Return the number of distinct integers in the final array.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <set>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3\n1 13 10", "output": "6", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Find the Town Judge",
-    "slug": "town-judge",
-    "description": "In a town, there are `n` people. The town judge trusts nobody and everyone trusts the town judge. Return the label of the town judge if they exist, else -1.\n\n**Input Format:**\n- First line: `n` (number of people) and `t` (number of trust relationships)\n- Next `t` lines: `a` `b` (person a trusts person b)",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const [n, t] = input[0].split(' ').map(Number);\n    const trust = input.slice(1).map(line => line.split(' ').map(Number));\n    // logic\n}\nsolve();",
-      "python": "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n, t = int(data[0]), int(data[1])\n    # logic\nif __name__ == '__main__': solve()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n, t; cin >> n >> t; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2 1\n1 2", "output": "2", "isPublic": true },
-      { "input": "3 2\n1 3\n2 3", "output": "3", "isPublic": true },
-      { "input": "3 2\n1 2\n2 3", "output": "-1", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Unique Morse Code Words",
-    "slug": "morse-code-words",
-    "description": "Each letter of the alphabet has a Morse code mapping. Return the number of different transformations among all words in the list.\n\n**Input Format:**\n- First line: `n` (number of words)\n- Next `n` lines: one word per line",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\nwords = sys.stdin.read().split()[1:]",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\n#include <set>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\ngin\nzen\ngig\nmsg", "output": "2", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Fair Candy Swap",
-    "slug": "fair-candy-swap",
-    "description": "Alice and Bob have candy bars of different sizes. They want to swap one candy bar each so that they both have the same total amount of candy. Return the sizes of the candy bars swapped.\n\n**Input Format:**\n- First line: `n` (Alice's bars) and `m` (Bob's bars)\n- Second line: `n` integers\n- Third line: `m` integers\n\n**Output Format:**\n- Two space-separated integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n, m; cin >> n >> m; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2 2\n1 1\n2 2", "output": "1 2", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Integers in Range Covered",
-    "slug": "range-covered",
-    "description": "Return \"true\" if every integer in the range `[left, right]` is covered by at least one interval in `ranges`.\n\n**Input Format:**\n- First line: `n` (number of ranges), `left`, `right` \n- Next `n` lines: `start` `end`",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\nusing namespace std; int main() { int n, l, r; cin >> n >> l >> r; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "3 2 5\n1 2\n3 4\n5 6", "output": "true", "isPublic": true },
-      { "input": "2 21 21\n1 10\n22 30", "output": "false", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Words Formed by Characters",
-    "slug": "formed-by-chars",
-    "description": "Return the sum of lengths of all strings in `words` that can be formed by characters from `chars` (each char used once).\n\n**Input Format:**\n- First line: `n` (number of words)\n- Next `n` lines: one word per line\n- Last line: `chars` string",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <string>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\ncat\nbt\nhat\ntree\natach", "output": "6", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Largest Local Values in Matrix",
-    "slug": "largest-local-matrix",
-    "description": "Return the `(n-2) x (n-2)` matrix where each element is the maximum in the `3 x 3` matrix centered at that position.\n\n**Input Format:**\n- First line: `n` \n- Next `n` lines: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').trim().split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n9 9 8 1\n5 6 2 6\n8 2 6 4\n6 2 2 2", "output": "9 9\n8 6", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Count Tested Devices",
-    "slug": "count-tested-devices",
-    "description": "Test device `i` if its battery is > 0. If tested, battery of all subsequent devices decreases by 1. Return count of tested devices.\n\n**Input Format:**\n- First line: `n` \n- Second line: `n` integers",
-    "difficulty": "Easy",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int n; cin >> n; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "5\n1 1 2 1 3", "output": "3", "isPublic": true },
-      { "input": "3\n0 1 2", "output": "2", "isPublic": false }
-    ]
-  },
-  {
-    "title": "Number of Laser Beams",
-    "slug": "laser-beams-bank",
-    "description": "Return the total number of laser beams in the bank. A beam exists between two security devices in different rows if there are no devices in the rows between them.\n\n**Input Format:**\n- First line: `r` (rows)\n- Next `r` lines: binary strings",
-    "difficulty": "Medium",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std; int main() { int r; cin >> r; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "4\n011001\n000000\n010100\n001000", "output": "8", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Valid Matrix Given Sums",
-    "slug": "valid-matrix-sums",
-    "description": "Construct any non-negative matrix that satisfies the given row and column sums.\n\n**Input Format:**\n- First line: `r` and `c` \n- Second line: `r` row sums\n- Third line: `c` col sums\n\n**Output Format:**\n- `r` lines of `c` space-separated integers",
-    "difficulty": "Medium",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int r, c; cin >> r >> c; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2 2\n3 8\n4 7", "output": "3 0\n1 7", "isPublic": true }
-    ]
-  },
-  {
-    "title": "Servers That Communicate",
-    "slug": "servers-communicate",
-    "description": "Return the number of servers that can communicate with at least one other server. Communication occurs if they are in the same row or column.\n\n**Input Format:**\n- First line: `r` and `c` \n- Next `r` lines: `c` integers (0 or 1)",
-    "difficulty": "Medium",
-    "starterCode": {
-      "javascript": "const input = require('fs').readFileSync(0, 'utf-8').split('\\n');",
-      "python": "import sys\ndata = sys.stdin.read().split()",
-      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std; int main() { int r, c; cin >> r >> c; return 0; }",
-      "java": "import java.util.*; public class Main { public static void main(String[] args) { Scanner sc = new Scanner(System.in); } }"
-    },
-    "testCases": [
-      { "input": "2 2\n1 0\n0 1", "output": "0", "isPublic": true },
-      { "input": "2 2\n1 0\n1 1", "output": "3", "isPublic": false }
+    "description": "The Fibonacci numbers, commonly denoted `F(n)` form a sequence, called the Fibonacci sequence, such that each number is the sum of the two preceding ones, starting from 0 and 1.\nGiven `n`, calculate `F(n)`.\n\n**Input:**\n- Integer `n` (0 <= n <= 40)\n\n**Output:**\n- The nth Fibonacci number.",
+    "difficulty": "Easy",
+    "constraints": [
+      "0 <= n <= 40"
+    ],
+    "timeLimit": 5000,
+    "memoryLimit": 512,
+    "starterCode": {
+      "javascript": "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() {\n    const n = parseInt(input);\n    // Write your code here\n}\nsolve();",
+      "python": "import sys\ndef solve():\n    input_data = sys.stdin.read().strip()\n    if not input_data: return\n    n = int(input_data)\n    # Write your code here\nif __name__ == '__main__': solve()",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Write your code here\n    return 0;\n}",
+      "java": "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNextInt()) {\n            int n = sc.nextInt();\n            // Write your code here\n        }\n    }\n}"
+    },
+    "testCases": [
+      {
+        "input": "2",
+        "output": "1",
+        "isPublic": true
+      },
+      {
+        "input": "5",
+        "output": "5",
+        "isPublic": true
+      },
+      {
+        "input": "0",
+        "output": "0",
+        "isPublic": false
+      },
+      {
+        "input": "1",
+        "output": "1",
+        "isPublic": false
+      },
+      {
+        "input": "30",
+        "output": "832040",
+        "isPublic": false
+      },
+      {
+        "input": "6",
+        "output": "8",
+        "isPublic": false
+      },
+      {
+        "input": "37",
+        "output": "24157817",
+        "isPublic": false
+      },
+      {
+        "input": "2",
+        "output": "1",
+        "isPublic": false
+      },
+      {
+        "input": "20",
+        "output": "6765",
+        "isPublic": false
+      },
+      {
+        "input": "15",
+        "output": "610",
+        "isPublic": false
+      },
+      {
+        "input": "19",
+        "output": "4181",
+        "isPublic": false
+      },
+      {
+        "input": "15",
+        "output": "610",
+        "isPublic": false
+      },
+      {
+        "input": "19",
+        "output": "4181",
+        "isPublic": false
+      },
+      {
+        "input": "28",
+        "output": "317811",
+        "isPublic": false
+      },
+      {
+        "input": "24",
+        "output": "46368",
+        "isPublic": false
+      },
+      {
+        "input": "21",
+        "output": "10946",
+        "isPublic": false
+      },
+      {
+        "input": "37",
+        "output": "24157817",
+        "isPublic": false
+      },
+      {
+        "input": "11",
+        "output": "89",
+        "isPublic": false
+      },
+      {
+        "input": "33",
+        "output": "3524578",
+        "isPublic": false
+      },
+      {
+        "input": "20",
+        "output": "6765",
+        "isPublic": false
+      },
+      {
+        "input": "37",
+        "output": "24157817",
+        "isPublic": false
+      },
+      {
+        "input": "8",
+        "output": "21",
+        "isPublic": false
+      },
+      {
+        "input": "7",
+        "output": "13",
+        "isPublic": false
+      },
+      {
+        "input": "32",
+        "output": "2178309",
+        "isPublic": false
+      },
+      {
+        "input": "15",
+        "output": "610",
+        "isPublic": false
+      }
     ]
   }
 ]
