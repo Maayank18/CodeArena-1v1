@@ -9,142 +9,73 @@
 // const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // // 2. THE GOLDEN SOLVERS (The "Truth")
-// // Optimal algorithms to calculate correct outputs
 // const solvers = {
-//     "two-sum": (input) => {
-//         // Input: "4\n2 7 11 15\n9"
-//         const lines = input.trim().split('\n');
-//         if (lines.length < 3) return "";
-//         const nums = lines[1].trim().split(' ').map(Number);
-//         const target = parseInt(lines[2]);
+//     "fox-and-snake": (input) => {
+//         // Input format: "3 3" or "5 3"
+//         const parts = input.trim().split(/\s+/);
+//         if (parts.length < 2) return "";
         
-//         const map = new Map();
-//         for (let i = 0; i < nums.length; i++) {
-//             const complement = target - nums[i];
-//             if (map.has(complement)) return `${map.get(complement)} ${i}`;
-//             map.set(nums[i], i);
-//         }
-//         return ""; 
-//     },
-    
-//     "palindrome-number": (input) => {
-//         // Input: "121"
-//         const s = input.trim();
-//         // Check if string equals its reverse
-//         return (s === s.split('').reverse().join('')).toString();
-//     },
+//         const n = parseInt(parts[0]);
+//         const m = parseInt(parts[1]);
+        
+//         let result = "";
+//         let rightSide = true; // flag to track snake direction
 
-//     "fibonacci-number": (input) => {
-//         // Input: "5" -> Output: "5"
-//         const n = parseInt(input.trim());
-//         if (isNaN(n)) return "";
-//         if (n === 0) return "0";
-//         if (n === 1) return "1";
-
-//         let a = 0, b = 1;
-//         for (let i = 2; i <= n; i++) {
-//             let temp = a + b;
-//             a = b;
-//             b = temp;
+//         for (let i = 0; i < n; i++) {
+//             if (i % 2 === 0) {
+//                 // Odd rows (1, 3, 5...) are full hashes
+//                 // Note: i starts at 0, so i=0 is Row 1
+//                 result += "#".repeat(m) + "\n";
+//             } else {
+//                 // Even rows (2, 4, 6...) are connecting dots
+//                 if (rightSide) {
+//                     result += ".".repeat(m - 1) + "#\n";
+//                 } else {
+//                     result += "#" + ".".repeat(m - 1) + "\n";
+//                 }
+//                 // Toggle direction only after drawing a connecting row
+//                 rightSide = !rightSide;
+//             }
 //         }
-//         return b.toString();
+//         return result.trim(); // Remove trailing newline for clean comparison
 //     }
 // };
 
 // // 3. GENERATORS (Create Data)
 
-// // --- Two Sum Generator ---
-// const generateTwoSum = () => {
-//     const cases = [];
-    
-//     // Public (Visible)
-//     cases.push({ input: "4\n2 7 11 15\n9", output: "0 1", isPublic: true });
-//     cases.push({ input: "3\n3 2 4\n6", output: "1 2", isPublic: true });
-    
-//     // Edge (Hidden)
-//     cases.push({ input: "2\n3 3\n6", output: "0 1", isPublic: false }); // Min size
-//     cases.push({ input: "4\n0 4 3 0\n0", output: "0 3", isPublic: false }); // Zero handling
-//     return cases;
-// };
-
-// // --- Palindrome Generator ---
-// const generatePalindrome = () => {
-//     const cases = [];
-    
-//     // Public
-//     cases.push({ input: "121", output: "true", isPublic: true });
-//     cases.push({ input: "-121", output: "false", isPublic: true });
-    
-//     // Edge
-//     cases.push({ input: "0", output: "true", isPublic: false });
-//     cases.push({ input: "10", output: "false", isPublic: false });
-//     return cases;
-// };
-
-// // --- Fibonacci Generator ---
-// const generateFibonacci = () => {
+// const generateFoxAndSnake = () => {
 //     const cases = [];
 
-//     // Public
-//     cases.push({ input: "2", output: "1", isPublic: true });
-//     cases.push({ input: "5", output: "5", isPublic: true });
+//     // A. Public Cases (From Problem Statement)
+//     cases.push({ input: "3 3", output: solvers["fox-and-snake"]("3 3"), isPublic: true });
+//     cases.push({ input: "5 3", output: solvers["fox-and-snake"]("5 3"), isPublic: true });
 
-//     // Edge
-//     cases.push({ input: "0", output: "0", isPublic: false });
-//     cases.push({ input: "1", output: "1", isPublic: false });
-//     cases.push({ input: "30", output: "832040", isPublic: false }); // Large case
+//     // B. Edge Cases (Hidden)
+//     // Smallest possible snake
+//     cases.push({ input: "3 3", output: solvers["fox-and-snake"]("3 3"), isPublic: false }); 
+//     // Wide snake
+//     cases.push({ input: "3 20", output: solvers["fox-and-snake"]("3 20"), isPublic: false }); 
+//     // Tall snake
+//     cases.push({ input: "9 3", output: solvers["fox-and-snake"]("9 3"), isPublic: false }); 
 //     return cases;
 // };
 
 // // 4. DATA EXPORT ARRAY
 // const allProblems = [
 //     {
-//         title: "Two Sum",
-//         slug: "two-sum",
-//         description: "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.\n\n**Input Format:**\n- Line 1: Size `n`\n- Line 2: Array integers\n- Line 3: Target integer\n\n**Output Format:**\n- Two indices separated by space (e.g. `0 1`)",
+//         title: "Fox And Snake",
+//         slug: "fox-and-snake",
+//         description: "Fox Ciel starts to learn programming. The first task is drawing a fox! However, that turns out to be too hard for a beginner, so she decides to draw a snake instead.\n\nA snake is a pattern on an `n` by `m` table. Denote `c`-th cell of `r`-th row as `(r, c)`. The tail of the snake is located at `(1, 1)`, then its body extends to `(1, m)`, then goes down 2 rows to `(3, m)`, then goes left to `(3, 1)` and so on.\n\nYour task is to draw this snake for Fox Ciel: the empty cells should be represented as dot characters (`.`) and the snake cells should be filled with number signs (`#`).\n\n**Input:**\nTwo integers `n` and `m` (`3 <= n, m <= 50`). `n` is odd.\n\n**Output:**\n`n` lines represented the snake pattern.",
 //         difficulty: "Easy",
-//         constraints: ["2 <= n <= 10^4", "-10^9 <= nums[i] <= 10^9"],
-//         timeLimit: 5000, 
-//         memoryLimit: 512,
+//         constraints: ["3 <= n, m <= 50", "n is odd"],
+//         timeLimit: 2000, 
 //         starterCode: {
-//              javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const nums = input[1].trim().split(' ').map(Number);\n    const target = parseInt(input[2]);\n    // Write your code here\n}\nsolve();",
-//              python: "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    nums = [int(x) for x in data[1:n+1]]\n    target = int(data[n+1])\n    # Write your code here\nif __name__ == '__main__': solve()",
-//              cpp: "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    vector<int> nums(n); for(int i=0; i<n; i++) cin >> nums[i];\n    int target; cin >> target;\n    // Write your code here\n    return 0;\n}",
-//              java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(!sc.hasNext()) return;\n        int n = sc.nextInt();\n        int[] nums = new int[n];\n        for(int i=0; i<n; i++) nums[i] = sc.nextInt();\n        int target = sc.nextInt();\n        // Write your code here\n    }\n}"
+//             javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/);\nfunction solve() {\n    const n = parseInt(input[0]);\n    const m = parseInt(input[1]);\n    // Write your code here\n}\nsolve();",
+//             python: "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    m = int(data[1])\n    # Write your code here\nif __name__ == '__main__': solve()",
+//             cpp: "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n, m;\n    cin >> n >> m;\n    // Write your code here\n    return 0;\n}",
+//             java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNextInt()) {\n            int n = sc.nextInt();\n            int m = sc.nextInt();\n            // Write your code here\n        }\n    }\n}"
 //         },
-//         testCases: generateTwoSum()
-//     },
-//     {
-//         title: "Palindrome Number",
-//         slug: "palindrome-number",
-//         description: "Given an integer `x`, return `true` if `x` is a palindrome, and `false` otherwise.\n\n**Input:**\n- An integer `x`\n\n**Output:**\n- `true` or `false`",
-//         difficulty: "Easy",
-//         constraints: ["-2^31 <= x <= 2^31 - 1"],
-//         timeLimit: 5000,
-//         memoryLimit: 512,
-//         starterCode: {
-//             javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() {\n    const x = parseInt(input);\n    // Write your code here\n}\nsolve();",
-//             python: "import sys\ndef solve():\n    x = sys.stdin.read().strip()\n    # Write your code here\nif __name__ == '__main__': solve()",
-//             cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    long long x; cin >> x;\n    // Write your code here\n    return 0;\n}",
-//             java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNext()) {\n            String x = sc.next();\n            // Write your code here\n        }\n    }\n}"
-//         },
-//         testCases: generatePalindrome()
-//     },
-//     {
-//         title: "Fibonacci Number",
-//         slug: "fibonacci-number",
-//         description: "The Fibonacci numbers, commonly denoted `F(n)` form a sequence, called the Fibonacci sequence, such that each number is the sum of the two preceding ones, starting from 0 and 1.\nGiven `n`, calculate `F(n)`.\n\n**Input:**\n- Integer `n` (0 <= n <= 40)\n\n**Output:**\n- The nth Fibonacci number.",
-//         difficulty: "Easy",
-//         constraints: ["0 <= n <= 40"],
-//         timeLimit: 5000,
-//         memoryLimit: 512,
-//         starterCode: {
-//             javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() {\n    const n = parseInt(input);\n    // Write your code here\n}\nsolve();",
-//             python: "import sys\ndef solve():\n    input_data = sys.stdin.read().strip()\n    if not input_data: return\n    n = int(input_data)\n    # Write your code here\nif __name__ == '__main__': solve()",
-//             cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    int n; cin >> n;\n    // Write your code here\n    return 0;\n}",
-//             java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNextInt()) {\n            int n = sc.nextInt();\n            // Write your code here\n        }\n    }\n}"
-//         },
-//         testCases: generateFibonacci()
+//         testCases: generateFoxAndSnake()
 //     }
 // ];
 
@@ -156,12 +87,6 @@
 
 
 
-
-
-
-
-
-
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -169,13 +94,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. HELPER: Generate random integers [min, max]
+// HELPER: Generate random integers [min, max]
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-// 2. THE GOLDEN SOLVERS (The "Truth")
+// SOLVER FUNCTIONS (The "Truth")
 const solvers = {
     "fox-and-snake": (input) => {
-        // Input format: "3 3" or "5 3"
         const parts = input.trim().split(/\s+/);
         if (parts.length < 2) return "";
         
@@ -183,78 +107,352 @@ const solvers = {
         const m = parseInt(parts[1]);
         
         let result = "";
-        let rightSide = true; // flag to track snake direction
+        let rightSide = true;
 
         for (let i = 0; i < n; i++) {
             if (i % 2 === 0) {
-                // Odd rows (1, 3, 5...) are full hashes
-                // Note: i starts at 0, so i=0 is Row 1
                 result += "#".repeat(m) + "\n";
             } else {
-                // Even rows (2, 4, 6...) are connecting dots
                 if (rightSide) {
                     result += ".".repeat(m - 1) + "#\n";
                 } else {
                     result += "#" + ".".repeat(m - 1) + "\n";
                 }
-                // Toggle direction only after drawing a connecting row
                 rightSide = !rightSide;
             }
         }
-        return result.trim(); // Remove trailing newline for clean comparison
+        return result.trim();
+    },
+
+    "easy-problem": (input) => {
+        const lines = input.trim().split('\n');
+        const n = parseInt(lines[0]);
+        const opinions = lines[1].split(/\s+/).map(x => parseInt(x));
+        
+        return opinions.includes(1) ? "HARD" : "EASY";
+    },
+
+    "team": (input) => {
+        const lines = input.trim().split('\n');
+        const n = parseInt(lines[0]);
+        let count = 0;
+        
+        for (let i = 1; i <= n; i++) {
+            const votes = lines[i].split(/\s+/).map(x => parseInt(x));
+            const sum = votes.reduce((a, b) => a + b, 0);
+            if (sum >= 2) count++;
+        }
+        
+        return count.toString();
+    },
+
+    "next-round": (input) => {
+        const lines = input.trim().split('\n');
+        const [n, k] = lines[0].split(/\s+/).map(x => parseInt(x));
+        const scores = lines[1].split(/\s+/).map(x => parseInt(x));
+        
+        const kthScore = scores[k - 1];
+        let count = 0;
+        
+        for (const score of scores) {
+            if (score >= kthScore && score > 0) {
+                count++;
+            }
+        }
+        
+        return count.toString();
+    },
+
+    "anton-and-danik": (input) => {
+        const lines = input.trim().split('\n');
+        const n = parseInt(lines[0]);
+        const games = lines[1];
+        
+        let countA = 0, countD = 0;
+        for (const c of games) {
+            if (c === 'A') countA++;
+            else if (c === 'D') countD++;
+        }
+        
+        if (countA > countD) return "Anton";
+        if (countD > countA) return "Danik";
+        return "Friendship";
+    },
+
+    "horseshoe": (input) => {
+        const colors = input.trim().split(/\s+/).map(x => parseInt(x));
+        const uniqueColors = new Set(colors);
+        return (4 - uniqueColors.size).toString();
+    },
+
+    "pangram": (input) => {
+        const lines = input.trim().split('\n');
+        const n = parseInt(lines[0]);
+        const s = lines[1];
+        
+        if (n < 26) return "NO";
+        
+        const letters = new Set();
+        for (const c of s) {
+            if (/[a-zA-Z]/.test(c)) {
+                letters.add(c.toLowerCase());
+            }
+        }
+        
+        return letters.size === 26 ? "YES" : "NO";
+    },
+
+    "hit-lottery": (input) => {
+        let amount = parseInt(input.trim());
+        const notes = [100, 20, 10, 5, 1];
+        let bills = 0;
+        
+        for (const note of notes) {
+            bills += Math.floor(amount / note);
+            amount %= note;
+        }
+        
+        return bills.toString();
+    },
+
+    "beautiful-year": (input) => {
+        let year = parseInt(input.trim()) + 1;
+        
+        while (true) {
+            const digits = new Set(year.toString());
+            if (digits.size === 4) {
+                return year.toString();
+            }
+            year++;
+        }
     }
 };
 
-// 3. GENERATORS (Create Data)
+// TEST CASE GENERATORS
 
 const generateFoxAndSnake = () => {
     const cases = [];
-
-    // A. Public Cases (From Problem Statement)
     cases.push({ input: "3 3", output: solvers["fox-and-snake"]("3 3"), isPublic: true });
     cases.push({ input: "5 3", output: solvers["fox-and-snake"]("5 3"), isPublic: true });
-
-    // B. Edge Cases (Hidden)
-    // Smallest possible snake
-    cases.push({ input: "3 3", output: solvers["fox-and-snake"]("3 3"), isPublic: false }); 
-    // Wide snake
-    cases.push({ input: "3 20", output: solvers["fox-and-snake"]("3 20"), isPublic: false }); 
-    // Tall snake
-    cases.push({ input: "9 3", output: solvers["fox-and-snake"]("9 3"), isPublic: false }); 
-
-    // C. Random Hidden (20 cases)
-    for (let i = 0; i < 20; i++) {
-        // n must be odd for this problem pattern usually, 
-        // but the logic handles even n. We'll generate odd n to be safe/standard.
-        let n = randInt(3, 50);
-        if (n % 2 === 0) n++; // Ensure odd
-        
-        const m = randInt(3, 50);
-        
-        const input = `${n} ${m}`;
-        const output = solvers["fox-and-snake"](input);
-        
-        cases.push({ input, output, isPublic: false });
-    }
+    cases.push({ input: "3 20", output: solvers["fox-and-snake"]("3 20"), isPublic: false });
+    cases.push({ input: "9 3", output: solvers["fox-and-snake"]("9 3"), isPublic: false });
+    cases.push({ input: "7 7", output: solvers["fox-and-snake"]("7 7"), isPublic: false });
     return cases;
 };
 
-// 4. DATA EXPORT ARRAY
+const generateEasyProblem = () => {
+    const cases = [];
+    cases.push({ input: "3\n0 0 1", output: solvers["easy-problem"]("3\n0 0 1"), isPublic: true });
+    cases.push({ input: "1\n0", output: solvers["easy-problem"]("1\n0"), isPublic: true });
+    cases.push({ input: "5\n1 0 0 0 0", output: solvers["easy-problem"]("5\n1 0 0 0 0"), isPublic: false });
+    cases.push({ input: "4\n0 0 0 0", output: solvers["easy-problem"]("4\n0 0 0 0"), isPublic: false });
+    cases.push({ input: "100\n" + "0 ".repeat(100).trim(), output: solvers["easy-problem"]("100\n" + "0 ".repeat(100).trim()), isPublic: false });
+    return cases;
+};
+
+const generateTeam = () => {
+    const cases = [];
+    cases.push({ input: "3\n1 1 0\n1 1 1\n1 0 0", output: solvers["team"]("3\n1 1 0\n1 1 1\n1 0 0"), isPublic: true });
+    cases.push({ input: "2\n1 0 0\n0 1 1", output: solvers["team"]("2\n1 0 0\n0 1 1"), isPublic: true });
+    cases.push({ input: "5\n0 0 0\n1 1 1\n1 1 0\n0 0 1\n1 0 1", output: solvers["team"]("5\n0 0 0\n1 1 1\n1 1 0\n0 0 1\n1 0 1"), isPublic: false });
+    cases.push({ input: "1\n0 0 0", output: solvers["team"]("1\n0 0 0"), isPublic: false });
+    return cases;
+};
+
+const generateNextRound = () => {
+    const cases = [];
+    cases.push({ input: "8 5\n10 9 8 7 7 7 5 5", output: solvers["next-round"]("8 5\n10 9 8 7 7 7 5 5"), isPublic: true });
+    cases.push({ input: "4 2\n0 0 0 0", output: solvers["next-round"]("4 2\n0 0 0 0"), isPublic: true });
+    cases.push({ input: "5 3\n100 99 98 97 96", output: solvers["next-round"]("5 3\n100 99 98 97 96"), isPublic: false });
+    cases.push({ input: "3 1\n5 3 0", output: solvers["next-round"]("3 1\n5 3 0"), isPublic: false });
+    return cases;
+};
+
+const generateAntonAndDanik = () => {
+    const cases = [];
+    cases.push({ input: "6\nADAAAD", output: solvers["anton-and-danik"]("6\nADAAAD"), isPublic: true });
+    cases.push({ input: "7\nDDDAADA", output: solvers["anton-and-danik"]("7\nDDDAADA"), isPublic: true });
+    cases.push({ input: "6\nDADADA", output: solvers["anton-and-danik"]("6\nDADADA"), isPublic: true });
+    cases.push({ input: "1\nA", output: solvers["anton-and-danik"]("1\nA"), isPublic: false });
+    cases.push({ input: "10\nAAAADDDDDD", output: solvers["anton-and-danik"]("10\nAAAADDDDDD"), isPublic: false });
+    return cases;
+};
+
+const generateHorseshoe = () => {
+    const cases = [];
+    cases.push({ input: "1 7 3 3", output: solvers["horseshoe"]("1 7 3 3"), isPublic: true });
+    cases.push({ input: "7 7 7 7", output: solvers["horseshoe"]("7 7 7 7"), isPublic: true });
+    cases.push({ input: "1 2 3 4", output: solvers["horseshoe"]("1 2 3 4"), isPublic: false });
+    cases.push({ input: "1000000000 1000000000 999999999 999999999", output: solvers["horseshoe"]("1000000000 1000000000 999999999 999999999"), isPublic: false });
+    return cases;
+};
+
+const generatePangram = () => {
+    const cases = [];
+    cases.push({ input: "12\ntoosmallword", output: solvers["pangram"]("12\ntoosmallword"), isPublic: true });
+    cases.push({ input: "35\nTheQuickBrownFoxJumpsOverTheLazyDog", output: solvers["pangram"]("35\nTheQuickBrownFoxJumpsOverTheLazyDog"), isPublic: true });
+    cases.push({ input: "26\nabcdefghijklmnopqrstuvwxyz", output: solvers["pangram"]("26\nabcdefghijklmnopqrstuvwxyz"), isPublic: false });
+    cases.push({ input: "30\nABCDEFGHIJKLMNOPQRSTUVWXYZ", output: solvers["pangram"]("30\nABCDEFGHIJKLMNOPQRSTUVWXYZ"), isPublic: false });
+    cases.push({ input: "10\nabcdefghij", output: solvers["pangram"]("10\nabcdefghij"), isPublic: false });
+    return cases;
+};
+
+const generateHitLottery = () => {
+    const cases = [];
+    cases.push({ input: "125", output: solvers["hit-lottery"]("125"), isPublic: true });
+    cases.push({ input: "43", output: solvers["hit-lottery"]("43"), isPublic: true });
+    cases.push({ input: "1000000000", output: solvers["hit-lottery"]("1000000000"), isPublic: true });
+    cases.push({ input: "1", output: solvers["hit-lottery"]("1"), isPublic: false });
+    cases.push({ input: "777", output: solvers["hit-lottery"]("777"), isPublic: false });
+    return cases;
+};
+
+const generateBeautifulYear = () => {
+    const cases = [];
+    cases.push({ input: "1987", output: solvers["beautiful-year"]("1987"), isPublic: true });
+    cases.push({ input: "2013", output: solvers["beautiful-year"]("2013"), isPublic: true });
+    cases.push({ input: "1000", output: solvers["beautiful-year"]("1000"), isPublic: false });
+    cases.push({ input: "9000", output: solvers["beautiful-year"]("9000"), isPublic: false });
+    cases.push({ input: "5555", output: solvers["beautiful-year"]("5555"), isPublic: false });
+    return cases;
+};
+
+// ALL PROBLEMS DATA
 const allProblems = [
     {
         title: "Fox And Snake",
         slug: "fox-and-snake",
-        description: "Fox Ciel starts to learn programming. The first task is drawing a fox! However, that turns out to be too hard for a beginner, so she decides to draw a snake instead.\n\nA snake is a pattern on an `n` by `m` table. Denote `c`-th cell of `r`-th row as `(r, c)`. The tail of the snake is located at `(1, 1)`, then its body extends to `(1, m)`, then goes down 2 rows to `(3, m)`, then goes left to `(3, 1)` and so on.\n\nYour task is to draw this snake for Fox Ciel: the empty cells should be represented as dot characters (`.`) and the snake cells should be filled with number signs (`#`).\n\n**Input:**\nTwo integers `n` and `m` (`3 <= n, m <= 50`). `n` is odd.\n\n**Output:**\n`n` lines represented the snake pattern.",
+        description: "Fox Ciel starts to learn programming. The first task is drawing a fox! However, that turns out to be too hard for a beginner, so she decides to draw a snake instead.\n\nA snake is a pattern on an `n` by `m` table. The tail of the snake is located at `(1, 1)`, then its body extends to `(1, m)`, then goes down 2 rows to `(3, m)`, then goes left to `(3, 1)` and so on.\n\nYour task is to draw this snake for Fox Ciel: the empty cells should be represented as dot characters (`.`) and the snake cells should be filled with number signs (`#`).",
         difficulty: "Easy",
-        constraints: ["3 <= n, m <= 50", "n is odd"],
-        timeLimit: 2000, 
+        constraints: ["3 ≤ n, m ≤ 50", "n is odd"],
+        timeLimit: 2000,
         starterCode: {
             javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/);\nfunction solve() {\n    const n = parseInt(input[0]);\n    const m = parseInt(input[1]);\n    // Write your code here\n}\nsolve();",
             python: "import sys\ndef solve():\n    data = sys.stdin.read().split()\n    if not data: return\n    n = int(data[0])\n    m = int(data[1])\n    # Write your code here\nif __name__ == '__main__': solve()",
             cpp: "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n, m;\n    cin >> n >> m;\n    // Write your code here\n    return 0;\n}",
-            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if(sc.hasNextInt()) {\n            int n = sc.nextInt();\n            int m = sc.nextInt();\n            // Write your code here\n        }\n    }\n}"
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int m = sc.nextInt();\n        // Write your code here\n    }\n}"
         },
         testCases: generateFoxAndSnake()
+    },
+    {
+        title: "In Search of an Easy Problem",
+        slug: "easy-problem",
+        description: "When preparing a tournament, Codeforces coordinators try their best to make the first problem as easy as possible. This time the coordinator had chosen some problem and asked n people about their opinions. Each person answered whether this problem is easy or hard.\n\nIf at least one of these n people has answered that the problem is hard, the coordinator decides to change the problem. For the given responses, check if the problem is easy enough.",
+        difficulty: "Easy",
+        constraints: ["1 ≤ n ≤ 100"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const opinions = input[1].split(' ').map(Number);\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    n = int(input())\n    opinions = list(map(int, input().split()))\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateEasyProblem()
+    },
+    {
+        title: "Team",
+        slug: "team",
+        description: "One day three best friends Petya, Vasya and Tonya decided to form a team and take part in programming contests. Participants are usually offered several problems during programming contests. Long before the start the friends decided that they will implement a problem if at least two of them are sure about the solution. Otherwise, the friends won't write the problem's solution.\n\nThis contest offers n problems to the participants. For each problem we know, which friend is sure about the solution. Help the friends find the number of problems for which they will write a solution.",
+        difficulty: "Easy",
+        constraints: ["1 ≤ n ≤ 1000"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    n = int(input())\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateTeam()
+    },
+    {
+        title: "Next Round",
+        slug: "next-round",
+        description: "\"Contestant who earns a score equal to or greater than the k-th place finisher's score will advance to the next round, as long as the contestant earns a positive score...\" — an excerpt from contest rules.\n\nA total of n participants took part in the contest (n ≥ k), and you already know their scores. Calculate how many participants will advance to the next round.",
+        difficulty: "Easy",
+        constraints: ["1 ≤ k ≤ n ≤ 50", "0 ≤ score ≤ 100"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const [n, k] = input[0].split(' ').map(Number);\n    const scores = input[1].split(' ').map(Number);\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    n, k = map(int, input().split())\n    scores = list(map(int, input().split()))\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    int n, k;\n    cin >> n >> k;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int k = sc.nextInt();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateNextRound()
+    },
+    {
+        title: "Anton and Danik",
+        slug: "anton-and-danik",
+        description: "Anton likes to play chess, and so does his friend Danik.\n\nOnce they have played n games in a row. For each game it's known who was the winner — Anton or Danik. None of the games ended with a tie.\n\nNow Anton wonders, who won more games, he or Danik? Help him determine this.",
+        difficulty: "Easy",
+        constraints: ["1 ≤ n ≤ 100,000"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const games = input[1];\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    n = int(input())\n    games = input().strip()\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    int n;\n    string games;\n    cin >> n >> games;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        String games = sc.next();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateAntonAndDanik()
+    },
+    {
+        title: "Is your horseshoe on the other hoof?",
+        slug: "horseshoe",
+        description: "Valera the Horse is going to the party with friends. He has been following the fashion trends for a while, and he knows that it is very popular to wear all horseshoes of different color. Valera has got four horseshoes left from the last year, but maybe some of them have the same color. In this case he needs to go to the store and buy some few more horseshoes, not to lose face in front of his stylish comrades.\n\nFortunately, the store sells horseshoes of all colors under the sun and Valera has enough money to buy any four of them. However, in order to save the money, he would like to spend as little money as possible, so you need to help Valera and determine what is the minimum number of horseshoes he needs to buy to wear four horseshoes of different colors to a party.",
+        difficulty: "Easy",
+        constraints: ["1 ≤ color ≤ 10^9"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/).map(Number);\nfunction solve() {\n    const colors = input;\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    colors = list(map(int, input().split()))\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    int s1, s2, s3, s4;\n    cin >> s1 >> s2 >> s3 >> s4;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int s1 = sc.nextInt();\n        int s2 = sc.nextInt();\n        int s3 = sc.nextInt();\n        int s4 = sc.nextInt();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateHorseshoe()
+    },
+    {
+        title: "Pangram",
+        slug: "pangram",
+        description: "A word or a sentence in some language is called a pangram if all the characters of the alphabet of this language appear in it at least once. Pangrams are often used to demonstrate fonts in printing or test the output devices.\n\nYou are given a string consisting of lowercase and uppercase Latin letters. Check whether this string is a pangram. We say that the string contains a letter of the Latin alphabet if this letter occurs in the string in uppercase or lowercase.",
+        difficulty: "Easy",
+        constraints: ["1 ≤ n ≤ 100"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nfunction solve() {\n    const n = parseInt(input[0]);\n    const s = input[1];\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    n = int(input())\n    s = input().strip()\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    int n;\n    string s;\n    cin >> n >> s;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        String s = sc.next();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generatePangram()
+    },
+    {
+        title: "Hit the Lottery",
+        slug: "hit-lottery",
+        description: "Allen has a LOT of money. He has n dollars in the bank. For security reasons, he wants to withdraw it in cash (we will not disclose the reasons here). The denominations for dollar bills are 1, 5, 10, 20, 100. What is the minimum number of bills Allen could receive after withdrawing his entire balance?",
+        difficulty: "Easy",
+        constraints: ["1 ≤ n ≤ 10^9"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() {\n    const n = parseInt(input);\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    n = int(input())\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    int n;\n    cin >> n;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateHitLottery()
+    },
+    {
+        title: "Beautiful Year",
+        slug: "beautiful-year",
+        description: "It seems like the year of 2013 came only yesterday. Do you know a curious fact? The year of 2013 is the first year after the old 1987 with only distinct digits.\n\nNow you are suggested to solve the following problem: given a year number, find the minimum year number which is strictly larger than the given one and has only distinct digits.",
+        difficulty: "Easy",
+        constraints: ["1000 ≤ year ≤ 9000"],
+        timeLimit: 2000,
+        starterCode: {
+            javascript: "const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\nfunction solve() {\n    const year = parseInt(input);\n    // Write your code here\n}\nsolve();",
+            python: "import sys\ndef solve():\n    year = int(input())\n    # Write your code here\nif __name__ == '__main__': solve()",
+            cpp: "#include <iostream>\nusing namespace std;\nint main() {\n    int year;\n    cin >> year;\n    // Write your code here\n    return 0;\n}",
+            java: "import java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int year = sc.nextInt();\n        // Write your code here\n    }\n}"
+        },
+        testCases: generateBeautifulYear()
     }
 ];
 
