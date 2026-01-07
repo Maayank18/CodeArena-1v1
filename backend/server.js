@@ -421,15 +421,42 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/matches', matchRoutes);
 
-cron.schedule('*/14 * * * *', async () => {
+Almost! But there's a better place for it. Let me show you the optimal placement:
+✅ CORRECT PLACEMENT
+The /health endpoint should go AFTER all your route registrations but BEFORE the Socket.IO setup.
+Here's exactly where in your server.js:
+javascript// ✅ REGISTER ROUTES (your existing code - lines ~35-41)
+app.use('/api/rooms', roomRoutes);
+app.use('/api/run', submissionRoutes);
+app.use('/api/problems', problemRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/users', userRoutes); 
+app.use('/api/matches', matchRoutes);
+
+//ADDED HEALTH ENDPOINT HERE (right after routes)
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(), 
+        uptime: process.uptime() 
+    });
+});
+
+//CRON JOB 
+cron.schedule('*/15 * * * *', async () => {
     try {
-        // Replace with your actual Render backend URL
-        const response = await axios.get('https://your-backend-app.onrender.com/');
-        console.log(`Self-ping successful: ${response.status}`);
+        const backendURL = process.env.RENDER_EXTERNAL_URL || 
+                          'https://codearena-1v1.onrender.com';  // Your actual URL
+        
+        console.log(`[CRON] Pinging: ${backendURL}/health`);
+        const response = await axios.get(`${backendURL}/health`, { timeout: 10000 });
+        console.log(`[CRON] ✅ Success at ${new Date().toISOString()}`);
     } catch (error) {
-        console.error('Self-ping failed:', error.message);
+        console.error(`[CRON] ❌ Failed:`, error.message);
     }
 });
+
 
 app.get('/', (req, res) => res.send('OK'));
 
