@@ -122,7 +122,12 @@ const matchSchema = new mongoose.Schema({
     score: { type: Number, default: 0 },
     oldElo: { type: Number, default: 1000 },
     newElo: { type: Number, default: 1000 },
-    statusText: { type: String, default: "" }
+    statusText: { type: String, default: "" },
+
+    //DEBUG CHANGES FROM HERE 
+    seasonPointsGained: { type: Number, default: 0 },
+    hasSubmitted: { type: Boolean, default: false }
+    //DEBUG CHANGES TILL HERE
   }],
   winner: { type: String, required: true },
   isDisqualified: { type: Boolean, default: false },
