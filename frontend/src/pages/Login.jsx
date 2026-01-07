@@ -44,8 +44,8 @@ const Login = () => {
             return;
         }
 
-        if (isRegister && (!formData.username || !formData.fullName)) {
-            toast.error("Username and Full Name are required for registration");
+        if (isRegister && (!formData.username || !formData.fullName || !formData.phone)) {
+            toast.error("Username, Full Name, and Phone are required for registration");
             return;
         }
 
