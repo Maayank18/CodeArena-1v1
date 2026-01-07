@@ -495,6 +495,22 @@ const handleGameEnd = async (roomId, room) => {
     }
     
     const playerNames = Object.keys(room.scores);
+    // 
+    // Handling ghost mode if only one playrer present
+    // 🛑 FIX: ABORT IF ONLY 1 PLAYER
+    if (playerNames.length < 2) {
+        console.log(`[GAME END] Room ${roomId}: Cancelled (Insufficient players).`);
+        io.to(roomId).emit('game_over', { 
+            winner: null, 
+            message: "Match cancelled (Waiting for opponent)" 
+        });
+        rooms.delete(roomId);
+        return; // STOP HERE! No DB updates, no Elo, no history.
+    }
+    // 
+    // 
+    // 
+
     console.log(`[GAME END] Processing Room: ${roomId}`);
     console.log(`[GAME END] Players: ${JSON.stringify(playerNames)}`);
     console.log(`[GAME END] Scores: ${JSON.stringify(room.scores)}`);
