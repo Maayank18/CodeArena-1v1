@@ -383,6 +383,7 @@ import authRoutes from './routes/authRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import userRoutes from './routes/userRoutes.js'; 
 import matchRoutes from './routes/matchRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 import Problem from './models/Problem.js';
 import User from './models/User.js';
@@ -420,12 +421,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/matches', matchRoutes);
+app.use('/api/admin', adminRoutes);
 
-Almost! But there's a better place for it. Let me show you the optimal placement:
-✅ CORRECT PLACEMENT
-The /health endpoint should go AFTER all your route registrations but BEFORE the Socket.IO setup.
-Here's exactly where in your server.js:
-javascript// ✅ REGISTER ROUTES (your existing code - lines ~35-41)
+// Almost! But there's a better place for it. Let me show you the optimal placement:
+// ✅ CORRECT PLACEMENT
+// The /health endpoint should go AFTER all your route registrations but BEFORE the Socket.IO setup.
+// Here's exactly where in your server.js:
+// javascript// ✅ REGISTER ROUTES (your existing code - lines ~35-41)
 app.use('/api/rooms', roomRoutes);
 app.use('/api/run', submissionRoutes);
 app.use('/api/problems', problemRoutes);
@@ -743,8 +745,16 @@ io.on('connection', async (socket) => {
       if (!rooms.has(roomId)) {
         const problems = await Problem.aggregate([{ $sample: { size: 2 } }]); 
         rooms.set(roomId, { 
-            players: [], round: 1, totalRounds: 2, problems, scores: {}, 
-            roundCompletions: new Set(), isGameActive: true, startTime: Date.now(), cheaters: new Set(), submissionAttempts: new Set()
+            players: [], 
+            round: 1, 
+            totalRounds: 2, 
+            problems, 
+            scores: {}, 
+            roundCompletions: new Set(), 
+            isGameActive: true, 
+            startTime: Date.now(), 
+            cheaters: new Set(), 
+            submissionAttempts: new Set()
         });
         startRoomTimer(roomId, 30 * 60);
       }
@@ -768,8 +778,15 @@ io.on('connection', async (socket) => {
 
       socket.join(roomId);
       socket.emit('room_joined', {
-        roomId, side, username, players: room.players, problem: room.problems[room.round - 1],
-        round: room.round, totalRounds: room.totalRounds, scores: room.scores, remainingTime 
+        roomId,
+        side,
+        username, 
+        players: room.players, 
+        problem: room.problems[room.round - 1],
+        round: room.round, 
+        totalRounds: room.totalRounds, 
+        scores: room.scores, 
+        remainingTime 
       });
 
       if (!isReconnect) {

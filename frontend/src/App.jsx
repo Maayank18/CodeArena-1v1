@@ -38,6 +38,7 @@ import History from './pages/History';
 import EditorPage from './pages/EditorPage';
 import Leaderboard from './pages/Leaderboard';
 import Resources from './pages/Resources';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
     return (
@@ -52,6 +53,7 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/editor/:roomId" element={<EditorPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
     );
 }
