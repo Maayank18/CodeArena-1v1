@@ -1,8 +1,6 @@
 // import axios from 'axios';
 
 // // Map frontend language names to Piston's identifiers
-// // Using version: '*' ensures we always use the latest supported version
-// // so the code doesn't break if Piston updates their runtimes.
 // const LANGUAGE_MAP = {
 //     javascript: { language: 'javascript', version: '*' },
 //     python: { language: 'python', version: '*' },
@@ -11,7 +9,8 @@
 //     java: { language: 'java', version: '*' }
 // };
 
-// export const executeCode = async (language, sourceCode, stdin = "") => {
+// // ✅ UPDATED: Now accepts timeLimit (default 2000ms)
+// export const executeCode = async (language, sourceCode, stdin = "", timeLimit = 2000) => {
 //     // 1. Validate Language
 //     const config = LANGUAGE_MAP[language.toLowerCase()];
 //     if (!config) {
@@ -19,7 +18,7 @@
 //     }
 
 //     try {
-//         // 2. Call Piston API
+//         // 2. Call Piston API with Constraints
 //         const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
 //             language: config.language,
 //             version: config.version,
@@ -28,31 +27,28 @@
 //                     content: sourceCode
 //                 }
 //             ],
-//             stdin: stdin // Inputs for the problem test cases
+//             stdin: stdin,
+            
+//             // ✅ ROBUSTNESS FIX: Enforce Timeouts
+//             // This kills infinite loops immediately on the execution server
+//             run_timeout: timeLimit,     
+//             compile_timeout: 10000, // 10s max for compilation (Java/C++ needs this)
 //         });
 
-//         // 3. Return the data directly
 //         return response.data; 
 
 //     } catch (error) {
 //         // 4. IMPROVED ERROR HANDLING
-//         // Axios creates specific error objects. We need to parse them to know WHY it failed.
-        
 //         if (error.response) {
-//             // The server responded with a status code outside the 2xx range (e.g., 400, 429, 500)
 //             console.error("Piston Error Response:", error.response.data);
-            
-//             // Extract the actual message from Piston (often contains rate limit info or compile errors)
 //             const pistonMessage = error.response.data?.message || "Execution Service Error";
 //             throw new Error(pistonMessage);
 //         } 
 //         else if (error.request) {
-//             // The request was made but no response was received (Timeout or Network down)
 //             console.error("Piston No Response:", error.request);
 //             throw new Error("Execution timed out or network is down.");
 //         } 
 //         else {
-//             // Something happened in setting up the request
 //             console.error("Piston Request Setup Error:", error.message);
 //             throw new Error("Failed to prepare execution request.");
 //         }
@@ -62,9 +58,11 @@
 
 
 
+
+
+
 import axios from 'axios';
 
-// Map frontend language names to Piston's identifiers
 const LANGUAGE_MAP = {
     javascript: { language: 'javascript', version: '*' },
     python: { language: 'python', version: '*' },
@@ -73,48 +71,139 @@ const LANGUAGE_MAP = {
     java: { language: 'java', version: '*' }
 };
 
-// ✅ UPDATED: Now accepts timeLimit (default 2000ms)
+// ✅ REQUEST QUEUE: Prevents overwhelming Piston API
+class ExecutionQueue {
+    constructor(maxConcurrent = 3, delayBetweenRequests = 500) {
+        this.queue = [];
+        this.active = 0;
+        this.maxConcurrent = maxConcurrent;
+        this.delayBetweenRequests = delayBetweenRequests;
+        this.lastRequestTime = 0;
+    }
+
+    async add(fn) {
+        return new Promise((resolve, reject) => {
+            this.queue.push({ fn, resolve, reject });
+            this.process();
+        });
+    }
+
+    async process() {
+        if (this.active >= this.maxConcurrent || this.queue.length === 0) {
+            return;
+        }
+
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.lastRequestTime;
+        if (timeSinceLastRequest < this.delayBetweenRequests) {
+            setTimeout(() => this.process(), this.delayBetweenRequests - timeSinceLastRequest);
+            return;
+        }
+
+        const { fn, resolve, reject } = this.queue.shift();
+        this.active++;
+        this.lastRequestTime = Date.now();
+
+        try {
+            const result = await fn();
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        } finally {
+            this.active--;
+            this.process();
+        }
+    }
+}
+
+const executionQueue = new ExecutionQueue(3, 500);
+
+// ✅ CIRCUIT BREAKER: Stops requests if Piston is down
+let circuitBreakerOpen = false;
+let failureCount = 0;
+const MAX_FAILURES = 5;
+const CIRCUIT_RESET_TIME = 60000;
+
+function recordFailure() {
+    failureCount++;
+    if (failureCount >= MAX_FAILURES) {
+        circuitBreakerOpen = true;
+        console.error(`[CIRCUIT BREAKER] Piston API down. Blocking requests for ${CIRCUIT_RESET_TIME}ms`);
+        setTimeout(() => {
+            circuitBreakerOpen = false;
+            failureCount = 0;
+            console.log('[CIRCUIT BREAKER] Reset. Resuming requests.');
+        }, CIRCUIT_RESET_TIME);
+    }
+}
+
+function recordSuccess() {
+    failureCount = Math.max(0, failureCount - 1);
+}
+
+// ✅ RETRY LOGIC: Exponential backoff
+async function executeWithRetry(fn, maxRetries = 2) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const result = await fn();
+            recordSuccess();
+            return result;
+        } catch (error) {
+            if (attempt === maxRetries) {
+                recordFailure();
+                throw error;
+            }
+            const delay = Math.pow(2, attempt) * 1000;
+            console.log(`[RETRY] Attempt ${attempt + 1} failed. Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
 export const executeCode = async (language, sourceCode, stdin = "", timeLimit = 2000) => {
-    // 1. Validate Language
+    // Circuit breaker check
+    if (circuitBreakerOpen) {
+        throw new Error("Execution service is temporarily unavailable. Please try again in a minute.");
+    }
+
+    // Validate language
     const config = LANGUAGE_MAP[language.toLowerCase()];
     if (!config) {
         throw new Error(`Unsupported language: ${language}`);
     }
 
-    try {
-        // 2. Call Piston API with Constraints
+    // Add to queue with retry
+    return executionQueue.add(() => executeWithRetry(async () => {
         const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
             language: config.language,
             version: config.version,
-            files: [
-                {
-                    content: sourceCode
-                }
-            ],
+            files: [{ content: sourceCode }],
             stdin: stdin,
-            
-            // ✅ ROBUSTNESS FIX: Enforce Timeouts
-            // This kills infinite loops immediately on the execution server
-            run_timeout: timeLimit,     
-            compile_timeout: 10000, // 10s max for compilation (Java/C++ needs this)
+            run_timeout: timeLimit,
+            compile_timeout: 10000,
+        }, {
+            timeout: timeLimit + 5000,
         });
 
-        return response.data; 
-
-    } catch (error) {
-        // 4. IMPROVED ERROR HANDLING
-        if (error.response) {
-            console.error("Piston Error Response:", error.response.data);
-            const pistonMessage = error.response.data?.message || "Execution Service Error";
-            throw new Error(pistonMessage);
-        } 
-        else if (error.request) {
-            console.error("Piston No Response:", error.request);
-            throw new Error("Execution timed out or network is down.");
-        } 
-        else {
-            console.error("Piston Request Setup Error:", error.message);
-            throw new Error("Failed to prepare execution request.");
+        if (!response.data || !response.data.run) {
+            throw new Error("Piston API returned invalid response");
         }
-    }
+
+        return response.data;
+    }, 2));
 };
+
+// ✅ HEALTH CHECK: Every 5 minutes
+setInterval(async () => {
+    try {
+        const testCode = "console.log('health')";
+        await axios.post('https://emkc.org/api/v2/piston/execute', {
+            language: 'javascript',
+            version: '*',
+            files: [{ content: testCode }],
+        }, { timeout: 5000 });
+        console.log('[PISTON HEALTH] ✅ API responsive');
+    } catch (error) {
+        console.error('[PISTON HEALTH] ⚠️ API check failed:', error.message);
+    }
+}, 5 * 60 * 1000);
