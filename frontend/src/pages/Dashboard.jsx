@@ -9,39 +9,27 @@
 // import { Loader2, Trophy } from 'lucide-react'; 
 // import axios from 'axios';
 // import api from '../api.js'; 
-
-// // 1. IMPORT THE UPDATED LEVEL SYSTEM
 // import { getLevelInfo } from '../utils/levelSystem';
 
 // const Dashboard = () => {
 //   const [user, setUser] = useState(null);
 //   const navigate = useNavigate();
 //   const [roomIdInput, setRoomIdInput] = useState('');
-
-//   // Loading & Navigation State
 //   const [isNavigating, setIsNavigating] = useState(false);
 //   const [loadingText, setLoadingText] = useState('');
 
-//   // ✅ DYNAMIC RANK CALCULATION
 //   const rankInfo = getLevelInfo(user?.rating || 1000);
 
 //   useEffect(() => {
 //       const syncUserAndData = async () => {
 //       const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
 //       if (!storedUser) { navigate('/login'); return; }
-
-//       // 1. Show what we have locally immediately (The "Correct" post-match data)
 //       setUser(storedUser);
 
 //       try {
 //           await new Promise(resolve => setTimeout(resolve, 1000));
-
-//           // 2. Fetch from Server
 //           const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
 //           const serverUser = response.data;
-
-//           // 3. SMART MERGE: Don't overwrite if server data looks "stale"
-//           // If local has MORE matches than server, keep local stats (DB might be lagging)
 //           const localStats = storedUser.stats || { matchesPlayed: 0 };
 //           const serverStats = serverUser.stats || { matchesPlayed: 0 };
 
@@ -52,17 +40,15 @@
 //           const finalUser = { 
 //               ...storedUser, 
 //               ...serverUser,
-//               stats: finalStats // Use the "best" stats available
+//               stats: finalStats
 //           };
           
 //           localStorage.setItem('codearena_user', JSON.stringify(finalUser));
 //           setUser(finalUser);
 //       } catch (err) {
 //           console.error("Profile sync failed, using cached data", err);
-//           // Do NOT reset user here, just keep the local version
 //       }
 //   };
-
 //       syncUserAndData();
 //   }, [navigate]);
 
@@ -111,7 +97,10 @@
 //       <div className="flex flex-1 h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] overflow-hidden">
 //         <Sidebar />
         
-//         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] pb-20 md:pb-0 w-full">
+//         {/* ✅ FIX 1: Increased padding from pb-20 to pb-32.
+//             This ensures the Footer (Email/LinkedIn) scrolls ABOVE the new Mobile Stats bar + Nav bar.
+//         */}
+//         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] pb-32 md:pb-0 w-full">
 //           <div className="min-h-full flex flex-col">
 //             <div className="max-w-4xl mx-auto p-4 md:p-8 flex-1 w-full">
 //               <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2 tracking-tight">
@@ -121,8 +110,15 @@
 //                 Join a room or create a new one to challenge a friend.
 //               </p>
 
-//               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-start">
-//                 <div className="bg-[var(--bg-secondary)] p-6 md:p-8 rounded-2xl border border-[var(--border-color)] shadow-xl shadow-black/5 space-y-6 md:space-y-8">
+//               {/* ✅ FIX 2: Removed 'items-start'. 
+//                   This allows the Left Card to stretch and match the height of the Right Column.
+//               */}
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                
+//                 {/* ✅ FIX 3: Added 'h-full'. 
+//                     This creates the visual symmetry you wanted.
+//                 */}
+//                 <div className="bg-[var(--bg-secondary)] p-6 md:p-8 rounded-2xl border border-[var(--border-color)] shadow-xl shadow-black/5 space-y-6 md:space-y-8 h-full flex flex-col justify-center">
 //                   <div>
 //                     <label className="text-xs md:sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3 block">Join Existing Room</label>
 //                     <div className="flex gap-2 md:gap-3">
@@ -148,7 +144,6 @@
 //                 </div>
 
 //                 <div className="grid grid-cols-2 gap-4">
-//                   {/* ✅ FIX: Displaying stats directly from the synced 'user' state */}
 //                   <div className="bg-[var(--bg-secondary)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-lg">
 //                     <span className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2">
 //                       {user.stats?.matchesPlayed || 0}
@@ -163,7 +158,6 @@
 //                     <span className="text-[var(--text-secondary)] font-medium text-sm">Wins</span>
 //                   </div>
 
-//                   {/* ✅ ENHANCED RANK CARD WITH PROGRESS BAR */}
 //                   <div className="col-span-2 bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col shadow-lg">
 //                     <div className="flex items-center justify-between mb-4">
 //                         <div className="flex flex-col">
@@ -223,10 +217,7 @@
 
 
 
-
-
-
-
+// UPAR WALA BADIA HAI LEKIN CLAUDE BHAIYA NE KUCH OPTIMISATION DI HAI 
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
@@ -236,9 +227,11 @@ import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { Logo } from '../components/Logo';
 import { Loader2, Trophy } from 'lucide-react'; 
-import axios from 'axios';
 import api from '../api.js'; 
 import { getLevelInfo } from '../utils/levelSystem';
+
+const CACHE_KEY = 'dashboard_profile_cache';
+const CACHE_DURATION = 60000; // 60 seconds
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -250,70 +243,101 @@ const Dashboard = () => {
   const rankInfo = getLevelInfo(user?.rating || 1000);
 
   useEffect(() => {
-      const syncUserAndData = async () => {
+    const syncUserAndData = async () => {
       const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
-      if (!storedUser) { navigate('/login'); return; }
+      if (!storedUser) { 
+        navigate('/login'); 
+        return; 
+      }
+      
+      // Immediately set user from localStorage for instant UI
       setUser(storedUser);
 
-      try {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const response = await api.get(`/users/profile/${storedUser.username}?t=${new Date().getTime()}`);
-          const serverUser = response.data;
-          const localStats = storedUser.stats || { matchesPlayed: 0 };
-          const serverStats = serverUser.stats || { matchesPlayed: 0 };
-
-          const finalStats = (localStats.matchesPlayed > serverStats.matchesPlayed) 
-              ? localStats 
-              : serverStats;
-
-          const finalUser = { 
-              ...storedUser, 
-              ...serverUser,
-              stats: finalStats
-          };
+      // Check cache validity
+      const cache = localStorage.getItem(CACHE_KEY);
+      let shouldFetch = true;
+      
+      if (cache) {
+        try {
+          const { data, timestamp } = JSON.parse(cache);
+          const age = Date.now() - timestamp;
           
-          localStorage.setItem('codearena_user', JSON.stringify(finalUser));
-          setUser(finalUser);
-      } catch (err) {
-          console.error("Profile sync failed, using cached data", err);
+          // Use cached data if less than 60 seconds old
+          if (age < CACHE_DURATION) {
+            shouldFetch = false;
+            const cachedUser = { ...storedUser, ...data };
+            setUser(cachedUser);
+            localStorage.setItem('codearena_user', JSON.stringify(cachedUser));
+          }
+        } catch (e) {
+          console.error("Cache parse error", e);
+        }
       }
-  };
-      syncUserAndData();
+
+      // Only fetch if cache is stale/missing
+      if (!shouldFetch) return;
+
+      try {
+        const response = await api.get(`/users/profile/${storedUser.username}`);
+        const serverUser = response.data;
+
+        // Merge server data with local user (server is source of truth)
+        const finalUser = { 
+          ...storedUser,
+          ...serverUser,
+          stats: serverUser.stats || storedUser.stats || { matchesPlayed: 0 }
+        };
+        
+        // Update state and storage
+        setUser(finalUser);
+        localStorage.setItem('codearena_user', JSON.stringify(finalUser));
+        
+        // Update cache with timestamp
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          data: serverUser,
+          timestamp: Date.now()
+        }));
+      } catch (err) {
+        console.error("Profile sync failed, using cached data", err);
+        // Keep using storedUser that was already set
+      }
+    };
+    
+    syncUserAndData();
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('codearena_user');
+    localStorage.removeItem(CACHE_KEY); // Clear cache on logout
     toast.success('Logged out successfully');
     navigate('/');
   };
 
   const handleJoinRoom = () => {
-    if (!roomIdInput) {
-        toast.error('Please enter a Room ID');
-        return;
+    if (!roomIdInput.trim()) {
+      toast.error('Please enter a Room ID');
+      return;
     }
     setIsNavigating(true);
     setLoadingText('Entering the Arena...');
     navigate(`/editor/${roomIdInput}`, { state: { username: user.username } });
-    setIsNavigating(false);
   };
 
   const createRoom = async () => {
     setIsNavigating(true);
     setLoadingText('Initializing Battleground...');
     try {
-        let newRoomId;
-        try {
-            const response = await api.post('/rooms');
-            newRoomId = response.data.roomId;
-        } catch (err) {
-            newRoomId = uuidv4();
-        }
-        navigate(`/editor/${newRoomId}`, { state: { username: user.username } });
-        setIsNavigating(false);
+      let newRoomId;
+      try {
+        const response = await api.post('/rooms');
+        newRoomId = response.data.roomId;
+      } catch (err) {
+        newRoomId = uuidv4();
+      }
+      navigate(`/editor/${newRoomId}`, { state: { username: user.username } });
     } catch (error) {
-        toast.error("Failed to initialize.");
-        setIsNavigating(false);
+      toast.error("Failed to initialize.");
+      setIsNavigating(false);
     }
   };
 
@@ -326,9 +350,6 @@ const Dashboard = () => {
       <div className="flex flex-1 h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] overflow-hidden">
         <Sidebar />
         
-        {/* ✅ FIX 1: Increased padding from pb-20 to pb-32.
-            This ensures the Footer (Email/LinkedIn) scrolls ABOVE the new Mobile Stats bar + Nav bar.
-        */}
         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] pb-32 md:pb-0 w-full">
           <div className="min-h-full flex flex-col">
             <div className="max-w-4xl mx-auto p-4 md:p-8 flex-1 w-full">
@@ -339,14 +360,8 @@ const Dashboard = () => {
                 Join a room or create a new one to challenge a friend.
               </p>
 
-              {/* ✅ FIX 2: Removed 'items-start'. 
-                  This allows the Left Card to stretch and match the height of the Right Column.
-              */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 
-                {/* ✅ FIX 3: Added 'h-full'. 
-                    This creates the visual symmetry you wanted.
-                */}
                 <div className="bg-[var(--bg-secondary)] p-6 md:p-8 rounded-2xl border border-[var(--border-color)] shadow-xl shadow-black/5 space-y-6 md:space-y-8 h-full flex flex-col justify-center">
                   <div>
                     <label className="text-xs md:sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3 block">Join Existing Room</label>
