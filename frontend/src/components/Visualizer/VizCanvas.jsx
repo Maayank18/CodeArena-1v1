@@ -3,7 +3,7 @@
 // import { Activity } from 'lucide-react';
 
 // import ArrayViz from './renderers/ArrayViz';
-// import VariableBox from './renderers/VariableBox'; // Still used for generic types if needed
+// import VariableBox from './renderers/VariableBox';
 // import TreeViz from './renderers/TreeViz';
 // import MatrixViz from './renderers/MatrixViz';
 // import LinkedListViz from './renderers/LinkedListViz';
@@ -62,14 +62,15 @@
 //     });
 
 //     return (
-//         // CHANGE: Main container is now a vertical flex column
 //         <div className="flex flex-col h-full overflow-hidden bg-[#0d1117]">
             
-//             {/* TOP: MAIN STAGE (Visualizations) - Grows to fill space */}
+//             {/* TOP: MAIN STAGE (Visualizations) */}
+//             {/* Added 'items-center' to center all visualization blocks horizontally */}
 //             <div className="flex-1 p-6 overflow-auto custom-scrollbar flex flex-col gap-8 items-center">
 //                 <AnimatePresence mode='popLayout'>
 //                     {complexVars.map(([name, value]) => (
-//                         <div key={name} className="w-full max-w-4xl">
+//                         // Changed wrapper to flex-col & items-center to center the content inside
+//                         <div key={name} className="w-full flex flex-col items-center">
 //                             <ComplexRenderer name={name} value={value} pointers={pointers} />
 //                         </div>
 //                     ))}
@@ -99,7 +100,6 @@
 //     );
 // };
 
-// // ✨ NEW DESIGN: Horizontal "Pill" for Variables
 // const CompactVariablePill = ({ name, value }) => {
 //     return (
 //         <motion.div
@@ -109,23 +109,15 @@
 //             exit={{ scale: 0.9, opacity: 0 }}
 //             className="px-3 py-2 bg-[#161b22] rounded-lg flex items-center gap-3 shadow-sm border border-gray-800"
 //         >
-//             {/* Name Badge */}
-//             <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-//                 {name}
-//             </span>
-
-//             {/* Separator line */}
+//             <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{name}</span>
 //             <div className="w-px h-4 bg-gray-700"></div>
-
-//             {/* Value */}
-//             <span className="text-base font-mono font-bold text-blue-400 tabular-nums">
-//                 {String(value)}
-//             </span>
+//             <span className="text-base font-mono font-bold text-blue-400 tabular-nums">{String(value)}</span>
 //         </motion.div>
 //     );
 // };
 
 // // --- HELPER: Logic to choose the right renderer for Complex Types ---
+// // UPDATED: Now wraps return elements in 'flex flex-col items-center'
 // const ComplexRenderer = ({ name, value, pointers }) => {
 //     // A. ARRAYS (1D)
 //     if (Array.isArray(value) && (value.length === 0 || !Array.isArray(value[0]))) {
@@ -137,7 +129,7 @@
 //         else if (lowerName.includes('queue')) { badgeLabel = "Queue"; badgeColor = "text-cyan-400 bg-cyan-400/10"; }
 
 //         return (
-//             <div>
+//             <div className="flex flex-col items-center">
 //                 <Header badge={badgeLabel} badgeColor={badgeColor} name={name} meta={`len: ${value.length}`} />
 //                 <ArrayViz data={value} pointers={pointers} />
 //             </div>
@@ -147,7 +139,7 @@
 //     // B. 2D MATRICES
 //     if (Array.isArray(value) && value.length > 0 && Array.isArray(value[0])) {
 //         return (
-//             <div>
+//             <div className="flex flex-col items-center">
 //                 <Header 
 //                     badge={`Matrix ${value.length}×${value[0]?.length || 0}`} 
 //                     badgeColor="text-orange-400 bg-orange-400/10 border-orange-400/20" 
@@ -168,14 +160,14 @@
             
 //             if (isLinkedList) {
 //                 return (
-//                     <div>
+//                     <div className="flex flex-col items-center">
 //                         <Header badge="List" badgeColor="text-emerald-400 bg-emerald-400/10 border-emerald-400/20" name={name} />
 //                         <LinkedListViz data={value} name={name} />
 //                     </div>
 //                 );
 //             }
 //             return (
-//                 <div>
+//                 <div className="flex flex-col items-center">
 //                     <Header badge={isBinaryTree ? "Tree" : "Graph"} badgeColor="text-purple-400 bg-purple-400/10 border-purple-400/20" name={name} />
 //                     <TreeViz data={value} name={name} />
 //                 </div>
@@ -183,7 +175,7 @@
 //         }
         
 //         return (
-//             <div className="min-w-[200px] bg-[#161b22] p-4 rounded-xl border border-gray-800">
+//             <div className="min-w-[200px] bg-[#161b22] p-4 rounded-xl border border-gray-800 flex flex-col items-center">
 //                 <Header badge="Object" name={name} />
 //                 <pre className="text-[10px] text-green-400 overflow-auto max-h-48 font-mono custom-scrollbar mt-2">{JSON.stringify(value, null, 2)}</pre>
 //             </div>
@@ -192,8 +184,9 @@
 //     return null;
 // };
 
+// // Updated Header to center text as well
 // const Header = ({ badge, badgeColor = "text-gray-400 bg-gray-800", name, meta }) => (
-//     <div className="flex items-center gap-3 mb-3">
+//     <div className="flex items-center gap-3 mb-3 justify-center">
 //         <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-transparent ${badgeColor}`}>
 //             {badge}
 //         </span>
@@ -214,14 +207,12 @@
 
 
 
-
-
-
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 
 import ArrayViz from './renderers/ArrayViz';
+import StackViz from './renderers/StackViz'; // ✅ IMPORT StackViz
 import VariableBox from './renderers/VariableBox';
 import TreeViz from './renderers/TreeViz';
 import MatrixViz from './renderers/MatrixViz';
@@ -284,11 +275,9 @@ const VizCanvas = ({ variables }) => {
         <div className="flex flex-col h-full overflow-hidden bg-[#0d1117]">
             
             {/* TOP: MAIN STAGE (Visualizations) */}
-            {/* Added 'items-center' to center all visualization blocks horizontally */}
             <div className="flex-1 p-6 overflow-auto custom-scrollbar flex flex-col gap-8 items-center">
                 <AnimatePresence mode='popLayout'>
                     {complexVars.map(([name, value]) => (
-                        // Changed wrapper to flex-col & items-center to center the content inside
                         <div key={name} className="w-full flex flex-col items-center">
                             <ComplexRenderer name={name} value={value} pointers={pointers} />
                         </div>
@@ -336,20 +325,40 @@ const CompactVariablePill = ({ name, value }) => {
 };
 
 // --- HELPER: Logic to choose the right renderer for Complex Types ---
-// UPDATED: Now wraps return elements in 'flex flex-col items-center'
 const ComplexRenderer = ({ name, value, pointers }) => {
-    // A. ARRAYS (1D)
+    // A. ARRAYS (1D) & STACKS
     if (Array.isArray(value) && (value.length === 0 || !Array.isArray(value[0]))) {
-        let badgeLabel = "Array";
-        let badgeColor = "text-blue-400 bg-blue-400/10";
         const lowerName = name.toLowerCase();
         
-        if (lowerName.includes('stack')) { badgeLabel = "Stack"; badgeColor = "text-pink-400 bg-pink-400/10"; } 
-        else if (lowerName.includes('queue')) { badgeLabel = "Queue"; badgeColor = "text-cyan-400 bg-cyan-400/10"; }
+        // 1. Check for Stack
+        if (lowerName.includes('stack')) {
+            return (
+                <div className="flex flex-col items-center">
+                    <Header 
+                        badge="Stack (LIFO)" 
+                        badgeColor="text-pink-400 bg-pink-400/10 border-pink-400/20" 
+                        name={name} 
+                        meta={`size: ${value.length}`} 
+                    />
+                    <StackViz data={value} pointers={pointers} />
+                </div>
+            );
+        }
+        
+        // 2. Check for Queue
+        if (lowerName.includes('queue')) {
+            return (
+                <div className="flex flex-col items-center">
+                    <Header badge="Queue" badgeColor="text-cyan-400 bg-cyan-400/10" name={name} meta={`len: ${value.length}`} />
+                    <ArrayViz data={value} pointers={pointers} />
+                </div>
+            );
+        }
 
+        // 3. Default Array
         return (
             <div className="flex flex-col items-center">
-                <Header badge={badgeLabel} badgeColor={badgeColor} name={name} meta={`len: ${value.length}`} />
+                <Header badge="Array" badgeColor="text-blue-400 bg-blue-400/10" name={name} meta={`len: ${value.length}`} />
                 <ArrayViz data={value} pointers={pointers} />
             </div>
         );
@@ -403,7 +412,6 @@ const ComplexRenderer = ({ name, value, pointers }) => {
     return null;
 };
 
-// Updated Header to center text as well
 const Header = ({ badge, badgeColor = "text-gray-400 bg-gray-800", name, meta }) => (
     <div className="flex items-center gap-3 mb-3 justify-center">
         <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-transparent ${badgeColor}`}>
