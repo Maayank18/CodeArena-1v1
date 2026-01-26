@@ -1,28 +1,6 @@
-// 🏆 GET LEADERBOARD - Optimized with Tie-Breaking
-// export const getLeaderboard = async (req, res) => {
-//   try {
-//     console.log('[LEADERBOARD] Fetching top players...');
-    
-//     const players = await User.find()
-//       // ✅ FIX: Ensure 'stats' is selected so matches/wins show up
-//       .select('username avatar rating seasonScore stats createdAt') 
-//       // ✅ FIX: Sort by seasonScore FIRST, then rating SECOND as a tie-breaker
-//       // This prevents you from being #1 just because your account is old.
-//       .sort({ seasonScore: -1, rating: -1 }) 
-//       .limit(100) 
-//       .lean(); 
-
-//     console.log(`[LEADERBOARD] Found ${players.length} players`);
-//     res.json(players);
-//   } catch (error) {
-//     console.error('❌ [LEADERBOARD] Error:', error);
-//     res.status(500).json({ error: 'Failed to fetch leaderboard' });
-//   }
-// };
-
-
 // Optimized getLeaderboard in userController.js
 import User from '../models/User.js';
+
 export const getLeaderboard = async (req, res) => {
   try {
     const players = await User.find()
