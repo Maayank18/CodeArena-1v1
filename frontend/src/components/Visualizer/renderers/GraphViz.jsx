@@ -143,3 +143,133 @@
 
 // // ✅ EXPORT DEFAULT IS CRITICAL
 // export default GraphViz;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useMemo, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// --- MAIN COMPONENT ---
+const GraphViz = memo(({ data, pointers }) => {
+    
+    // 🛡️ DEFENSIVE GUARD
+    if (!data || !Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 text-gray-500 bg-[#0d1117] rounded-xl border border-dashed border-gray-800">
+                <span className="text-xs font-mono">Waiting for Grid Data...</span>
+            </div>
+        );
+    }
+
+    const activeRow = pointers?.r ?? pointers?.row ?? -1;
+    const activeCol = pointers?.c ?? pointers?.col ?? -1;
+
+    return (
+        <div className="p-6 bg-[#020617] rounded-3xl border border-slate-800 inline-block shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-900/10 to-purple-900/10 pointer-events-none" />
+
+            <div className="flex flex-col gap-1.5 relative z-10">
+                {data.map((row, r) => (
+                    <div key={r} className="flex gap-1.5">
+                        {row.map((val, c) => (
+                            <GridCell 
+                                key={`${r}-${c}`} 
+                                val={val} 
+                                isPointerHere={activeRow === r && activeCol === c}
+                            />
+                        ))}
+                    </div>
+                ))}
+            </div>
+
+            <div className="flex flex-wrap gap-4 mt-8 justify-center items-center border-t border-slate-800 pt-5">
+                <LegendItem color="bg-blue-900/30 border-blue-500/50 text-blue-400" label="Road (1)" />
+                <LegendItem color="bg-orange-900/30 border-orange-500/50 text-orange-400" label="Mud (5+)" />
+                <LegendItem color="bg-green-500/20 text-green-400 border-green-500" label="Path" />
+                <LegendItem color="bg-cyan-600 text-white shadow-lg shadow-cyan-600/50" label="Start" />
+                <LegendItem color="bg-pink-600 text-white shadow-lg shadow-pink-600/50" label="Goal" />
+            </div>
+        </div>
+    );
+});
+
+// --- SUB-COMPONENT ---
+const GridCell = memo(({ val, isPointerHere }) => {
+    
+    const styles = useMemo(() => {
+        // 1. STRINGS (Path, Start, Goal)
+        if (typeof val === 'string') {
+            if (['↑', '↓', '←', '→', '✓'].includes(val)) {
+                return { base: 'bg-green-500/20 border-green-500/50', text: 'text-green-400 text-xl font-black', zIndex: 10 };
+            }
+            if (val === 'S') return { base: 'bg-cyan-600 border-cyan-400 shadow-[0_0_15px_rgba(8,145,178,0.6)]', text: 'text-white font-bold', zIndex: 20 };
+            if (val === 'G') return { base: 'bg-pink-600 border-pink-400 shadow-[0_0_15px_rgba(219,39,119,0.6)]', text: 'text-white font-bold', zIndex: 20 };
+            if (val === '*') return { base: 'bg-yellow-400 border-yellow-200 shadow-[0_0_20px_rgba(250,204,21,0.8)]', text: 'text-black font-bold', zIndex: 30, pulse: true };
+        }
+
+        // 2. NUMBERS (Terrain)
+        // STRICT CHECK: Don't treat null/undefined as 0
+        if (typeof val === 'number') {
+            if (val === 0) return { base: 'bg-[#0f172a] border-slate-800', text: 'text-slate-700' };
+            if (val < 10) return { base: 'bg-blue-600/10 border-blue-500/30', text: 'text-blue-400 font-bold' };
+            if (val >= 10) return { base: 'bg-orange-600/20 border-orange-500/50', text: 'text-orange-400 font-bold' };
+        }
+
+        return { base: 'bg-[#0f172a] border-slate-800', text: 'text-slate-600' };
+    }, [val]);
+
+    return (
+        <div className="relative">
+            <motion.div
+                initial={false}
+                animate={{
+                    scale: styles.pulse || isPointerHere ? 1.1 : 1,
+                    backgroundColor: isPointerHere ? 'rgba(250, 204, 21, 0.9)' : undefined,
+                    borderColor: isPointerHere ? '#fef08a' : undefined,
+                }}
+                transition={{ duration: 0.2 }}
+                className={`
+                    w-10 h-10 md:w-12 md:h-12 flex items-center justify-center 
+                    rounded-lg border-[1.5px] text-sm md:text-base font-mono relative backdrop-blur-sm
+                    ${styles.base} ${styles.text} 
+                    ${styles.zIndex ? `z-[${styles.zIndex}]` : 'z-0'}
+                    transition-colors
+                `}
+            >
+                {val === '*' ? '●' : val}
+            </motion.div>
+
+            <AnimatePresence>
+                {(styles.pulse || isPointerHere) && (
+                    <motion.div
+                        initial={{ opacity: 1, scale: 1 }}
+                        animate={{ opacity: 0, scale: 1.8 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        className="absolute inset-0 rounded-lg border-2 border-yellow-400 pointer-events-none z-40"
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+});
+
+const LegendItem = memo(({ color, label }) => (
+    <div className="flex items-center gap-2 bg-[#0f172a] px-3 py-1.5 rounded-full border border-slate-800">
+        <div className={`w-3 h-3 rounded-full ${color} ${!color.includes('border') ? 'border border-transparent' : ''}`}></div>
+        <span className="text-[10px] md:text-xs text-slate-300 font-bold uppercase tracking-wider">{label}</span>
+    </div>
+));
+
+export default GraphViz;

@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from 'react';
-// import { Swords, History, Trophy, BookOpen, Globe, Zap } from 'lucide-react'; // ✅ Added Zap icon
+// import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye } from 'lucide-react'; // ✅ Added Eye icon
 // import { useLocation, useNavigate } from 'react-router-dom';
 // import { io } from 'socket.io-client';
 
@@ -38,11 +38,13 @@
 //     };
 //   }, []);
 
+//   // ✅ ADDED: Visualizer to the menu list
 //   const menu = [
 //     { name: 'Battle', icon: Swords, path: '/dashboard' },
 //     { name: 'History', icon: History, path: '/history' },
 //     { name: 'Ranks', icon: Trophy, path: '/leaderboard' },
 //     { name: 'Learn', icon: BookOpen, path: '/resources' },
+//     { name: 'Visualizer', icon: Eye, path: '/visualizer' }, // ✅ New Item
 //   ];
 
 //   return (
@@ -67,7 +69,10 @@
 //                 }`}
 //               >
 //                 <item.icon size={18} />
-//                 {item.name === 'Battle' ? 'Battle Arena' : item.name === 'Ranks' ? 'Leaderboard' : item.name}
+//                 {/* Handle display names based on key */}
+//                 {item.name === 'Battle' ? 'Battle Arena' : 
+//                  item.name === 'Ranks' ? 'Leaderboard' : 
+//                  item.name}
 //               </button>
 //             );
 //           })}
@@ -95,7 +100,6 @@
 //               </div>
 //           </div>
 //           <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
-//             {/* ✅ Added Zap Icon here */}
 //             <h4 className="text-[var(--text-primary)] font-bold text-sm mb-1 flex items-center gap-2">
 //                 <Zap size={16} className="text-yellow-400 fill-current" /> Pro Plan
 //             </h4>
@@ -104,12 +108,8 @@
 //         </div>
 //       </aside>
 
-//       {/* ✅ NEW: MOBILE STATS STRIP 
-//           - Visible only on mobile (md:hidden)
-//           - Sits right above the bottom nav (bottom-16)
-//       */}
+//       {/* MOBILE STATS STRIP */}
 //       <div className="md:hidden fixed bottom-16 left-0 right-0 h-12 bg-[var(--bg-primary)] border-t border-[var(--border-color)] flex items-center justify-between px-4 z-40">
-//           {/* Stats Section */}
 //           <div className="flex items-center gap-4 text-[10px]">
 //               <div className="flex items-center gap-1.5">
 //                   <div className="relative flex h-1.5 w-1.5">
@@ -124,13 +124,12 @@
 //               </div>
 //           </div>
 
-//           {/* Upgrade Button */}
 //           <button className="flex items-center gap-1 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20 text-[10px] font-bold hover:bg-yellow-500/20">
 //               <Zap size={12} className="fill-current" /> Upgrade
 //           </button>
 //       </div>
 
-//       {/* MOBILE BOTTOM NAV (Unchanged) */}
+//       {/* MOBILE BOTTOM NAV */}
 //       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[var(--bg-secondary)] border-t border-[var(--border-color)] flex justify-around items-center z-50">
 //          {menu.map((item) => (
 //            <button key={item.path} onClick={() => navigate(item.path)} className={`flex flex-col items-center gap-1 ${location.pathname === item.path ? 'text-accent' : 'text-[var(--text-secondary)]'}`}>
@@ -148,17 +147,8 @@
 
 
 
-
-
-
-
-
-
-
-
-
 import React, { useEffect, useState } from 'react';
-import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye } from 'lucide-react'; // ✅ Added Eye icon
+import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
@@ -170,10 +160,17 @@ const Sidebar = () => {
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
     
-    // 1. PROACTIVE WAKEUP
-    fetch(`${socketUrl.replace(/\/$/, '')}/api/stats`).then(res => res.json()).then(d => {
-        if (d) setStats({ live: d.live || 0, total: d.total || 0 });
-    }).catch(() => {});
+    // 1. INITIAL FETCH (With Retry Logic for sleeping servers)
+    const fetchStats = async () => {
+        try {
+            const res = await fetch(`${socketUrl.replace(/\/$/, '')}/api/stats`);
+            if (res.ok) {
+                const d = await res.json();
+                if (d) setStats(prev => ({ ...prev, live: d.live || 0, total: d.total || 0 }));
+            }
+        } catch (e) { console.error("Stats fetch failed", e); }
+    };
+    fetchStats();
 
     // 2. SOCKET CONFIG
     const socket = io(socketUrl, {
@@ -184,10 +181,11 @@ const Sidebar = () => {
 
     socket.on('site_stats', (data) => {
       if (data) {
-        setStats({
-          live: typeof data.live === 'number' ? data.live : stats.live,
-          total: typeof data.total === 'number' ? data.total : stats.total
-        });
+        // ✅ FIXED: Use Functional Update 'prev' to avoid stale closure
+        setStats(prev => ({
+          live: typeof data.live === 'number' ? data.live : prev.live,
+          total: typeof data.total === 'number' ? data.total : prev.total
+        }));
       }
     });
 
@@ -197,18 +195,18 @@ const Sidebar = () => {
     };
   }, []);
 
-  // ✅ ADDED: Visualizer to the menu list
+  // Menu Configuration
   const menu = [
     { name: 'Battle', icon: Swords, path: '/dashboard' },
     { name: 'History', icon: History, path: '/history' },
     { name: 'Ranks', icon: Trophy, path: '/leaderboard' },
     { name: 'Learn', icon: BookOpen, path: '/resources' },
-    { name: 'Visualizer', icon: Eye, path: '/visualizer' }, // ✅ New Item
+    { name: 'Visualizer', icon: Eye, path: '/visualizer' },
   ];
 
   return (
     <>
-      {/* DESKTOP SIDEBAR (Unchanged Configuration) */}
+      {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex w-64 border-r border-[var(--border-color)] bg-[var(--bg-secondary)] flex-col py-6 h-auto">
         <div className="px-4 mb-6">
           <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider px-2">Main Menu</h3>
@@ -228,7 +226,6 @@ const Sidebar = () => {
                 }`}
               >
                 <item.icon size={18} />
-                {/* Handle display names based on key */}
                 {item.name === 'Battle' ? 'Battle Arena' : 
                  item.name === 'Ranks' ? 'Leaderboard' : 
                  item.name}

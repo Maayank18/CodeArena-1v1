@@ -1,53 +1,266 @@
+import { runInContext, createContext } from 'vm';
+
+export const traceJavaScript = async (userCode) => {
+    const trace = [];
+
+    try {
+        // 1. INSTRUMENTATION
+        // Now accurately detects function arguments (r, c) and loop variables
+        const instrumentedCode = instrumentJs(userCode);
+
+        // 2. SANDBOX SETUP
+        const sandbox = {
+            console: { 
+                log: (...args) => {} // Silently swallow logs
+            },
+            
+            // The snapshot function captures variable states
+            __snapshot: (line, capturer) => {
+                try {
+                    const capturedVars = capturer();
+                    const safeVars = {};
+
+                    capturedVars.forEach(([key, val]) => {
+                        if (val !== undefined) {
+                            // Serialize safely (Handle Cycles, Infinity, Maps)
+                            safeVars[key] = safeSerialize(val);
+                        }
+                    });
+
+                    // Only push if we have valid variables to show (Optimization)
+                    if (Object.keys(safeVars).length > 0) {
+                        trace.push({ line, variables: safeVars });
+                    }
+                } catch (e) {
+                    // Ignore snapshot errors (e.g., accessing variables in TDZ)
+                }
+            }
+        };
+
+        createContext(sandbox);
+
+        // 3. EXECUTION
+        // 5000ms timeout for heavy recursion
+        runInContext(instrumentedCode, sandbox, { timeout: 5000 });
+
+    } catch (e) {
+        // Capture Runtime Errors (like "Maximum call stack size exceeded")
+        trace.push({ 
+            line: 0, 
+            error: e.message, 
+            type: "error" 
+        });
+    }
+
+    return trace;
+};
+
+// --- HELPER 1: Safe Serializer (Prevents Crashes) ---
+function safeSerialize(value, seen = new WeakMap()) {
+    if (value === null) return null;
+    
+    // Handle Numbers (Infinity, NaN)
+    if (typeof value === 'number') {
+        if (Number.isNaN(value)) return 'NaN';
+        if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
+        return value;
+    }
+    
+    // Pass primitives through
+    if (typeof value !== 'object' && typeof value !== 'function') return value;
+    if (typeof value === 'function') return `[Function: ${value.name || 'anonymous'}]`;
+
+    // Circular Reference Check
+    if (seen.has(value)) return '[Circular]';
+    
+    // Handle Arrays
+    if (Array.isArray(value)) {
+        seen.set(value, true);
+        return value.map(item => safeSerialize(item, seen));
+    }
+
+    // Handle Maps
+    if (value instanceof Map) {
+        seen.set(value, true);
+        return { 
+            type: 'Map', 
+            entries: Array.from(value.entries()).map(([k, v]) => [safeSerialize(k, seen), safeSerialize(v, seen)]) 
+        };
+    }
+    
+    // Handle Sets
+    if (value instanceof Set) {
+        seen.set(value, true);
+        return { 
+            type: 'Set', 
+            values: Array.from(value.values()).map(v => safeSerialize(v, seen)) 
+        };
+    }
+
+    // Handle Objects
+    seen.set(value, true);
+    const copy = {};
+    for (const key in value) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+            copy[key] = safeSerialize(value[key], seen);
+        }
+    }
+    return copy;
+}
+
+// --- HELPER 2: Robust Instrumentation (The Fix) ---
+function instrumentJs(code) {
+    const lines = code.split('\n');
+    let injectedCode = "";
+    
+    // 1. ADVANCED VARIABLE SCANNING
+    let allVars = new Set();
+    
+    // Clean code for regex scanning (Remove comments)
+    const cleanCode = code.replace(/\/\/.*$/gm, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
+
+    // REGEX SET:
+    // 1. Declarations: let x, const y, var z
+    // 2. Function Args: function solve(r, c)
+    // 3. Arrow Args: (a, b) =>
+    // 4. Catch Clause: catch(err)
+    
+    const patterns = [
+        /(?:let|const|var)\s+([a-zA-Z0-9_$]+|\[.*?\]|\{.*?\})/g, // Variables
+        /function\s+\w*\s*\(([^)]*)\)/g, // Function Arguments
+        /\(([^)]*)\)\s*=>/g, // Arrow Function Arguments
+        /catch\s*\(([^)]+)\)/g // Catch block error variable
+    ];
+
+    patterns.forEach(regex => {
+        let match;
+        while ((match = regex.exec(cleanCode)) !== null) {
+            const raw = match[1]; 
+            if (!raw) continue;
+
+            // Split by comma for args like (r, c)
+            raw.split(',').forEach(part => {
+                const clean = part.trim().replace(/[\[\]\{\}\.\s]/g, ''); // Naive cleanup for destructured args
+                if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(clean)) {
+                    allVars.add(clean);
+                }
+            });
+        }
+    });
+
+    // Also scan for simple globals defined without keywords (edge case) or 'this' properties? 
+    // No, strictly rely on scoping rules for now to avoid noise.
+
+    const varList = Array.from(allVars);
+
+    // 2. INJECTION
+    lines.forEach((line, index) => {
+        const lineNum = index + 1;
+        const trimmed = line.trim();
+
+        // Skip empty/comments
+        if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed === '') {
+            injectedCode += line + '\n';
+            return;
+        }
+
+        // Logic Continuation Check
+        const isIncomplete = 
+            trimmed.endsWith('{') || 
+            trimmed.endsWith('(') || 
+            trimmed.endsWith('[') || 
+            trimmed.endsWith(',') || 
+            trimmed.endsWith('.') || 
+            trimmed.endsWith('=>') || 
+            trimmed.endsWith(':') || 
+            trimmed.endsWith('?');
+
+        const isBlockEnd = trimmed === '}' || trimmed === '];' || trimmed === '});';
+
+        if (isIncomplete || isBlockEnd) {
+            injectedCode += line + '\n';
+        } else {
+            // Build Capturer
+            // Wraps each var access in try/catch to handle Scope/TDZ issues
+            const captureList = varList.map(v => `["${v}", () => ${v}]`);
+            captureList.push(`["this", () => this]`); // Always capture 'this'
+
+            const capturer = `() => {
+                const captured = [];
+                [${captureList.join(',')}].forEach(([name, getter]) => {
+                    try { 
+                        captured.push([name, getter()]); 
+                    } catch (e) {
+                        // Variable likely not in this scope or TDZ - Ignore
+                    }
+                });
+                return captured;
+            }`;
+
+            // Inject AFTER the line
+            injectedCode += `${line}\n __snapshot(${lineNum}, ${capturer});\n`;
+        }
+    });
+
+    return injectedCode;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 // import { runInContext, createContext } from 'vm';
 
 // export const traceJavaScript = async (userCode) => {
 //     const trace = [];
 
-//     // 1. INSTRUMENTATION: Inject "Spy" calls safely
-//     const instrumentedCode = instrumentJs(userCode);
-
-//     // 2. SANDBOX SETUP
-//     const sandbox = {
-//         console: { log: () => {} }, // Silence logs
-        
-//         // The spy function now accepts a 'capturer' function
-//         __snapshot: (line, capturer) => {
-//             try {
-//                 // Execute the capturer to get current scope values
-//                 // The capturer returns an array of [key, value] pairs safely
-//                 const capturedVars = capturer();
-                
-//                 const safeVars = {};
-                
-//                 capturedVars.forEach(([key, val]) => {
-//                     // Filter out undefined/null if you want, or keep them
-//                     // We keep them to show state accurately
-//                     if (val !== undefined) {
-//                         try {
-//                             // Handle circular references or complex objects
-//                             safeVars[key] = JSON.parse(JSON.stringify(val));
-//                         } catch (e) {
-//                             safeVars[key] = '[Circular/Complex]';
-//                         }
-//                     }
-//                 });
-
-//                 trace.push({
-//                     line: line,
-//                     variables: safeVars
-//                 });
-//             } catch (e) { 
-//                 console.error("Snapshot error", e);
-//             }
-//         }
-//     };
-
-//     createContext(sandbox);
-
-//     // 3. EXECUTION
 //     try {
-//         runInContext(instrumentedCode, sandbox, { timeout: 2000 });
+//         // 1. INSTRUMENTATION
+//         const instrumentedCode = instrumentJs(userCode);
+
+//         // 2. SANDBOX SETUP
+//         const sandbox = {
+//             console: { 
+//                 log: (...args) => {} // Silently swallow logs
+//             },
+            
+//             // The snapshot function captures variable states
+//             __snapshot: (line, capturer) => {
+//                 try {
+//                     const capturedVars = capturer();
+//                     const safeVars = {};
+
+//                     capturedVars.forEach(([key, val]) => {
+//                         if (val !== undefined) {
+//                             safeVars[key] = safeSerialize(val);
+//                         }
+//                     });
+
+//                     // Only push if we have valid variables to show
+//                     if (Object.keys(safeVars).length > 0) {
+//                         trace.push({ line, variables: safeVars });
+//                     }
+//                 } catch (e) {
+//                     // Ignore snapshot errors
+//                 }
+//             }
+//         };
+
+//         createContext(sandbox);
+
+//         // 3. EXECUTION (5s timeout for recursion)
+//         runInContext(instrumentedCode, sandbox, { timeout: 5000 });
+
 //     } catch (e) {
+//         // Capture runtime errors
 //         trace.push({ 
 //             line: 0, 
 //             error: e.message, 
@@ -58,189 +271,190 @@
 //     return trace;
 // };
 
-// // --- HELPER: AST-free Instrumentation (Robust Version) ---
+// // --- HELPER 1: Safe Serializer ---
+// function safeSerialize(value, seen = new WeakMap()) {
+//     if (value === null) return null;
+    
+//     // Handle special numbers
+//     if (typeof value === 'number') {
+//         if (Number.isNaN(value)) return 'NaN';
+//         if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
+//         return value;
+//     }
+    
+//     // Primitives
+//     if (typeof value !== 'object' && typeof value !== 'function') return value;
+//     if (typeof value === 'function') return `[Function: ${value.name || 'anonymous'}]`;
+
+//     // Circular reference check
+//     if (seen.has(value)) return '[Circular]';
+    
+//     // Arrays
+//     if (Array.isArray(value)) {
+//         seen.set(value, true);
+//         return value.map(item => safeSerialize(item, seen));
+//     }
+
+//     // Maps
+//     if (value instanceof Map) {
+//         seen.set(value, true);
+//         return { 
+//             type: 'Map', 
+//             entries: Array.from(value.entries()).map(([k, v]) => [
+//                 safeSerialize(k, seen), 
+//                 safeSerialize(v, seen)
+//             ]) 
+//         };
+//     }
+    
+//     // Sets
+//     if (value instanceof Set) {
+//         seen.set(value, true);
+//         return { 
+//             type: 'Set', 
+//             values: Array.from(value.values()).map(v => safeSerialize(v, seen)) 
+//         };
+//     }
+
+//     // Objects
+//     seen.set(value, true);
+//     const copy = {};
+//     for (const key in value) {
+//         if (Object.prototype.hasOwnProperty.call(value, key)) {
+//             copy[key] = safeSerialize(value[key], seen);
+//         }
+//     }
+//     return copy;
+// }
+
+// // --- HELPER 2: ✅ FIXED INSTRUMENTATION ---
 // function instrumentJs(code) {
 //     const lines = code.split('\n');
 //     let injectedCode = "";
-
-//     // 1. PRE-SCAN: Find ALL variable names in the entire file first
-//     const varRegex = /(?:let|const|var)\s+([a-zA-Z_$][0-9a-zA-Z_$]*)/g;
+    
+//     // 1. VARIABLE SCANNING
 //     let allVars = new Set();
-    
-//     // Also capture 'this' implicitly by adding it to the list check
-//     // We don't add it to allVars for regex matching, but we inject it manually later
-    
-//     lines.forEach(line => {
+//     const cleanCode = code.replace(/\/\/.*$/gm, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
+
+//     const patterns = [
+//         /(?:let|const|var)\s+([a-zA-Z0-9_$]+|\[.*?\]|\{.*?\})/g,
+//         /function\s+\w*\s*\(([^)]*)\)/g,
+//         /\(([^)]*)\)\s*=>/g,
+//         /catch\s*\(([^)]+)\)/g
+//     ];
+
+//     patterns.forEach(regex => {
 //         let match;
-//         while ((match = varRegex.exec(line)) !== null) {
-//             allVars.add(match[1]);
+//         while ((match = regex.exec(cleanCode)) !== null) {
+//             const raw = match[1]; 
+//             if (!raw) continue;
+
+//             raw.split(',').forEach(part => {
+//                 const clean = part.trim().replace(/[\[\]\{\}\.\s]/g, '');
+//                 if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(clean)) {
+//                     allVars.add(clean);
+//                 }
+//             });
 //         }
 //     });
 
 //     const varList = Array.from(allVars);
 
-//     // 2. INJECTION
+//     // 2. ✅ FIXED: Track loops but NOT functions
+//     let insideLoop = false;
+//     let loopDepth = 0;
+
+//     // 3. INJECTION
 //     lines.forEach((line, index) => {
 //         const lineNum = index + 1;
 //         const trimmed = line.trim();
 
-//         // Safety checks to avoid breaking syntax
-//         const isComment = trimmed.startsWith('//') || trimmed.startsWith('/*');
-//         const isEmpty = trimmed.length === 0;
+//         // Skip empty/comments
+//         if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed === '') {
+//             injectedCode += line + '\n';
+//             return;
+//         }
+
+//         // ✅ Track loops (for, while, do)
+//         if (trimmed.match(/^(for|while|do)\s*\(/)) {
+//             insideLoop = true;
+//             loopDepth++;
+//         }
+
+//         // ✅ Track block endings
+//         if (trimmed === '}' || trimmed === '};' || trimmed === '});') {
+//             if (loopDepth > 0) {
+//                 loopDepth--;
+//                 if (loopDepth === 0) {
+//                     insideLoop = false;
+//                 }
+//             }
+//         }
+
+//         // ✅ CRITICAL FIX: Removed insideFunction check entirely
+//         // Now we capture inside function bodies too!
+
+//         // Detect incomplete lines
 //         const isIncomplete = 
-//             trimmed.endsWith('[') || 
 //             trimmed.endsWith('{') || 
 //             trimmed.endsWith('(') || 
+//             trimmed.endsWith('[') || 
 //             trimmed.endsWith(',') || 
-//             trimmed.endsWith(':') ||
-//             trimmed.endsWith('=>') ||
+//             trimmed.endsWith('.') || 
+//             trimmed.endsWith('=>') || 
+//             trimmed.endsWith(':') || 
 //             trimmed.endsWith('?');
-//         const isClosing = trimmed === '}' || trimmed === '];' || trimmed === '});';
-//         const isClassProp = trimmed.includes('=') && !trimmed.includes('let ') && !trimmed.includes('const ') && !trimmed.includes('var ') && !trimmed.includes(';'); // Loose check for class fields
 
-//         if (isComment || isEmpty || isIncomplete || isClosing) {
+//         const isBlockEnd = trimmed === '}' || trimmed === '];' || trimmed === '});';
+
+//         // Skip capturing on incomplete/block-end lines
+//         if (isIncomplete || isBlockEnd) {
 //             injectedCode += line + '\n';
-//         } else {
-//             // THE MAGIC: 
-//             // We construct an array of safe getters: [ ["root", () => root], ["i", () => i] ]
-//             // We wrap each variable access in a function so it doesn't crash if the variable is in TDZ (Temporal Dead Zone)
+//             return;
+//         }
+
+//         // ✅ AGGRESSIVE CAPTURING
+//         const shouldCapture = (
+//             // Variable mutations
+//             trimmed.includes('=') ||
             
+//             // Array/object mutations
+//             trimmed.match(/\[.*\]\s*=/) ||
+//             trimmed.match(/\.\w+\s*=/) ||
+            
+//             // Function calls (including recursive)
+//             trimmed.match(/\w+\s*\(/) ||
+            
+//             // Return statements (capture before returning)
+//             trimmed.startsWith('return') ||
+            
+//             // Always capture inside loops
+//             insideLoop
+//         );
+
+//         if (shouldCapture) {
+//             // Build capturer
 //             const captureList = varList.map(v => `["${v}", () => ${v}]`);
-//             // Add 'this' capture (wrapped in try-catch logic implicitly by being a function)
 //             captureList.push(`["this", () => this]`);
 
-//             const capturerCode = `() => {
+//             const capturer = `() => {
 //                 const captured = [];
 //                 [${captureList.join(',')}].forEach(([name, getter]) => {
-//                     try {
-//                         captured.push([name, getter()]);
+//                     try { 
+//                         captured.push([name, getter()]); 
 //                     } catch (e) {
-//                         // Ignore ReferenceErrors (TDZ)
+//                         // Variable not in scope
 //                     }
 //                 });
 //                 return captured;
 //             }`;
 
-//             injectedCode += `${line}\n __snapshot(${lineNum}, ${capturerCode});\n`;
+//             // Inject AFTER the line
+//             injectedCode += `${line}\n __snapshot(${lineNum}, ${capturer});\n`;
+//         } else {
+//             injectedCode += line + '\n';
 //         }
 //     });
 
 //     return injectedCode;
 // }
-
-
-
-
-
-
-
-
-
-
-import { runInContext, createContext } from 'vm';
-
-export const traceJavaScript = async (userCode) => {
-    const trace = [];
-
-    try {
-        // 1. INSTRUMENTATION
-        const instrumentedCode = instrumentJs(userCode);
-
-        // 2. SANDBOX SETUP
-        const sandbox = {
-            console: { log: () => {} }, 
-            __snapshot: (line, capturer) => {
-                try {
-                    const capturedVars = capturer();
-                    const safeVars = {};
-                    capturedVars.forEach(([key, val]) => {
-                        if (val !== undefined) {
-                            try {
-                                safeVars[key] = JSON.parse(JSON.stringify(val));
-                            } catch (e) {
-                                safeVars[key] = String(val); 
-                            }
-                        }
-                    });
-                    trace.push({ line, variables: safeVars });
-                } catch (e) { }
-            }
-        };
-
-        createContext(sandbox);
-
-        // 3. EXECUTION
-        runInContext(instrumentedCode, sandbox, { timeout: 2000 });
-
-    } catch (e) {
-        trace.push({ line: 0, error: e.message, type: "error" });
-    }
-
-    return trace;
-};
-
-// --- HELPER: AST-free Instrumentation ---
-function instrumentJs(code) {
-    const lines = code.split('\n');
-    let injectedCode = "";
-
-    // 1. SMART VARIABLE SCANNING
-    let allVars = new Set();
-    const declRegex = /(?:let|const|var)\s+([^;]+)/g;
-    const cleanCode = code.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
-    
-    let match;
-    while ((match = declRegex.exec(cleanCode)) !== null) {
-        const vars = match[1].split(',');
-        vars.forEach(v => {
-            const varName = v.trim().split('=')[0].trim().split(/\s+/)[0]; 
-            if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(varName)) {
-                allVars.add(varName);
-            }
-        });
-    }
-
-    const varList = Array.from(allVars);
-
-    // 2. LINE-BY-LINE INJECTION
-    lines.forEach((line, index) => {
-        const lineNum = index + 1;
-        const trimmed = line.trim();
-
-        const isComment = trimmed.startsWith('//') || trimmed.startsWith('/*');
-        const isEmpty = trimmed.length === 0;
-        
-        // ✅ FIX IS HERE: Added ']' to the incomplete list
-        const isIncomplete = 
-            trimmed.endsWith('{') || 
-            trimmed.endsWith('[') || 
-            trimmed.endsWith('(') || 
-            trimmed.endsWith(',') || 
-            trimmed.endsWith(':') ||
-            trimmed.endsWith('=>') ||
-            trimmed.endsWith('?') ||
-            trimmed.endsWith('.') ||
-            trimmed.endsWith(']'); // <--- CRITICAL FIX
-
-        const isClosing = trimmed === '}' || trimmed === '];' || trimmed === '});';
-
-        if (isComment || isEmpty || isIncomplete || isClosing) {
-            injectedCode += line + '\n';
-        } else {
-            const captureList = varList.map(v => `["${v}", () => ${v}]`);
-            captureList.push(`["this", () => this]`);
-
-            const capturer = `() => {
-                const captured = [];
-                [${captureList.join(',')}].forEach(([name, getter]) => {
-                    try { captured.push([name, getter()]); } catch (e) {}
-                });
-                return captured;
-            }`;
-
-            injectedCode += `${line}\n __snapshot(${lineNum}, ${capturer});\n`;
-        }
-    });
-
-    return injectedCode;
-}
