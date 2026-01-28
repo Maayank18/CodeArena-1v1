@@ -275,7 +275,7 @@ import { Activity, Hash, Layers, Braces } from 'lucide-react';
 import ArrayViz from './renderers/ArrayViz';
 import StackViz from './renderers/StackViz'; 
 import QueueViz from './renderers/QueueViz'; 
-import GraphViz from './renderers/GraphViz'; 
+// import GraphViz from './renderers/GraphViz'; 
 import TreeViz from './renderers/TreeViz';
 import MatrixViz from './renderers/MatrixViz';
 import LinkedListViz from './renderers/LinkedListViz';
