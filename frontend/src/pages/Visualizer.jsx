@@ -821,52 +821,52 @@ import api from '../api.js';
 
 // --- ALGORITHM EXAMPLES ---
 const EXAMPLES = {
-    dfsMaze: `// Depth-First Search (DFS) Maze Solver
-// 0 = Wall, 1 = Path, 'S' = Start, 'G' = Goal
-let grid = [
-  ['S', 0, 1, 1, 1],
-  [1, 0, 1, 0, 1],
-  [1, 1, 1, 0, 1],
-  [0, 0, 0, 0, 1],
-  [1, 1, 1, 1, 'G']
-];
+//     dfsMaze: `// Depth-First Search (DFS) Maze Solver
+// // 0 = Wall, 1 = Path, 'S' = Start, 'G' = Goal
+// let grid = [
+//   ['S', 0, 1, 1, 1],
+//   [1, 0, 1, 0, 1],
+//   [1, 1, 1, 0, 1],
+//   [0, 0, 0, 0, 1],
+//   [1, 1, 1, 1, 'G']
+// ];
 
-const dr = [0, 1, 0, -1];
-const dc = [1, 0, -1, 0];
+// const dr = [0, 1, 0, -1];
+// const dc = [1, 0, -1, 0];
 
-function solve(r, c) {
-  // Force a tracer step
-  const current = grid[r][c]; 
+// function solve(r, c) {
+//   // Force a tracer step
+//   const current = grid[r][c]; 
   
-  // 1. Check Bounds & Walls
-  if (r < 0 || c < 0 || r >= 5 || c >= 5 || current === 0) return false;
+//   // 1. Check Bounds & Walls
+//   if (r < 0 || c < 0 || r >= 5 || c >= 5 || current === 0) return false;
   
-  // 2. Check Goal
-  if (current === 'G') return true;
+//   // 2. Check Goal
+//   if (current === 'G') return true;
   
-  // 3. Mark Visited
-  if (current !== 'S' && current !== '*') {
-      grid[r][c] = '*'; // Mark as active
-  }
+//   // 3. Mark Visited
+//   if (current !== 'S' && current !== '*') {
+//       grid[r][c] = '*'; // Mark as active
+//   }
 
-  // 4. Explore Neighbors
-  for (let i = 0; i < 4; i++) {
-    // Explicitly define next steps for the visualizer
-    let nextR = r + dr[i];
-    let nextC = c + dc[i];
+//   // 4. Explore Neighbors
+//   for (let i = 0; i < 4; i++) {
+//     // Explicitly define next steps for the visualizer
+//     let nextR = r + dr[i];
+//     let nextC = c + dc[i];
     
-    if (solve(nextR, nextC)) {
-      if (grid[r][c] !== 'S') grid[r][c] = '✓'; // Success path
-      return true;
-    }
-  }
+//     if (solve(nextR, nextC)) {
+//       if (grid[r][c] !== 'S') grid[r][c] = '✓'; // Success path
+//       return true;
+//     }
+//   }
 
-  // 5. Backtrack
-  if (grid[r][c] !== 'S') grid[r][c] = 1; // Unmark
-  return false;
-}
+//   // 5. Backtrack
+//   if (grid[r][c] !== 'S') grid[r][c] = 1; // Unmark
+//   return false;
+// }
 
-solve(0, 0);`,
+// solve(0, 0);`,
 
     bubbleSort: `// Bubble Sort Visualization
 let arr = [64, 34, 25, 12, 22, 11, 90];
