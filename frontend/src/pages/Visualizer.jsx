@@ -60,9 +60,11 @@ head.next.next.next = new Node(40);
 // Circular link example
 head.next.next.next.next = head.next;`,
 
-// ✅ FIXED: PROFESSIONAL ITERATIVE CONSTRUCTION
-    // This method guarantees a single, complete list visualization
-    doublyLinkedList: `// Doubly Linked List (Iterative Construction)
+
+// ✅ FIXED: PROFESSIONAL ENCAPSULATION
+    // By using a class method 'push', temporary variables like 'newNode'
+    // are garbage collected immediately. The visualizer only sees 'list'.
+    doublyLinkedList: `// Doubly Linked List (Professional OOP)
 class Node {
     constructor(val) {
         this.val = val;
@@ -71,28 +73,33 @@ class Node {
     }
 }
 
-// 1. Initialize Head
-let head = new Node(10);
-let current = head;
+class DoublyLinkedList {
+    constructor() {
+        this.head = null;
+        this.tail = null;
+    }
 
-// 2. Data to insert
-const values = [20, 30, 40];
-
-// 3. Loop to build list dynamically
-for (let i = 0; i < values.length; i++) {
-    let newNode = new Node(values[i]);
-    
-    // Link Forward
-    current.next = newNode;
-    
-    // Link Backward
-    newNode.prev = current;
-    
-    // Move Pointer
-    current = newNode;
+    push(val) {
+        const newNode = new Node(val);
+        if (!this.head) {
+            this.head = newNode;
+            this.tail = newNode;
+        } else {
+            this.tail.next = newNode;
+            newNode.prev = this.tail;
+            this.tail = newNode;
+        }
+    }
 }
 
-// 'head' now points to the complete chain: 10 <-> 20 <-> 30 <-> 40`,
+// Execution: Only 'list' exists in global scope
+const list = new DoublyLinkedList();
+
+list.push(10); // Adds 10
+list.push(20); // Adds 20 <-> 10
+list.push(30); // Adds 30 <-> 20
+list.push(40); // Adds 40 <-> 30`,
+
 
  matrix: `// 2D Matrix
 let matrix = [
