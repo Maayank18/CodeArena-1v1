@@ -60,57 +60,7 @@ head.next.next.next = new Node(40);
 // Circular link example
 head.next.next.next.next = head.next;`,
 
-    // ✅ NEW DOUBLY LINKED LIST EXAMPLE ADDED HERE
-//     doublyLinkedList: `// Doubly Linked List Visualization
-// // Node structure
-// class Node {
-//     constructor(data) {
-//         this.data = data;
-//         this.prev = null;
-//         this.next = null;
-//     }
-// }
-
-// // Doubly Linked List Wrapper
-// class DoublyLinkedList {
-//     constructor() {
-//         this.head = null;
-//     }
-
-//     // Insert node at end
-//     insertEnd(data) {
-//         const newNode = new Node(data);
-
-//         // If list is empty
-//         if (this.head === null) {
-//             this.head = newNode;
-//             return;
-//         }
-
-//         let temp = this.head;
-
-//         // Move to last node
-//         while (temp.next !== null) {
-//             temp = temp.next;
-//         }
-
-//         // Link new node
-//         temp.next = newNode;
-//         newNode.prev = temp;
-//     }
-// }
-
-// // --- Execution ---
-// const dll = new DoublyLinkedList();
-
-// // Inserting values
-// dll.insertEnd(10);
-// dll.insertEnd(20);
-// dll.insertEnd(30);
-// dll.insertEnd(40);`,
-doublyLinkedList: `// Doubly Linked List Visualization
-// Direct construction without intermediate variables
-
+doublyLinkedList: `// Doubly Linked List (Clean Construction)
 class Node {
     constructor(data) {
         this.data = data;
@@ -119,23 +69,24 @@ class Node {
     }
 }
 
-// ✅ BUILD LIST DIRECTLY
 let head = new Node(10);
 
-// Add second node
-head.next = new Node(20);
-head.next.prev = head;
+// Use a block to create nodes cleanly
+{
+    let n2 = new Node(20);
+    head.next = n2;
+    n2.prev = head;
 
-// Add third node
-head.next.next = new Node(30);
-head.next.next.prev = head.next;
+    let n3 = new Node(30);
+    n2.next = n3;
+    n3.prev = n2;
 
-// Add fourth node
-head.next.next.next = new Node(40);
-head.next.next.next.prev = head.next.next;
-
-// Now we have a complete doubly linked list
-// Only 'head' variable exists, so only 1 list is visualized`,
+    let n4 = new Node(40);
+    n3.next = n4;
+    n4.prev = n3;
+}
+// End of block: Temporary variables (n2, n3, n4) are removed.
+// Only 'head' remains, showing the full connected list.`,
 
  matrix: `// 2D Matrix
 let matrix = [
