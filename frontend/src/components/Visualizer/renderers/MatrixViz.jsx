@@ -1,61 +1,146 @@
-// import React from 'react';
-// import { motion } from 'framer-motion';
+// import React, { useMemo, memo } from 'react';
+// import { motion, AnimatePresence } from 'framer-motion';
 
-// const MatrixViz = ({ data, pointers }) => {
-//     if (!data || data.length === 0) return null;
+// // --- MAIN COMPONENT ---
+// const MatrixViz = memo(({ data, pointers }) => {
+    
+//     // 🛡️ Guard Clause: Prevents crash on empty data
+//     if (!data || !Array.isArray(data) || data.length === 0) {
+//         return (
+//             <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-800 rounded-xl bg-[#0d1117]/50 min-w-[200px] min-h-[150px]">
+//                 <span className="font-mono text-xs text-gray-500">Empty Matrix / Initializing...</span>
+//             </div>
+//         );
+//     }
+
+//     const colCount = data[0]?.length || 0;
 
 //     return (
-//         <div className="inline-block p-6 bg-[#0d1117] border border-gray-800 rounded-xl shadow-2xl">
-//             <div className="flex flex-col gap-2">
-//                 {data.map((row, r) => (
-//                     <div key={r} className="flex gap-2">
-//                         {row.map((val, c) => {
-//                             // POINTER LOGIC: Check if any pointer matches this cell
-//                             // We support standard names: i, j, row, col
-//                             const isRowMatch = (pointers?.i === r || pointers?.row === r);
-//                             const isColMatch = (pointers?.j === c || pointers?.col === c);
+//         // ✅ ADDED: min-w and min-h to prevent visual "collapse"
+//         <div className="inline-block p-6 bg-[#0d1117] border border-gray-800 rounded-xl shadow-2xl overflow-hidden relative min-w-[120px] min-h-[120px]">
+            
+//             <div className="flex flex-col relative">
+                
+//                 {/* 1. COLUMN INDICES (Top Axis) */}
+//                 <div className="flex gap-2 mb-2 ml-8 pl-1">
+//                     {Array.from({ length: colCount }).map((_, c) => (
+//                         <div key={c} className="w-12 text-center text-[10px] font-mono text-gray-600 select-none font-bold">
+//                             {c}
+//                         </div>
+//                     ))}
+//                 </div>
+
+//                 {/* 2. GRID ROWS */}
+//                 <div className="flex flex-col gap-2">
+//                     {data.map((row, r) => (
+//                         <div key={r} className="flex gap-2 items-center">
                             
-//                             // Highlight if BOTH row and col match (specific cell)
-//                             // OR if only row matches (entire row scan)
-//                             const isCellHighlighted = isRowMatch && isColMatch;
-//                             const isRowHighlighted = isRowMatch && !pointers?.j; // Highlight row if j isn't defined yet
+//                             {/* ROW INDEX (Left Axis) */}
+//                             <div className="w-6 text-right text-[10px] font-mono text-gray-600 select-none pr-2 font-bold">
+//                                 {r}
+//                             </div>
 
-//                             return (
-//                                 <motion.div
-//                                     key={`${r}-${c}`}
-//                                     layout
-//                                     initial={{ scale: 0.8 }}
-//                                     animate={{ 
-//                                         scale: isCellHighlighted ? 1.1 : 1,
-//                                         backgroundColor: isCellHighlighted ? '#f59e0b' : (isRowHighlighted ? '#1f2937' : '#0d1117'),
-//                                         borderColor: isCellHighlighted ? '#fbbf24' : '#374151'
-//                                     }}
-//                                     className="w-12 h-12 flex items-center justify-center border-2 rounded-lg text-white font-mono font-bold relative"
-//                                 >
-//                                     {val}
-                                    
-//                                     {/* Grid Coordinates */}
-//                                     <span className="absolute top-0.5 left-1 text-[8px] text-gray-600">
-//                                         {r},{c}
-//                                     </span>
-
-//                                     {/* Pointer Label */}
-//                                     {isCellHighlighted && (
-//                                         <div className="absolute -top-3 right-0 bg-amber-500 text-black text-[8px] px-1 rounded font-bold">
-//                                             [i][j]
-//                                         </div>
-//                                     )}
-//                                 </motion.div>
-//                             );
-//                         })}
-//                     </div>
-//                 ))}
+//                             {/* ROW CELLS */}
+//                             <MatrixRow 
+//                                 row={row} 
+//                                 rowIndex={r} 
+//                                 pointers={pointers} 
+//                             />
+//                         </div>
+//                     ))}
+//                 </div>
 //             </div>
 //         </div>
 //     );
-// };
+// });
+
+// // --- ROW COMPONENT ---
+// const MatrixRow = memo(({ row, rowIndex, pointers }) => {
+//     return (
+//         <div className="flex gap-2">
+//             {row.map((val, c) => {
+//                 // 🧠 LOGIC: Safe access to pointers
+//                 const r = rowIndex;
+//                 const i = pointers?.i ?? pointers?.row ?? -1;
+//                 const j = pointers?.j ?? pointers?.col ?? -1;
+
+//                 // 1. Exact Cell Match [i][j]
+//                 const isExactMatch = (i === r && j === c);
+
+//                 // 2. Active Row Match [i] (when j is not yet active/valid)
+//                 const isRowActive = (i === r && j === -1);
+
+//                 return (
+//                     <MatrixCell 
+//                         key={`${r}-${c}`}
+//                         val={val}
+//                         r={r}
+//                         c={c}
+//                         isExactMatch={isExactMatch}
+//                         isRowActive={isRowActive}
+//                     />
+//                 );
+//             })}
+//         </div>
+//     );
+// });
+
+// // --- CELL COMPONENT ---
+// const MatrixCell = memo(({ val, r, c, isExactMatch, isRowActive }) => {
+    
+//     // Visual Variants
+//     const variants = {
+//         idle: { scale: 1, backgroundColor: '#161b22', borderColor: '#30363d', zIndex: 0 },
+//         rowHighlight: { scale: 1.02, backgroundColor: '#1f2937', borderColor: '#4b5563', zIndex: 10 },
+//         active: { scale: 1.15, backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: '#f59e0b', zIndex: 20 }
+//     };
+
+//     const state = isExactMatch ? 'active' : (isRowActive ? 'rowHighlight' : 'idle');
+
+//     return (
+//         <motion.div
+//             layout
+//             initial={false}
+//             animate={state}
+//             variants={variants}
+//             transition={{ duration: 0.2 }}
+//             className={`
+//                 w-12 h-12 flex items-center justify-center 
+//                 border-2 rounded-lg relative text-sm font-mono font-bold shadow-sm
+//                 ${isExactMatch ? 'text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'text-gray-300'}
+//             `}
+//         >
+//             {/* Value */}
+//             <span className="z-10">{val}</span>
+
+//             {/* Coordinates (Subtle Background) */}
+//             {!isExactMatch && (
+//                 <span className="absolute top-0.5 left-1 text-[7px] text-gray-700 font-mono opacity-40 select-none">
+//                     {r},{c}
+//                 </span>
+//             )}
+
+//             {/* Active Pointer Badge */}
+//             <AnimatePresence>
+//                 {isExactMatch && (
+//                     <motion.div 
+//                         initial={{ opacity: 0, y: 5 }}
+//                         animate={{ opacity: 1, y: 0 }}
+//                         exit={{ opacity: 0 }}
+//                         className="absolute -top-3.5 -right-3 z-30 pointer-events-none"
+//                     >
+//                         <div className="bg-amber-500 text-black text-[7px] px-1 py-0.5 rounded shadow-sm font-black uppercase tracking-tighter border border-amber-400">
+//                             [i][j]
+//                         </div>
+//                     </motion.div>
+//                 )}
+//             </AnimatePresence>
+//         </motion.div>
+//     );
+// });
 
 // export default MatrixViz;
+
 
 
 

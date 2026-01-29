@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 // import cron from 'node-cron';
+import cron from 'node-cron';
 import axios from 'axios';
 
 import roomRoutes from './routes/roomRoutes.js';
