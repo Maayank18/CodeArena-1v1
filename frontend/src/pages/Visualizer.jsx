@@ -60,7 +60,8 @@ head.next.next.next = new Node(40);
 // Circular link example
 head.next.next.next.next = head.next;`,
 
-doublyLinkedList: `// Doubly Linked List (Clean Construction)
+// ✅ FIXED: Direct Chaining for Single List Visualization
+    doublyLinkedList: `// Doubly Linked List (Chain Construction)
 class Node {
     constructor(data) {
         this.data = data;
@@ -69,24 +70,22 @@ class Node {
     }
 }
 
+// 1. Initialize Head
 let head = new Node(10);
 
-// Use a block to create nodes cleanly
-{
-    let n2 = new Node(20);
-    head.next = n2;
-    n2.prev = head;
+// 2. Attach Node 20
+head.next = new Node(20);
+head.next.prev = head;
 
-    let n3 = new Node(30);
-    n2.next = n3;
-    n3.prev = n2;
+// 3. Attach Node 30
+head.next.next = new Node(30);
+head.next.next.prev = head.next;
 
-    let n4 = new Node(40);
-    n3.next = n4;
-    n4.prev = n3;
-}
-// End of block: Temporary variables (n2, n3, n4) are removed.
-// Only 'head' remains, showing the full connected list.`,
+// 4. Attach Node 40
+head.next.next.next = new Node(40);
+head.next.next.next.prev = head.next.next;
+
+// Result: Visualizer sees ONLY 'head' growing.`,
 
  matrix: `// 2D Matrix
 let matrix = [
