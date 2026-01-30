@@ -68,7 +68,7 @@ app.get('/health', (req, res) => {
 
 // ✅ REMOVED: Cron job (wastes resources, not needed with active users)
 //CRON JOB 
-cron.schedule('*/15 * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
     try {
         const backendURL = process.env.RENDER_EXTERNAL_URL || 
                           'https://codearena-1v1.onrender.com';  // Your actual URL
