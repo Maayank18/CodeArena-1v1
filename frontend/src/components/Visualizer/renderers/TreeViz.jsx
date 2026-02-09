@@ -179,16 +179,13 @@
 
 import React, { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 
 // --- CONFIGURATION ---
 const CONFIG = {
-    MAX_DEPTH: 8, // Prevent infinite rendering
-    MAX_CHILDREN: 10, // Limit n-ary tree children display
-    SHOW_NULL_NODES: true, // Visualize null/missing children
-    NODE_SIZE: 56, // Base node size in pixels
-    HORIZONTAL_GAP: 32, // Gap between siblings
-    VERTICAL_GAP: 48, // Gap between levels
+    MAX_DEPTH: 8,
+    MAX_CHILDREN: 10,
+    SHOW_NULL_NODES: false, // ✅ CHANGED: Better for most trees
+    NODE_SIZE: 56,
 };
 
 // --- MAIN WRAPPER ---
@@ -208,8 +205,12 @@ const TreeViz = memo(({ data, name }) => {
             p-10 rounded-xl border border-gray-800 
             flex flex-col items-center shadow-2xl min-h-[350px]
         ">
-            {/* Background Grid Pattern */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+            
+            {/* Variable Name Label */}
+            <div className="absolute top-4 left-4 px-2 py-1 bg-purple-900/30 border border-purple-500/30 rounded text-xs font-mono text-purple-300">
+                {name}
+            </div>
             
             <div className="relative z-10">
                 <TreeNode node={data} label="root" depth={0} visited={new Set()} />
@@ -218,35 +219,33 @@ const TreeViz = memo(({ data, name }) => {
     );
 });
 
-// --- RECURSIVE NODE COMPONENT (OPTIMIZED) ---
+// --- RECURSIVE NODE COMPONENT ---
 const TreeNode = memo(({ node, label, depth, visited }) => {
-    // 🛡️ SAFETY: Prevent infinite loops from circular references
+    // 🛡️ Circular reference protection
     if (visited.has(node)) {
         return <CircularRefNode />;
     }
 
-    // 🛡️ SAFETY: Depth limiter
+    // 🛡️ Depth limiter
     if (depth >= CONFIG.MAX_DEPTH) {
         return <MaxDepthNode />;
     }
 
     // Base Case: Null node
     if (!node) {
-        return CONFIG.SHOW_NULL_NODES && depth > 0 ? <NullNode /> : <div className="w-12 h-12 invisible" />;
+        return CONFIG.SHOW_NULL_NODES && depth > 0 ? <NullNode /> : null;
     }
 
-    // 🧠 SMART PROPERTY DETECTION
+    // 🧠 Property extraction
     const nodeProps = extractNodeProperties(node);
     const { value, children, metadata, isLeaf } = nodeProps;
 
-    // Add current node to visited set
+    // Add to visited set
     const newVisited = new Set(visited);
     newVisited.add(node);
 
     return (
         <div className="flex flex-col items-center">
-            
-            {/* 1. THE NODE CIRCLE (WITH METADATA SUPPORT) */}
             <NodeCircle 
                 value={value} 
                 label={label} 
@@ -255,7 +254,6 @@ const TreeNode = memo(({ node, label, depth, visited }) => {
                 metadata={metadata}
             />
 
-            {/* 2. CHILDREN RENDERING */}
             <AnimatePresence>
                 {children.length > 0 && (
                     <ChildrenContainer 
@@ -269,9 +267,8 @@ const TreeNode = memo(({ node, label, depth, visited }) => {
     );
 });
 
-// --- SMART PROPERTY EXTRACTION ---
+// --- PROPERTY EXTRACTION ---
 function extractNodeProperties(node) {
-    // Support multiple naming conventions
     const VALUE_FIELDS = ['val', 'value', 'data', 'key', 'item', 'element', 'content'];
     
     let value = '?';
@@ -282,34 +279,24 @@ function extractNodeProperties(node) {
         }
     }
 
-    // 🎯 CHILDREN DETECTION (supports both binary and n-ary trees)
+    // Children detection
     let children = [];
     
-    // 1. Check for explicit children array (n-ary tree)
     if (Array.isArray(node.children)) {
         children = node.children
             .slice(0, CONFIG.MAX_CHILDREN)
-            .map((child, idx) => ({ node: child, label: `C${idx}` }));
-    }
-    // 2. Check for left/right (binary tree)
-    else if ('left' in node || 'right' in node) {
+            .map((child, idx) => ({ node: child, label: `${idx}` }));
+    } else if ('left' in node || 'right' in node) {
         if (node.left !== undefined) children.push({ node: node.left, label: 'L' });
         if (node.right !== undefined) children.push({ node: node.right, label: 'R' });
     }
-    // 3. Check for numbered children (child0, child1, ...)
-    else {
-        const childKeys = Object.keys(node).filter(k => /^child\d+$/i.test(k)).sort();
-        children = childKeys.map(k => ({ node: node[k], label: k.replace(/child/i, 'C') }));
-    }
 
-    // 🎨 METADATA EXTRACTION (for advanced visualizations)
+    // Metadata
     const metadata = {
         color: node.color || node.nodeColor || null,
         weight: node.weight || node.cost || null,
         height: node.height || null,
-        size: node.size || null,
         isVisited: node.visited || node.isVisited || false,
-        parent: node.parent || node.parentNode || null, // Don't render, just detect
     };
 
     const isLeaf = children.length === 0;
@@ -317,23 +304,60 @@ function extractNodeProperties(node) {
     return { value, children, metadata, isLeaf };
 }
 
-// --- NODE CIRCLE COMPONENT ---
+// --- NODE CIRCLE ---
 const NodeCircle = memo(({ value, label, depth, isLeaf, metadata }) => {
-    // Apply custom color if available
-    const customColor = metadata.color;
-    const isVisited = metadata.isVisited;
+    // ✅ FIXED: Predefined styles instead of dynamic Tailwind
+    const getNodeStyle = () => {
+        if (metadata.isVisited) {
+            return {
+                gradient: 'from-yellow-900/80 to-yellow-600/20',
+                border: 'border-yellow-500',
+                shadow: 'shadow-yellow-900/20',
+                text: 'text-yellow-100',
+                badge: 'bg-yellow-950 text-yellow-400 border-yellow-800'
+            };
+        }
+        
+        if (metadata.color === 'red') {
+            return {
+                gradient: 'from-red-900/80 to-red-600/20',
+                border: 'border-red-500',
+                shadow: 'shadow-red-900/20',
+                text: 'text-red-100',
+                badge: 'bg-red-950 text-red-400 border-red-800'
+            };
+        }
+        
+        if (metadata.color === 'green') {
+            return {
+                gradient: 'from-green-900/80 to-green-600/20',
+                border: 'border-green-500',
+                shadow: 'shadow-green-900/20',
+                text: 'text-green-100',
+                badge: 'bg-green-950 text-green-400 border-green-800'
+            };
+        }
+        
+        if (isLeaf) {
+            return {
+                gradient: 'from-emerald-900/80 to-emerald-600/20',
+                border: 'border-emerald-500',
+                shadow: 'shadow-emerald-900/20',
+                text: 'text-emerald-100',
+                badge: 'bg-emerald-950 text-emerald-400 border-emerald-800'
+            };
+        }
+        
+        return {
+            gradient: 'from-indigo-900/80 to-indigo-600/20',
+            border: 'border-indigo-500',
+            shadow: 'shadow-indigo-900/20',
+            text: 'text-indigo-100',
+            badge: 'bg-indigo-950 text-indigo-400 border-indigo-800'
+        };
+    };
 
-    const baseStyle = isLeaf 
-        ? 'from-emerald-900/80 to-emerald-600/20 border-emerald-500' 
-        : 'from-indigo-900/80 to-indigo-600/20 border-indigo-500';
-
-    const visitedStyle = isVisited 
-        ? 'from-yellow-900/80 to-yellow-600/20 border-yellow-500'
-        : baseStyle;
-
-    const colorStyle = customColor 
-        ? `bg-${customColor}-900/80 border-${customColor}-500`
-        : visitedStyle;
+    const style = getNodeStyle();
 
     return (
         <div className="relative z-20">
@@ -350,14 +374,13 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata }) => {
                 className={`
                     w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center 
                     border-[3px] shadow-xl relative backdrop-blur-sm transition-colors
-                    bg-gradient-to-br ${colorStyle}
+                    bg-gradient-to-br ${style.gradient} ${style.border} ${style.shadow}
                 `}
             >
-                <span className="text-sm md:text-base font-mono font-bold drop-shadow-md text-white">
+                <span className={`text-sm md:text-base font-mono font-bold drop-shadow-md ${style.text}`}>
                     {value}
                 </span>
 
-                {/* LABEL BADGE */}
                 {label && (
                     <motion.div 
                         initial={{ opacity: 0, y: 5 }}
@@ -365,20 +388,22 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata }) => {
                         className={`
                             absolute -top-3 left-1/2 -translate-x-1/2 
                             text-[9px] font-bold px-1.5 py-0.5 rounded border shadow-sm uppercase tracking-wider
-                            ${isLeaf 
-                                ? 'bg-emerald-950 text-emerald-400 border-emerald-800' 
-                                : 'bg-indigo-950 text-indigo-400 border-indigo-800'
-                            }
+                            ${style.badge}
                         `}
                     >
                         {label}
                     </motion.div>
                 )}
 
-                {/* METADATA BADGES (weight, height, etc.) */}
                 {metadata.weight !== null && (
                     <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[8px] font-bold px-1 py-0.5 rounded bg-gray-900 text-gray-400 border border-gray-700">
                         w:{metadata.weight}
+                    </div>
+                )}
+                
+                {metadata.height !== null && (
+                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold px-1 py-0.5 rounded bg-gray-900 text-gray-400 border border-gray-700">
+                        h:{metadata.height}
                     </div>
                 )}
             </motion.div>
@@ -386,18 +411,15 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata }) => {
     );
 });
 
-// --- CHILDREN CONTAINER (SMART LAYOUT) ---
+// --- CHILDREN CONTAINER ---
 const ChildrenContainer = memo(({ children, depth, visited }) => {
-    const isBinary = children.length === 2;
-    const isNary = children.length > 2;
-
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex flex-col items-center"
         >
-            {/* SVG CONNECTORS */}
+            {/* SVG Connectors */}
             <div className="w-full h-10 relative" style={{ minWidth: `${children.length * 60}px` }}>
                 <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
                     {children.map((child, idx) => {
@@ -422,8 +444,8 @@ const ChildrenContainer = memo(({ children, depth, visited }) => {
                 </svg>
             </div>
 
-            {/* CHILDREN NODES */}
-            <div className={`flex items-start pt-1 ${isNary ? 'gap-3 md:gap-4' : 'gap-4 md:gap-8'}`}>
+            {/* Children */}
+            <div className="flex items-start gap-4 md:gap-8 pt-1">
                 {children.map((child, idx) => (
                     <div key={idx} className="flex flex-col items-center">
                         <TreeNode 
@@ -439,7 +461,7 @@ const ChildrenContainer = memo(({ children, depth, visited }) => {
     );
 });
 
-// --- SPECIAL NODE TYPES ---
+// --- SPECIAL NODES ---
 const NullNode = memo(() => (
     <motion.div
         initial={{ scale: 0, opacity: 0 }}
