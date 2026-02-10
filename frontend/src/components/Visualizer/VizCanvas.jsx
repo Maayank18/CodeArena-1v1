@@ -780,41 +780,84 @@ const VizCanvas = memo(({ variables }) => {
     );
 });
 
-// 🧠 LOGIC: INTELLIGENT ROUTER
+// 🧠 INTELLIGENT ROUTER - Detects data structure types and routes to appropriate renderer
 const ComplexRenderer = memo(({ name, value, pointers }) => {
     const lowerName = name.toLowerCase();
 
-    // 1. Handle Special Cases First
-    if (value === '[Circular]') return <InfoCard name={name} label="Circular Ref" icon={<Activity size={14}/>} color="orange" />;
-    if (value?.type === 'Map') return <MapRenderer name={name} data={value.entries} />;
-    if (value?.type === 'Set') return <SetRenderer name={name} data={value.values} />;
-
-    // 2. Handle Arrays
-    if (Array.isArray(value)) {
-        if (value.length === 0) return <Header badge="Empty Array" name={name} />;
-        const isMatrix = Array.isArray(value[0]);
-
-        if (lowerName.includes('stack')) return <Wrapper badge="Stack (LIFO)" color="pink"><StackViz data={value} pointers={pointers} /></Wrapper>;
-        if (lowerName.includes('queue') || lowerName === 'q') return <Wrapper badge="Queue (FIFO)" color="emerald"><QueueViz data={value} pointers={pointers} /></Wrapper>;
-        
-        if (isMatrix && (lowerName.includes('grid') || lowerName.includes('board') || lowerName.includes('maze') || lowerName.includes('graph'))) {
-             return <Wrapper badge={`Grid ${value.length}×${value[0].length}`} color="indigo"><MatrixViz data={value} pointers={pointers} /></Wrapper>;
-        }
-        if (isMatrix) return <Wrapper badge={`Matrix ${value.length}×${value[0].length}`} color="orange"><MatrixViz data={value} pointers={pointers} /></Wrapper>;
-        
-        return <Wrapper badge="Array" color="blue"><ArrayViz data={value} pointers={pointers} /></Wrapper>;
+    // ========== PHASE 1: SPECIAL TYPES ==========
+    if (value === '[Circular]') {
+        return <InfoCard name={name} label="Circular Ref" icon={<Activity size={14}/>} color="orange" />;
+    }
+    
+    if (value?.type === 'Map') {
+        return <MapRenderer name={name} data={value.entries} />;
+    }
+    
+    if (value?.type === 'Set') {
+        return <SetRenderer name={name} data={value.values} />;
     }
 
-    // 3. Handle Objects
+    // ========== PHASE 2: ARRAYS ==========
+    if (Array.isArray(value)) {
+        if (value.length === 0) {
+            return <Header badge="Empty Array" name={name} />;
+        }
+        
+        const isMatrix = Array.isArray(value[0]);
+
+        // Named array patterns
+        if (lowerName.includes('stack')) {
+            return (
+                <Wrapper badge="Stack (LIFO)" color="pink">
+                    <StackViz data={value} pointers={pointers} />
+                </Wrapper>
+            );
+        }
+        
+        if (lowerName.includes('queue') || lowerName === 'q') {
+            return (
+                <Wrapper badge="Queue (FIFO)" color="emerald">
+                    <QueueViz data={value} pointers={pointers} />
+                </Wrapper>
+            );
+        }
+        
+        // Matrix detection
+        if (isMatrix && (lowerName.includes('grid') || lowerName.includes('board') || 
+                         lowerName.includes('maze') || lowerName.includes('graph'))) {
+            return (
+                <Wrapper badge={`Grid ${value.length}×${value[0].length}`} color="indigo">
+                    <MatrixViz data={value} pointers={pointers} />
+                </Wrapper>
+            );
+        }
+        
+        if (isMatrix) {
+            return (
+                <Wrapper badge={`Matrix ${value.length}×${value[0].length}`} color="orange">
+                    <MatrixViz data={value} pointers={pointers} />
+                </Wrapper>
+            );
+        }
+        
+        // Default array
+        return (
+            <Wrapper badge="Array" color="blue">
+                <ArrayViz data={value} pointers={pointers} />
+            </Wrapper>
+        );
+    }
+
+    // ========== PHASE 3: OBJECTS ==========
     if (typeof value === 'object' && value !== null) {
         const keys = Object.keys(value);
 
-        // ✅ CRITICAL: CHECK FOR OOP PATTERNS FIRST (BEFORE OTHER CHECKS)
-        
-        // A. STACK CLASS PATTERN: { stack: [...], capacity: 5 }
+        // ===== A. STACK CLASS (OOP) =====
+        // Pattern: { stack: [...], capacity: 5 }
         if (keys.includes('stack') && Array.isArray(value.stack)) {
             const stackData = value.stack;
-            const capacity = value.capacity || null;
+            const capacity = value.capacity || value.size || null;
+            const top = value.top !== undefined ? value.top : null;
             const isFull = capacity && stackData.length >= capacity;
 
             return (
@@ -841,39 +884,88 @@ const ComplexRenderer = memo(({ name, value, pointers }) => {
             );
         }
 
-        // B. QUEUE CLASS PATTERN: { items: [...] } or { queue: [...] }
-        if ((keys.includes('items') || keys.includes('queue')) && 
-            (Array.isArray(value.items) || Array.isArray(value.queue))) {
-            const queueData = value.items || value.queue;
+        // ===== B. QUEUE CLASS (OOP) =====
+        // Pattern: { queue: [...], front: 0, rear: 1 } or { items: [...] }
+        if ((keys.includes('queue') || keys.includes('items')) && 
+            (Array.isArray(value.queue) || Array.isArray(value.items))) {
+            
+            const queueData = value.queue || value.items;
+            const capacity = value.capacity || value.size || value.maxSize || null;
+            const front = value.front !== undefined ? value.front : null;
+            const rear = value.rear !== undefined ? value.rear : null;
+            const isFull = capacity && queueData.length >= capacity;
+
             return (
                 <div className="flex flex-col items-center">
-                    <div className="mb-3 px-2 py-0.5 rounded text-[10px] font-bold font-mono border uppercase tracking-wider bg-emerald-900/20 text-emerald-400 border-emerald-500/30">
-                        Queue (OOP)
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded font-mono border uppercase tracking-wider bg-emerald-900/20 text-emerald-400 border-emerald-500/30">
+                            Queue (OOP)
+                        </span>
+                        <span className="text-gray-200 font-bold text-sm font-mono">{name}</span>
+                        {capacity && (
+                            <span className="text-[10px] font-mono text-gray-500 border-l border-gray-700 pl-2">
+                                {queueData.length}/{capacity}
+                                {isFull && <span className="text-yellow-400 ml-1">FULL</span>}
+                            </span>
+                        )}
                     </div>
-                    <QueueViz data={queueData} pointers={pointers} />
+                    <QueueViz 
+                        data={queueData} 
+                        pointers={pointers}
+                        capacity={capacity}
+                        front={front}
+                        rear={rear}
+                    />
                 </div>
             );
         }
 
-        // C. LINKED LIST CLASS PATTERN: { head: {...} }
+        // ===== C. LINKED LIST CLASS (OOP) =====
+        // Pattern: { head: Node } - Auto-unwrap to visualize the linked structure
         if (keys.includes('head') && value.head && typeof value.head === 'object') {
             const headKeys = Object.keys(value.head);
-            if (headKeys.includes('val') || headKeys.includes('next') || headKeys.includes('value')) {
+            // Verify it's actually a node structure
+            if (headKeys.includes('val') || headKeys.includes('next') || 
+                headKeys.includes('value') || headKeys.includes('data')) {
+                // Recursively render the head node (which will detect LL/DLL)
                 return <ComplexRenderer name={name} value={value.head} pointers={pointers} />;
             }
         }
 
-        // D. TREE/NODE DETECTION
+        // ===== D. NODE STRUCTURES (Trees, Linked Lists) =====
         const hasNext = keys.includes('next');
         const hasPrev = keys.includes('prev'); 
         const hasLeftRight = keys.includes('left') || keys.includes('right');
         const hasVal = keys.includes('val') || keys.includes('value') || keys.includes('data');
         
-        if (hasLeftRight && hasVal) return <Wrapper badge="Binary Tree" color="purple"><TreeViz data={value} name={name} /></Wrapper>;
-        if (hasNext && hasPrev && hasVal) return <Wrapper badge="Doubly Linked List" color="orange"><DoublyLinkedListViz data={value} name={name} /></Wrapper>;
-        if (hasNext && hasVal) return <Wrapper badge="Linked List" color="teal"><LinkedListViz data={value} name={name} /></Wrapper>;
+        // Binary Tree Node
+        if (hasLeftRight && hasVal) {
+            return (
+                <Wrapper badge="Binary Tree" color="purple">
+                    <TreeViz data={value} name={name} />
+                </Wrapper>
+            );
+        }
+        
+        // Doubly Linked List Node
+        if (hasNext && hasPrev && hasVal) {
+            return (
+                <Wrapper badge="Doubly Linked List" color="orange">
+                    <DoublyLinkedListViz data={value} name={name} />
+                </Wrapper>
+            );
+        }
+        
+        // Singly Linked List Node
+        if (hasNext && hasVal) {
+            return (
+                <Wrapper badge="Linked List" color="teal">
+                    <LinkedListViz data={value} name={name} />
+                </Wrapper>
+            );
+        }
 
-        // E. FALLBACK: Generic Object
+        // ===== E. GENERIC OBJECT (Fallback) =====
         return (
             <div className="flex flex-col items-center">
                 <Header badge="Object" name={name} />
@@ -889,10 +981,16 @@ const ComplexRenderer = memo(({ name, value, pointers }) => {
     return null;
 });
 
-// --- SUB-RENDERERS ---
+// ========== SUB-RENDERERS ==========
+
 const MapRenderer = ({ name, data }) => (
     <div className="flex flex-col items-center">
-        <Header badge="Map" badgeColor="text-yellow-400 bg-yellow-400/10 border-yellow-400/20" name={name} meta={`size: ${data.length}`} />
+        <Header 
+            badge="Map" 
+            badgeColor="text-yellow-400 bg-yellow-400/10 border-yellow-400/20" 
+            name={name} 
+            meta={`size: ${data.length}`} 
+        />
         <div className="flex flex-col gap-1 bg-[#161b22] p-3 rounded-xl border border-gray-800 min-w-[160px] shadow-lg">
             {data.map(([k, v], i) => (
                 <div key={i} className="flex justify-between gap-4 text-xs font-mono border-b border-gray-800 last:border-0 pb-1.5 mb-1.5 last:pb-0 last:mb-0">
@@ -901,21 +999,30 @@ const MapRenderer = ({ name, data }) => (
                     <span className="text-emerald-400 font-bold">{String(v)}</span>
                 </div>
             ))}
-            {data.length === 0 && <span className="text-gray-600 italic text-xs text-center">Empty</span>}
+            {data.length === 0 && (
+                <span className="text-gray-600 italic text-xs text-center">Empty</span>
+            )}
         </div>
     </div>
 );
 
 const SetRenderer = ({ name, data }) => (
     <div className="flex flex-col items-center">
-        <Header badge="Set" badgeColor="text-rose-400 bg-rose-400/10 border-rose-400/20" name={name} meta={`size: ${data.length}`} />
+        <Header 
+            badge="Set" 
+            badgeColor="text-rose-400 bg-rose-400/10 border-rose-400/20" 
+            name={name} 
+            meta={`size: ${data.length}`} 
+        />
         <div className="flex flex-wrap gap-2 bg-[#161b22] p-3 rounded-xl border border-gray-800 max-w-[200px] justify-center shadow-lg">
             {data.map((v, i) => (
                 <span key={i} className="px-2 py-1 bg-gray-800 rounded text-xs text-rose-300 font-mono border border-gray-700 shadow-sm">
                     {String(v)}
                 </span>
             ))}
-            {data.length === 0 && <span className="text-gray-600 italic text-xs">Empty</span>}
+            {data.length === 0 && (
+                <span className="text-gray-600 italic text-xs">Empty</span>
+            )}
         </div>
     </div>
 );
@@ -963,7 +1070,11 @@ const Header = ({ badge, badgeColor, name, meta }) => (
             {badge}
         </span>
         <span className="text-gray-200 font-bold text-sm font-mono">{name}</span>
-        {meta && <span className="text-gray-600 text-[10px] font-mono border-l border-gray-700 pl-2">{meta}</span>}
+        {meta && (
+            <span className="text-gray-600 text-[10px] font-mono border-l border-gray-700 pl-2">
+                {meta}
+            </span>
+        )}
     </div>
 );
 
