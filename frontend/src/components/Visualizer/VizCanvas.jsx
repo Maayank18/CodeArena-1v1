@@ -10,9 +10,8 @@
 // import TreeViz from './renderers/TreeViz';
 // import MatrixViz from './renderers/MatrixViz';
 // import LinkedListViz from './renderers/LinkedListViz';
-// import DoublyLinkedListViz from './renderers/DoublyLinkedListViz'; // ✅ ADDED
+// import DoublyLinkedListViz from './renderers/DoublyLinkedListViz'; // ✅ IMPORTED
 
-// // System variables to hide from visualization (Expanded for safety)
 // const BANNED_VARS = [
 //     'this', 'window', 'global', 'self', 'module', 'exports', 'arguments', 
 //     'require', 'process', '__dirname', '__filename', 'console'
@@ -20,7 +19,7 @@
 
 // const VizCanvas = memo(({ variables }) => {
     
-//     // 🧠 1. SMART CLASSIFICATION ENGINE (Memoized)
+//     // 🧠 SMART CLASSIFICATION ENGINE
 //     const { complexVars, simpleVars, pointers, isEmpty } = useMemo(() => {
 //         if (!variables) return { complexVars: [], simpleVars: [], pointers: {}, isEmpty: true };
 
@@ -32,24 +31,17 @@
 //             if (BANNED_VARS.includes(name)) return;
 //             if (typeof value === 'function' || typeof value === 'symbol') return;
 
-//             // Detect Pointers (Integers used as indices)
 //             if (Number.isInteger(value) && value >= 0 && value < 1000) {
 //                 ptrs[name] = value;
 //             }
 
-//             // Detect Primitive Types
 //             const isPrimitive = (
-//                 value === null || 
-//                 value === undefined || 
-//                 typeof value === 'number' || 
-//                 typeof value === 'string' || 
-//                 typeof value === 'boolean' ||
-//                 value === 'NaN' || 
-//                 value === 'Infinity' || 
-//                 value === '-Infinity'
+//                 value === null || value === undefined || 
+//                 typeof value === 'number' || typeof value === 'string' || 
+//                 typeof value === 'boolean' || value === 'NaN' || 
+//                 value === 'Infinity' || value === '-Infinity'
 //             );
 
-//             // Detect Backend Special Types (Map/Set)
 //             const isSpecialStruct = value && typeof value === 'object' && (value.type === 'Map' || value.type === 'Set');
 
 //             if (isPrimitive) {
@@ -61,22 +53,14 @@
 //             }
 //         });
 
-//         return { 
-//             complexVars: complex, 
-//             simpleVars: simple, 
-//             pointers: ptrs,
-//             isEmpty: complex.length === 0 && simple.length === 0
-//         };
+//         return { complexVars: complex, simpleVars: simple, pointers: ptrs, isEmpty: complex.length === 0 && simple.length === 0 };
 //     }, [variables]);
 
-//     // 2. EMPTY STATE
 //     if (!variables) return <EmptyState />;
 //     if (isEmpty) return <NoVarsState />;
 
 //     return (
 //         <div className="flex flex-col h-full w-full overflow-hidden bg-[#0d1117] relative">
-            
-//             {/* --- TOP: MAIN STAGE (Complex Structures) --- */}
 //             <div className="flex-1 p-8 overflow-auto custom-scrollbar">
 //                 <div className="flex flex-wrap justify-center items-start gap-12 content-start min-h-full">
 //                     <AnimatePresence mode='popLayout'>
@@ -95,7 +79,6 @@
 //                         ))}
 //                     </AnimatePresence>
 
-//                     {/* Hint if only primitives exist */}
 //                     {complexVars.length === 0 && simpleVars.length > 0 && (
 //                         <div className="flex flex-col items-center justify-center h-full w-full text-gray-600 opacity-40 mt-20">
 //                             <Activity size={48} />
@@ -105,7 +88,6 @@
 //                 </div>
 //             </div>
 
-//             {/* --- BOTTOM: VARIABLE PILLS (Primitives) --- */}
 //             {simpleVars.length > 0 && (
 //                 <div className="w-full px-6 py-4 border-t border-gray-800 bg-[#161b22]/95 backdrop-blur-md shrink-0 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
 //                     <div className="flex flex-wrap gap-4 justify-center items-center">
@@ -125,62 +107,43 @@
 // const ComplexRenderer = memo(({ name, value, pointers }) => {
 //     const lowerName = name.toLowerCase();
 
-//     // 0. HANDLE SAFETY MARKERS
 //     if (value === '[Circular]') return <InfoCard name={name} label="Circular Ref" icon={<Activity size={14}/>} color="orange" />;
-
-//     // 1. HANDLE SPECIAL BACKEND TYPES (Map / Set)
 //     if (value?.type === 'Map') return <MapRenderer name={name} data={value.entries} />;
 //     if (value?.type === 'Set') return <SetRenderer name={name} data={value.values} />;
 
-//     // 2. ARRAYS & MATRICES
 //     if (Array.isArray(value)) {
 //         if (value.length === 0) return <Header badge="Empty Array" name={name} />;
-        
 //         const isMatrix = Array.isArray(value[0]);
 
-//         // Specific Data Structures by Naming Convention
 //         if (lowerName.includes('stack')) return <Wrapper badge="Stack (LIFO)" color="pink"><StackViz data={value} pointers={pointers} /></Wrapper>;
 //         if (lowerName.includes('queue') || lowerName === 'q') return <Wrapper badge="Queue (FIFO)" color="emerald"><QueueViz data={value} pointers={pointers} /></Wrapper>;
         
-//         // Grid/Graph Detection (Matrix + Naming)
-//         // Note: GraphViz is currently commented out in imports, so we use MatrixViz fallback or you can uncomment GraphViz above if needed.
 //         if (isMatrix && (lowerName.includes('grid') || lowerName.includes('board') || lowerName.includes('maze') || lowerName.includes('graph'))) {
-//              // return <Wrapper badge="Weighted Grid" color="indigo"><GraphViz data={value} pointers={pointers} /></Wrapper>;
 //              return <Wrapper badge={`Grid ${value.length}×${value[0].length}`} color="indigo"><MatrixViz data={value} pointers={pointers} /></Wrapper>;
 //         }
-
-//         // Standard Matrix vs Array
 //         if (isMatrix) return <Wrapper badge={`Matrix ${value.length}×${value[0].length}`} color="orange"><MatrixViz data={value} pointers={pointers} /></Wrapper>;
         
 //         return <Wrapper badge="Array" color="blue"><ArrayViz data={value} pointers={pointers} /></Wrapper>;
 //     }
 
-//     // 3. OBJECTS (Trees, Linked Lists, Wrappers)
 //     if (typeof value === 'object' && value !== null) {
 //         const keys = Object.keys(value);
 
-//         // ✅ NEW: Auto-Unwrap Wrapper Classes (e.g. "new DoublyLinkedList()")
-//         // If an object has a 'head' property that looks like a node, render that instead of the wrapper object
+//         // ✅ AUTO-UNWRAP: This is the secret to a clean display
+//         // It drills down into 'list.head' and visualizes that, instead of the wrapper object
 //         if (keys.includes('head') && value.head && typeof value.head === 'object') {
 //              return <ComplexRenderer name={name} value={value.head} pointers={pointers} />;
 //         }
 
-//         // Heuristic Checks
 //         const hasNext = keys.includes('next');
-//         const hasPrev = keys.includes('prev'); // ✅ Check for DLL
+//         const hasPrev = keys.includes('prev'); 
 //         const hasLeftRight = keys.includes('left') || keys.includes('right');
 //         const hasVal = keys.includes('val') || keys.includes('value') || keys.includes('data');
         
-//         // Tree
 //         if (hasLeftRight && hasVal) return <Wrapper badge="Binary Tree" color="purple"><TreeViz data={value} name={name} /></Wrapper>;
-        
-//         // ✅ DLL Detection
 //         if (hasNext && hasPrev && hasVal) return <Wrapper badge="Doubly Linked List" color="orange"><DoublyLinkedListViz data={value} name={name} /></Wrapper>;
-
-//         // SLL Detection
 //         if (hasNext && hasVal) return <Wrapper badge="Linked List" color="teal"><LinkedListViz data={value} name={name} /></Wrapper>;
 
-//         // Fallback: Generic JSON Object
 //         return (
 //             <div className="flex flex-col items-center">
 //                 <Header badge="Object" name={name} />
@@ -192,11 +155,11 @@
 //             </div>
 //         );
 //     }
-
 //     return null;
 // });
 
-// // --- SPECIALIZED SUB-RENDERERS ---
+// // ... Sub-renderers (MapRenderer, SetRenderer, Wrapper, CompactVariablePill, Header, InfoCard, EmptyState, NoVarsState) are standard ...
+// // Ensure you include them from the previous complete snippet
 
 // const MapRenderer = ({ name, data }) => (
 //     <div className="flex flex-col items-center">
@@ -227,8 +190,6 @@
 //         </div>
 //     </div>
 // );
-
-// // --- UTILITY COMPONENTS ---
 
 // const Wrapper = ({ children, badge, color = "blue" }) => {
 //     const colors = {
@@ -316,20 +277,418 @@
 
 
 
+// import React, { useMemo, memo } from 'react';
+// import { AnimatePresence, motion } from 'framer-motion';
+// import { Activity, Hash } from 'lucide-react';
+
+// // --- RENDERERS ---
+// import ArrayViz from './renderers/ArrayViz';
+// import StackViz from './renderers/StackViz'; 
+// import QueueViz from './renderers/QueueViz'; 
+// import TreeViz from './renderers/TreeViz';
+// import MatrixViz from './renderers/MatrixViz';
+// import LinkedListViz from './renderers/LinkedListViz';
+// import DoublyLinkedListViz from './renderers/DoublyLinkedListViz';
+
+// const BANNED_VARS = [
+//     'this', 'window', 'global', 'self', 'module', 'exports', 'arguments', 
+//     'require', 'process', '__dirname', '__filename', 'console'
+// ];
+
+// const VizCanvas = memo(({ variables }) => {
+    
+//     // 🧠 SMART CLASSIFICATION + GROUPING
+//     const { groups, simpleVars, isEmpty } = useMemo(() => {
+//         if (!variables) return { groups: [], simpleVars: [], isEmpty: true };
+
+//         const complex = [];
+//         const simple = [];
+//         const ptrs = {};
+
+//         Object.entries(variables).forEach(([name, value]) => {
+//             if (BANNED_VARS.includes(name)) return;
+//             if (typeof value === 'function' || typeof value === 'symbol') return;
+
+//             if (Number.isInteger(value) && value >= 0 && value < 1000) {
+//                 ptrs[name] = value;
+//             }
+
+//             const isPrimitive = (
+//                 value === null || value === undefined || 
+//                 typeof value === 'number' || typeof value === 'string' || 
+//                 typeof value === 'boolean'
+//             );
+
+//             if (isPrimitive) {
+//                 simple.push([name, value]);
+//             } else {
+//                 complex.push([name, value]);
+//             }
+//         });
+
+//         // 🎯 SMART GROUPING: Detect related variables
+//         const grouped = smartGrouping(complex);
+
+//         return { 
+//             groups: grouped, 
+//             simpleVars: simple, 
+//             isEmpty: grouped.length === 0 && simple.length === 0 
+//         };
+//     }, [variables]);
+
+//     if (!variables) return <EmptyState />;
+//     if (isEmpty) return <NoVarsState />;
+
+//     return (
+//         <div className="flex flex-col h-full w-full overflow-hidden bg-[#0d1117] relative">
+//             <div className="flex-1 p-4 overflow-auto custom-scrollbar">
+                
+//                 {/* VERTICAL STACKING for groups */}
+//                 <div className="flex flex-col gap-6 items-center w-full">
+//                     <AnimatePresence mode='popLayout'>
+//                         {groups.map((group, idx) => (
+//                             <motion.div 
+//                                 key={`group-${idx}`}
+//                                 layout
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                                 className="w-full max-w-6xl"
+//                             >
+//                                 {group.isTransformation ? (
+//                                     <TransformationFlow group={group} />
+//                                 ) : (
+//                                     <div className="flex flex-wrap justify-center gap-8">
+//                                         {group.items.map(([name, value]) => (
+//                                             <div key={name} className="flex-shrink-0">
+//                                                 <ComplexRenderer name={name} value={value} pointers={{}} />
+//                                             </div>
+//                                         ))}
+//                                     </div>
+//                                 )}
+//                             </motion.div>
+//                         ))}
+//                     </AnimatePresence>
+//                 </div>
+//             </div>
+
+//             {simpleVars.length > 0 && (
+//                 <div className="w-full px-6 py-3 border-t border-gray-800 bg-[#161b22]/95 backdrop-blur-md shrink-0 z-30">
+//                     <div className="flex flex-wrap gap-3 justify-center items-center">
+//                         <AnimatePresence mode='popLayout'>
+//                             {simpleVars.map(([name, value]) => (
+//                                 <CompactVariablePill key={name} name={name} value={value} />
+//                             ))}
+//                         </AnimatePresence>
+//                     </div>
+//                 </div>
+//             )}
+//         </div>
+//     );
+// });
+
+// // 🎯 SMART GROUPING LOGIC
+// function smartGrouping(complexVars) {
+//     // Detect transformation patterns: original + intermediate + final
+//     const groups = [];
+//     const used = new Set();
+
+//     // Pattern: originalX + X + balancedX or sortedX
+//     complexVars.forEach(([name, value], idx) => {
+//         if (used.has(name)) return;
+
+//         const lower = name.toLowerCase();
+        
+//         // Check for transformation pattern
+//         if (lower.includes('original')) {
+//             const baseName = name.replace(/original/i, '').toLowerCase();
+//             const related = complexVars.filter(([n, v]) => {
+//                 const nLower = n.toLowerCase();
+//                 return !used.has(n) && (
+//                     nLower.includes(baseName) || 
+//                     nLower.includes('inorder') ||
+//                     nLower.includes('sorted') ||
+//                     nLower.includes('balanced')
+//                 );
+//             });
+
+//             if (related.length > 0) {
+//                 groups.push({
+//                     isTransformation: true,
+//                     items: [[name, value], ...related]
+//                 });
+//                 used.add(name);
+//                 related.forEach(([n]) => used.add(n));
+//                 return;
+//             }
+//         }
+
+//         // Check for inorder array pattern
+//         if (lower.includes('inorder') || lower.includes('sorted')) {
+//             const related = complexVars.filter(([n, v]) => {
+//                 const nLower = n.toLowerCase();
+//                 return !used.has(n) && (
+//                     nLower.includes('tree') || 
+//                     nLower.includes('balanced') ||
+//                     nLower.includes('bst')
+//                 );
+//             });
+
+//             if (related.length > 0) {
+//                 groups.push({
+//                     isTransformation: true,
+//                     items: [[name, value], ...related]
+//                 });
+//                 used.add(name);
+//                 related.forEach(([n]) => used.add(n));
+//                 return;
+//             }
+//         }
+//     });
+
+//     // Add ungrouped items
+//     const ungrouped = complexVars.filter(([n]) => !used.has(n));
+//     if (ungrouped.length > 0) {
+//         groups.push({
+//             isTransformation: false,
+//             items: ungrouped
+//         });
+//     }
+
+//     return groups;
+// }
+
+// // 🎨 TRANSFORMATION FLOW COMPONENT
+// const TransformationFlow = memo(({ group }) => {
+//     return (
+//         <div className="flex flex-col gap-4 items-center">
+//             {/* Transformation Label */}
+//             <div className="px-3 py-1 bg-green-900/20 border border-green-500/30 rounded-full text-xs font-bold text-green-400 uppercase tracking-wider">
+//                 Transformation Pipeline
+//             </div>
+
+//             {/* Vertical Flow */}
+//             <div className="flex flex-col gap-6 items-center w-full">
+//                 {group.items.map(([name, value], idx) => (
+//                     <React.Fragment key={name}>
+//                         <div className="w-full flex justify-center">
+//                             <div className="max-w-4xl w-full">
+//                                 <ComplexRenderer name={name} value={value} pointers={{}} />
+//                             </div>
+//                         </div>
+                        
+//                         {/* Arrow between steps */}
+//                         {idx < group.items.length - 1 && (
+//                             <motion.div 
+//                                 initial={{ opacity: 0, y: -10 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 className="flex flex-col items-center gap-1"
+//                             >
+//                                 <div className="w-0.5 h-6 bg-gradient-to-b from-green-500/50 to-blue-500/50"></div>
+//                                 <div className="w-3 h-3 border-2 border-blue-500 rounded-full bg-blue-500/20"></div>
+//                             </motion.div>
+//                         )}
+//                     </React.Fragment>
+//                 ))}
+//             </div>
+//         </div>
+//     );
+// });
+
+// // ... (Rest of the ComplexRenderer, renderers, pills stay the same)
+
+// // 🧠 LOGIC: INTELLIGENT ROUTER
+// const ComplexRenderer = memo(({ name, value, pointers }) => {
+//     const lowerName = name.toLowerCase();
+
+//     if (value === '[Circular]') return <InfoCard name={name} label="Circular" icon={<Activity size={14}/>} color="orange" />;
+//     if (value?.type === 'Map') return <MapRenderer name={name} data={value.entries} />;
+//     if (value?.type === 'Set') return <SetRenderer name={name} data={value.values} />;
+
+//     if (Array.isArray(value)) {
+//         if (value.length === 0) return <Header badge="Empty Array" name={name} />;
+//         const isMatrix = Array.isArray(value[0]);
+
+//         if (lowerName.includes('stack')) return <Wrapper badge="Stack" color="pink"><StackViz data={value} pointers={pointers} /></Wrapper>;
+//         if (lowerName.includes('queue')) return <Wrapper badge="Queue" color="emerald"><QueueViz data={value} pointers={pointers} /></Wrapper>;
+//         if (isMatrix) return <Wrapper badge="Matrix" color="orange"><MatrixViz data={value} pointers={pointers} /></Wrapper>;
+        
+//         return <Wrapper badge="Array" color="blue"><ArrayViz data={value} pointers={pointers} /></Wrapper>;
+//     }
+
+//     if (typeof value === 'object' && value !== null) {
+//         const keys = Object.keys(value);
+
+//         if (keys.includes('head') && value.head && typeof value.head === 'object') {
+//             const headKeys = Object.keys(value.head);
+//             if (headKeys.includes('val') || headKeys.includes('next')) {
+//                 return <ComplexRenderer name={name} value={value.head} pointers={pointers} />;
+//             }
+//         }
+
+//         const hasNext = keys.includes('next');
+//         const hasPrev = keys.includes('prev'); 
+//         const hasLeftRight = keys.includes('left') || keys.includes('right');
+//         const hasVal = keys.includes('val') || keys.includes('value') || keys.includes('data');
+        
+//         if (hasLeftRight && hasVal) return <TreeViz data={value} name={name} />;
+//         if (hasNext && hasPrev && hasVal) return <Wrapper badge="DLL" color="orange"><DoublyLinkedListViz data={value} name={name} /></Wrapper>;
+//         if (hasNext && hasVal) return <Wrapper badge="LL" color="teal"><LinkedListViz data={value} name={name} /></Wrapper>;
+
+//         return (
+//             <div className="flex flex-col items-center">
+//                 <Header badge="Object" name={name} />
+//                 <div className="bg-[#161b22] p-3 rounded-lg border border-gray-800 font-mono text-xs text-gray-300 max-w-md">
+//                     <pre className="overflow-auto max-h-32">
+//                         {JSON.stringify(value, null, 2)}
+//                     </pre>
+//                 </div>
+//             </div>
+//         );
+//     }
+//     return null;
+// });
+
+// // ... (All other components remain the same)
+// const MapRenderer = ({ name, data }) => (
+//     <div className="flex flex-col items-center">
+//         <Header badge="Map" badgeColor="text-yellow-400 bg-yellow-400/10 border-yellow-400/20" name={name} meta={`${data.length}`} />
+//         <div className="flex flex-col gap-1 bg-[#161b22] p-2 rounded-lg border border-gray-800 min-w-[140px]">
+//             {data.map(([k, v], i) => (
+//                 <div key={i} className="flex justify-between gap-3 text-[10px] font-mono border-b border-gray-800 last:border-0 pb-1 last:pb-0">
+//                     <span className="text-blue-400 font-bold">{String(k)}</span>
+//                     <span className="text-emerald-400 font-bold">{String(v)}</span>
+//                 </div>
+//             ))}
+//         </div>
+//     </div>
+// );
+
+// const SetRenderer = ({ name, data }) => (
+//     <div className="flex flex-col items-center">
+//         <Header badge="Set" badgeColor="text-rose-400 bg-rose-400/10 border-rose-400/20" name={name} meta={`${data.length}`} />
+//         <div className="flex flex-wrap gap-2 bg-[#161b22] p-2 rounded-lg border border-gray-800 max-w-[180px] justify-center">
+//             {data.map((v, i) => (
+//                 <span key={i} className="px-1.5 py-0.5 bg-gray-800 rounded text-[10px] text-rose-300 font-mono border border-gray-700">
+//                     {String(v)}
+//                 </span>
+//             ))}
+//         </div>
+//     </div>
+// );
+
+// const Wrapper = ({ children, badge, color = "blue" }) => {
+//     const colors = {
+//         pink: "text-pink-400 bg-pink-400/10 border-pink-400/20",
+//         emerald: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+//         orange: "text-orange-400 bg-orange-400/10 border-orange-400/20",
+//         blue: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+//         purple: "text-purple-400 bg-purple-400/10 border-purple-400/20",
+//         teal: "text-teal-400 bg-teal-400/10 border-teal-400/20",
+//     };
+
+//     return (
+//         <div className="flex flex-col items-center">
+//             <div className={`mb-2 px-2 py-0.5 rounded text-[9px] font-bold font-mono border uppercase ${colors[color]}`}>
+//                 {badge}
+//             </div>
+//             {children}
+//         </div>
+//     );
+// };
+
+// const CompactVariablePill = memo(({ name, value }) => (
+//     <motion.div 
+//         layout 
+//         initial={{ scale: 0.9, opacity: 0 }} 
+//         animate={{ scale: 1, opacity: 1 }} 
+//         className="flex items-center bg-[#0d1117] border border-gray-700 rounded-lg overflow-hidden shadow-sm"
+//     >
+//         <div className="bg-[#161b22] px-2 py-1 text-[9px] font-bold text-gray-400 border-r border-gray-700 uppercase">
+//             {name}
+//         </div>
+//         <div className="px-2 py-1 text-xs font-mono font-bold text-blue-400">
+//             {value === null ? 'null' : String(value)}
+//         </div>
+//     </motion.div>
+// ));
+
+// const Header = ({ badge, badgeColor, name, meta }) => (
+//     <div className="flex items-center gap-2 mb-2">
+//         <span className={`text-[9px] font-bold px-1 py-0.5 rounded font-mono border ${badgeColor || 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+//             {badge}
+//         </span>
+//         <span className="text-gray-200 font-bold text-sm font-mono">{name}</span>
+//         {meta && <span className="text-gray-600 text-[9px] font-mono">{meta}</span>}
+//     </div>
+// );
+
+// const InfoCard = ({ name, label, icon, color }) => (
+//     <div className={`p-3 rounded-lg border flex flex-col items-center gap-2 bg-${color}-900/10 border-${color}-500/30 text-${color}-400`}>
+//         {icon}
+//         <span className="font-bold text-xs font-mono">{label}</span>
+//     </div>
+// );
+
+// const EmptyState = () => (
+//     <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-3">
+//         <Activity size={48} strokeWidth={1} className="opacity-20 animate-pulse" />
+//         <p className="text-sm opacity-50">Run code to visualize</p>
+//     </div>
+// );
+
+// const NoVarsState = () => (
+//     <div className="h-full flex flex-col items-center justify-center text-gray-600 gap-2">
+//         <Hash size={40} strokeWidth={1} className="opacity-20" />
+//         <p className="text-xs font-mono opacity-60">No variables tracked</p>
+//     </div>
+// );
+
+// export default VizCanvas;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import React, { useMemo, memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, Hash, Layers, Braces } from 'lucide-react';
+import { Activity, Hash } from 'lucide-react';
 
 // --- RENDERERS ---
 import ArrayViz from './renderers/ArrayViz';
 import StackViz from './renderers/StackViz'; 
 import QueueViz from './renderers/QueueViz'; 
-// import GraphViz from './renderers/GraphViz'; 
 import TreeViz from './renderers/TreeViz';
 import MatrixViz from './renderers/MatrixViz';
 import LinkedListViz from './renderers/LinkedListViz';
-import DoublyLinkedListViz from './renderers/DoublyLinkedListViz'; // ✅ IMPORTED
+import DoublyLinkedListViz from './renderers/DoublyLinkedListViz';
 
 const BANNED_VARS = [
     'this', 'window', 'global', 'self', 'module', 'exports', 'arguments', 
@@ -338,7 +697,6 @@ const BANNED_VARS = [
 
 const VizCanvas = memo(({ variables }) => {
     
-    // 🧠 SMART CLASSIFICATION ENGINE
     const { complexVars, simpleVars, pointers, isEmpty } = useMemo(() => {
         if (!variables) return { complexVars: [], simpleVars: [], pointers: {}, isEmpty: true };
 
@@ -426,10 +784,12 @@ const VizCanvas = memo(({ variables }) => {
 const ComplexRenderer = memo(({ name, value, pointers }) => {
     const lowerName = name.toLowerCase();
 
+    // 1. Handle Special Cases First
     if (value === '[Circular]') return <InfoCard name={name} label="Circular Ref" icon={<Activity size={14}/>} color="orange" />;
     if (value?.type === 'Map') return <MapRenderer name={name} data={value.entries} />;
     if (value?.type === 'Set') return <SetRenderer name={name} data={value.values} />;
 
+    // 2. Handle Arrays
     if (Array.isArray(value)) {
         if (value.length === 0) return <Header badge="Empty Array" name={name} />;
         const isMatrix = Array.isArray(value[0]);
@@ -445,15 +805,65 @@ const ComplexRenderer = memo(({ name, value, pointers }) => {
         return <Wrapper badge="Array" color="blue"><ArrayViz data={value} pointers={pointers} /></Wrapper>;
     }
 
+    // 3. Handle Objects
     if (typeof value === 'object' && value !== null) {
         const keys = Object.keys(value);
 
-        // ✅ AUTO-UNWRAP: This is the secret to a clean display
-        // It drills down into 'list.head' and visualizes that, instead of the wrapper object
-        if (keys.includes('head') && value.head && typeof value.head === 'object') {
-             return <ComplexRenderer name={name} value={value.head} pointers={pointers} />;
+        // ✅ CRITICAL: CHECK FOR OOP PATTERNS FIRST (BEFORE OTHER CHECKS)
+        
+        // A. STACK CLASS PATTERN: { stack: [...], capacity: 5 }
+        if (keys.includes('stack') && Array.isArray(value.stack)) {
+            const stackData = value.stack;
+            const capacity = value.capacity || null;
+            const isFull = capacity && stackData.length >= capacity;
+
+            return (
+                <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded font-mono border uppercase tracking-wider bg-pink-900/20 text-pink-400 border-pink-500/30">
+                            Stack (OOP)
+                        </span>
+                        <span className="text-gray-200 font-bold text-sm font-mono">{name}</span>
+                        {capacity && (
+                            <span className="text-[10px] font-mono text-gray-500 border-l border-gray-700 pl-2">
+                                {stackData.length}/{capacity}
+                                {isFull && <span className="text-red-400 ml-1">FULL</span>}
+                            </span>
+                        )}
+                    </div>
+                    <StackViz 
+                        data={stackData} 
+                        pointers={pointers}
+                        capacity={capacity}
+                        isFull={isFull}
+                    />
+                </div>
+            );
         }
 
+        // B. QUEUE CLASS PATTERN: { items: [...] } or { queue: [...] }
+        if ((keys.includes('items') || keys.includes('queue')) && 
+            (Array.isArray(value.items) || Array.isArray(value.queue))) {
+            const queueData = value.items || value.queue;
+            return (
+                <div className="flex flex-col items-center">
+                    <div className="mb-3 px-2 py-0.5 rounded text-[10px] font-bold font-mono border uppercase tracking-wider bg-emerald-900/20 text-emerald-400 border-emerald-500/30">
+                        Queue (OOP)
+                    </div>
+                    <QueueViz data={queueData} pointers={pointers} />
+                </div>
+            );
+        }
+
+        // C. LINKED LIST CLASS PATTERN: { head: {...} }
+        if (keys.includes('head') && value.head && typeof value.head === 'object') {
+            const headKeys = Object.keys(value.head);
+            if (headKeys.includes('val') || headKeys.includes('next') || headKeys.includes('value')) {
+                return <ComplexRenderer name={name} value={value.head} pointers={pointers} />;
+            }
+        }
+
+        // D. TREE/NODE DETECTION
         const hasNext = keys.includes('next');
         const hasPrev = keys.includes('prev'); 
         const hasLeftRight = keys.includes('left') || keys.includes('right');
@@ -463,6 +873,7 @@ const ComplexRenderer = memo(({ name, value, pointers }) => {
         if (hasNext && hasPrev && hasVal) return <Wrapper badge="Doubly Linked List" color="orange"><DoublyLinkedListViz data={value} name={name} /></Wrapper>;
         if (hasNext && hasVal) return <Wrapper badge="Linked List" color="teal"><LinkedListViz data={value} name={name} /></Wrapper>;
 
+        // E. FALLBACK: Generic Object
         return (
             <div className="flex flex-col items-center">
                 <Header badge="Object" name={name} />
@@ -474,12 +885,11 @@ const ComplexRenderer = memo(({ name, value, pointers }) => {
             </div>
         );
     }
+    
     return null;
 });
 
-// ... Sub-renderers (MapRenderer, SetRenderer, Wrapper, CompactVariablePill, Header, InfoCard, EmptyState, NoVarsState) are standard ...
-// Ensure you include them from the previous complete snippet
-
+// --- SUB-RENDERERS ---
 const MapRenderer = ({ name, data }) => (
     <div className="flex flex-col items-center">
         <Header badge="Map" badgeColor="text-yellow-400 bg-yellow-400/10 border-yellow-400/20" name={name} meta={`size: ${data.length}`} />
@@ -527,7 +937,6 @@ const Wrapper = ({ children, badge, color = "blue" }) => {
                 {badge}
             </div>
             {children}
-            <span className="mt-2 text-xs font-mono font-bold text-gray-500">{/* Name label moved to children usually, or handled by header */}</span>
         </div>
     );
 };
