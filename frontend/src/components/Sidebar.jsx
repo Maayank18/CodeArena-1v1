@@ -166,9 +166,8 @@
 
 
 
-
 // FILE: frontend/src/components/Sidebar.jsx
-// PRODUCTION-OPTIMIZED FOR SCALE
+// PRODUCTION-OPTIMIZED WITH LIVE COUNT FIX
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -180,13 +179,13 @@ const SOCKET_CONFIG = {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
-    transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+    transports: ['websocket', 'polling'],
 };
 
 const STATS_CONFIG = {
-    updateInterval: 3000, // Throttle updates to every 3 seconds
+    updateInterval: 2000, // Reduced to 2s for faster updates
     cacheKey: 'sidebar_stats_cache',
-    cacheDuration: 60000, // 1 minute
+    cacheDuration: 30000, // Reduced to 30s for fresher data
 };
 
 const Sidebar = () => {
@@ -199,6 +198,7 @@ const Sidebar = () => {
     const lastUpdateRef = useRef(0);
     const mountedRef = useRef(true);
     const reconnectTimeoutRef = useRef(null);
+    const fetchControllerRef = useRef(null); // ✅ NEW: For aborting fetch
 
     // ✅ PERFORMANCE: Memoize menu items
     const menu = useMemo(() => [
@@ -214,26 +214,34 @@ const Sidebar = () => {
         navigate(path);
     }, [navigate]);
 
-    // ✅ CRITICAL: Throttled stats update
-    const updateStats = useCallback((data) => {
+    // ✅ CRITICAL FIX: Enhanced stats update with logging
+    const updateStats = useCallback((data, source = 'unknown') => {
         if (!mountedRef.current) return;
+        
+        console.log(`[SIDEBAR] Stats update from ${source}:`, data);
         
         const now = Date.now();
         if (now - lastUpdateRef.current < STATS_CONFIG.updateInterval) {
-            return; // Throttle updates
+            console.log('[SIDEBAR] Update throttled');
+            return;
         }
         
         lastUpdateRef.current = now;
         
-        setStats(prev => ({
-            live: typeof data.live === 'number' ? data.live : prev.live,
-            total: typeof data.total === 'number' ? data.total : prev.total
-        }));
+        // ✅ CRITICAL: Ensure we have valid numbers
+        const newStats = {
+            live: typeof data.live === 'number' && data.live >= 0 ? data.live : 0,
+            total: typeof data.total === 'number' && data.total >= 0 ? data.total : 0
+        };
+        
+        console.log('[SIDEBAR] Setting stats:', newStats);
+        
+        setStats(newStats);
 
         // Cache stats
         try {
             localStorage.setItem(STATS_CONFIG.cacheKey, JSON.stringify({
-                data: { live: data.live, total: data.total },
+                data: newStats,
                 timestamp: now
             }));
         } catch (e) {
@@ -250,7 +258,10 @@ const Sidebar = () => {
                 const age = Date.now() - timestamp;
                 
                 if (age < STATS_CONFIG.cacheDuration) {
+                    console.log('[SIDEBAR] Loading cached stats:', data);
                     setStats(data);
+                } else {
+                    console.log('[SIDEBAR] Cache expired');
                 }
             }
         } catch (e) {
@@ -263,32 +274,52 @@ const Sidebar = () => {
         mountedRef.current = true;
         
         const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
+        console.log('[SIDEBAR] Connecting to:', socketUrl);
 
-        // 1. Initial HTTP fetch (fast, no socket dependency)
+        // ✅ FIX: Browser-compatible fetch with manual timeout
         const fetchStats = async () => {
             try {
+                // Create AbortController for timeout
+                fetchControllerRef.current = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    if (fetchControllerRef.current) {
+                        fetchControllerRef.current.abort();
+                    }
+                }, 5000);
+
                 const res = await fetch(`${socketUrl.replace(/\/$/, '')}/api/stats`, {
                     headers: { 'Accept': 'application/json' },
-                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                    signal: fetchControllerRef.current.signal
                 });
+                
+                clearTimeout(timeoutId);
                 
                 if (res.ok) {
                     const data = await res.json();
+                    console.log('[SIDEBAR] Initial HTTP fetch response:', data);
+                    
                     if (mountedRef.current && data) {
-                        updateStats(data);
+                        updateStats(data, 'http-fetch');
                     }
+                } else {
+                    console.error('[SIDEBAR] HTTP fetch failed with status:', res.status);
                 }
             } catch (e) {
-                console.error('[SIDEBAR] Initial stats fetch failed:', e.message);
+                if (e.name === 'AbortError') {
+                    console.error('[SIDEBAR] Fetch timeout');
+                } else {
+                    console.error('[SIDEBAR] Initial stats fetch failed:', e.message);
+                }
             }
         };
         
         fetchStats();
 
-        // 2. Socket connection (for real-time updates)
+        // ✅ Socket connection (for real-time updates)
         const socket = io(socketUrl, {
             ...SOCKET_CONFIG,
             reconnection: true,
+            autoConnect: true, // ✅ Ensure auto-connect
         });
 
         socketRef.current = socket;
@@ -296,8 +327,12 @@ const Sidebar = () => {
         // ✅ CONNECTION HANDLERS
         socket.on('connect', () => {
             if (mountedRef.current) {
-                console.log('[SIDEBAR] Socket connected');
+                console.log('[SIDEBAR] ✅ Socket connected, ID:', socket.id);
                 setIsConnected(true);
+                
+                // ✅ CRITICAL: Request stats immediately on connect
+                socket.emit('request_stats');
+                console.log('[SIDEBAR] Requested stats from server');
                 
                 // Clear any reconnect timeouts
                 if (reconnectTimeoutRef.current) {
@@ -309,14 +344,14 @@ const Sidebar = () => {
 
         socket.on('disconnect', (reason) => {
             if (mountedRef.current) {
-                console.warn('[SIDEBAR] Socket disconnected:', reason);
+                console.warn('[SIDEBAR] ❌ Socket disconnected:', reason);
                 setIsConnected(false);
                 
                 // Attempt reconnection after delay
                 if (reason === 'io server disconnect') {
-                    // Server initiated disconnect, wait before reconnecting
                     reconnectTimeoutRef.current = setTimeout(() => {
                         if (mountedRef.current) {
+                            console.log('[SIDEBAR] Attempting manual reconnect...');
                             socket.connect();
                         }
                     }, 5000);
@@ -325,27 +360,43 @@ const Sidebar = () => {
         });
 
         socket.on('connect_error', (error) => {
-            console.error('[SIDEBAR] Socket connection error:', error.message);
+            console.error('[SIDEBAR] ⚠️ Socket connection error:', error.message);
         });
 
         socket.on('reconnect', (attemptNumber) => {
-            console.log('[SIDEBAR] Socket reconnected after', attemptNumber, 'attempts');
+            console.log('[SIDEBAR] ✅ Socket reconnected after', attemptNumber, 'attempts');
+            // Request stats after reconnection
+            socket.emit('request_stats');
         });
 
         socket.on('reconnect_failed', () => {
-            console.error('[SIDEBAR] Socket reconnection failed');
+            console.error('[SIDEBAR] ❌ Socket reconnection failed completely');
         });
 
         // ✅ STATS UPDATE HANDLER
         socket.on('site_stats', (data) => {
+            console.log('[SIDEBAR] 📊 Received site_stats event:', data);
             if (mountedRef.current && data) {
-                updateStats(data);
+                updateStats(data, 'socket-site_stats');
+            }
+        });
+
+        // ✅ NEW: Alternative event name (in case backend uses different name)
+        socket.on('stats_update', (data) => {
+            console.log('[SIDEBAR] 📊 Received stats_update event:', data);
+            if (mountedRef.current && data) {
+                updateStats(data, 'socket-stats_update');
             }
         });
 
         // ✅ CLEANUP
         return () => {
+            console.log('[SIDEBAR] Cleaning up...');
             mountedRef.current = false;
+            
+            if (fetchControllerRef.current) {
+                fetchControllerRef.current.abort();
+            }
             
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current);
@@ -358,6 +409,7 @@ const Sidebar = () => {
                 socketRef.current.off('reconnect');
                 socketRef.current.off('reconnect_failed');
                 socketRef.current.off('site_stats');
+                socketRef.current.off('stats_update');
                 socketRef.current.disconnect();
                 socketRef.current = null;
             }
@@ -435,7 +487,7 @@ const Sidebar = () => {
                         </div>
                     </div>
                     
-                    {/* Pro Plan (Placeholder) */}
+                    {/* Pro Plan */}
                     <div className="p-4 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
                         <h4 className="text-[var(--text-primary)] font-bold text-sm mb-1 flex items-center gap-2">
                             <Zap size={16} className="text-yellow-400 fill-current" />
@@ -501,5 +553,4 @@ const Sidebar = () => {
     );
 };
 
-// ✅ PERFORMANCE: Memoize component
 export default React.memo(Sidebar);
