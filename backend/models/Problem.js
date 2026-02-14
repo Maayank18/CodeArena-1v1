@@ -115,3 +115,5 @@ problemSchema.index({ difficulty: 1 });
 problemSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Problem', problemSchema);
+
+// optimizing problem.js for future feature integration
