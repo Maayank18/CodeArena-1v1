@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App.jsx';
 import { ThemeProvider } from './context/ThemeContext'; // Import
 import './index.css';
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
