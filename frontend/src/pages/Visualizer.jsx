@@ -1,33 +1,43 @@
+// // FILE: frontend/src/pages/Visualizer.jsx
+// // PRODUCTION-OPTIMIZED VERSION - MODERN UI WITH THEME SUPPORT
 // import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 // import { useNavigate } from 'react-router-dom';
-// // ✅ ADDED: AlertTriangle for error display
-// import { ArrowLeft, Loader2, Code2, Eye, Play, Pause, RotateCcw, Settings, AlertTriangle } from 'lucide-react';
+// import { 
+//     ArrowLeft, Loader2, Code2, Play, Pause, RotateCcw, 
+//     AlertTriangle, Sparkles, Zap, ChevronDown 
+// } from 'lucide-react';
 // import toast from 'react-hot-toast';
 
-// // --- COMPONENTS ---
+// // Components
 // import Navbar from '../components/Navbar'; 
 // import CodePanel from '../components/Visualizer/CodePanel';
 // import VizCanvas from '../components/Visualizer/VizCanvas';
 // import ControlBar from '../components/Visualizer/ControlBar';
 // import api from '../api.js';
 
-// // --- ALGORITHM EXAMPLES ---
+// // ✅ ALGORITHM EXAMPLES
 // const EXAMPLES = {
-//     bubbleSort: `// Bubble Sort Visualization
+//     bubbleSort: {
+//         name: 'Bubble Sort',
+//         icon: '🔄',
+//         category: 'Sorting',
+//         code: `// Bubble Sort Visualization
 // let arr = [64, 34, 25, 12, 22, 11, 90];
 // for(let i = 0; i < arr.length; i++) {
 //   for(let j = 0; j < arr.length - i - 1; j++) {
-//     // Compare
 //     if(arr[j] > arr[j+1]) {
-//       // Swap
 //       let temp = arr[j];
 //       arr[j] = arr[j+1];
 //       arr[j+1] = temp;
 //     }
 //   }
-// }`,
-
-//     binaryTree: `// Binary Search Tree Construction
+// }`
+//     },
+//     binaryTree: {
+//         name: 'Binary Tree',
+//         icon: '🌳',
+//         category: 'Trees',
+//         code: `// Binary Search Tree
 // class Node {
 //   constructor(val) {
 //     this.val = val;
@@ -41,9 +51,13 @@
 // root.left.left = new Node(20);
 // root.left.right = new Node(40);
 // root.right.left = new Node(60);
-// root.right.right = new Node(80);`,
-
-//     linkedList: `// Linked List Creation
+// root.right.right = new Node(80);`
+//     },
+//     linkedList: {
+//         name: 'Linked List',
+//         icon: '🔗',
+//         category: 'Lists',
+//         code: `// Linked List Creation
 // class Node {
 //   constructor(val) {
 //     this.val = val;
@@ -54,10 +68,13 @@
 // head.next = new Node(20);
 // head.next.next = new Node(30);
 // head.next.next.next = new Node(40);
-// // Circular link example
-// head.next.next.next.next = head.next;`,
-
-//     doublyLinkedList: `// Doubly Linked List (Professional OOP)
+// head.next.next.next.next = head.next;`
+//     },
+//     doublyLinkedList: {
+//         name: 'Doubly Linked List',
+//         icon: '⛓️',
+//         category: 'Lists',
+//         code: `// Doubly Linked List
 // class Node {
 //     constructor(val) {
 //         this.val = val;
@@ -71,7 +88,6 @@
 //         this.head = null;
 //         this.tail = null;
 //     }
-
 //     push(val) {
 //         const newNode = new Node(val);
 //         if (!this.head) {
@@ -85,29 +101,34 @@
 //     }
 // }
 
-// // Execution: Only 'list' exists in global scope
 // const list = new DoublyLinkedList();
-
-// list.push(10); // Adds 10
-// list.push(20); // Adds 20 <-> 10
-// list.push(30); // Adds 30 <-> 20
-// list.push(40); // Adds 40 <-> 30`,
-
-//     matrix: `// 2D Matrix
+// list.push(10);
+// list.push(20);
+// list.push(30);
+// list.push(40);`
+//     },
+//     matrix: {
+//         name: '2D Matrix',
+//         icon: '⬜',
+//         category: 'Arrays',
+//         code: `// 2D Matrix Traversal
 // let matrix = [
 //   [1, 2, 3],
 //   [4, 5, 6],
 //   [7, 8, 9]
 // ];
 // let i = 0, j = 0;
-// // Matrix traversal
 // for(i = 0; i < matrix.length; i++) {
 //   for(j = 0; j < matrix[i].length; j++) {
 //     matrix[i][j] *= 2;
 //   }
-// }`,
-
-//     stack: `// Stack (LIFO)
+// }`
+//     },
+//     stack: {
+//         name: 'Stack (LIFO)',
+//         icon: '📚',
+//         category: 'Stacks & Queues',
+//         code: `// Stack Implementation
 // let stack = [];
 // let top = -1;
 
@@ -118,7 +139,7 @@
 
 // function pop() {
 //   if (top >= 0) {
-//     stack.pop(); // Remove from array
+//     stack.pop();
 //     top--;
 //   }
 // }
@@ -126,99 +147,106 @@
 // push(10);
 // push(20);
 // push(30);
-// pop(); // Removes 30
-// push(40);`,
-
-//     queue: `// Queue Data Structure (FIFO)
-// // We use a standard array to simulate a Queue
+// pop();
+// push(40);`
+//     },
+//     queue: {
+//         name: 'Queue (FIFO)',
+//         icon: '➡️',
+//         category: 'Stacks & Queues',
+//         code: `// Queue Implementation
 // let myQueue = [];
 
-// // 1. ENQUEUE (Add to Rear)
 // function enqueue(val) {
-//     // Pushing to the end of array
 //     myQueue.push(val);
 // }
 
-// // 2. DEQUEUE (Remove from Front)
 // function dequeue() {
-//     // Shifting from the start of array
 //     if (myQueue.length > 0) {
 //         myQueue.shift();
 //     }
 // }
 
-// // --- Execution ---
-// enqueue(10); // Queue: [10]
-// enqueue(20); // Queue: [10, 20]
-// enqueue(30); // Queue: [10, 20, 30]
-
-// dequeue();   // Removes 10. Queue: [20, 30]
-// dequeue();   // Removes 20. Queue: [30]
-
-// enqueue(40); // Queue: [30, 40]
-// enqueue(50); // Queue: [30, 40, 50]`,
+// enqueue(10);
+// enqueue(20);
+// enqueue(30);
+// dequeue();
+// dequeue();
+// enqueue(40);
+// enqueue(50);`
+//     },
 // };
 
 // const Visualizer = () => {
 //     const navigate = useNavigate();
     
-//     // --- STATE ---
-//     const [code, setCode] = useState(EXAMPLES.bubbleSort); 
+//     // ✅ STATE
+//     const [code, setCode] = useState(EXAMPLES.bubbleSort.code); 
 //     const [trace, setTrace] = useState([]);
 //     const [loading, setLoading] = useState(false);
 //     const [showExamples, setShowExamples] = useState(false);
-//     const [mobileTab, setMobileTab] = useState('editor'); // 'editor' | 'visualizer'
+//     const [mobileTab, setMobileTab] = useState('editor');
 
-//     // --- PLAYBACK ENGINE ---
+//     // ✅ PLAYBACK ENGINE
 //     const [currentStep, setCurrentStep] = useState(0);
 //     const [isPlaying, setIsPlaying] = useState(false);
 //     const timerRef = useRef(null);
-//     const speedRef = useRef(800); // Default 800ms
+//     const speedRef = useRef(800);
     
-//     // Cleanup on unmount
+//     // ✅ Cleanup on unmount
 //     useEffect(() => {
-//         return () => stop();
+//         return () => {
+//             if (timerRef.current) {
+//                 clearInterval(timerRef.current);
+//             }
+//         };
 //     }, []);
 
-//     // The Heartbeat of the Visualizer
+//     // ✅ PLAYBACK HEARTBEAT
 //     useEffect(() => {
 //         if (isPlaying && trace.length > 0) {
 //             timerRef.current = setInterval(() => {
 //                 setCurrentStep((prev) => {
 //                     if (prev >= trace.length - 1) {
-//                         stop(); // Auto-stop at end
+//                         stop();
 //                         return prev;
 //                     }
 //                     return prev + 1;
 //                 });
 //             }, speedRef.current);
 //         } else {
-//             stop();
+//             if (timerRef.current) {
+//                 clearInterval(timerRef.current);
+//             }
 //         }
-//         return () => clearInterval(timerRef.current);
+//         return () => {
+//             if (timerRef.current) {
+//                 clearInterval(timerRef.current);
+//             }
+//         };
 //     }, [isPlaying, trace.length]);
 
-//     // Playback Controls
+//     // ✅ PLAYBACK CONTROLS
 //     const stop = useCallback(() => {
-//         clearInterval(timerRef.current);
+//         if (timerRef.current) {
+//             clearInterval(timerRef.current);
+//         }
 //         setIsPlaying(false);
 //     }, []);
 
 //     const play = useCallback(() => {
 //         if (currentStep >= trace.length - 1) {
-//             setCurrentStep(0); // Restart if at end
+//             setCurrentStep(0);
 //         }
 //         setIsPlaying(true);
 //     }, [currentStep, trace.length]);
 
-//     // --- API & EXECUTION ---
-//     const executeCode = async (codeToRun) => {
+//     // ✅ CODE EXECUTION
+//     const executeCode = useCallback(async (codeToRun) => {
 //         if (!codeToRun.trim()) return;
 
 //         setLoading(true);
-//         stop(); // Stop any running playback
-        
-//         // Reset state
+//         stop();
 //         setTrace([]);
 //         setCurrentStep(0);
 
@@ -230,121 +258,127 @@
             
 //             if (data.success && data.trace && data.trace.length > 0) {
 //                 setTrace(data.trace);
-//                 // No toast on success to allow smooth auto-runs
 //             } else {
-//                 toast.error('No steps generated. Check your logic.');
+//                 toast.error('No steps generated. Check your code.');
 //             }
 //         } catch (error) {
-//             console.error('Viz Error:', error);
+//             console.error('[VISUALIZER] Error:', error);
 //             const msg = error.response?.data?.message || 'Execution failed';
             
-//             // ✅ IMPROVED ERROR HANDLING:
-//             // Instead of just a toast, we create a fake trace step with the error
-//             // so it renders in the main view.
 //             setTrace([{ 
 //                 line: 0, 
 //                 error: msg, 
 //                 type: 'error',
-//                 variables: {} // Ensure variables is defined
+//                 variables: {}
 //             }]);
             
 //             toast.error(msg);
 //         } finally {
 //             setLoading(false);
 //         }
-//     };
+//     }, [stop]);
 
 //     // ✅ AUTO-RUN ON MOUNT
 //     useEffect(() => {
-//         executeCode(EXAMPLES.bubbleSort);
-//     }, []);
+//         executeCode(EXAMPLES.bubbleSort.code);
+//     }, [executeCode]);
 
-//     // Manual Run Handler
-//     const handleRun = () => {
-//         if (!code.trim()) return toast.error('Please write some code first!');
+//     // ✅ MANUAL RUN
+//     const handleRun = useCallback(() => {
+//         if (!code.trim()) {
+//             return toast.error('Please write some code first!');
+//         }
 //         setMobileTab('visualizer'); 
 //         executeCode(code);
-//         toast.success('Visualization started!');
-//     };
+//         toast.success('Visualizing...', { icon: '✨', duration: 2000 });
+//     }, [code, executeCode]);
 
-//     const loadExample = (key) => {
+//     // ✅ LOAD EXAMPLE
+//     const loadExample = useCallback((key) => {
 //         stop();
-//         const newCode = EXAMPLES[key];
+//         const newCode = EXAMPLES[key].code;
 //         setCode(newCode);
 //         setShowExamples(false);
 //         setTrace([]);
 //         setCurrentStep(0);
 //         setMobileTab('editor');
-//         toast.success(`Loaded ${key.replace(/([A-Z])/g, ' $1')} example`);
-//     };
+//         toast.success(`Loaded ${EXAMPLES[key].name}`, { icon: EXAMPLES[key].icon });
+//     }, [stop]);
 
-//     // --- MEMOIZED RENDER PROPS (OPTIMIZED) ---
-//     // ✅ FIX: Safely access current frame to prevent crashes
-//     const currentFrame = trace[currentStep];
+//     // ✅ MEMOIZED VALUES
+//     const currentFrame = useMemo(() => trace[currentStep], [trace, currentStep]);
 //     const currentVariables = useMemo(() => currentFrame?.variables || {}, [currentFrame]);
 //     const currentLine = useMemo(() => currentFrame?.line || 0, [currentFrame]);
-    
-//     // ✅ FIX: Extract Error State
 //     const executionError = useMemo(() => {
 //         return currentFrame?.type === 'error' ? currentFrame.error : null;
 //     }, [currentFrame]);
 
+//     // ✅ GROUP EXAMPLES BY CATEGORY
+//     const groupedExamples = useMemo(() => {
+//         const groups = {};
+//         Object.entries(EXAMPLES).forEach(([key, value]) => {
+//             if (!groups[value.category]) {
+//                 groups[value.category] = [];
+//             }
+//             groups[value.category].push({ key, ...value });
+//         });
+//         return groups;
+//     }, []);
+
 //     return (
-//         <div className="h-screen bg-[#0d1117] flex flex-col text-white overflow-hidden font-sans">
+//         <div className="h-screen bg-[var(--bg-primary)] flex flex-col text-[var(--text-primary)] overflow-hidden font-sans transition-colors duration-300">
 //             <Navbar />
             
-//             {/* --- TOP BAR --- */}
-//             <div className="h-16 border-b border-gray-800 flex items-center justify-between px-4 bg-[#161b22] shrink-0 z-20 relative">
+//             {/* ✅ TOP BAR - Modern Design */}
+//             <div className="h-16 border-b border-[var(--border-color)] flex items-center justify-between px-4 bg-[var(--bg-secondary)] shrink-0 z-20 relative shadow-lg">
                 
-//                 {/* 1. Left: Back Button */}
-//                 <div className="flex items-center z-10">
-//                     <button 
-//                         onClick={() => navigate('/dashboard')} 
-//                         className="flex items-center justify-center w-8 h-8 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all"
-//                         title="Back to Dashboard"
-//                     >
-//                         <ArrowLeft size={20} />
-//                     </button>
+//                 {/* Left: Back Button */}
+//                 <button 
+//                     onClick={() => navigate('/dashboard')} 
+//                     className="flex items-center gap-2 px-3 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] rounded-lg transition-all group"
+//                     aria-label="Back to Dashboard"
+//                 >
+//                     <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+//                     <span className="hidden sm:inline text-sm font-medium">Back</span>
+//                 </button>
+
+//                 {/* Center: Branding */}
+//                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+//                     <Sparkles size={20} className="text-accent" />
+//                     <h1 className="font-extrabold text-lg sm:text-xl tracking-tight">
+//                         <span className="hidden sm:inline">Algorithm </span>
+//                         <span className="text-accent">Visualizer</span>
+//                     </h1>
+//                     <span className="text-[10px] font-bold bg-accent/10 text-accent px-2 py-0.5 rounded border border-accent/30 uppercase tracking-widest">
+//                         BETA
+//                     </span>
 //                 </div>
 
-//                 {/* 2. Center: Branding & BETA Badge */}
-//                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
-//                     <div className="flex items-center gap-2">
-//                         {/* Main Title */}
-//                         <h1 className="font-extrabold text-xl tracking-tight leading-none text-white hidden md:block">
-//                             Code<span className="text-green-500">Arena</span><span className="text-white">1v1</span>
-//                         </h1>
-//                         <h1 className="font-extrabold text-lg tracking-tight leading-none text-white md:hidden">
-//                             CA<span className="text-green-500">1v1</span>
-//                         </h1>
-                        
-//                         {/* BETA Badge */}
-//                         <span className="text-[10px] font-bold bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/30 uppercase tracking-widest shadow-[0_0_10px_rgba(74,222,128,0.1)]">
-//                             BETA
-//                         </span>
-//                     </div>
-//                 </div>
-
-//                 {/* 3. Right: Examples & Mobile Tabs */}
-//                 <div className="flex items-center gap-3 z-10">
+//                 {/* Right: Mobile Tabs + Examples */}
+//                 <div className="flex items-center gap-2">
                     
-//                     {/* Mobile Tabs Switcher */}
-//                     <div className="flex lg:hidden bg-gray-800/50 p-1 rounded-lg border border-gray-700/50">
+//                     {/* Mobile View Switcher */}
+//                     <div className="flex lg:hidden bg-[var(--bg-primary)] p-1 rounded-lg border border-[var(--border-color)]">
 //                         <button
 //                             onClick={() => setMobileTab('editor')}
-//                             className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${
-//                                 mobileTab === 'editor' ? 'bg-[#21262d] text-white shadow-sm' : 'text-gray-400 hover:text-gray-300'
+//                             className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+//                                 mobileTab === 'editor' 
+//                                     ? 'bg-accent text-black shadow-sm' 
+//                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
 //                             }`}
 //                         >
 //                             Code
 //                         </button>
 //                         <button
 //                             onClick={() => setMobileTab('visualizer')}
-//                             className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${
-//                                 mobileTab === 'visualizer' ? 'bg-[#21262d] text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-300'
+//                             className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+//                                 mobileTab === 'visualizer' 
+//                                     ? 'bg-accent text-black shadow-sm' 
+//                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
 //                             }`}
 //                         >
-//                             View
+//                             <span className="hidden sm:inline">Visualizer</span>
+//                             <span className="sm:hidden">View</span>
 //                         </button>
 //                     </div>
 
@@ -352,31 +386,47 @@
 //                     <div className="relative">
 //                         <button 
 //                             onClick={() => setShowExamples(!showExamples)}
-//                             className="flex items-center gap-2 text-xs font-bold bg-[#21262d] hover:bg-[#30363d] text-gray-200 px-3 py-2 rounded-lg border border-gray-700 transition-all shadow-sm"
+//                             className="flex items-center gap-2 text-xs font-bold bg-[var(--bg-primary)] hover:bg-accent/10 text-[var(--text-primary)] px-3 py-2 rounded-lg border border-[var(--border-color)] hover:border-accent transition-all"
 //                         >
-//                             <Code2 size={16} className="text-gray-400" />
+//                             <Code2 size={16} className="text-accent" />
 //                             <span className="hidden sm:inline">Examples</span>
+//                             <ChevronDown size={14} className={`transition-transform ${showExamples ? 'rotate-180' : ''}`} />
 //                         </button>
                         
 //                         {showExamples && (
 //                             <>
 //                                 <div className="fixed inset-0 z-40" onClick={() => setShowExamples(false)} />
-//                                 <div className="absolute right-0 top-12 bg-[#1c2128] border border-gray-700 rounded-xl shadow-2xl py-2 w-64 z-50 overflow-hidden ring-1 ring-black/50">
-//                                     <div className="px-4 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider bg-[#21262d]/50 mb-1 border-b border-gray-800">
-//                                         Load Algorithm Preset
+//                                 <div className="absolute right-0 top-14 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl w-80 z-50 overflow-hidden animate-fade-in">
+                                    
+//                                     {/* Header */}
+//                                     <div className="px-4 py-3 bg-[var(--bg-primary)] border-b border-[var(--border-color)]">
+//                                         <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+//                                             Algorithm Examples
+//                                         </h3>
 //                                     </div>
-//                                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-//                                         {Object.keys(EXAMPLES).map(key => (
-//                                             <button
-//                                                 key={key}
-//                                                 onClick={() => loadExample(key)}
-//                                                 className="w-full text-left px-4 py-3 hover:bg-green-500/10 hover:text-green-400 text-sm text-gray-300 transition-colors flex items-center gap-3 border-b border-gray-800/50 last:border-0"
-//                                             >
-//                                                 <div className="w-1.5 h-1.5 rounded-full bg-gray-600 group-hover:bg-green-500 shrink-0"></div>
-//                                                 <span className="truncate font-medium">
-//                                                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-//                                                 </span>
-//                                             </button>
+                                    
+//                                     {/* Categories */}
+//                                     <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+//                                         {Object.entries(groupedExamples).map(([category, examples]) => (
+//                                             <div key={category}>
+//                                                 <div className="px-4 py-2 bg-[var(--bg-primary)]/50 border-b border-[var(--border-color)]/50">
+//                                                     <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+//                                                         {category}
+//                                                     </span>
+//                                                 </div>
+//                                                 {examples.map(({ key, name, icon }) => (
+//                                                     <button
+//                                                         key={key}
+//                                                         onClick={() => loadExample(key)}
+//                                                         className="w-full text-left px-4 py-3 hover:bg-accent/10 hover:text-accent text-sm text-[var(--text-primary)] transition-colors flex items-center gap-3 border-b border-[var(--border-color)]/30 last:border-0 group"
+//                                                     >
+//                                                         <span className="text-xl group-hover:scale-110 transition-transform">
+//                                                             {icon}
+//                                                         </span>
+//                                                         <span className="font-medium">{name}</span>
+//                                                     </button>
+//                                                 ))}
+//                                             </div>
 //                                         ))}
 //                                     </div>
 //                                 </div>
@@ -386,15 +436,27 @@
 //                 </div>
 //             </div>
 
-//             {/* --- MAIN SPLIT VIEW --- */}
-//             <div className="flex-1 flex overflow-hidden min-h-0 relative bg-[#0d1117]">
+//             {/* ✅ MAIN SPLIT VIEW */}
+//             <div className="flex-1 flex overflow-hidden min-h-0 relative">
                 
-//                 {/* 1. CODE EDITOR */}
+//                 {/* Left: CODE EDITOR */}
 //                 <div className={`
-//                     flex-col min-h-0 border-r border-gray-800 bg-[#0d1117] relative z-10
+//                     flex-col min-h-0 border-r border-[var(--border-color)] bg-[var(--bg-primary)] relative
 //                     ${mobileTab === 'editor' ? 'flex w-full' : 'hidden'} 
 //                     lg:flex lg:w-1/2
 //                 `}>
+//                     {/* Editor Header */}
+//                     <div className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center px-4 shrink-0">
+//                         <div className="flex items-center gap-2">
+//                             <div className="w-3 h-3 rounded-full bg-red-500"></div>
+//                             <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+//                             <div className="w-3 h-3 rounded-full bg-green-500"></div>
+//                         </div>
+//                         <span className="ml-4 text-xs font-mono text-[var(--text-secondary)]">
+//                             editor.js
+//                         </span>
+//                     </div>
+                    
 //                     <CodePanel 
 //                         code={code} 
 //                         setCode={setCode} 
@@ -402,60 +464,68 @@
 //                     />
 //                 </div>
 
-//                 {/* 2. VISUALIZATION CANVAS */}
+//                 {/* Right: VISUALIZATION */}
 //                 <div className={`
-//                     flex-col relative min-h-0 bg-[#010409]
+//                     flex-col relative min-h-0 bg-[var(--bg-primary)]
 //                     ${mobileTab === 'visualizer' ? 'flex w-full' : 'hidden'} 
 //                     lg:flex lg:w-1/2
 //                 `}>
-//                     {/* Canvas Status Header */}
-//                     <div className="h-8 bg-[#0d1117] border-b border-gray-800 flex items-center px-4 shrink-0 justify-between text-[10px] text-gray-500 font-mono uppercase tracking-wider">
+//                     {/* Canvas Header */}
+//                     <div className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center px-4 shrink-0 justify-between">
 //                         <div className="flex items-center gap-2">
-//                             <div className={`w-2 h-2 rounded-full ${trace.length > 0 && !executionError ? 'bg-green-500' : 'bg-gray-600'}`} />
-//                             <span>{executionError ? 'Error Detected' : 'Memory State'}</span>
+//                             <div className={`w-2 h-2 rounded-full ${
+//                                 trace.length > 0 && !executionError ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
+//                             }`} />
+//                             <span className="text-xs font-mono text-[var(--text-secondary)]">
+//                                 {executionError ? 'Error' : 'Memory State'}
+//                             </span>
 //                         </div>
-//                         <span>
+//                         <span className="text-xs font-mono text-[var(--text-secondary)]">
 //                             {trace.length > 0 
-//                                 ? `Step ${currentStep + 1} / ${trace.length}`
-//                                 : 'Idle'
+//                                 ? `${currentStep + 1} / ${trace.length}`
+//                                 : 'Ready'
 //                             }
 //                         </span>
 //                     </div>
 
-//                     {/* Loader Overlay */}
+//                     {/* Loading Overlay */}
 //                     {loading && (
-//                         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#0d1117]/80 backdrop-blur-sm">
-//                             <Loader2 className="animate-spin text-green-500 mb-4" size={40} />
-//                             <span className="text-gray-300 font-mono text-xs animate-pulse">Running Algorithm...</span>
+//                         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[var(--bg-primary)]/90 backdrop-blur-sm">
+//                             <Loader2 className="animate-spin text-accent mb-4" size={40} />
+//                             <span className="text-[var(--text-secondary)] font-mono text-sm animate-pulse">
+//                                 Executing algorithm...
+//                             </span>
 //                         </div>
 //                     )}
                     
-//                     {/* ✅ FIX: ERROR OVERLAY */}
+//                     {/* Error Display */}
 //                     {executionError ? (
-//                         <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in select-none">
-//                             <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/50">
-//                                 <AlertTriangle size={32} className="text-red-500" />
+//                         <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in">
+//                             <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border-2 border-red-500/30">
+//                                 <AlertTriangle size={40} className="text-red-500" />
 //                             </div>
-//                             <h3 className="text-xl font-bold text-white mb-2">Execution Error</h3>
-//                             <p className="text-red-400 font-mono text-sm bg-red-900/10 px-4 py-3 rounded-lg border border-red-900/30 max-w-md">
+//                             <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
+//                                 Execution Error
+//                             </h3>
+//                             <p className="text-red-400 font-mono text-sm bg-red-500/10 px-6 py-4 rounded-xl border border-red-500/30 max-w-lg mb-6">
 //                                 {executionError}
 //                             </p>
 //                             <button 
 //                                 onClick={() => loadExample('bubbleSort')}
-//                                 className="mt-6 text-xs text-gray-500 hover:text-white underline"
+//                                 className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-accent/10 text-[var(--text-primary)] text-sm font-medium rounded-lg border border-[var(--border-color)] hover:border-accent transition-all"
 //                             >
-//                                 Reset to Default Example
+//                                 Reset to Bubble Sort
 //                             </button>
 //                         </div>
 //                     ) : (
-//                         /* The Canvas */
+//                         /* Canvas */
 //                         <VizCanvas variables={currentVariables} />
 //                     )}
 //                 </div>
 //             </div>
 
-//             {/* --- CONTROL BAR --- */}
-//             <div className="h-auto min-h-[4.5rem] border-t border-gray-800 bg-[#161b22] px-4 py-2 shrink-0 z-20">
+//             {/* ✅ CONTROL BAR */}
+//             <div className="h-auto min-h-[5rem] border-t border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 shrink-0 z-20 shadow-2xl">
 //                 <ControlBar 
 //                     totalSteps={trace.length} 
 //                     currentStep={currentStep} 
@@ -508,23 +578,23 @@
 
 
 // FILE: frontend/src/pages/Visualizer.jsx
-// PRODUCTION-OPTIMIZED VERSION - MODERN UI WITH THEME SUPPORT
+// FULLY OPTIMIZED — Bug fixes, dark/light theme, responsive layout, speed control
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    ArrowLeft, Loader2, Code2, Play, Pause, RotateCcw, 
-    AlertTriangle, Sparkles, Zap, ChevronDown 
+import {
+    ArrowLeft, Loader2, Code2, AlertTriangle,
+    Sparkles, ChevronDown, Sun, Moon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Components
-import Navbar from '../components/Navbar'; 
+import Navbar from '../components/Navbar';
 import CodePanel from '../components/Visualizer/CodePanel';
 import VizCanvas from '../components/Visualizer/VizCanvas';
 import ControlBar from '../components/Visualizer/ControlBar';
 import api from '../api.js';
 
-// ✅ ALGORITHM EXAMPLES
+// ─── ALGORITHM EXAMPLES ──────────────────────────────────────────────────────
 const EXAMPLES = {
     bubbleSort: {
         name: 'Bubble Sort',
@@ -540,7 +610,7 @@ for(let i = 0; i < arr.length; i++) {
       arr[j+1] = temp;
     }
   }
-}`
+}`,
     },
     binaryTree: {
         name: 'Binary Tree',
@@ -560,7 +630,7 @@ root.right = new Node(70);
 root.left.left = new Node(20);
 root.left.right = new Node(40);
 root.right.left = new Node(60);
-root.right.right = new Node(80);`
+root.right.right = new Node(80);`,
     },
     linkedList: {
         name: 'Linked List',
@@ -577,7 +647,7 @@ let head = new Node(10);
 head.next = new Node(20);
 head.next.next = new Node(30);
 head.next.next.next = new Node(40);
-head.next.next.next.next = head.next;`
+head.next.next.next.next = head.next;`,
     },
     doublyLinkedList: {
         name: 'Doubly Linked List',
@@ -591,7 +661,6 @@ class Node {
         this.next = null;
     }
 }
-
 class DoublyLinkedList {
     constructor() {
         this.head = null;
@@ -609,12 +678,11 @@ class DoublyLinkedList {
         }
     }
 }
-
 const list = new DoublyLinkedList();
 list.push(10);
 list.push(20);
 list.push(30);
-list.push(40);`
+list.push(40);`,
     },
     matrix: {
         name: '2D Matrix',
@@ -631,7 +699,7 @@ for(i = 0; i < matrix.length; i++) {
   for(j = 0; j < matrix[i].length; j++) {
     matrix[i][j] *= 2;
   }
-}`
+}`,
     },
     stack: {
         name: 'Stack (LIFO)',
@@ -640,24 +708,21 @@ for(i = 0; i < matrix.length; i++) {
         code: `// Stack Implementation
 let stack = [];
 let top = -1;
-
 function push(val) {
   top++;
   stack[top] = val;
 }
-
 function pop() {
   if (top >= 0) {
     stack.pop();
     top--;
   }
 }
-
 push(10);
 push(20);
 push(30);
 pop();
-push(40);`
+push(40);`,
     },
     queue: {
         name: 'Queue (FIFO)',
@@ -665,388 +730,589 @@ push(40);`
         category: 'Stacks & Queues',
         code: `// Queue Implementation
 let myQueue = [];
-
 function enqueue(val) {
     myQueue.push(val);
 }
-
 function dequeue() {
     if (myQueue.length > 0) {
         myQueue.shift();
     }
 }
-
 enqueue(10);
 enqueue(20);
 enqueue(30);
 dequeue();
 dequeue();
 enqueue(40);
-enqueue(50);`
+enqueue(50);`,
     },
 };
 
+// ─── SPEED OPTIONS ────────────────────────────────────────────────────────────
+const SPEED_OPTIONS = [
+    { label: '0.5×', ms: 1600 },
+    { label: '1×',   ms: 800  },
+    { label: '2×',   ms: 400  },
+    { label: '4×',   ms: 200  },
+];
+const DEFAULT_SPEED_INDEX = 1; // 1× = 800ms
+
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 const Visualizer = () => {
     const navigate = useNavigate();
-    
-    // ✅ STATE
-    const [code, setCode] = useState(EXAMPLES.bubbleSort.code); 
-    const [trace, setTrace] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [showExamples, setShowExamples] = useState(false);
-    const [mobileTab, setMobileTab] = useState('editor');
 
-    // ✅ PLAYBACK ENGINE
-    const [currentStep, setCurrentStep] = useState(0);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const timerRef = useRef(null);
-    const speedRef = useRef(800);
-    
-    // ✅ Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        };
+    // ── Core state ────────────────────────────────────────────────────────────
+    const [code, setCode]               = useState(EXAMPLES.bubbleSort.code);
+    const [trace, setTrace]             = useState([]);
+    const [loading, setLoading]         = useState(false);
+    const [showExamples, setShowExamples] = useState(false);
+    const [mobileTab, setMobileTab]     = useState('editor');
+
+    // ── Theme ─────────────────────────────────────────────────────────────────
+    // Reads the current theme from <html> or <body> class set by global theme system.
+    // Falls back to local state if no global system is present.
+    const [localTheme, setLocalTheme] = useState(() => {
+        if (typeof document !== 'undefined') {
+            return document.documentElement.classList.contains('light') ? 'light' : 'dark';
+        }
+        return 'dark';
+    });
+
+    const toggleTheme = useCallback(() => {
+        setLocalTheme(prev => {
+            const next = prev === 'dark' ? 'light' : 'dark';
+            // Sync with global theme class if a global system isn't managing it
+            document.documentElement.classList.remove('dark', 'light');
+            document.documentElement.classList.add(next);
+            return next;
+        });
     }, []);
 
-    // ✅ PLAYBACK HEARTBEAT
+    // ── Playback ──────────────────────────────────────────────────────────────
+    const [currentStep, setCurrentStep] = useState(0);
+    const [isPlaying, setIsPlaying]     = useState(false);
+    const [speedIndex, setSpeedIndex]   = useState(DEFAULT_SPEED_INDEX);
+
+    const timerRef = useRef(null);
+
+    // Derived speed ms — always reads latest via ref so interval stays fresh
+    const speedMsRef = useRef(SPEED_OPTIONS[DEFAULT_SPEED_INDEX].ms);
     useEffect(() => {
+        speedMsRef.current = SPEED_OPTIONS[speedIndex].ms;
+    }, [speedIndex]);
+
+    // Cleanup on unmount
+    useEffect(() => () => { clearInterval(timerRef.current); }, []);
+
+    // ── FIXED: Playback heartbeat — restarts cleanly when speed changes ────────
+    useEffect(() => {
+        clearInterval(timerRef.current);
+
         if (isPlaying && trace.length > 0) {
             timerRef.current = setInterval(() => {
-                setCurrentStep((prev) => {
+                setCurrentStep(prev => {
                     if (prev >= trace.length - 1) {
-                        stop();
+                        clearInterval(timerRef.current);
+                        setIsPlaying(false);
                         return prev;
                     }
                     return prev + 1;
                 });
-            }, speedRef.current);
-        } else {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
+            }, speedMsRef.current);
         }
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        };
-    }, [isPlaying, trace.length]);
 
-    // ✅ PLAYBACK CONTROLS
-    const stop = useCallback(() => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-        }
+        return () => clearInterval(timerRef.current);
+    }, [isPlaying, trace.length, speedIndex]); // ← speedIndex here triggers restart at new speed
+
+    // ── FIXED: Clear, unambiguous playback controls ───────────────────────────
+    const pause = useCallback(() => {
+        clearInterval(timerRef.current);
         setIsPlaying(false);
     }, []);
 
     const play = useCallback(() => {
-        if (currentStep >= trace.length - 1) {
-            setCurrentStep(0);
-        }
+        setCurrentStep(prev => (prev >= trace.length - 1 ? 0 : prev));
         setIsPlaying(true);
-    }, [currentStep, trace.length]);
+    }, [trace.length]);
 
-    // ✅ CODE EXECUTION
+    // ── FIXED: Single toggle handler — no more prop mismatch ─────────────────
+    const handlePlayPause = useCallback(() => {
+        if (isPlaying) pause();
+        else play();
+    }, [isPlaying, pause, play]);
+
+    // ── Code execution ────────────────────────────────────────────────────────
     const executeCode = useCallback(async (codeToRun) => {
         if (!codeToRun.trim()) return;
 
         setLoading(true);
-        stop();
+        pause();
         setTrace([]);
         setCurrentStep(0);
 
         try {
-            const { data } = await api.post('/visualize/run', { 
-                code: codeToRun, 
-                language: 'javascript' 
+            const { data } = await api.post('/visualize/run', {
+                code: codeToRun,
+                language: 'javascript',
             });
-            
-            if (data.success && data.trace && data.trace.length > 0) {
+
+            if (data.success && data.trace?.length > 0) {
                 setTrace(data.trace);
             } else {
                 toast.error('No steps generated. Check your code.');
             }
         } catch (error) {
-            console.error('[VISUALIZER] Error:', error);
+            console.error('[VISUALIZER]', error);
             const msg = error.response?.data?.message || 'Execution failed';
-            
-            setTrace([{ 
-                line: 0, 
-                error: msg, 
-                type: 'error',
-                variables: {}
-            }]);
-            
+            setTrace([{ line: 0, error: msg, type: 'error', variables: {} }]);
             toast.error(msg);
         } finally {
             setLoading(false);
         }
-    }, [stop]);
+    }, [pause]);
 
-    // ✅ AUTO-RUN ON MOUNT
+    // Auto-run on mount
     useEffect(() => {
         executeCode(EXAMPLES.bubbleSort.code);
-    }, [executeCode]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ✅ MANUAL RUN
     const handleRun = useCallback(() => {
-        if (!code.trim()) {
-            return toast.error('Please write some code first!');
-        }
-        setMobileTab('visualizer'); 
+        if (!code.trim()) return toast.error('Please write some code first!');
+        setMobileTab('visualizer');
         executeCode(code);
-        toast.success('Visualizing...', { icon: '✨', duration: 2000 });
+        toast.success('Visualizing…', { icon: '✨', duration: 2000 });
     }, [code, executeCode]);
 
-    // ✅ LOAD EXAMPLE
     const loadExample = useCallback((key) => {
-        stop();
-        const newCode = EXAMPLES[key].code;
-        setCode(newCode);
+        pause();
+        setCode(EXAMPLES[key].code);
         setShowExamples(false);
         setTrace([]);
         setCurrentStep(0);
         setMobileTab('editor');
         toast.success(`Loaded ${EXAMPLES[key].name}`, { icon: EXAMPLES[key].icon });
-    }, [stop]);
+    }, [pause]);
 
-    // ✅ MEMOIZED VALUES
-    const currentFrame = useMemo(() => trace[currentStep], [trace, currentStep]);
-    const currentVariables = useMemo(() => currentFrame?.variables || {}, [currentFrame]);
-    const currentLine = useMemo(() => currentFrame?.line || 0, [currentFrame]);
-    const executionError = useMemo(() => {
-        return currentFrame?.type === 'error' ? currentFrame.error : null;
-    }, [currentFrame]);
+    // ── Derived values ────────────────────────────────────────────────────────
+    const currentFrame     = useMemo(() => trace[currentStep],                  [trace, currentStep]);
+    const currentVariables = useMemo(() => currentFrame?.variables || {},        [currentFrame]);
+    const currentLine      = useMemo(() => currentFrame?.line || 0,              [currentFrame]);
+    const executionError   = useMemo(() =>
+        currentFrame?.type === 'error' ? currentFrame.error : null,             [currentFrame]);
 
-    // ✅ GROUP EXAMPLES BY CATEGORY
     const groupedExamples = useMemo(() => {
         const groups = {};
-        Object.entries(EXAMPLES).forEach(([key, value]) => {
-            if (!groups[value.category]) {
-                groups[value.category] = [];
-            }
-            groups[value.category].push({ key, ...value });
+        Object.entries(EXAMPLES).forEach(([key, val]) => {
+            (groups[val.category] ??= []).push({ key, ...val });
         });
         return groups;
     }, []);
 
+    // ── Keyboard shortcuts ────────────────────────────────────────────────────
+    useEffect(() => {
+        const handler = (e) => {
+            // Don't fire when user is typing in the editor
+            if (e.target.closest('.monaco-editor')) return;
+            if (e.code === 'Space')       { e.preventDefault(); handlePlayPause(); }
+            if (e.code === 'ArrowRight')  setCurrentStep(p => Math.min(trace.length - 1, p + 1));
+            if (e.code === 'ArrowLeft')   setCurrentStep(p => Math.max(0, p - 1));
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [handlePlayPause, trace.length]);
+
+    // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="h-screen bg-[var(--bg-primary)] flex flex-col text-[var(--text-primary)] overflow-hidden font-sans transition-colors duration-300">
+        <div
+            className="viz-root h-screen flex flex-col overflow-hidden font-sans transition-colors duration-300"
+            data-theme={localTheme}
+        >
+            {/* Inject scoped CSS variables for both themes */}
+            <style>{`
+                .viz-root[data-theme="dark"] {
+                    --vz-bg-primary:   #0d1117;
+                    --vz-bg-secondary: #161b22;
+                    --vz-bg-hover:     #1f2937;
+                    --vz-border:       #30363d;
+                    --vz-text-primary: #e6edf3;
+                    --vz-text-muted:   #8b949e;
+                    --vz-accent:       #58a6ff;
+                    --vz-accent-glow:  rgba(88,166,255,0.15);
+                    --vz-green:        #3fb950;
+                    --vz-red:          #f85149;
+                    --vz-badge-bg:     rgba(88,166,255,0.1);
+                }
+                .viz-root[data-theme="light"] {
+                    --vz-bg-primary:   #ffffff;
+                    --vz-bg-secondary: #f6f8fa;
+                    --vz-bg-hover:     #eaeef2;
+                    --vz-border:       #d0d7de;
+                    --vz-text-primary: #1f2328;
+                    --vz-text-muted:   #656d76;
+                    --vz-accent:       #0969da;
+                    --vz-accent-glow:  rgba(9,105,218,0.1);
+                    --vz-green:        #1a7f37;
+                    --vz-red:          #cf222e;
+                    --vz-badge-bg:     rgba(9,105,218,0.08);
+                }
+                /* Utility classes bound to vz tokens */
+                .vz-bg-p  { background-color: var(--vz-bg-primary); }
+                .vz-bg-s  { background-color: var(--vz-bg-secondary); }
+                .vz-border { border-color: var(--vz-border); }
+                .vz-text  { color: var(--vz-text-primary); }
+                .vz-muted { color: var(--vz-text-muted); }
+                .vz-accent { color: var(--vz-accent); }
+
+                /* Smooth line-highlight fade */
+                .active-line-highlight {
+                    background: rgba(88,166,255,0.12) !important;
+                    border-left: 3px solid var(--vz-accent) !important;
+                    transition: background 0.2s ease;
+                }
+                .active-line-glyph {
+                    background: var(--vz-accent) !important;
+                    width: 4px !important;
+                    margin-left: 2px !important;
+                }
+                .active-line-decoration::before {
+                    content: '▶';
+                    color: var(--vz-accent);
+                    font-size: 10px;
+                    position: absolute;
+                    left: -12px;
+                }
+
+                /* Custom scrollbar */
+                .vz-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+                .vz-scroll::-webkit-scrollbar-track { background: transparent; }
+                .vz-scroll::-webkit-scrollbar-thumb {
+                    background: var(--vz-border);
+                    border-radius: 3px;
+                }
+                .vz-scroll::-webkit-scrollbar-thumb:hover {
+                    background: var(--vz-text-muted);
+                }
+
+                @keyframes fadeSlideIn {
+                    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+                    to   { opacity: 1; transform: translateY(0)   scale(1);    }
+                }
+                .anim-dropdown { animation: fadeSlideIn 0.18s ease forwards; }
+            `}</style>
+
+            {/* ── NAVBAR (from parent project) ───────────────────────────── */}
             <Navbar />
-            
-            {/* ✅ TOP BAR - Modern Design */}
-            <div className="h-16 border-b border-[var(--border-color)] flex items-center justify-between px-4 bg-[var(--bg-secondary)] shrink-0 z-20 relative shadow-lg">
-                
-                {/* Left: Back Button */}
-                <button 
-                    onClick={() => navigate('/dashboard')} 
-                    className="flex items-center gap-2 px-3 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] rounded-lg transition-all group"
-                    aria-label="Back to Dashboard"
+
+            {/* ── TOP BAR ────────────────────────────────────────────────── */}
+            <TopBar
+                localTheme={localTheme}
+                toggleTheme={toggleTheme}
+                mobileTab={mobileTab}
+                setMobileTab={setMobileTab}
+                showExamples={showExamples}
+                setShowExamples={setShowExamples}
+                groupedExamples={groupedExamples}
+                loadExample={loadExample}
+                navigate={navigate}
+            />
+
+            {/* ── MAIN SPLIT VIEW ────────────────────────────────────────── */}
+            <div className="flex-1 flex overflow-hidden min-h-0 relative vz-bg-p">
+
+                {/* LEFT — Code Editor */}
+                <div
+                    className={`
+                        flex-col min-h-0 border-r vz-border vz-bg-p relative transition-all
+                        ${mobileTab === 'editor' ? 'flex w-full' : 'hidden'}
+                        lg:flex lg:w-1/2
+                    `}
                 >
-                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="hidden sm:inline text-sm font-medium">Back</span>
-                </button>
-
-                {/* Center: Branding */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <Sparkles size={20} className="text-accent" />
-                    <h1 className="font-extrabold text-lg sm:text-xl tracking-tight">
-                        <span className="hidden sm:inline">Algorithm </span>
-                        <span className="text-accent">Visualizer</span>
-                    </h1>
-                    <span className="text-[10px] font-bold bg-accent/10 text-accent px-2 py-0.5 rounded border border-accent/30 uppercase tracking-widest">
-                        BETA
-                    </span>
-                </div>
-
-                {/* Right: Mobile Tabs + Examples */}
-                <div className="flex items-center gap-2">
-                    
-                    {/* Mobile View Switcher */}
-                    <div className="flex lg:hidden bg-[var(--bg-primary)] p-1 rounded-lg border border-[var(--border-color)]">
-                        <button
-                            onClick={() => setMobileTab('editor')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                mobileTab === 'editor' 
-                                    ? 'bg-accent text-black shadow-sm' 
-                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                        >
-                            Code
-                        </button>
-                        <button
-                            onClick={() => setMobileTab('visualizer')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                mobileTab === 'visualizer' 
-                                    ? 'bg-accent text-black shadow-sm' 
-                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                            }`}
-                        >
-                            <span className="hidden sm:inline">Visualizer</span>
-                            <span className="sm:hidden">View</span>
-                        </button>
-                    </div>
-
-                    {/* Examples Dropdown */}
-                    <div className="relative">
-                        <button 
-                            onClick={() => setShowExamples(!showExamples)}
-                            className="flex items-center gap-2 text-xs font-bold bg-[var(--bg-primary)] hover:bg-accent/10 text-[var(--text-primary)] px-3 py-2 rounded-lg border border-[var(--border-color)] hover:border-accent transition-all"
-                        >
-                            <Code2 size={16} className="text-accent" />
-                            <span className="hidden sm:inline">Examples</span>
-                            <ChevronDown size={14} className={`transition-transform ${showExamples ? 'rotate-180' : ''}`} />
-                        </button>
-                        
-                        {showExamples && (
-                            <>
-                                <div className="fixed inset-0 z-40" onClick={() => setShowExamples(false)} />
-                                <div className="absolute right-0 top-14 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl w-80 z-50 overflow-hidden animate-fade-in">
-                                    
-                                    {/* Header */}
-                                    <div className="px-4 py-3 bg-[var(--bg-primary)] border-b border-[var(--border-color)]">
-                                        <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                                            Algorithm Examples
-                                        </h3>
-                                    </div>
-                                    
-                                    {/* Categories */}
-                                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                                        {Object.entries(groupedExamples).map(([category, examples]) => (
-                                            <div key={category}>
-                                                <div className="px-4 py-2 bg-[var(--bg-primary)]/50 border-b border-[var(--border-color)]/50">
-                                                    <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                                                        {category}
-                                                    </span>
-                                                </div>
-                                                {examples.map(({ key, name, icon }) => (
-                                                    <button
-                                                        key={key}
-                                                        onClick={() => loadExample(key)}
-                                                        className="w-full text-left px-4 py-3 hover:bg-accent/10 hover:text-accent text-sm text-[var(--text-primary)] transition-colors flex items-center gap-3 border-b border-[var(--border-color)]/30 last:border-0 group"
-                                                    >
-                                                        <span className="text-xl group-hover:scale-110 transition-transform">
-                                                            {icon}
-                                                        </span>
-                                                        <span className="font-medium">{name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* ✅ MAIN SPLIT VIEW */}
-            <div className="flex-1 flex overflow-hidden min-h-0 relative">
-                
-                {/* Left: CODE EDITOR */}
-                <div className={`
-                    flex-col min-h-0 border-r border-[var(--border-color)] bg-[var(--bg-primary)] relative
-                    ${mobileTab === 'editor' ? 'flex w-full' : 'hidden'} 
-                    lg:flex lg:w-1/2
-                `}>
-                    {/* Editor Header */}
-                    <div className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center px-4 shrink-0">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        </div>
-                        <span className="ml-4 text-xs font-mono text-[var(--text-secondary)]">
-                            editor.js
-                        </span>
-                    </div>
-                    
-                    <CodePanel 
-                        code={code} 
-                        setCode={setCode} 
-                        activeLine={currentLine} 
+                    <PanelHeader title="editor.js" />
+                    <CodePanel
+                        code={code}
+                        setCode={setCode}
+                        activeLine={currentLine}
+                        theme={localTheme}
                     />
                 </div>
 
-                {/* Right: VISUALIZATION */}
-                <div className={`
-                    flex-col relative min-h-0 bg-[var(--bg-primary)]
-                    ${mobileTab === 'visualizer' ? 'flex w-full' : 'hidden'} 
-                    lg:flex lg:w-1/2
-                `}>
-                    {/* Canvas Header */}
-                    <div className="h-10 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] flex items-center px-4 shrink-0 justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                                trace.length > 0 && !executionError ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
-                            }`} />
-                            <span className="text-xs font-mono text-[var(--text-secondary)]">
-                                {executionError ? 'Error' : 'Memory State'}
-                            </span>
-                        </div>
-                        <span className="text-xs font-mono text-[var(--text-secondary)]">
-                            {trace.length > 0 
+                {/* RIGHT — Visualization */}
+                <div
+                    className={`
+                        flex-col relative min-h-0 vz-bg-p
+                        ${mobileTab === 'visualizer' ? 'flex w-full' : 'hidden'}
+                        lg:flex lg:w-1/2
+                    `}
+                >
+                    <PanelHeader
+                        title={executionError ? 'Error' : 'Memory State'}
+                        right={
+                            trace.length > 0
                                 ? `${currentStep + 1} / ${trace.length}`
                                 : 'Ready'
-                            }
-                        </span>
-                    </div>
+                        }
+                        dot={trace.length > 0 && !executionError ? 'green' : 'gray'}
+                    />
 
-                    {/* Loading Overlay */}
-                    {loading && (
-                        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[var(--bg-primary)]/90 backdrop-blur-sm">
-                            <Loader2 className="animate-spin text-accent mb-4" size={40} />
-                            <span className="text-[var(--text-secondary)] font-mono text-sm animate-pulse">
-                                Executing algorithm...
-                            </span>
-                        </div>
-                    )}
-                    
-                    {/* Error Display */}
-                    {executionError ? (
-                        <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-fade-in">
-                            <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border-2 border-red-500/30">
-                                <AlertTriangle size={40} className="text-red-500" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
-                                Execution Error
-                            </h3>
-                            <p className="text-red-400 font-mono text-sm bg-red-500/10 px-6 py-4 rounded-xl border border-red-500/30 max-w-lg mb-6">
-                                {executionError}
-                            </p>
-                            <button 
-                                onClick={() => loadExample('bubbleSort')}
-                                className="px-4 py-2 bg-[var(--bg-secondary)] hover:bg-accent/10 text-[var(--text-primary)] text-sm font-medium rounded-lg border border-[var(--border-color)] hover:border-accent transition-all"
-                            >
-                                Reset to Bubble Sort
-                            </button>
-                        </div>
+                    {/* Loading overlay */}
+                    {loading && <LoadingOverlay />}
+
+                    {/* Error state */}
+                    {!loading && executionError ? (
+                        <ErrorDisplay error={executionError} onReset={() => loadExample('bubbleSort')} />
                     ) : (
-                        /* Canvas */
                         <VizCanvas variables={currentVariables} />
                     )}
                 </div>
             </div>
 
-            {/* ✅ CONTROL BAR */}
-            <div className="h-auto min-h-[5rem] border-t border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 shrink-0 z-20 shadow-2xl">
-                <ControlBar 
-                    totalSteps={trace.length} 
-                    currentStep={currentStep} 
+            {/* ── CONTROL BAR ────────────────────────────────────────────── */}
+            <div
+                className="border-t vz-border vz-bg-s px-3 sm:px-5 py-3 shrink-0 z-20"
+                style={{ boxShadow: '0 -4px 24px rgba(0,0,0,0.18)' }}
+            >
+                <ControlBar
+                    totalSteps={trace.length}
+                    currentStep={currentStep}
                     setCurrentStep={setCurrentStep}
                     isPlaying={isPlaying}
-                    setIsPlaying={isPlaying ? stop : play}
+                    onPlayPause={handlePlayPause}   // ✅ FIXED: clean prop name
+                    onPause={pause}                 // ✅ FIXED: separate pause for scrubbing
                     onRun={handleRun}
                     loading={loading}
+                    speedIndex={speedIndex}
+                    onSpeedChange={setSpeedIndex}
+                    speedOptions={SPEED_OPTIONS}
                 />
             </div>
         </div>
     );
 };
+
+// ─── SUB-COMPONENTS ──────────────────────────────────────────────────────────
+
+const TopBar = ({
+    localTheme, toggleTheme,
+    mobileTab, setMobileTab,
+    showExamples, setShowExamples,
+    groupedExamples, loadExample, navigate,
+}) => (
+    <div
+        className="h-14 sm:h-16 border-b vz-border vz-bg-s flex items-center
+                   justify-between px-3 sm:px-5 shrink-0 z-20 relative"
+        style={{ boxShadow: '0 1px 0 var(--vz-border)' }}
+    >
+        {/* Left — back */}
+        <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 vz-muted
+                       hover:vz-text rounded-lg transition-colors group
+                       hover:bg-[var(--vz-bg-hover)] text-sm font-medium"
+            aria-label="Back to Dashboard"
+        >
+            <ArrowLeft
+                size={17}
+                className="group-hover:-translate-x-0.5 transition-transform"
+            />
+            <span className="hidden sm:inline">Back</span>
+        </button>
+
+        {/* Center — branding */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+                        flex items-center gap-2 pointer-events-none select-none">
+            <Sparkles size={18} style={{ color: 'var(--vz-accent)' }} />
+            <span className="font-extrabold text-base sm:text-lg tracking-tight vz-text">
+                <span className="hidden sm:inline">Algorithm </span>
+                <span style={{ color: 'var(--vz-accent)' }}>Visualizer</span>
+            </span>
+            <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-widest"
+                style={{
+                    background: 'var(--vz-badge-bg)',
+                    color: 'var(--vz-accent)',
+                    borderColor: 'var(--vz-accent-glow)',
+                }}
+            >
+                BETA
+            </span>
+        </div>
+
+        {/* Right — controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+
+            {/* Mobile tab switcher */}
+            <div
+                className="flex lg:hidden p-1 rounded-lg border vz-border vz-bg-p"
+            >
+                {['editor', 'visualizer'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setMobileTab(tab)}
+                        className="px-2.5 py-1 rounded-md text-xs font-bold transition-all capitalize"
+                        style={
+                            mobileTab === tab
+                                ? { background: 'var(--vz-accent)', color: '#fff' }
+                                : { color: 'var(--vz-text-muted)' }
+                        }
+                    >
+                        {tab === 'editor' ? 'Code' : 'View'}
+                    </button>
+                ))}
+            </div>
+
+            {/* Theme toggle */}
+            <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg border vz-border vz-bg-p vz-muted
+                           hover:vz-text transition-colors hover:bg-[var(--vz-bg-hover)]"
+                title={localTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+                {localTheme === 'dark'
+                    ? <Sun size={16} />
+                    : <Moon size={16} />
+                }
+            </button>
+
+            {/* Examples dropdown */}
+            <div className="relative">
+                <button
+                    onClick={() => setShowExamples(v => !v)}
+                    className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-2
+                               rounded-lg border vz-border vz-bg-p vz-muted
+                               hover:vz-text hover:bg-[var(--vz-bg-hover)] transition-all"
+                >
+                    <Code2 size={15} style={{ color: 'var(--vz-accent)' }} />
+                    <span className="hidden sm:inline">Examples</span>
+                    <ChevronDown
+                        size={13}
+                        className={`transition-transform duration-200 ${showExamples ? 'rotate-180' : ''}`}
+                    />
+                </button>
+
+                {showExamples && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowExamples(false)}
+                        />
+                        {/* Dropdown */}
+                        <div
+                            className="absolute right-0 top-12 w-72 sm:w-80 rounded-xl border
+                                       vz-border vz-bg-s z-50 overflow-hidden anim-dropdown"
+                            style={{ boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}
+                        >
+                            <div className="px-4 py-2.5 border-b vz-border vz-bg-p">
+                                <p className="text-[10px] font-bold vz-muted uppercase tracking-wider">
+                                    Algorithm Examples
+                                </p>
+                            </div>
+                            <div className="max-h-[360px] overflow-y-auto vz-scroll">
+                                {Object.entries(groupedExamples).map(([cat, items]) => (
+                                    <div key={cat}>
+                                        <div className="px-4 py-1.5 border-b vz-border sticky top-0 vz-bg-s z-10">
+                                            <span className="text-[9px] font-bold vz-muted uppercase tracking-wider">
+                                                {cat}
+                                            </span>
+                                        </div>
+                                        {items.map(({ key, name, icon }) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => loadExample(key)}
+                                                className="w-full text-left px-4 py-2.5 text-sm vz-text
+                                                           flex items-center gap-3 border-b vz-border last:border-0
+                                                           hover:bg-[var(--vz-accent-glow)] group transition-colors"
+                                            >
+                                                <span className="text-lg group-hover:scale-110 transition-transform shrink-0">
+                                                    {icon}
+                                                </span>
+                                                <span className="font-medium">{name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    </div>
+);
+
+const PanelHeader = ({ title, right, dot }) => (
+    <div
+        className="h-9 vz-bg-s border-b vz-border flex items-center
+                   justify-between px-4 shrink-0"
+    >
+        <div className="flex items-center gap-2">
+            {dot && (
+                <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                        dot === 'green' ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
+                    }`}
+                />
+            )}
+            {!dot && (
+                <div className="flex items-center gap-1.5">
+                    {['bg-red-500','bg-yellow-500','bg-green-500'].map(c => (
+                        <div key={c} className={`w-2.5 h-2.5 rounded-full ${c}`} />
+                    ))}
+                </div>
+            )}
+            <span className="text-[11px] font-mono vz-muted ml-1">{title}</span>
+        </div>
+        {right && <span className="text-[11px] font-mono vz-muted tabular-nums">{right}</span>}
+    </div>
+);
+
+const LoadingOverlay = () => (
+    <div
+        className="absolute inset-0 z-30 flex flex-col items-center justify-center
+                   vz-bg-p backdrop-blur-sm"
+        style={{ background: 'color-mix(in srgb, var(--vz-bg-primary) 88%, transparent)' }}
+    >
+        <Loader2
+            className="animate-spin mb-3"
+            size={36}
+            style={{ color: 'var(--vz-accent)' }}
+        />
+        <span className="vz-muted font-mono text-sm animate-pulse">
+            Executing algorithm…
+        </span>
+    </div>
+);
+
+const ErrorDisplay = ({ error, onReset }) => (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mb-5 border-2"
+            style={{
+                background: 'rgba(248,81,73,0.08)',
+                borderColor: 'rgba(248,81,73,0.3)',
+            }}
+        >
+            <AlertTriangle size={32} style={{ color: 'var(--vz-red)' }} />
+        </div>
+        <h3 className="text-xl font-bold vz-text mb-3">Execution Error</h3>
+        <p
+            className="font-mono text-sm px-5 py-3 rounded-xl border max-w-md mb-5 break-all"
+            style={{
+                color: 'var(--vz-red)',
+                background: 'rgba(248,81,73,0.07)',
+                borderColor: 'rgba(248,81,73,0.25)',
+            }}
+        >
+            {error}
+        </p>
+        <button
+            onClick={onReset}
+            className="px-4 py-2 text-sm font-medium rounded-lg border vz-border
+                       vz-bg-s vz-text hover:bg-[var(--vz-bg-hover)] transition-colors"
+        >
+            Reset to Bubble Sort
+        </button>
+    </div>
+);
 
 export default Visualizer;

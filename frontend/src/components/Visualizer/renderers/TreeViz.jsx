@@ -1,182 +1,3 @@
-// import React, { memo } from 'react';
-// import { motion, AnimatePresence } from 'framer-motion';
-
-// // --- MAIN WRAPPER ---
-// const TreeViz = memo(({ data, name }) => {
-//     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-//         return (
-//             <div className="w-full h-48 flex flex-col items-center justify-center text-gray-500 border border-dashed border-gray-800 rounded-xl bg-[#0d1117]/50">
-//                 <span className="text-xs font-mono">Empty Tree / Null</span>
-//             </div>
-//         );
-//     }
-
-//     return (
-//         <div className="
-//             relative w-full overflow-auto custom-scrollbar 
-//             bg-gradient-to-b from-[#0d1117] to-[#161b22] 
-//             p-10 rounded-xl border border-gray-800 
-//             flex flex-col items-center shadow-2xl min-h-[350px]
-//         ">
-//             {/* Background Grid Pattern for depth */}
-//             <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-            
-//             <div className="relative z-10">
-//                 <TreeNode node={data} label="root" depth={0} />
-//             </div>
-//         </div>
-//     );
-// });
-
-// // --- RECURSIVE NODE COMPONENT ---
-// const TreeNode = memo(({ node, label, depth }) => {
-//     // Base Case: Ghost node for spacing if parent has only one child
-//     if (!node) {
-//         return <div className="w-12 h-12 invisible" />;
-//     }
-
-//     // 1. EXTRACT DATA
-//     // Supports various naming conventions (val, value, data)
-//     const rawVal = node.val ?? node.value ?? node.data;
-//     const val = rawVal !== undefined ? String(rawVal) : '?';
-    
-//     // Check children
-//     const left = node.left;
-//     const right = node.right;
-//     const isLeaf = !left && !right;
-//     const hasChildren = left || right;
-
-//     return (
-//         <div className="flex flex-col items-center">
-            
-//             {/* 2. THE NODE CIRCLE */}
-//             <div className="relative z-20">
-//                 <motion.div
-//                     layout
-//                     initial={{ scale: 0, opacity: 0 }}
-//                     animate={{ scale: 1, opacity: 1 }}
-//                     transition={{ 
-//                         type: "spring", 
-//                         stiffness: 260, 
-//                         damping: 20, 
-//                         delay: depth * 0.1 // Staggered entry based on depth
-//                     }}
-//                     className={`
-//                         w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center 
-//                         border-[3px] shadow-xl relative backdrop-blur-sm transition-colors
-//                         ${isLeaf 
-//                             ? 'bg-gradient-to-br from-emerald-900/80 to-emerald-600/20 border-emerald-500 shadow-emerald-900/20' 
-//                             : 'bg-gradient-to-br from-indigo-900/80 to-indigo-600/20 border-indigo-500 shadow-indigo-900/20'
-//                         }
-//                     `}
-//                 >
-//                     <span className={`
-//                         text-sm md:text-base font-mono font-bold drop-shadow-md
-//                         ${isLeaf ? 'text-emerald-100' : 'text-indigo-100'}
-//                     `}>
-//                         {val}
-//                     </span>
-
-//                     {/* LABEL BADGE (Root, L, R) */}
-//                     {label && (
-//                         <motion.div 
-//                             initial={{ opacity: 0, y: 5 }}
-//                             animate={{ opacity: 1, y: 0 }}
-//                             className={`
-//                                 absolute -top-3 left-1/2 -translate-x-1/2 
-//                                 text-[9px] font-bold px-1.5 py-0.5 rounded border shadow-sm uppercase tracking-wider
-//                                 ${isLeaf 
-//                                     ? 'bg-emerald-950 text-emerald-400 border-emerald-800' 
-//                                     : 'bg-indigo-950 text-indigo-400 border-indigo-800'
-//                                 }
-//                             `}
-//                         >
-//                             {label}
-//                         </motion.div>
-//                     )}
-//                 </motion.div>
-//             </div>
-
-//             {/* 3. CONNECTORS & CHILDREN */}
-//             <AnimatePresence>
-//                 {hasChildren && (
-//                     <motion.div
-//                         initial={{ opacity: 0 }}
-//                         animate={{ opacity: 1 }}
-//                         className="flex flex-col items-center"
-//                     >
-//                         {/* A. SVG CONNECTOR LAYER */}
-//                         {/* This SVG sits between the parent and the children row.
-//                            It draws lines from Top-Center to Bottom-Left (25%) and Bottom-Right (75%)
-//                         */}
-//                         <div className="w-full h-10 relative">
-//                             <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
-//                                 {/* Path to Left Child */}
-//                                 {left && (
-//                                     <motion.path 
-//                                         d="M 50% 0 C 50% 20, 25% 20, 25% 100%" 
-//                                         fill="none" 
-//                                         stroke="#6366f1" 
-//                                         strokeWidth="2" 
-//                                         strokeOpacity="0.3"
-//                                         initial={{ pathLength: 0 }}
-//                                         animate={{ pathLength: 1 }}
-//                                         transition={{ duration: 0.5, delay: depth * 0.1 }}
-//                                     />
-//                                 )}
-//                                 {/* Path to Right Child */}
-//                                 {right && (
-//                                     <motion.path 
-//                                         d="M 50% 0 C 50% 20, 75% 20, 75% 100%" 
-//                                         fill="none" 
-//                                         stroke="#6366f1" 
-//                                         strokeWidth="2" 
-//                                         strokeOpacity="0.3"
-//                                         initial={{ pathLength: 0 }}
-//                                         animate={{ pathLength: 1 }}
-//                                         transition={{ duration: 0.5, delay: depth * 0.1 }}
-//                                     />
-//                                 )}
-//                             </svg>
-//                         </div>
-
-//                         {/* B. CHILDREN CONTAINER */}
-//                         <div className="flex items-start gap-4 md:gap-8 pt-1">
-//                             {/* Left Branch */}
-//                             <div className="flex flex-col items-center">
-//                                 {left ? <TreeNode node={left} label="L" depth={depth + 1} /> : <div className="w-12" />}
-//                             </div>
-
-//                             {/* Right Branch */}
-//                             <div className="flex flex-col items-center">
-//                                 {right ? <TreeNode node={right} label="R" depth={depth + 1} /> : <div className="w-12" />}
-//                             </div>
-//                         </div>
-
-//                     </motion.div>
-//                 )}
-//             </AnimatePresence>
-//         </div>
-//     );
-// });
-
-// export default TreeViz;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -484,3 +305,47 @@ const MaxDepthNode = memo(({ sizing }) => (
 ));
 
 export default TreeViz;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
