@@ -68,6 +68,8 @@ setInterval(() => {
 
 // ─── Controller ───────────────────────────────────────────────────────────────
 export const chat = async (req, res) => {
+    console.log('[CHAT] Key exists:', !!process.env.GROQ_API_KEY);
+    console.log('[CHAT] Key value:', process.env.GROQ_API_KEY?.slice(0, 10) + '...');
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
 
     // IP-level rate limit (server protection)
