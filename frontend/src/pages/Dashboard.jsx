@@ -260,6 +260,7 @@ import { Logo } from '../components/Logo';
 import { Loader2, Trophy } from 'lucide-react'; 
 import api from '../api.js'; 
 import { getLevelInfo } from '../utils/levelSystem';
+import ChatWidget from '../components/ChatWIdget.jsx';
 
 const CACHE_KEY = 'dashboard_profile_cache';
 const CACHE_DURATION = 60000; // 60 seconds
@@ -541,6 +542,7 @@ const Dashboard = () => {
            </div>
         </div>
       )}
+      <ChatWidget user={user} />
     </div>
   );
 };
