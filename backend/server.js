@@ -520,7 +520,7 @@ import matchRoutes from './routes/matchRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import visualizerRoutes from './routes/visualizerRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
-
+import campaignRoutes from './routes/campaignRoutes.js';
 
 // ✅ MODELS
 import Problem from './models/Problem.js';
@@ -585,6 +585,7 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/visualize', visualizerRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/campaign', campaignRoutes);
 
 // ✅ HEALTH CHECK (Enhanced)
 app.get('/health', (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye } from 'lucide-react';
+import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye, Map } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
@@ -53,6 +53,7 @@ const Sidebar = () => {
     { name: 'Ranks', icon: Trophy, path: '/leaderboard' },
     { name: 'Learn', icon: BookOpen, path: '/resources' },
     { name: 'Visualizer', icon: Eye, path: '/visualizer' },
+    { name: 'Campaign', icon: Map, path: '/campaign' }
   ];
 
   return (
