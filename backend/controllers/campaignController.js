@@ -2,7 +2,6 @@
 
 import CampaignMap      from '../models/CampaignMap.js';
 import CampaignProgress from '../models/CampaignProgress.js';
-import Problem          from '../models/Problem.js';
 import { executeForCampaign } from '../services/campaignExecutor.js';
 import { calculateStars, calculateKP, shouldUpdateNode } from '../services/starCalculator.js';
 
@@ -86,7 +85,7 @@ export const getNodeDetails = async (req, res) => {
 
         // Verify node is unlocked for this user
         const progress = await CampaignProgress.findOne({ userId }).lean();
-        if (!progress || !progress.unlockedNodes.includes(nodeId)) {
+        if (!progress || !(progress.unlockedNodes ?? []).includes(nodeId)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Node not unlocked. Complete prerequisites first.' 
@@ -105,7 +104,7 @@ export const getNodeDetails = async (req, res) => {
 
         // Only send PUBLIC test cases to frontend
         const problem = node.problemId.toObject();
-        problem.testCases = problem.testCases.filter(tc => tc.isPublic);
+        problem.testCases = (problem.testCases ?? []).filter(tc => tc.isPublic);
 
         // Check if user has already completed this node
         const existingCompletion = progress.completedNodes?.find(n => n.nodeId === nodeId);
@@ -143,7 +142,7 @@ export const submitCampaignSolution = async (req, res) => {
 
         // 1. Verify this node is unlocked for the user
         const progress = await CampaignProgress.findOne({ userId });
-        if (!progress || !progress.unlockedNodes.includes(nodeId)) {
+        if (!progress || !(progress.unlockedNodes ?? []).includes(nodeId)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Node not unlocked' 
@@ -158,10 +157,10 @@ export const submitCampaignSolution = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Node not found' });
         }
 
-        const allTestCases = node.problemId.testCases; // both public + hidden
+        const allTestCases = node.problemId?.testCases ?? []; // both public + hidden
 
         // 3. Increment attempt count BEFORE execution
-        progress.totalAttempts += 1;
+        progress.totalAttempts = (progress.totalAttempts ?? 0) + 1;
 
         // 4. Execute against ALL test cases via Piston
         const executionResult = await executeForCampaign(code, language, allTestCases);
@@ -170,6 +169,7 @@ export const submitCampaignSolution = async (req, res) => {
         if (!executionResult.allPassed) {
 
             // Update sage failure counter for this node
+            progress.sageUsage = progress.sageUsage ?? [];
             let sageEntry = progress.sageUsage.find(s => s.nodeId === nodeId);
             if (!sageEntry) {
                 progress.sageUsage.push({ nodeId, failCount: 1 });
@@ -189,10 +189,19 @@ export const submitCampaignSolution = async (req, res) => {
         }
 
         // 6. Calculate Stars
-        const stars = calculateStars(executionResult.avgTimeMs, node.starThresholds);
-        const kpEarned = calculateKP(stars, node.rewards);
+        const stars = calculateStars(
+            executionResult.avgTimeMs,
+            node.starThresholds ?? { twoStarTimeMs: Number.POSITIVE_INFINITY, threeStarTimeMs: Number.POSITIVE_INFINITY }
+        );
+        const safeRewards = node.rewards ?? { oneStarKP: 0, twoStarKP: 0, threeStarKP: 0 };
+        const kpEarned = calculateKP(stars, safeRewards);
 
         // 7. Check existing completion — only update if improved
+        progress.completedNodes = progress.completedNodes ?? [];
+        progress.unlockedNodes = progress.unlockedNodes ?? [];
+        progress.inventory = progress.inventory ?? [];
+        progress.sageUsage = progress.sageUsage ?? [];
+
         const existingIdx = progress.completedNodes.findIndex(n => n.nodeId === nodeId);
         const existingNode = existingIdx >= 0 ? progress.completedNodes[existingIdx] : null;
         const isImprovement = shouldUpdateNode(stars, executionResult.avgTimeMs, existingNode);
@@ -219,7 +228,7 @@ export const submitCampaignSolution = async (req, res) => {
             newlyUnlockedNodes = allNodes
                 .filter(n => 
                     !progress.unlockedNodes.includes(n.nodeId) &&
-                    n.prerequisites.every(prereq => 
+                    (n.prerequisites ?? []).every(prereq => 
                         progress.completedNodes.some(c => c.nodeId === prereq) ||
                         nodeId === prereq // just completed this one
                     )
@@ -229,11 +238,11 @@ export const submitCampaignSolution = async (req, res) => {
             progress.unlockedNodes.push(...newlyUnlockedNodes);
 
             // Boss node loot drop
-            if (node.nodeType === 'boss' && node.rewards.lootPool?.length > 0) {
+            if (node.nodeType === 'boss' && node.rewards?.lootPool?.length > 0) {
                 const rolled = Math.random();
                 let cumulative = 0;
                 for (const loot of node.rewards.lootPool) {
-                    cumulative += loot.dropChance;
+                    cumulative += (loot.dropChance ?? 0);
                     if (rolled <= cumulative && !progress.inventory.find(i => i.itemId === loot.itemId)) {
                         progress.inventory.push({
                             itemId:       loot.itemId,
@@ -249,7 +258,7 @@ export const submitCampaignSolution = async (req, res) => {
         } else if (isImprovement) {
             // Re-attempt with better performance
             const oldStars = existingNode.starsAwarded;
-            bonusKP = kpEarned - calculateKP(oldStars, node.rewards); // only diff
+            bonusKP = kpEarned - calculateKP(oldStars, safeRewards); // only diff
 
             progress.completedNodes[existingIdx].starsAwarded = stars;
             progress.completedNodes[existingIdx].bestTimeMs   = executionResult.avgTimeMs;
@@ -311,6 +320,7 @@ export const spendKnowledgePoints = async (req, res) => {
             'theme_matrix':    { cost: 100, type: 'theme'  },
             'theme_cyberpunk': { cost: 150, type: 'theme'  },
             'border_gold':     { cost: 80,  type: 'border' },
+            'border_neon':     { cost: 120, type: 'border' },
             'title_knight':    { cost: 120, type: 'title'  },
             // Add more in the future
         };
@@ -325,18 +335,19 @@ export const spendKnowledgePoints = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Progress not found' });
         }
 
-        if (progress.knowledgePoints < item.cost) {
+        if ((progress.knowledgePoints ?? 0) < item.cost) {
             return res.status(400).json({ 
                 success: false, 
-                message: `Insufficient KP. Need ${item.cost}, have ${progress.knowledgePoints}` 
+                message: `Insufficient KP. Need ${item.cost}, have ${progress.knowledgePoints ?? 0}` 
             });
         }
 
+        progress.inventory = progress.inventory ?? [];
         if (progress.inventory.find(i => i.itemId === itemId)) {
             return res.status(400).json({ success: false, message: 'Already owned' });
         }
 
-        progress.knowledgePoints -= item.cost;
+        progress.knowledgePoints = (progress.knowledgePoints ?? 0) - item.cost;
         progress.inventory.push({ itemId, itemType: item.type });
         await progress.save();
 
@@ -364,6 +375,7 @@ export const equipCosmetic = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Progress not found' });
         }
 
+        progress.inventory = progress.inventory ?? [];
         if (!progress.inventory.find(i => i.itemId === itemId)) {
             return res.status(403).json({ success: false, message: 'Item not owned' });
         }

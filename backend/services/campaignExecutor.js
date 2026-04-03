@@ -15,12 +15,13 @@ const LANGUAGE_MAP = {
 export const executeForCampaign = async (code, language, testCases) => {
     const langConfig = LANGUAGE_MAP[language];
     if (!langConfig) throw new Error(`Unsupported language: ${language}`);
+    const safeCases = testCases ?? [];
 
     const results = [];
     let totalTimeMs = 0;
     let allPassed = true;
 
-    for (const tc of testCases) {
+    for (const tc of safeCases) {
         const startTime = Date.now();
         
         try {
@@ -35,7 +36,7 @@ export const executeForCampaign = async (code, language, testCases) => {
             totalTimeMs += elapsed;
 
             const actualOutput = (response.data.run?.stdout || '').trim();
-            const expectedOutput = tc.output.trim();
+            const expectedOutput = (tc.output ?? '').trim();
             const passed = actualOutput === expectedOutput;
 
             if (!passed) allPassed = false;
@@ -65,8 +66,8 @@ export const executeForCampaign = async (code, language, testCases) => {
         results,
         totalTimeMs,
         // Average time across test cases (fairer metric than total)
-        avgTimeMs: testCases.length > 0 
-            ? Math.round(totalTimeMs / testCases.length) 
+        avgTimeMs: safeCases.length > 0 
+            ? Math.round(totalTimeMs / safeCases.length) 
             : 0
     };
 };

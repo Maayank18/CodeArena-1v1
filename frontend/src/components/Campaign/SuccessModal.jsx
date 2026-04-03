@@ -1,7 +1,6 @@
 // src/components/Campaign/SuccessModal.jsx
 import React, { useEffect, useState } from 'react';
-// motion
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Star, Zap, Map, RotateCcw, Gift, Sparkles } from 'lucide-react';
 
 // Animated KP counter

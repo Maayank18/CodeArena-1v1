@@ -1,7 +1,7 @@
 // src/components/Campaign/CampaignHUD.jsx
 import React from 'react';
 import { Star, Zap, Flame, ShoppingBag, Trophy } from 'lucide-react';
-// import { motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const Stat = ({ icon: Icon, value, label, color }) => (
     <div className="flex items-center gap-1.5">

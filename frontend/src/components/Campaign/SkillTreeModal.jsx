@@ -1,7 +1,6 @@
 // src/components/Campaign/SkillTreeModal.jsx
 import React, { useState } from 'react';
-// motion
-import {  AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X, Zap, Check, Lock, ShoppingBag } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
@@ -25,7 +24,8 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
     const [buying, setBuying] = useState(null);
 
     const currentKP = progress?.knowledgePoints ?? 0;
-    const owned     = (progress?.inventory ?? []).map(i => i.itemId);
+    // const owned     = (progress?.inventory ?? []).map(i => i.itemId);
+    const owned = (progress?.inventory ?? []).map(i => i.itemId);
 
     const handleBuy = async (item) => {
         if (owned.includes(item.itemId)) { toast('Already owned!'); return; }

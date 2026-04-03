@@ -44,7 +44,8 @@ const campaignProgressSchema = new mongoose.Schema({
     sageUsage: [{
         nodeId:    String,
         usedAt:    { type: Date, default: Date.now },
-        failCount: { type: Number, default: 0 }
+        failCount: { type: Number, default: 0 },
+        sageCallCount: { type: Number, default: 0 }
     }],
 
     // Streak tracking (gamification hook)

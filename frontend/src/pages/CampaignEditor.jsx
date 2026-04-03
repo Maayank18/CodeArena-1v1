@@ -7,8 +7,7 @@ import React, {
 } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
-// motion
-import {AnimatePresence} from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     ArrowLeft, Play, Send, Loader2, CheckCircle, XCircle,
     ChevronDown, ChevronUp, Sparkles, Clock, BookOpen,

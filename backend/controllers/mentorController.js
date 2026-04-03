@@ -15,7 +15,11 @@ const MAX_SAGE_CALLS_PER_NODE = 8;
 export const getSageHint = async (req, res) => {
     try {
         const { nodeId, failedCode, errorMessage, language } = req.body;
-        const userId = req.user._id;
+        const userId = req.user?._id;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
 
         if (!nodeId || !failedCode) {
             return res.status(400).json({

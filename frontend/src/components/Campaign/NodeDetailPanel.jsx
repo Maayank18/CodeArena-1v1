@@ -1,8 +1,8 @@
 // src/components/Campaign/NodeDetailPanel.jsx
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X, Clock, Lock, Play, RefreshCw, Skull, Star, Zap, Gift } from 'lucide-react';
-import StarDisplay from './StarDisplay';
+import StarDisplay from '../Campaign/StarDisplay';
 
 const DIFF = {
     Easy:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',

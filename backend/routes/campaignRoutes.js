@@ -3,7 +3,7 @@
 // Now correctly applies campaignAuth middleware at the right granularity.
 
 import express from 'express';
-// import { verifyToken } from '../middleware/auth.js';           // existing auth middleware
+import { verifyToken } from '../middleware/auth.js';
 import { ensureProgress, verifyNodeUnlocked } from '../middleware/campaignAuth.js';
 
 import {
@@ -26,6 +26,7 @@ const router = express.Router();
 // GET /api/campaign/map
 // Heavily cached in the controller; safe to hit often.
 router.get('/map', getCampaignMap);
+router.use(verifyToken);
 
 // ── Progress routes (need progress to exist) ─────────────────────────────────
 // GET /api/campaign/progress

@@ -1,7 +1,6 @@
 // src/components/Campaign/SagePanel.jsx
 import React, { useState, useEffect, useRef } from 'react';
-// motion
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X, Sparkles, Loader2 } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
