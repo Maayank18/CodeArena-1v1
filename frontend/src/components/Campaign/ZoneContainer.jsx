@@ -1,194 +1,152 @@
 // src/components/Campaign/ZoneContainer.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Renders a single zone's:
-//   • Thematic gradient background
-//   • RPG-styled zone name & subtitle
-//   • Weather particle layer (delegated to <WeatherEffect>)
-//   • SVG bezier paths between nodes within the zone
-// Children = the actual node elements (positioned absolutely)
-// ─────────────────────────────────────────────────────────────────────────────
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import WeatherEffect from './WeatherEffect';
-import { ZONE_W, ZONE_H } from './campaignWorldData';
+import { buildZonePath, getLocalNodePos, ZONE_W, ZONE_H, MID_BOSS_IDX, MAIN_BOSS_IDX, NODE_RADIUS, BOSS_RADIUS } from './campaignWorldData';
 
-// ── Build SVG path between consecutive nodes ────────────────────────────────
-const makeNodePath = (a, b) => {
-  // Quadratic bezier with mid-point control
-  const mx = (a.x + b.x) / 2;
-  const my = (a.y + b.y) / 2 - 20; // arch upward slightly
-  return `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`;
-};
+// Pre-built path is the same for every zone (only colours differ)
+const SHARED_PATH = buildZonePath();
 
-const ZoneContainer = ({
-  config,          // zone config object from ZONE_CONFIGS
-  zoneX,           // world-space x of zone top-left
-  zoneY,           // world-space y of zone top-left
-  nodes = [],      // nodes belonging to this zone, sorted by nodeNum
-  completedNodeIds = new Set(),
-  children,        // rendered node elements
-}) => {
-  const { name, subtitle, icon, weather, primary, bg1, bg2, glow, pathColor, titleGrad } = config;
+// Decorative ground strip geometry
+const GROUND_H = 90;
 
-  // ── Build inter-node paths ─────────────────────────────────────────────────
-  const paths = React.useMemo(() => {
-    const list = [];
-    for (let i = 0; i < nodes.length - 1; i++) {
-      const a = nodes[i];
-      const b = nodes[i + 1];
-      if (!a?.localPosition || !b?.localPosition) continue;
-      const lit = completedNodeIds.has(a.nodeId) && completedNodeIds.has(b.nodeId);
-      list.push({
-        id:  `${a.nodeId}-${b.nodeId}`,
-        d:   makeNodePath(a.localPosition, b.localPosition),
-        lit,
-      });
+const ZoneContainer = ({ config, completedIds = new Set(), children }) => {
+  const { id, name, subtitle, icon, weather, bgGrad, groundColor, accent, path: pathColor,
+          titleGrad, border, glow, decorations } = config;
+
+  // Which nodes in this zone are completed (for path lighting)
+  const litPairs = useMemo(() => {
+    const pairs = [];
+    for (let i = 0; i < 14; i++) {
+      const aId = `${id}_${i + 1}`;
+      const bId = `${id}_${i + 2}`;
+      pairs.push({ lit: completedIds.has(aId) && completedIds.has(bId) });
     }
-    return list;
-  }, [nodes, completedNodeIds]);
+    return pairs;
+  }, [id, completedIds]);
+
+  // Individual segment paths (for colouring lit vs unlit separately)
+  const segPaths = useMemo(() => {
+    const pts = Array.from({ length: 15 }, (_, i) => getLocalNodePos(i));
+    return pts.slice(0, 14).map((prev, i) => {
+      const cur     = pts[i + 1];
+      const sameRow = Math.floor(i / 5) === Math.floor((i + 1) / 5);
+      if (sameRow) {
+        const mx = (prev.x + cur.x) / 2;
+        return `M ${prev.x} ${prev.y} Q ${mx} ${prev.y - 18} ${cur.x} ${cur.y}`;
+      }
+      const cp1x = prev.x, cp1y = prev.y + (cur.y - prev.y) * 0.45;
+      const cp2x = cur.x,  cp2y = prev.y + (cur.y - prev.y) * 0.55;
+      return `M ${prev.x} ${prev.y} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${cur.x} ${cur.y}`;
+    });
+  }, []);
 
   return (
     <motion.div
-      className="absolute"
-      style={{
-        left:   zoneX,
-        top:    zoneY,
-        width:  ZONE_W,
-        height: ZONE_H,
-      }}
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="relative overflow-hidden"
+      style={{ width: ZONE_W, height: ZONE_H, borderRadius: 20 }}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.55, ease: 'easeOut' }}
     >
-      {/* ── Zone background ────────────────────────────────────────── */}
+      {/* ── Biome background ─────────────────────────────────────── */}
       <div
-        className="absolute inset-0 rounded-2xl overflow-hidden"
+        className="absolute inset-0"
         style={{
-          background: `linear-gradient(155deg, ${bg1} 0%, ${bg2} 100%)`,
-          border: `1px solid ${primary}25`,
-          boxShadow: `inset 0 0 60px ${glow}, 0 0 30px ${glow}`,
+          background: `linear-gradient(175deg, ${bgGrad[0]} 0%, ${bgGrad[1]} 55%, ${bgGrad[2]} 100%)`,
+          borderRadius: 20,
+          boxShadow: `inset 0 0 80px ${glow}, 0 0 0 1.5px ${border}40`,
         }}
       >
-        {/* Atmospheric corner radial glow */}
-        <div
-          className="absolute inset-0 rounded-2xl"
-          style={{
-            background: `radial-gradient(ellipse 70% 50% at 50% 30%, ${primary}12, transparent 70%)`,
-          }}
-        />
+        {/* Radial top-glow */}
+        <div className="absolute inset-0 rounded-[20px]"
+          style={{ background:`radial-gradient(ellipse 80% 45% at 50% 20%, ${accent}14, transparent 65%)` }} />
 
-        {/* Weather / particle layer */}
-        <WeatherEffect
-          type={weather}
-          zoneId={config.id}
-          primary={primary}
-        />
+        {/* Weather particles */}
+        <WeatherEffect type={weather} zoneId={id} primary={accent} />
 
-        {/* ── Zone title area ─────────────────────────────────────── */}
-        <div className="absolute top-0 left-0 right-0 px-5 pt-4 pb-2 flex items-start justify-between z-10">
-          <div className="min-w-0 flex-1">
-            {/* Subtitle */}
-            <p
-              className="text-[9px] font-bold uppercase tracking-[0.25em] mb-1 opacity-60"
-              style={{ color: primary }}
-            >
-              {subtitle}
-            </p>
-
-            {/* Zone name — RPG style */}
-            <h3
-              className="font-black leading-tight select-none"
-              style={{
-                fontSize: name.length > 18 ? 15 : 17,
-                background: `linear-gradient(135deg, ${titleGrad[0]}, ${titleGrad[1]})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                textShadow: 'none',
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {name}
-            </h3>
-          </div>
-
-          {/* Zone icon */}
-          <div
-            className="ml-2 shrink-0 flex items-center justify-center rounded-xl text-xl select-none"
-            style={{
-              width: 40, height: 40,
-              background: `${primary}15`,
-              border: `1px solid ${primary}30`,
-              boxShadow: `0 0 12px ${primary}25`,
-            }}
-          >
-            {icon}
-          </div>
+        {/* Ground strip */}
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: GROUND_H, background: groundColor, borderRadius:'0 0 20px 20px' }}>
+          <div className="absolute top-0 left-0 right-0 h-12"
+            style={{ background:`linear-gradient(180deg, transparent, ${groundColor})` }} />
+          {/* Decorative emojis on ground */}
+          {decorations.map((d, i) => (
+            <span key={i} className="absolute select-none" style={{
+              fontSize: 20, bottom: 14, left: `${15 + i * 22}%`, opacity: .7,
+              transform:`rotate(${(i%2===0?-8:6)}deg)`,
+            }}>{d}</span>
+          ))}
         </div>
-
-        {/* Bottom accent line */}
-        <div
-          className="absolute bottom-0 left-6 right-6 h-px"
-          style={{ background: `linear-gradient(90deg, transparent, ${primary}50, transparent)` }}
-        />
       </div>
 
-      {/* ── SVG path layer (inside zone, local coords) ─────────────── */}
-      <svg
-        className="absolute inset-0 pointer-events-none"
-        style={{ width: ZONE_W, height: ZONE_H, overflow: 'visible' }}
-      >
+      {/* ── RPG zone title ───────────────────────────────────────── */}
+      <div className="absolute top-0 left-0 right-0 px-6 pt-5 pb-2 z-20 pointer-events-none">
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-xl mb-1.5"
+          style={{ background:`${accent}18`, border:`1px solid ${border}35` }}
+        >
+          <span className="text-base select-none">{icon}</span>
+          <p className="text-[9px] font-bold uppercase tracking-[0.25em]" style={{ color: accent }}>{subtitle}</p>
+        </div>
+        <h2
+          className="font-black leading-none tracking-tight select-none"
+          style={{
+            fontSize: name.length > 20 ? 22 : 26,
+            fontFamily:"'JetBrains Mono','Fira Code',monospace",
+            background: `linear-gradient(135deg, ${titleGrad[0]}, ${titleGrad[1]})`,
+            WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+            textShadow:'none',
+            filter: `drop-shadow(0 0 20px ${accent}40)`,
+          }}
+        >
+          {name}
+        </h2>
+      </div>
+
+      {/* ── SVG: snake path segments + glow filter ───────────────── */}
+      <svg className="absolute inset-0 pointer-events-none z-10"
+        style={{ width: ZONE_W, height: ZONE_H, overflow:'visible' }}>
         <defs>
-          <filter id={`glow-${config.id}`} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id={`pg-${id}`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
 
-        {paths.map(p => (
-          <g key={p.id}>
-            {/* Shadow/glow layer on lit paths */}
-            {p.lit && (
-              <path
-                d={p.d}
-                fill="none"
-                stroke={pathColor}
-                strokeWidth="8"
-                strokeOpacity="0.15"
-                filter={`url(#glow-${config.id})`}
+        {segPaths.map((d, i) => {
+          const lit = litPairs[i]?.lit;
+          return (
+            <g key={i}>
+              {/* Shadow / glow on lit segments */}
+              {lit && <path d={d} fill="none" stroke={pathColor} strokeWidth={10} strokeOpacity={.15} filter={`url(#pg-${id})`}/>}
+              {/* Main segment */}
+              <path d={d} fill="none"
+                stroke={lit ? pathColor : '#1e293b'}
+                strokeWidth={lit ? 3 : 2.2}
+                strokeOpacity={lit ? .85 : .55}
+                strokeLinecap="round"
+                strokeDasharray={lit ? 'none' : '5 7'}
               />
-            )}
-            {/* Main path */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={p.lit ? pathColor : '#1e2533'}
-              strokeWidth={p.lit ? 2.5 : 1.8}
-              strokeOpacity={p.lit ? 0.7 : 0.5}
-              strokeLinecap="round"
-              strokeDasharray={p.lit ? 'none' : '5 6'}
-            />
-            {/* Moving dot on lit paths */}
-            {p.lit && (
-              <circle r="4" fill={pathColor} opacity="0.9">
-                <animateMotion
-                  dur="3s"
-                  repeatCount="indefinite"
-                  path={p.d}
-                />
-              </circle>
-            )}
-          </g>
-        ))}
+              {/* Animated traveller dot on lit segments */}
+              {lit && (
+                <circle r="4.5" fill={pathColor} opacity=".9">
+                  <animateMotion dur={`${2.5 + i * .05}s`} repeatCount="indefinite" path={d}/>
+                </circle>
+              )}
+            </g>
+          );
+        })}
       </svg>
 
-      {/* ── Node elements (passed as children) ─────────────────────── */}
-      {children}
+      {/* ── Node layer ────────────────────────────────────────────── */}
+      <div className="absolute inset-0 z-30">
+        {children}
+      </div>
+
+      {/* ── Bottom border accent ─────────────────────────────────── */}
+      <div className="absolute bottom-0 left-8 right-8 h-px z-40"
+        style={{ background:`linear-gradient(90deg,transparent,${accent}60,transparent)` }}/>
     </motion.div>
   );
 };
