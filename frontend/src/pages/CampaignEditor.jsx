@@ -528,7 +528,7 @@ const CampaignEditor = () => {
                                     sageShouldShow={sageShouldShow}
                                     showSage={showSage}     setShowSage={setShowSage}
                                     nodeId={nodeId} lastFailedCode={lastFailedCode}
-                                    lastError={lastError}   language={language}
+                                    lastError={lastError}
                                 />
                             </div>
                         </Panel>
@@ -553,7 +553,7 @@ const CampaignEditor = () => {
                                 sageShouldShow={sageShouldShow}
                                 showSage={showSage}     setShowSage={setShowSage}
                                 nodeId={nodeId} lastFailedCode={lastFailedCode}
-                                lastError={lastError}   language={language}
+                                lastError={lastError} 
                             />
                         </div>
                     )}
