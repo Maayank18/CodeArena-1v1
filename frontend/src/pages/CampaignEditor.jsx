@@ -17,7 +17,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+// import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Play, Send, Loader2, CheckCircle, XCircle,
