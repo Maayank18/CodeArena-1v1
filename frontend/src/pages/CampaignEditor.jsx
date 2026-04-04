@@ -13,7 +13,6 @@
 //   npm install react-resizable-panels
 //
 // ─────────────────────────────────────────────────────────────────────────────
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
