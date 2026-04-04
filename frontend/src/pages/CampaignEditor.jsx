@@ -2,7 +2,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Key V2 upgrades:
 //   ✓ Resizable problem/editor split via react-resizable-panels
-//     (sizes saved to localStorage automatically via autoSaveId)
 //   ✓ Output sanitization on the frontend for run results display
 //     (backend also sanitizes before DB comparison)
 //   ✓ Refined UI matching the screenshot aesthetic
@@ -496,12 +495,11 @@ const CampaignEditor = () => {
                 {/* Desktop — react-resizable-panels */}
                 <div className="hidden sm:flex h-full">
                     <PanelGroup
-                        direction="horizontal"
-                        autoSaveId="ca-editor-layout-v2"
+                        orientation="horizontal"
                         className="h-full"
                     >
                         {/* LEFT: Problem description */}
-                        <Panel defaultSize={38} minSize={22} maxSize={65}>
+                        <Panel defaultSize="38%" minSize="22%" maxSize="70%">
                             <div className="h-full bg-[#07090f] border-r border-gray-800/40 flex flex-col">
                                 <ProblemPanel node={node} existingBest={existingBest} />
                             </div>
@@ -516,7 +514,7 @@ const CampaignEditor = () => {
                         </PanelResizeHandle>
 
                         {/* RIGHT: Code editor + results + sage */}
-                        <Panel defaultSize={62} minSize={30}>
+                        <Panel defaultSize="62%" minSize="30%">
                             <div className="h-full bg-[#07090e] flex flex-col relative">
                                 <EditorAndResults
                                     code={code} setCode={setCode} language={language}
