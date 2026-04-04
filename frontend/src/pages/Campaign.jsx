@@ -1,14 +1,15 @@
-// src/pages/Campaign.jsx
+// src/pages/Campaign.jsx  — V2
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Map, ArrowLeft } from 'lucide-react';
-import Navbar         from '../components/Navbar';
-import WorldMap       from '../components/Campaign/WorldMap';
-import NodeDetailPanel from '../components/Campaign/NodeDetailPanel';
-import CampaignHUD    from '../components/Campaign/CampaignHUD';
-import SkillTreeModal from '../components/Campaign/SkillTreeModal';
-import api            from '../api';
-import toast          from 'react-hot-toast';
+import { Loader2, Map, ArrowLeft, BookOpen } from 'lucide-react';
+import Navbar              from '../components/Navbar';
+import WorldMap            from '../components/Campaign/WorldMap';
+import NodeDetailPanel     from '../components/Campaign/NodeDetailPanel';
+import CampaignHUD         from '../components/Campaign/CampaignHUD';
+import SkillTreeModal      from '../components/Campaign/SkillTreeModal';
+import CampaignGuideModal  from '../components/Campaign/CampaignGuideModal';
+import api                 from '../api';
+import toast               from 'react-hot-toast';
 
 const Campaign = () => {
     const navigate = useNavigate();
@@ -16,50 +17,38 @@ const Campaign = () => {
     const [mapData,       setMapData]       = useState(null);
     const [progress,      setProgress]      = useState(null);
     const [loading,       setLoading]       = useState(true);
-    const [loadError,     setLoadError]     = useState('');
     const [selectedNode,  setSelectedNode]  = useState(null);
     const [showSkillTree, setShowSkillTree] = useState(false);
+    const [showGuide,     setShowGuide]     = useState(false);
 
     const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
 
     useEffect(() => {
+        let cancelled = false;
         const load = async () => {
-            setLoadError('');
             try {
-                const mapRes = await api.get('/campaign/map');
-                setMapData(mapRes?.data?.map ?? { nodes: [], grouped: {} });
-
-                try {
-                    const progRes = await api.get('/campaign/progress');
-                    setProgress(progRes?.data?.progress ?? null);
-                } catch (progErr) {
-                    const status = progErr?.response?.status;
-                    if (status !== 401) {
-                        console.error('[CAMPAIGN][PROGRESS]', progErr);
-                    }
-                    setProgress(null);
-                }
+                const [mapRes, progRes] = await Promise.all([
+                    api.get('/campaign/map'),
+                    api.get('/campaign/progress'),
+                ]);
+                if (cancelled) return;
+                setMapData(mapRes.data.map || mapRes.data);
+                setProgress(progRes.data.progress || progRes.data);
             } catch (err) {
+                if (cancelled) return;
                 console.error('[CAMPAIGN]', err);
-                const status = err?.response?.status;
-                if (status === 404) {
-                    setLoadError('Campaign API route not found on backend deployment.');
-                } else if (status === 401) {
-                    setLoadError('Please login again to access campaign progress.');
-                } else {
-                    setLoadError('Failed to load campaign data from backend.');
-                }
                 toast.error('Failed to load Campaign world');
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
         load();
+        return () => { cancelled = true; };
     }, []);
 
-    const handleNodeClick     = useCallback(node => setSelectedNode(node),             []);
-    const handleClosePanel    = useCallback(() => setSelectedNode(null),                []);
-    const handleStartChallenge = useCallback(nodeId => navigate(`/campaign/${nodeId}`), [navigate]);
+    const handleNodeClick      = useCallback(node   => setSelectedNode(node),             []);
+    const handleClosePanel     = useCallback(()     => setSelectedNode(null),              []);
+    const handleStartChallenge = useCallback(nodeId => navigate(`/campaign/${nodeId}`),    [navigate]);
     const handleProgressUpdate = useCallback(updates => setProgress(p => ({ ...p, ...updates })), []);
     const handleLogout = useCallback(() => {
         localStorage.removeItem('codearena_user');
@@ -70,60 +59,37 @@ const Campaign = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-[#060810] flex flex-col items-center justify-center gap-5">
-                <div className="text-7xl animate-bounce select-none">🗺️</div>
-                <div className="flex items-center gap-2.5 text-gray-500 font-bold">
-                    <Loader2 size={18} className="animate-spin text-accent" />
+                <div className="text-7xl select-none" style={{ animation: 'bounce 1s infinite' }}>🗺️</div>
+                <div className="flex items-center gap-2.5 text-gray-500 font-bold text-sm">
+                    <Loader2 size={16} className="animate-spin text-accent" />
                     Loading Campaign World...
                 </div>
             </div>
         );
     }
 
-    if (loadError) {
-        return (
-            <div className="min-h-screen bg-[#060810] flex flex-col">
-                <Navbar user={user} onLogout={handleLogout} />
-                <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
-                    <Map size={64} className="text-red-800 opacity-60" />
-                    <div>
-                        <h2 className="text-2xl font-black text-red-400 mb-2">Campaign Load Failed</h2>
-                        <p className="text-gray-500 text-sm">{loadError}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-                        >
-                            Retry
-                        </button>
-                        <button
-                            onClick={() => navigate('/dashboard')}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
-                        >
-                            <ArrowLeft size={16} /> Back to Dashboard
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // ── Defensive: normalise mapData shape (backend may return { nodes:[] } or { map:{ nodes:[] } }) ──
+    const nodes = mapData?.nodes ?? [];
 
-    // ── Empty map (no nodes seeded yet) ─────────────────────────────────────
-    if (!mapData?.nodes?.length) {
+    // ── Empty ────────────────────────────────────────────────────────────────
+    if (!nodes.length) {
         return (
             <div className="min-h-screen bg-[#060810] flex flex-col">
                 <Navbar user={user} onLogout={handleLogout} />
                 <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
-                    <Map size={64} className="text-gray-800 opacity-50" />
+                    <Map size={64} className="text-gray-800 opacity-40" />
                     <div>
                         <h2 className="text-2xl font-black text-gray-500 mb-2">No Campaign Nodes Yet</h2>
-                        <p className="text-gray-700 text-sm">Ask an admin to seed the campaign map.</p>
+                        <p className="text-gray-700 text-sm">Run the seed script to populate the map.</p>
+                        <code className="block mt-2 text-xs text-accent font-mono bg-gray-900/60 px-4 py-2 rounded-lg border border-gray-800">
+                            node backend/seeder.js
+                        </code>
                     </div>
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors text-sm"
                     >
-                        <ArrowLeft size={16} /> Back to Dashboard
+                        <ArrowLeft size={15} /> Back to Dashboard
                     </button>
                 </div>
             </div>
@@ -135,22 +101,31 @@ const Campaign = () => {
         <div className="h-screen bg-[#060810] flex flex-col overflow-hidden">
             <Navbar user={user} onLogout={handleLogout} />
 
-            {/* Campaign HUD strip */}
+            {/* ── Campaign HUD ─────────────────────────────────────────── */}
             <CampaignHUD
                 progress={progress}
                 onOpenSkillTree={() => setShowSkillTree(true)}
-            />
+            >
+                {/* Guide button injected into HUD via children */}
+                <button
+                    onClick={() => setShowGuide(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-gray-200 hover:bg-gray-800/60 rounded-lg transition-colors text-xs font-bold border border-transparent hover:border-gray-700/40"
+                    title="How to Play"
+                >
+                    <BookOpen size={14} />
+                    <span className="hidden sm:inline">Guide</span>
+                </button>
+            </CampaignHUD>
 
-            {/* Map area — fills remaining height */}
+            {/* ── Map area ─────────────────────────────────────────────── */}
             <div className="flex-1 relative overflow-hidden">
                 <WorldMap
-                    nodes={mapData.nodes}
+                    nodes={nodes}
                     progress={progress}
                     onNodeClick={handleNodeClick}
                     selectedNodeId={selectedNode?.nodeId}
                 />
 
-                {/* Node detail panel — slides in from right */}
                 {selectedNode && (
                     <NodeDetailPanel
                         node={selectedNode}
@@ -160,22 +135,26 @@ const Campaign = () => {
                     />
                 )}
 
-                {/* Click-away backdrop for the panel (mobile) */}
+                {/* Mobile click-away for panel */}
                 {selectedNode && (
                     <div
                         className="sm:hidden absolute inset-0 z-30"
                         onClick={handleClosePanel}
-                        style={{ background: 'transparent' }}
                     />
                 )}
             </div>
 
-            {/* Skill Tree Modal */}
+            {/* ── Modals ───────────────────────────────────────────────── */}
             <SkillTreeModal
                 isOpen={showSkillTree}
                 onClose={() => setShowSkillTree(false)}
                 progress={progress}
                 onProgressUpdate={handleProgressUpdate}
+            />
+
+            <CampaignGuideModal
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
             />
         </div>
     );

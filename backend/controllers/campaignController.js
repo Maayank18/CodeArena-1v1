@@ -4,7 +4,9 @@ import CampaignMap      from '../models/CampaignMap.js';
 import CampaignProgress from '../models/CampaignProgress.js';
 import { executeForCampaign } from '../services/campaignExecutor.js';
 import { calculateStars, calculateKP, shouldUpdateNode } from '../services/starCalculator.js';
-
+import { outputsMatch } from '../utils/sanitizeOutput.js';
+// replace: actual === expected
+// with:    outputsMatch(actual, expected)
 // ─── In-memory cache for static map (avoids DB hit every request) ────────────
 let mapCache = null;
 let mapCacheTime = 0;
