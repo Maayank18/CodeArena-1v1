@@ -116,13 +116,21 @@ const requestCache = new Map();
 // ✅ PENDING REQUESTS (prevent duplicate simultaneous requests)
 const pendingRequests = new Map();
 
+const normalizeApiBase = (url) => {
+    const trimmed = (url || '').trim().replace(/\/+$/, '');
+    if (!trimmed) return '';
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+
 // ✅ DYNAMIC BASE URL with fallback
 const getBaseURL = () => {
-    const envURL = import.meta.env.VITE_API_URL;
+    const envURLRaw = import.meta.env.VITE_API_URL;
     
-    // Use environment variable if set and not localhost
-    if (envURL && !envURL.includes('localhost')) {
-        return `${envURL}/api`;
+    if (envURLRaw) {
+        const isLocalEnvUrl = /localhost|127\.0\.0\.1/i.test(envURLRaw);
+        if (!(import.meta.env.PROD && isLocalEnvUrl)) {
+            return normalizeApiBase(envURLRaw);
+        }
     }
     
     // Production fallback

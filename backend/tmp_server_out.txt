@@ -1,0 +1,11 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+
+    ╔═══════════════════════════════════════════╗
+    ║     CodeArena 1v1 Server Started! 🚀     ║
+    ╠═══════════════════════════════════════════╣
+    ║   Port: 5000                              ║
+    ║   Environment: development              ║
+    ║   Max Concurrent Matches: 150-200         ║
+    ╚═══════════════════════════════════════════╝
+    
+[REQ] 2026-04-04T04:09:16.588Z GET /api/campaign/map

@@ -16,6 +16,7 @@ const Campaign = () => {
     const [mapData,       setMapData]       = useState(null);
     const [progress,      setProgress]      = useState(null);
     const [loading,       setLoading]       = useState(true);
+    const [loadError,     setLoadError]     = useState('');
     const [selectedNode,  setSelectedNode]  = useState(null);
     const [showSkillTree, setShowSkillTree] = useState(false);
 
@@ -23,15 +24,31 @@ const Campaign = () => {
 
     useEffect(() => {
         const load = async () => {
+            setLoadError('');
             try {
-                const [mapRes, progRes] = await Promise.all([
-                    api.get('/campaign/map'),
-                    api.get('/campaign/progress'),
-                ]);
-                setMapData(mapRes.data.map);
-                setProgress(progRes.data.progress);
+                const mapRes = await api.get('/campaign/map');
+                setMapData(mapRes?.data?.map ?? { nodes: [], grouped: {} });
+
+                try {
+                    const progRes = await api.get('/campaign/progress');
+                    setProgress(progRes?.data?.progress ?? null);
+                } catch (progErr) {
+                    const status = progErr?.response?.status;
+                    if (status !== 401) {
+                        console.error('[CAMPAIGN][PROGRESS]', progErr);
+                    }
+                    setProgress(null);
+                }
             } catch (err) {
                 console.error('[CAMPAIGN]', err);
+                const status = err?.response?.status;
+                if (status === 404) {
+                    setLoadError('Campaign API route not found on backend deployment.');
+                } else if (status === 401) {
+                    setLoadError('Please login again to access campaign progress.');
+                } else {
+                    setLoadError('Failed to load campaign data from backend.');
+                }
                 toast.error('Failed to load Campaign world');
             } finally {
                 setLoading(false);
@@ -57,6 +74,35 @@ const Campaign = () => {
                 <div className="flex items-center gap-2.5 text-gray-500 font-bold">
                     <Loader2 size={18} className="animate-spin text-accent" />
                     Loading Campaign World...
+                </div>
+            </div>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <div className="min-h-screen bg-[#060810] flex flex-col">
+                <Navbar user={user} onLogout={handleLogout} />
+                <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
+                    <Map size={64} className="text-red-800 opacity-60" />
+                    <div>
+                        <h2 className="text-2xl font-black text-red-400 mb-2">Campaign Load Failed</h2>
+                        <p className="text-gray-500 text-sm">{loadError}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        >
+                            Retry
+                        </button>
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        >
+                            <ArrowLeft size={16} /> Back to Dashboard
+                        </button>
+                    </div>
                 </div>
             </div>
         );
