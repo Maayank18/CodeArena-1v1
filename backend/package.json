@@ -4,10 +4,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "yjs": "node run-yjs.cjs"
-  },
+  "start": "node server.js",
+  "dev": "nodemon server.js",
+  "yjs": "node run-yjs.cjs",
+  "seed": "node seeder.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

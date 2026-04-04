@@ -41,7 +41,8 @@
         "output": "#######\n......#\n#######\n#......\n#######\n......#\n#######",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const parts = String(input ?? '').trim().split(/\\s+/).filter(Boolean).map(Number);\n    const n = parts[0] ?? 0;\n    const m = parts[1] ?? 0;\n    const rows = [];\n\n    for (let i = 0; i < n; i++) {\n      if (i % 2 === 0) {\n        rows.push('#'.repeat(m));\n      } else if (Math.floor(i / 2) % 2 === 0) {\n        rows.push('.'.repeat(Math.max(0, m - 1)) + '#');\n      } else {\n        rows.push('#' + '.'.repeat(Math.max(0, m - 1)));\n      }\n    }\n\n    return rows.join('\\n');\n  }"
   },
   {
     "title": "In Search of an Easy Problem",
@@ -84,7 +85,8 @@
         "output": "EASY",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const nums = String(input ?? '').trim().split(/\\s+/).filter(Boolean).map(Number);\n    const n = nums[0] ?? 0;\n    for (let i = 1; i <= n; i++) {\n      if (nums[i] === 1) return 'HARD';\n    }\n    return 'EASY';\n  }"
   },
   {
     "title": "Team",
@@ -122,7 +124,8 @@
         "output": "0",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const nums = String(input ?? '').trim().split(/\\s+/).filter(Boolean).map(Number);\n    const n = nums[0] ?? 0;\n    let solved = 0;\n    let idx = 1;\n\n    for (let i = 0; i < n; i++) {\n      const sum = (nums[idx] ?? 0) + (nums[idx + 1] ?? 0) + (nums[idx + 2] ?? 0);\n      if (sum >= 2) solved++;\n      idx += 3;\n    }\n\n    return String(solved);\n  }"
   },
   {
     "title": "Next Round",
@@ -161,7 +164,8 @@
         "output": "1",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const nums = String(input ?? '').trim().split(/\\s+/).filter(Boolean).map(Number);\n    const n = nums[0] ?? 0;\n    const k = nums[1] ?? 0;\n    const scores = nums.slice(2, 2 + n);\n    const kth = k > 0 ? (scores[k - 1] ?? 0) : 0;\n    const count = scores.filter((score) => score > 0 && score >= kth).length;\n    return String(count);\n  }"
   },
   {
     "title": "Anton and Danik",
@@ -204,7 +208,8 @@
         "output": "Danik",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const parts = String(input ?? '').trim().split(/\\s+/).filter(Boolean);\n    const n = Number(parts[0] ?? 0);\n    const s = String(parts[1] ?? '');\n    let a = 0;\n    let d = 0;\n\n    for (let i = 0; i < Math.min(n, s.length); i++) {\n      if (s[i] === 'A') a++;\n      else if (s[i] === 'D') d++;\n    }\n\n    if (a > d) return 'Anton';\n    if (d > a) return 'Danik';\n    return 'Friendship';\n  }"
   },
   {
     "title": "Is your horseshoe on the other hoof?",
@@ -242,7 +247,8 @@
         "output": "2",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const nums = String(input ?? '').trim().split(/\\s+/).filter(Boolean);\n    const unique = new Set(nums);\n    return String(4 - unique.size);\n  }"
   },
   {
     "title": "Pangram",
@@ -285,7 +291,8 @@
         "output": "NO",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    const parts = String(input ?? '').trim().split(/\\s+/).filter(Boolean);\n    const s = String(parts[1] ?? '').toLowerCase();\n    const set = new Set();\n\n    for (const ch of s) {\n      if (ch >= 'a' && ch <= 'z') set.add(ch);\n    }\n\n    return set.size === 26 ? 'YES' : 'NO';\n  }"
   },
   {
     "title": "Hit the Lottery",
@@ -328,7 +335,8 @@
         "output": "14",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    let n = Number(String(input ?? '').trim().split(/\\s+/).filter(Boolean)[0] ?? 0);\n    let count = 0;\n    const denoms = [100, 20, 10, 5, 1];\n\n    for (const d of denoms) {\n      count += Math.floor(n / d);\n      n %= d;\n    }\n\n    return String(count);\n  }"
   },
   {
     "title": "Beautiful Year",
@@ -371,6 +379,7 @@
         "output": "5601",
         "isPublic": false
       }
-    ]
+    ],
+    "goldenSolution": "(input) => {\n    let year = Number(String(input ?? '').trim().split(/\\s+/).filter(Boolean)[0] ?? 0);\n\n    while (true) {\n      year += 1;\n      const digits = String(year);\n      if (new Set(digits).size === digits.length) return String(year);\n    }\n  }"
   }
 ]

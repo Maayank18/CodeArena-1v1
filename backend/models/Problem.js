@@ -256,7 +256,6 @@ public class Main {
 });
 
 // ✅ EXISTING INDEXES (kept for backward compatibility)
-problemSchema.index({ slug: 1 });
 problemSchema.index({ difficulty: 1 });
 problemSchema.index({ createdAt: -1 });
 

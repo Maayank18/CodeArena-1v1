@@ -5,7 +5,8 @@ const campaignMapSchema = new mongoose.Schema({
     nodeId: { 
         type: String, 
         required: true, 
-        unique: true 
+        unique: true,
+        trim: true,
         // e.g. 'array_01', 'array_boss_01', 'tree_01'
     },
     region: { 
@@ -16,12 +17,12 @@ const campaignMapSchema = new mongoose.Schema({
             'String_Shores', 
             'HashMap_Highlands',
             'Tree_Territory',
-            'Graph_Gorge',
+            'Graph_Gorge',  
             'DP_Dungeon'
         ]
     },
-    regionOrder: { type: Number, required: true }, // 1,2,3... for map ordering
-    nodeOrder:   { type: Number, required: true }, // position within region
+    regionOrder: { type: Number, required: true, min:1 }, // 1,2,3... for map ordering
+    nodeOrder:   { type: Number, required: true, min:1 }, // position within region
 
     problemId: { 
         type: mongoose.Schema.Types.ObjectId, 
@@ -69,6 +70,6 @@ const campaignMapSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 campaignMapSchema.index({ region: 1, nodeOrder: 1 });
-campaignMapSchema.index({ nodeId: 1 });
+campaignMapSchema.index({ problemId: 1 });
 
 export default mongoose.model('CampaignMap', campaignMapSchema);
