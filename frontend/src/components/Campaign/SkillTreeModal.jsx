@@ -98,7 +98,7 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
                                     const canAfford  = currentKP >= item.cost;
                                     const isBuying   = buying === item.itemId;
                                     const tc         = TYPE_COLOR[item.itemType] || TYPE_COLOR.theme;
-                                    const isDisabled = item.locked || isBuying || isOwned;
+                                    // const isDisabled = item.locked || isBuying || isOwned;
 
                                     return (
                                         <div

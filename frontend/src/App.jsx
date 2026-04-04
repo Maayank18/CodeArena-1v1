@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+// import { react } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
