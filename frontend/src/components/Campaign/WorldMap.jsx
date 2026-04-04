@@ -31,8 +31,9 @@ const WORLD_H = 2820;
 
 // Star field — generated once at module load
 const STARS = Array.from({ length: 200 }, (_, i) => {
-  const r = ((i * 6364136223846793005n + 1442695040888963407n) & 0xFFFFFFFFn);
-  const s = Number(r) / 0xFFFFFFFF;
+  // Deterministic 32-bit value per index (number-only, no BigInt mixing).
+  const seed = (Math.imul(i + 1, 1664525) + 1013904223) >>> 0;
+  const s = seed / 0xffffffff;
   return {
     id:  i,
     x:   (i * 137.508) % WORLD_W,
