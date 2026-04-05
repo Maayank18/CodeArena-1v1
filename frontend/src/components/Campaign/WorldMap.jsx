@@ -393,7 +393,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
       </div>
 
       {/* ── Legend ─────────────────────────────────────────────────── */}
-      <div className="absolute bottom-5 left-[58px] z-50 pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-3 py-2.5 backdrop-blur-md">
+      <div className="absolute left-5 bottom-[74px] sm:left-[58px] sm:bottom-5 z-50 pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-3 py-2.5 backdrop-blur-md">
         {[
           { col:'#374151', label:'Locked' },
           { col:'#06b6d4', label:'Available' },
