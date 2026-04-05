@@ -49,17 +49,48 @@ const elapsed = s => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 6
 
 // ─── Client-side output sanitizer (mirrors backend for display parity) ────────
 
-const sanitize = (raw) => {
+// const sanitize = (raw) => {
+//     if (raw == null) return '';
+//     return raw
+//         .replace(/\r\n/g, '\n')
+//         .replace(/\r/g, '\n')
+//         .split('\n')
+//         .map(l => l.trimEnd())
+//         .join('\n')
+//         .replace(/\n+$/, '')
+//         .trim();
+// };
+
+    const sanitize = (raw) => {
+    // null / undefined → empty string (not a crash)
     if (raw == null) return '';
-    return raw
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
+    
+    // Already a plain string — normalise line endings & trailing whitespace only.
+    // Do NOT strip "0", "false", "null" — those are valid program outputs.
+    if (typeof raw === 'string') {
+        return raw
+        .replace(/\r\n/g, '\n')   // Windows CRLF → LF
+        .replace(/\r/g, '\n')     // old Mac CR → LF
         .split('\n')
-        .map(l => l.trimEnd())
+        .map(line => line.trimEnd()) // trailing spaces per line only
         .join('\n')
-        .replace(/\n+$/, '')
-        .trim();
-};
+        .replace(/\n+$/, '')      // trailing blank lines
+        .trim();                   // final safety trim
+    }
+    
+    // Number / boolean (e.g., program output of `0` or `false`)
+    if (typeof raw === 'number' || typeof raw === 'boolean') {
+        return String(raw);
+    }
+    
+    // Array (some runners return stdout as string[])
+    if (Array.isArray(raw)) {
+        return sanitize(raw.join('\n'));
+    }
+    
+    // Object / anything else — stringify for debug visibility
+    return JSON.stringify(raw);
+    };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -209,6 +240,37 @@ const ProblemPanel = ({ node, existingBest }) => {
     );
 };
 
+const extractOutput = (data) => {
+  if (!data) return { stdout: '', stderr: 'No response from execution server.' };
+ 
+  // Piston-style nested response
+  if (data.run) {
+    return {
+      stdout: sanitize(data.run.stdout ?? data.run.output ?? ''),
+      stderr: sanitize(data.run.stderr ?? ''),
+    };
+  }
+ 
+  // Our wrapper / other runners — check every possible field name
+  const stdout =
+    data.stdout   ??   // most common wrapper field
+    data.output   ??   // THE BUG: many wrappers use this
+    data.result   ??   // some custom runners
+    data.out      ??   // shorthand variant
+    '';
+ 
+  const stderr =
+    data.stderr  ??
+    data.error   ??
+    data.err     ??
+    '';
+ 
+  return {
+    stdout: sanitize(stdout),
+    stderr: sanitize(stderr),
+  };
+};
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const CampaignEditor = () => {
@@ -277,19 +339,6 @@ const CampaignEditor = () => {
         return () => clearInterval(timerRef.current);
     }, []);
 
-    // ── Keyboard shortcuts ────────────────────────────────────────────────────
-    useEffect(() => {
-        const handler = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                if (e.shiftKey) handleSubmit();
-                else            handleRun();
-            }
-        };
-        window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, []);
-
     // ── Monaco setup ──────────────────────────────────────────────────────────
     const handleEditorMount = useCallback((editor, monaco) => {
         editorRef.current = editor;
@@ -318,70 +367,262 @@ const CampaignEditor = () => {
     }, [code, language, node]);
 
     // ── Run (public cases, /api/run) ──────────────────────────────────────────
+    // const handleRun = useCallback(async () => {
+    //     if (isRunning || isSubmitting || !code.trim()) return;
+    //     const publicCases = (node?.problemId?.testCases || []).filter(tc => tc.isPublic);
+    //     if (!publicCases.length) { toast.error('No public test cases'); return; }
+
+    //     setIsRunning(true); setRunResults(null); setExecType('run');
+    //     setShowResults(true); setShowSage(false); setMobileTab('editor');
+
+    //     const results = [];
+    //     for (const [i, tc] of publicCases.entries()) {
+    //         try {
+    //             const { data } = await api.post('/run', { language, code, stdin: tc.input });
+    //             const actual   = sanitize(data.stdout || '');
+    //             const expected = sanitize(tc.output || '');
+    //             results.push({ caseNum: i+1, input: tc.input, expected, actual, passed: actual === expected, stderr: data.stderr || '', isPublic: true });
+    //         } catch (err) {
+    //             results.push({ caseNum: i+1, input: tc.input, passed: false, error: err.response?.data?.message || 'Execution error', actual: '', expected: tc.output, isPublic: true });
+    //         }
+    //     }
+
+    //     setRunResults(results); setIsRunning(false);
+    //     const passed = results.filter(r => r.passed).length;
+    //     if (passed === results.length) toast.success('All public cases passed! Ready to submit.', { icon: '✅', duration: 3500 });
+    //     else toast.error(`${results.length - passed}/${results.length} case(s) failed`);
+    // }, [code, language, node, isRunning, isSubmitting]);
+
     const handleRun = useCallback(async () => {
-        if (isRunning || isSubmitting || !code.trim()) return;
-        const publicCases = (node?.problemId?.testCases || []).filter(tc => tc.isPublic);
-        if (!publicCases.length) { toast.error('No public test cases'); return; }
-
-        setIsRunning(true); setRunResults(null); setExecType('run');
-        setShowResults(true); setShowSage(false); setMobileTab('editor');
-
-        const results = [];
-        for (const [i, tc] of publicCases.entries()) {
-            try {
-                const { data } = await api.post('/run', { language, code, stdin: tc.input });
-                const actual   = sanitize(data.stdout || '');
-                const expected = sanitize(tc.output || '');
-                results.push({ caseNum: i+1, input: tc.input, expected, actual, passed: actual === expected, stderr: data.stderr || '', isPublic: true });
-            } catch (err) {
-                results.push({ caseNum: i+1, input: tc.input, passed: false, error: err.response?.data?.message || 'Execution error', actual: '', expected: tc.output, isPublic: true });
-            }
+    if (isRunning || isSubmitting || !code.trim()) return;
+    
+    const publicCases = (node?.problemId?.testCases || []).filter(tc => tc.isPublic);
+    if (!publicCases.length) {
+        toast.error('No public test cases available for this node.');
+        return;
+    }
+    
+    setIsRunning(true);
+    setRunResults(null);
+    setExecType('run');
+    setShowResults(true);
+    setShowSage(false);
+    setMobileTab('editor');
+    
+    const results = [];
+    
+    for (const [i, tc] of publicCases.entries()) {
+        try {
+        const { data } = await api.post('/run', {
+            language,
+            code,
+            stdin: tc.input,
+        });
+    
+        const { stdout, stderr } = extractOutput(data);
+    
+        // Surface compilation/runtime errors directly in the result card
+        if (stderr) {
+            results.push({
+            caseNum:  i + 1,
+            input:    tc.input,
+            expected: sanitize(tc.output),
+            actual:   stdout,
+            passed:   false,
+            stderr,
+            error:    'Runtime / Compilation Error',
+            isPublic: true,
+            });
+            continue;
         }
-
-        setRunResults(results); setIsRunning(false);
-        const passed = results.filter(r => r.passed).length;
-        if (passed === results.length) toast.success('All public cases passed! Ready to submit.', { icon: '✅', duration: 3500 });
-        else toast.error(`${results.length - passed}/${results.length} case(s) failed`);
+    
+        const expected = sanitize(tc.output);
+        const actual   = stdout;
+        const passed   = actual === expected;
+    
+        results.push({
+            caseNum:  i + 1,
+            input:    tc.input,
+            expected,
+            actual,
+            passed,
+            stderr:   '',
+            isPublic: true,
+        });
+    
+        } catch (err) {
+        // Network error or HTTP error from our backend
+        const errMsg =
+            err.response?.data?.message ||
+            err.response?.data?.error   ||
+            err.message                 ||
+            'Execution service unreachable';
+    
+        results.push({
+            caseNum:  i + 1,
+            input:    tc.input,
+            expected: sanitize(tc.output),
+            actual:   '',
+            passed:   false,
+            error:    errMsg,
+            stderr:   errMsg,
+            isPublic: true,
+        });
+        }
+    }
+    
+    setRunResults(results);
+    setIsRunning(false);
+    
+    const passed = results.filter(r => r.passed).length;
+    if (passed === results.length) {
+        toast.success(`All ${results.length} public cases passed ✅`, { duration: 3500 });
+    } else {
+        toast.error(`${results.length - passed}/${results.length} test case(s) failed`);
+    }
     }, [code, language, node, isRunning, isSubmitting]);
 
     // ── Submit ────────────────────────────────────────────────────────────────
+    // const handleSubmit = useCallback(async () => {
+    //     if (isSubmitting || isRunning || !code.trim()) return;
+    //     setIsSubmitting(true); setRunResults(null); setExecType('submit');
+    //     setShowResults(true);  setShowSage(false);  setMobileTab('editor');
+
+    //     try {
+    //         const { data } = await api.post('/campaign/submit', { nodeId, code, language });
+    //         setRunResults(data.results || []);
+
+    //         if (data.allPassed) {
+    //             clearInterval(timerRef.current);
+    //             setSuccessResult({ ...data, elapsedSeconds: time });
+    //             setShowSuccess(true); setFailCount(0); setSageShouldShow(false);
+    //         } else {
+    //             const newFails = failCount + 1;
+    //             setFailCount(newFails);
+    //             const failedResult = (data.results || []).find(r => !r.passed);
+    //             setLastFailedCode(code);
+    //             setLastError(failedResult?.error || failedResult?.stderr || 'Wrong answer');
+
+    //             if (newFails >= 3) {
+    //                 setSageShouldShow(true);
+    //                 if (newFails === 3) toast('The Sage has appeared 🔮', { duration: 4000, icon: '✨' });
+    //             } else {
+    //                 const passed = (data.results || []).filter(r => r.passed).length;
+    //                 const total  = (data.results || []).length;
+    //                 toast.error(`${total - passed} case(s) failed · Attempt ${newFails}/3 before Sage appears`);
+    //             }
+    //         }
+    //     } catch (err) {
+    //         toast.error(err.response?.data?.message || 'Submission failed');
+    //         setShowResults(false);
+    //     } finally {
+    //         setIsSubmitting(false);
+    //     }
+    // }, [code, language, nodeId, isSubmitting, isRunning, failCount, time]);
+
     const handleSubmit = useCallback(async () => {
-        if (isSubmitting || isRunning || !code.trim()) return;
-        setIsSubmitting(true); setRunResults(null); setExecType('submit');
-        setShowResults(true);  setShowSage(false);  setMobileTab('editor');
-
-        try {
-            const { data } = await api.post('/campaign/submit', { nodeId, code, language });
-            setRunResults(data.results || []);
-
-            if (data.allPassed) {
-                clearInterval(timerRef.current);
-                setSuccessResult({ ...data, elapsedSeconds: time });
-                setShowSuccess(true); setFailCount(0); setSageShouldShow(false);
-            } else {
-                const newFails = failCount + 1;
-                setFailCount(newFails);
-                const failedResult = (data.results || []).find(r => !r.passed);
-                setLastFailedCode(code);
-                setLastError(failedResult?.error || failedResult?.stderr || 'Wrong answer');
-
-                if (newFails >= 3) {
-                    setSageShouldShow(true);
-                    if (newFails === 3) toast('The Sage has appeared 🔮', { duration: 4000, icon: '✨' });
-                } else {
-                    const passed = (data.results || []).filter(r => r.passed).length;
-                    const total  = (data.results || []).length;
-                    toast.error(`${total - passed} case(s) failed · Attempt ${newFails}/3 before Sage appears`);
-                }
+    if (isSubmitting || isRunning || !code.trim()) return;
+    
+    setIsSubmitting(true);
+    setRunResults(null);
+    setExecType('submit');
+    setShowResults(true);
+    setShowSage(false);
+    setMobileTab('editor');
+    
+    try {
+        const { data } = await api.post('/campaign/submit', {
+        nodeId,
+        code,
+        language,
+        });
+    
+        // Backend returns { allPassed, results[], stars, kpEarned, ... }
+        // Each result may have stdout / output / result field — normalise all
+        const normalizedResults = (data.results || []).map((r, i) => {
+        const { stdout, stderr } = extractOutput(r);
+        const expected = sanitize(r.expected ?? r.output ?? '');
+        const actual   = stdout || sanitize(r.actual ?? r.stdout ?? '');
+    
+        return {
+            ...r,
+            caseNum:  i + 1,
+            expected,
+            actual,
+            passed:   r.passed ?? (actual === expected),
+            stderr:   stderr || sanitize(r.stderr ?? r.error ?? ''),
+        };
+        });
+    
+        setRunResults(normalizedResults);
+    
+        if (data.allPassed) {
+        clearInterval(timerRef.current);
+        setSuccessResult({ ...data, elapsedSeconds: time });
+        setShowSuccess(true);
+        setFailCount(0);
+        setSageShouldShow(false);
+        } else {
+        const newFails = failCount + 1;
+        setFailCount(newFails);
+    
+        // Identify best error message to send to the Sage
+        const failedResult = normalizedResults.find(r => !r.passed);
+        const errMsg = failedResult?.stderr || failedResult?.error || 'Wrong answer on hidden test case';
+        setLastFailedCode(code);
+        setLastError(errMsg);
+    
+        if (newFails >= 3) {
+            setSageShouldShow(true);
+            if (newFails === 3) {
+            toast('⚗️ The Sage has sensed your struggle...', { duration: 4000 });
             }
-        } catch (err) {
-            toast.error(err.response?.data?.message || 'Submission failed');
-            setShowResults(false);
-        } finally {
-            setIsSubmitting(false);
+        } else {
+            const passedCount = normalizedResults.filter(r => r.passed).length;
+            const total       = normalizedResults.length;
+            toast.error(
+            `${total - passedCount} test case(s) failed · Attempt ${newFails}/3 before Sage appears`
+            );
         }
+        }
+    } catch (err) {
+        // Surface the raw error from the backend — don't fail silently
+        const errMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error   ||
+        err.message                 ||
+        'Submission failed — execution service may be down';
+    
+        toast.error(errMsg, { duration: 5000 });
+    
+        // Show a single failed result row so the user can see the error
+        setRunResults([{
+        caseNum: 1,
+        input:    'N/A',
+        expected: 'N/A',
+        actual:   '',
+        passed:   false,
+        error:    errMsg,
+        stderr:   errMsg,
+        }]);
+    } finally {
+        setIsSubmitting(false);
+    }
     }, [code, language, nodeId, isSubmitting, isRunning, failCount, time]);
 
+    // ── Keyboard shortcuts ────────────────────────────────────────────────────
+    useEffect(() => {
+        const handler = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (e.shiftKey) handleSubmit();
+                else            handleRun();
+            }
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [handleRun, handleSubmit]);
+    
     // ── Derived ───────────────────────────────────────────────────────────────
     const isBusy      = isRunning || isSubmitting;
     const passedCount = useMemo(() => (runResults || []).filter(r => r.passed).length, [runResults]);
@@ -499,7 +740,7 @@ const CampaignEditor = () => {
                         className="h-full"
                     >
                         {/* LEFT: Problem description */}
-                        <Panel defaultSize="38%" minSize="22%" maxSize="70%">
+                        <Panel defaultSize={38} minSize={22} maxSize={70}>
                             <div className="h-full bg-[#07090f] border-r border-gray-800/40 flex flex-col">
                                 <ProblemPanel node={node} existingBest={existingBest} />
                             </div>
@@ -514,7 +755,7 @@ const CampaignEditor = () => {
                         </PanelResizeHandle>
 
                         {/* RIGHT: Code editor + results + sage */}
-                        <Panel defaultSize="62%" minSize="30%">
+                        <Panel defaultSize={62} minSize={30}>
                             <div className="h-full bg-[#07090e] flex flex-col relative">
                                 <EditorAndResults
                                     code={code} setCode={setCode} language={language}
