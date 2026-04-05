@@ -5,10 +5,10 @@
 // Standard nodes: circular glowing buttons.
 // Boss nodes (8 & 15): <BossNode> with pulsing rings.
 // Inter-zone connectors: animated SVG bezier between last/first nodes.
-// No wheel zoom — pure vertical scroll + ±zoom buttons for overall scale.
+// No wheel/pinch zoom — pure vertical scroll navigation.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
 import ZoneContainer from './ZoneContainer';
@@ -16,15 +16,28 @@ import BossNode      from './BossNode';
 import {
   ZONE_CONFIGS,
   ZONE_W, ZONE_H, ZONE_GAP,
-  NODE_RADIUS, BOSS_RADIUS,
+  NODE_RADIUS,
   MID_BOSS_IDX, MAIN_BOSS_IDX,
   getLocalNodePos,
   generateMockWorld,
 } from './campaignWorldData';
 
-// ── getZoneConfig shim (if not exported from data file) ───────────────────────
-const _getZoneCfg = (region) =>
-  ZONE_CONFIGS.find(z => z.id === region) || ZONE_CONFIGS[0];
+const REGION_TO_ZONE = {
+  Array_Archipelago: 'array_archipelago',
+  String_Shores: 'string_shores',
+  Stack_Queue_Quarry: 'stack_quarry',
+  HashMap_Highlands: 'hashmap_highlands',
+  Tree_Territory: 'tree_tundra',
+  Graph_Gorge: 'graph_gorge',
+  DP_Dungeon: 'dp_dungeon',
+};
+
+const toZoneId = (node) => {
+  if (node?.zoneId && ZONE_CONFIGS.some(z => z.id === node.zoneId)) return node.zoneId;
+  if (node?.region && REGION_TO_ZONE[node.region]) return REGION_TO_ZONE[node.region];
+  if (node?.region && ZONE_CONFIGS.some(z => z.id === node.region)) return node.region;
+  return null;
+};
 
 // ── Node progress state helper ────────────────────────────────────────────────
 const getState = (nodeId, progress) => {
@@ -36,7 +49,7 @@ const getState = (nodeId, progress) => {
 };
 
 // ── StandardNode ──────────────────────────────────────────────────────────────
-const StandardNode = React.memo(({ node, state, isSelected, accent, pathColor, onClick }) => {
+const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) => {
   const isLocked = state.state === 'locked';
   const isAvail  = state.state === 'available';
   const isDone   = state.state === 'completed';
@@ -108,9 +121,8 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, pathColor, o
 });
 
 // ── Inter-zone SVG bridge (connects zone N last node → zone N+1 first node) ──
-const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, fromColor, toColor, lit }) => {
+const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, toColor, lit }) => {
   // Absolute positions in the scroll canvas
-  const HALF = ZONE_W / 2;
   const fx = fromLocal.x, fy = zoneTop + fromLocal.y;
   const tx = toLocal.x,   ty = nextZoneTop + toLocal.y;
   // Control points: drop down from zone end, rise up to next zone start
@@ -133,7 +145,7 @@ const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, fromColor, 
 // ── WorldMap ──────────────────────────────────────────────────────────────────
 const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId }) => {
   const scrollRef = useRef(null);
-  const [zoom, setZoom]   = useState(1);
+  const zoom = 1;
 
   // Use mock data if no real nodes passed
   const allNodes = useMemo(
@@ -145,9 +157,23 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   const nodesByZone = useMemo(() => {
     const m = {};
     ZONE_CONFIGS.forEach(z => { m[z.id] = []; });
-    allNodes.forEach(n => {
-      const zid = n.region || n.zoneId;
-      if (m[zid]) m[zid].push(n);
+    allNodes.forEach((n) => {
+      const zid = toZoneId(n);
+      if (!zid || !m[zid]) return;
+
+      const rawIndex = (n.localIndex ?? (n.nodeNum ?? n.nodeOrder ?? 1) - 1);
+      const safeIndex = Math.min(14, Math.max(0, rawIndex));
+      const localPos = n.localPos
+        || n.localPosition
+        || getLocalNodePos(safeIndex);
+
+      m[zid].push({
+        ...n,
+        zoneId: zid,
+        nodeNum: n.nodeNum ?? n.nodeOrder ?? safeIndex + 1,
+        localIndex: safeIndex,
+        localPos,
+      });
     });
     Object.values(m).forEach(arr => arr.sort((a,b) => (a.nodeNum??0)-(b.nodeNum??0)));
     return m;
@@ -184,6 +210,12 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
     });
     if (firstAvail) scrollToZone(firstAvail.zoneIndex ?? 0);
   }, [allNodes, progress, scrollToZone]);
+
+  const jumpToZone = useCallback((zoneIndex) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: zoneTops[zoneIndex] * zoom - 100, behavior: 'smooth' });
+  }, [zoneTops, zoom]);
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ background:'#020408' }}>
@@ -233,7 +265,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                 <InterZoneBridge key={`bridge-${zIdx}`}
                   fromLocal={fromLocal}  toLocal={toLocal}
                   zoneTop={zoneTops[zIdx]}  nextZoneTop={zoneTops[zIdx+1]}
-                  fromColor={zone.path}     toColor={nextZone.path}
+                  toColor={nextZone.path}
                   lit={lit}
                 />
               );
@@ -271,7 +303,6 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                 <ZoneContainer
                   config={zone}
                   completedIds={completedSet}
-                  zoneY={zoneTop}
                 >
                   {displayNodes.map(node => {
                     const { x, y } = node.localPos || getLocalNodePos(node.localIndex ?? 0);
@@ -281,9 +312,6 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                     const isSel   = node.nodeId === selectedNodeId;
                     const isBoss  = node.nodeType === 'boss';
                     const bType   = node.bossType || null;
-                    const BR      = BOSS_RADIUS;
-                    const NR      = NODE_RADIUS;
-                    const half    = isBoss ? BR + 20 : NR;
 
                     return (
                       <div
@@ -311,7 +339,6 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                             state={nodeState}
                             isSelected={isSel}
                             accent={zone.accent}
-                            pathColor={zone.path}
                             onClick={!node.isPlaceholder ? onNodeClick : undefined}
                           />
                         )}
@@ -323,20 +350,6 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
             );
           })}
         </div>
-      </div>
-
-      {/* ── HUD: Zoom controls ──────────────────────────────────────── */}
-      <div className="absolute bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-auto">
-        {[
-          { label:'+', fn:()=>setZoom(z=>Math.min(z*1.18,2.2)) },
-          { label:'⟳', fn:()=>{ setZoom(1); scrollRef.current?.scrollTo({top:0,behavior:'smooth'}); } },
-          { label:'−', fn:()=>setZoom(z=>Math.max(z*0.85,0.35)) },
-        ].map(b=>(
-          <button key={b.label} onClick={b.fn}
-            className="w-9 h-9 bg-[#0d1117]/90 border border-gray-800/70 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 font-bold text-sm flex items-center justify-center transition-all hover:border-gray-600">
-            {b.label}
-          </button>
-        ))}
       </div>
 
       {/* ── HUD: Jump to progress ───────────────────────────────────── */}
@@ -364,7 +377,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                 key={z.id}
                 className="flex items-center gap-2 w-full text-left hover:opacity-100 transition-opacity"
                 style={{ opacity: done===0 && i>0 ? 0.4 : 0.85 }}
-                onClick={()=>scrollRef.current?.scrollTo({ top: zoneTops[i]*zoom - 100, behavior:'smooth' })}
+                onClick={() => jumpToZone(i)}
               >
                 <span className="text-xs select-none">{z.icon}</span>
                 <div className="flex-1 min-w-0">

@@ -1,4 +1,4 @@
-// src/pages/CampaignEditor.jsx  — V2
+﻿// src/pages/CampaignEditor.jsx  — V2
 // ─────────────────────────────────────────────────────────────────────────────
 // Key V2 upgrades:
 //   ✓ Resizable problem/editor split via react-resizable-panels
