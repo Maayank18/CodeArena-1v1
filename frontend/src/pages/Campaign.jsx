@@ -184,12 +184,224 @@
 
 
 
+// YE WALA BADIA HAI AND PERFECT HAI 
+
+
+// import React, { useState, useEffect, useCallback } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import { Loader2, BookOpen } from 'lucide-react'; // Removed unused: Map, ArrowLeft
+// import Navbar             from '../components/Navbar';
+// import WorldMap           from '../components/Campaign/WorldMap';
+// import NodeDetailPanel    from '../components/Campaign/NodeDetailPanel';
+// import CampaignHUD        from '../components/Campaign/CampaignHUD';
+// import SkillTreeModal     from '../components/Campaign/SkillTreeModal';
+// import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
+// import api                from '../api';
+// import toast              from 'react-hot-toast';
+
+// const Campaign = () => {
+//   const navigate = useNavigate();
+
+//   const [mapData,       setMapData]       = useState(null);
+//   const [progress,      setProgress]      = useState(null);
+//   const [loading,       setLoading]       = useState(true);
+//   const [selectedNode,  setSelectedNode]  = useState(null);
+//   const [showSkillTree, setShowSkillTree] = useState(false);
+//   const [showGuide,     setShowGuide]     = useState(false);
+
+//   // Safe JSON parse so corrupted localStorage doesn't throw
+//   const user = (() => {
+//     try { 
+//       return JSON.parse(localStorage.getItem('codearena_user') || '{}'); 
+//     } catch { 
+//       return {}; 
+//     }
+//   })();
+
+//   // ── Load map + progress ───────────────────────────────────────────────────
+//   useEffect(() => {
+//     // Auth Guard: Prevent fetching if user is not logged in
+//     if (!user || Object.keys(user).length === 0) {
+//       toast.error('Please log in to access the campaign');
+//       navigate('/'); // Redirect to home/login route
+//       return;
+//     }
+
+//     let cancelled = false;
+    
+//     const loadData = async () => {
+//       setLoading(true);
+//       try {
+//         const [mapRes, progRes] = await Promise.all([
+//           api.get('/campaign/map'),
+//           api.get('/campaign/progress'),
+//         ]);
+        
+//         if (cancelled) return;
+
+//         // Backend may return { success, map: { nodes, grouped } } or flat { nodes }
+//         const rawMap = mapRes.data?.map || mapRes.data;
+//         setMapData(rawMap);
+
+//         // Progress may be nested under .progress or at the top level
+//         const rawProg = progRes.data?.progress || progRes.data;
+//         setProgress(rawProg);
+//       } catch (err) {
+//         if (cancelled) return;
+//         console.error('[CAMPAIGN]', err);
+//         toast.error('Failed to load Campaign world');
+//       } finally {
+//         if (!cancelled) setLoading(false);
+//       }
+//     };
+
+//     loadData();
+    
+//     return () => { 
+//       cancelled = true; 
+//     };
+//   }, [navigate]); // Excluded 'user' dependency to avoid re-renders if localStorage changes outside this component
+
+//   const handleNodeClick      = useCallback((node)   => setSelectedNode(node), []);
+//   const handleClosePanel     = useCallback(()       => setSelectedNode(null), []);
+//   const handleStartChallenge = useCallback((nodeId) => navigate(`/campaign/${nodeId}`), [navigate]);
+//   const handleProgressUpdate = useCallback((updates) => setProgress(p => ({ ...p, ...updates })), []);
+  
+//   const handleLogout = useCallback(() => {
+//     localStorage.removeItem('codearena_user');
+//     navigate('/');
+//   }, [navigate]);
+
+//   // ── Loading ────────────────────────────────────────────────────────────────
+//   if (loading) return (
+//     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col items-center justify-center gap-5">
+//       <div className="text-6xl select-none" style={{ animation: 'bounce 1s infinite' }}>🗺️</div>
+//       <div className="flex items-center gap-2.5 text-slate-500 dark:text-gray-500 font-bold text-sm">
+//         <Loader2 size={16} className="animate-spin text-cyan-500" />
+//         Loading Campaign World…
+//       </div>
+//     </div>
+//   );
+
+//   // Normalise — backend returns { nodes:[], grouped:{} } wrapped in `.map`
+//   const nodes = mapData?.nodes ?? [];
+
+//   // ── Main ──────────────────────────────────────────────────────────────────
+//   return (
+//     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col overflow-hidden">
+//       <Navbar user={user} onLogout={handleLogout} />
+
+//       {/* ── Campaign HUD ─────────────────────────────────────────── */}
+//       <CampaignHUD
+//         progress={progress}
+//         onOpenSkillTree={() => setShowSkillTree(true)}
+//       >
+//         {/* Guide button — injected into HUD via children prop */}
+//         <button
+//           onClick={() => setShowGuide(true)}
+//           className="flex items-center gap-1.5 px-3 py-1.5
+//                      text-slate-500 hover:text-slate-800
+//                      hover:bg-slate-200
+//                      dark:text-gray-500 dark:hover:text-gray-200
+//                      dark:hover:bg-gray-800/60
+//                      rounded-lg transition-colors text-xs font-bold
+//                      border border-transparent dark:hover:border-gray-700/40"
+//           title="How to Play"
+//         >
+//           <BookOpen size={14} />
+//           <span className="hidden sm:inline">Guide</span>
+//         </button>
+//       </CampaignHUD>
+
+//       {/* ── Map area ─────────────────────────────────────────────── */}
+//       <div className="flex-1 relative overflow-hidden min-h-0">
+//         <WorldMap
+//           nodes={nodes}
+//           progress={progress}
+//           onNodeClick={handleNodeClick}
+//           selectedNodeId={selectedNode?.nodeId}
+//         />
+
+//         {/* Mobile Overlay: Added a subtle backdrop-blur and strict z- 
+//           Make sure your NodeDetailPanel component has a z-index of 40 or higher (e.g., z-)!
+//         */}
+//         {selectedNode && (
+//           <div
+//             className="sm:hidden absolute inset-0 z- bg-slate-900/20 backdrop-blur-[2px] transition-opacity"
+//             onClick={handleClosePanel}
+//             aria-label="Close node details"
+//           />
+//         )}
+
+//         {/* Node detail panel — slide in on click */}
+//         {selectedNode && (
+//           <div className="absolute inset-y-0 right-0 z- w-full sm:w-auto h-full pointer-events-none">
+//             {/* The wrapper above ensures the panel stays on top. 
+//                 pointer-events-none on wrapper, pointer-events-auto on panel below ensures 
+//                 we don't block clicks to the map if the wrapper stretches. */}
+//             <div className="h-full pointer-events-auto">
+//               <NodeDetailPanel
+//                 node={selectedNode}
+//                 progress={progress}
+//                 onClose={handleClosePanel}
+//                 onStartChallenge={handleStartChallenge}
+//               />
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Seed prompt — shown ONLY when backend returned empty AND no progress */}
+//         {!nodes.length && !progress?.unlockedNodes?.length && (
+//           <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50">
+//             <div className="bg-slate-900/90 border border-slate-700/60 rounded-xl px-4 py-3 text-center max-w-xs backdrop-blur-md shadow-lg shadow-black/20">
+//               <p className="text-slate-400 text-xs mb-2">
+//                 Showing demo map — run the seeder to enable progress saving
+//               </p>
+//               <code className="text-cyan-400 text-[11px] font-mono bg-black/30 px-2 py-1 rounded">
+//                 node backend/seeder.js
+//               </code>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* ── Modals ───────────────────────────────────────────────── */}
+//       <SkillTreeModal
+//         isOpen={showSkillTree}
+//         onClose={() => setShowSkillTree(false)}
+//         progress={progress}
+//         onProgressUpdate={handleProgressUpdate}
+//       />
+//       <CampaignGuideModal
+//         isOpen={showGuide}
+//         onClose={() => setShowGuide(false)}
+//       />
+//     </div>
+//   );
+// };
+
+// export default Campaign;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// YE WALA REFRESH WALI PROBLEM KO SOLVE KARTA HAI + BADIA HAI 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, BookOpen } from 'lucide-react'; // Removed unused: Map, ArrowLeft
+import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
+import { Loader2, BookOpen } from 'lucide-react';
 import Navbar             from '../components/Navbar';
 import WorldMap           from '../components/Campaign/WorldMap';
 import NodeDetailPanel    from '../components/Campaign/NodeDetailPanel';
@@ -201,6 +413,7 @@ import toast              from 'react-hot-toast';
 
 const Campaign = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Hook to access navigation state
 
   const [mapData,       setMapData]       = useState(null);
   const [progress,      setProgress]      = useState(null);
@@ -209,7 +422,7 @@ const Campaign = () => {
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [showGuide,     setShowGuide]     = useState(false);
 
-  // Safe JSON parse so corrupted localStorage doesn't throw
+  // Safe JSON parse for user data
   const user = (() => {
     try { 
       return JSON.parse(localStorage.getItem('codearena_user') || '{}'); 
@@ -220,16 +433,25 @@ const Campaign = () => {
 
   // ── Load map + progress ───────────────────────────────────────────────────
   useEffect(() => {
-    // Auth Guard: Prevent fetching if user is not logged in
+    // Auth Guard
     if (!user || Object.keys(user).length === 0) {
       toast.error('Please log in to access the campaign');
-      navigate('/'); // Redirect to home/login route
+      navigate('/');
       return;
     }
 
     let cancelled = false;
     
     const loadData = async () => {
+      // ✅ RACE CONDITION FIX: 
+      // If we arrived here from a successful submission, wait for DB consistency
+      if (location.state?.refetch) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Clean up navigation state so a manual refresh doesn't trigger the delay again
+        window.history.replaceState({}, document.title);
+      }
+
       setLoading(true);
       try {
         const [mapRes, progRes] = await Promise.all([
@@ -239,16 +461,11 @@ const Campaign = () => {
         
         if (cancelled) return;
 
-        // Backend may return { success, map: { nodes, grouped } } or flat { nodes }
-        const rawMap = mapRes.data?.map || mapRes.data;
-        setMapData(rawMap);
-
-        // Progress may be nested under .progress or at the top level
-        const rawProg = progRes.data?.progress || progRes.data;
-        setProgress(rawProg);
+        setMapData(mapRes.data?.map || mapRes.data);
+        setProgress(progRes.data?.progress || progRes.data);
       } catch (err) {
         if (cancelled) return;
-        console.error('[CAMPAIGN]', err);
+        console.error('[CAMPAIGN ERROR]', err);
         toast.error('Failed to load Campaign world');
       } finally {
         if (!cancelled) setLoading(false);
@@ -260,7 +477,7 @@ const Campaign = () => {
     return () => { 
       cancelled = true; 
     };
-  }, [navigate]); // Excluded 'user' dependency to avoid re-renders if localStorage changes outside this component
+  }, [navigate, location.state]); // ✅ Dependency on location.state triggers reload on navigation
 
   const handleNodeClick      = useCallback((node)   => setSelectedNode(node), []);
   const handleClosePanel     = useCallback(()       => setSelectedNode(null), []);
@@ -272,7 +489,7 @@ const Campaign = () => {
     navigate('/');
   }, [navigate]);
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // ── Loading State ──────────────────────────────────────────────────────────
   if (loading) return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col items-center justify-center gap-5">
       <div className="text-6xl select-none" style={{ animation: 'bounce 1s infinite' }}>🗺️</div>
@@ -283,20 +500,17 @@ const Campaign = () => {
     </div>
   );
 
-  // Normalise — backend returns { nodes:[], grouped:{} } wrapped in `.map`
   const nodes = mapData?.nodes ?? [];
 
-  // ── Main ──────────────────────────────────────────────────────────────────
   return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col overflow-hidden">
       <Navbar user={user} onLogout={handleLogout} />
 
-      {/* ── Campaign HUD ─────────────────────────────────────────── */}
+      {/* ── HUD ── */}
       <CampaignHUD
         progress={progress}
         onOpenSkillTree={() => setShowSkillTree(true)}
       >
-        {/* Guide button — injected into HUD via children prop */}
         <button
           onClick={() => setShowGuide(true)}
           className="flex items-center gap-1.5 px-3 py-1.5
@@ -313,7 +527,7 @@ const Campaign = () => {
         </button>
       </CampaignHUD>
 
-      {/* ── Map area ─────────────────────────────────────────────── */}
+      {/* ── Map Area ── */}
       <div className="flex-1 relative overflow-hidden min-h-0">
         <WorldMap
           nodes={nodes}
@@ -322,24 +536,19 @@ const Campaign = () => {
           selectedNodeId={selectedNode?.nodeId}
         />
 
-        {/* Mobile Overlay: Added a subtle backdrop-blur and strict z- 
-          Make sure your NodeDetailPanel component has a z-index of 40 or higher (e.g., z-)!
-        */}
+        {/* Mobile Backdrop Overlay - Fixed z-index */}
         {selectedNode && (
           <div
-            className="sm:hidden absolute inset-0 z- bg-slate-900/20 backdrop-blur-[2px] transition-opacity"
+            className="sm:hidden absolute inset-0 z- bg-slate-900/40 backdrop-blur-[2px] transition-opacity"
             onClick={handleClosePanel}
             aria-label="Close node details"
           />
         )}
 
-        {/* Node detail panel — slide in on click */}
+        {/* Node Detail Panel - Fixed z-index and positioning */}
         {selectedNode && (
-          <div className="absolute inset-y-0 right-0 z- w-full sm:w-auto h-full pointer-events-none">
-            {/* The wrapper above ensures the panel stays on top. 
-                pointer-events-none on wrapper, pointer-events-auto on panel below ensures 
-                we don't block clicks to the map if the wrapper stretches. */}
-            <div className="h-full pointer-events-auto">
+          <div className="absolute inset-y-0 right-0 z- w-full sm:w-80 md:w-96 h-full pointer-events-none">
+            <div className="h-full pointer-events-auto shadow-2xl">
               <NodeDetailPanel
                 node={selectedNode}
                 progress={progress}
@@ -350,14 +559,14 @@ const Campaign = () => {
           </div>
         )}
 
-        {/* Seed prompt — shown ONLY when backend returned empty AND no progress */}
+        {/* Empty State / Seeder Prompt */}
         {!nodes.length && !progress?.unlockedNodes?.length && (
           <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-50">
-            <div className="bg-slate-900/90 border border-slate-700/60 rounded-xl px-4 py-3 text-center max-w-xs backdrop-blur-md shadow-lg shadow-black/20">
+            <div className="bg-slate-900/90 border border-slate-700/60 rounded-xl px-4 py-3 text-center max-w-xs backdrop-blur-md shadow-lg">
               <p className="text-slate-400 text-xs mb-2">
                 Showing demo map — run the seeder to enable progress saving
               </p>
-              <code className="text-cyan-400 text-[11px] font-mono bg-black/30 px-2 py-1 rounded">
+              <code className="text-cyan-400 text-[11px] font-mono bg-black/40 px-2 py-1 rounded">
                 node backend/seeder.js
               </code>
             </div>
@@ -365,7 +574,7 @@ const Campaign = () => {
         )}
       </div>
 
-      {/* ── Modals ───────────────────────────────────────────────── */}
+      {/* ── Modals ── */}
       <SkillTreeModal
         isOpen={showSkillTree}
         onClose={() => setShowSkillTree(false)}
