@@ -47,7 +47,7 @@ const Timer = React.memo(({ initialTime, socket, roomId }) => {
                 intervalRef.current = null;
             }
         };
-    }, [timeLeft !== null && timeLeft !== undefined]);
+    }, [timeLeft]);
 
     // ✅ Server sync (every 60s)
     useEffect(() => {
@@ -116,7 +116,7 @@ const EditorPage = () => {
     const [remainingTime, setRemainingTime] = useState(null);
 
     // Connection state
-    const [isConnected, setIsConnected] = useState(false);
+    // const [isConnected, setIsConnected] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connecting');
     const hasConnectedOnce = useRef(false);
 
@@ -169,7 +169,6 @@ const EditorPage = () => {
 
         socket.on('connect', () => {
             console.log('[SOCKET] ✅ Connected:', socket.id);
-            setIsConnected(true);
             setConnectionStatus('connected');
             hasConnectedOnce.current = true;
             
@@ -184,7 +183,6 @@ const EditorPage = () => {
 
         socket.on('disconnect', (reason) => {
             console.log('[SOCKET] ❌ Disconnected:', reason);
-            setIsConnected(false);
             
             if (hasConnectedOnce.current) {
                 setConnectionStatus('disconnected');
@@ -196,7 +194,6 @@ const EditorPage = () => {
 
         socket.on('reconnect', (attemptNumber) => {
             console.log('[SOCKET] ✅ Reconnected after', attemptNumber, 'attempts');
-            setIsConnected(true);
             setConnectionStatus('connected');
             toast.success('Reconnected!', { icon: '✅', duration: 2000 });
         });
@@ -232,7 +229,7 @@ const EditorPage = () => {
             }
         };
 
-        const handlePlayerJoined = ({ username, side, players, scores }) => {
+        const handlePlayerJoined = ({ username, players, scores }) => {
             console.log('[SOCKET] 👤 player_joined:', username);
             setClients(players || []);
             setScores(scores || {});
