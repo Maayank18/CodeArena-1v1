@@ -497,346 +497,7 @@
 
 
 
-// // FILE: frontend/src/components/Campaign/WorldMap.jsx
-// import React, { useRef, useCallback, useMemo } from 'react';
-// import { motion } from 'framer-motion';
-// import { Lock } from 'lucide-react';
-// import ZoneContainer from './ZoneContainer';
-// import BossNode from './BossNode';
-// import {
-//   ZONE_CONFIGS,
-//   ZONE_W, ZONE_H, ZONE_GAP,
-//   NODE_RADIUS,
-//   MID_BOSS_IDX, MAIN_BOSS_IDX,
-//   getLocalNodePos,
-//   generateMockWorld,
-// } from './campaignWorldData';
-
-// // ─────────────────────────────────────────────────────────────
-// // Helpers
-// // ─────────────────────────────────────────────────────────────
-// const REGION_TO_ZONE = {
-//   Array_Archipelago: 'array_archipelago',
-//   String_Shores: 'string_shores',
-//   Stack_Queue_Quarry: 'stack_quarry',
-//   HashMap_Highlands: 'hashmap_highlands',
-//   Tree_Territory: 'tree_tundra',
-//   Graph_Gorge: 'graph_gorge',
-//   DP_Dungeon: 'dp_dungeon',
-// };
-
-// const toZoneId = (node) => {
-//   if (node?.zoneId && ZONE_CONFIGS.some(z => z.id === node.zoneId)) return node.zoneId;
-//   if (node?.region && REGION_TO_ZONE[node.region]) return REGION_TO_ZONE[node.region];
-//   if (node?.region && ZONE_CONFIGS.some(z => z.id === node.region)) return node.region;
-//   return null;
-// };
-
-// const getState = (nodeId, progress) => {
-//   if (!progress) return { state: 'locked' };
-//   const done = progress.completedNodes?.find(n => n.nodeId === nodeId);
-//   if (done) return { state: 'completed', starsAwarded: done.starsAwarded ?? 0 };
-//   if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
-//   return { state: 'locked' };
-// };
-
-// // ─────────────────────────────────────────────────────────────
-// // Standard Node
-// // ─────────────────────────────────────────────────────────────
-// const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) => {
-//   const isLocked = state.state === 'locked';
-//   const isAvail = state.state === 'available';
-//   const isDone = state.state === 'completed';
-//   const stars = state.starsAwarded || 0;
-//   const SZ = NODE_RADIUS * 2;
-
-//   const border = isLocked ? 'var(--border-color)' : isDone ? '#fbbf24' : accent;
-
-//   const bg = isLocked
-//     ? 'var(--bg-secondary)'
-//     : isDone
-//       ? '#1a1200'
-//       : `${accent}15`;
-
-//   const glow = isLocked ? 'none' : `0 0 12px ${accent}55`;
-
-//   const title = node.problemId?.title?.slice(0, 20) || `Node ${node.nodeNum}`;
-
-//   return (
-//     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.4 : 1 }}>
-
-//       {isAvail && (
-//         <motion.div
-//           className="absolute rounded-full border pointer-events-none"
-//           style={{ width: SZ + 16, height: SZ + 16, borderColor: accent }}
-//           animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0, 0.7] }}
-//           transition={{ duration: 2, repeat: Infinity }}
-//         />
-//       )}
-
-//       <motion.div
-//         className="relative flex items-center justify-center rounded-full border cursor-pointer"
-//         style={{
-//           width: SZ,
-//           height: SZ,
-//           background: bg,
-//           borderColor: border,
-//           boxShadow: glow
-//         }}
-//         whileHover={{ scale: isLocked ? 1 : 1.1 }}
-//         whileTap={{ scale: isLocked ? 1 : 0.95 }}
-//         onClick={() => !isLocked && onClick?.(node)}
-//       >
-//         {isLocked ? (
-//           <Lock size={14} className="text-[var(--text-secondary)]" />
-//         ) : isDone ? (
-//           <div className="flex gap-0.5">
-//             {[1,2,3].map(i => (
-//               <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#444' }}>★</span>
-//             ))}
-//           </div>
-//         ) : (
-//           <div
-//             className="w-2 h-2 rounded-full"
-//             style={{ background: accent }}
-//           />
-//         )}
-//       </motion.div>
-
-//       <div
-//         className="px-2 py-0.5 rounded-full text-[8px] font-bold max-w-[80px] truncate text-center"
-//         style={{
-//           background: 'var(--bg-secondary)',
-//           color: 'var(--text-primary)',
-//           border: `1px solid var(--border-color)`
-//         }}
-//       >
-//         {title}
-//       </div>
-//     </div>
-//   );
-// });
-
-// // ─────────────────────────────────────────────────────────────
-// // WorldMap
-// // ─────────────────────────────────────────────────────────────
-// const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId }) => {
-//   const scrollRef = useRef(null);
-
-//   const allNodes = useMemo(
-//     () => propNodes.length ? propNodes : generateMockWorld(),
-//     [propNodes]
-//   );
-
-//   const nodesByZone = useMemo(() => {
-//     const map = {};
-//     ZONE_CONFIGS.forEach(z => map[z.id] = []);
-
-//     allNodes.forEach(n => {
-//       const zid = toZoneId(n);
-//       if (!zid || !map[zid]) return;
-
-//       const index = (n.nodeNum ?? 1) - 1;
-
-//       map[zid].push({
-//         ...n,
-//         zoneId: zid,
-//         localIndex: index,
-//         localPos: getLocalNodePos(index),
-//       });
-//     });
-
-//     return map;
-//   }, [allNodes]);
-
-//   const zoneTops = ZONE_CONFIGS.map((_, i) => i * (ZONE_H + ZONE_GAP));
-
-//   const jumpToZone = (i) => {
-//     scrollRef.current?.scrollTo({
-//       top: zoneTops[i],
-//       behavior: 'smooth'
-//     });
-//   };
-
-//   return (
-//     <div
-//       className="relative w-full h-full overflow-hidden"
-//       style={{ background: 'var(--bg-primary)' }}
-//     >
-
-//       {/* Stars */}
-//       <div className="absolute inset-0 pointer-events-none">
-//         {Array.from({ length: 60 }).map((_, i) => (
-//           <div
-//             key={i}
-//             className="absolute rounded-full"
-//             style={{
-//               background: 'var(--text-primary)',
-//               width: 1,
-//               height: 1,
-//               left: `${Math.random()*100}%`,
-//               top: `${Math.random()*100}%`,
-//               opacity: 0.2
-//             }}
-//           />
-//         ))}
-//       </div>
-
-//       {/* Scroll */}
-//       <div ref={scrollRef} className="absolute inset-0 overflow-y-auto">
-//         <div className="relative mx-auto" style={{ width: ZONE_W }}>
-
-//           {ZONE_CONFIGS.map((zone, zIdx) => (
-//             <div
-//               key={zone.id}
-//               className="relative"
-//               style={{
-//                 height: ZONE_H,
-//                 marginBottom: ZONE_GAP
-//               }}
-//             >
-//               <ZoneContainer config={zone}>
-//                 {(nodesByZone[zone.id] || []).map(node => {
-//                   const { x, y } = node.localPos;
-//                   const state = getState(node.nodeId, progress);
-
-//                   return (
-//                     <div
-//                       key={node.nodeId}
-//                       className="absolute"
-//                       style={{
-//                         left: x,
-//                         top: y,
-//                         transform: 'translate(-50%, -50%)'
-//                       }}
-//                     >
-//                       <StandardNode
-//                         node={node}
-//                         state={state}
-//                         isSelected={node.nodeId === selectedNodeId}
-//                         accent={zone.accent}
-//                         onClick={onNodeClick}
-//                       />
-//                     </div>
-//                   );
-//                 })}
-//               </ZoneContainer>
-//             </div>
-//           ))}
-
-//         </div>
-//       </div>
-
-//       {/* Mini Map */}
-//       <div className="absolute top-3 right-3 z-50">
-//         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-3 py-2">
-//           {ZONE_CONFIGS.map((z,i)=>(
-//             <button
-//               key={z.id}
-//               className="block text-xs text-[var(--text-primary)]"
-//               onClick={() => jumpToZone(i)}
-//             >
-//               {z.name}
-//             </button>
-//           ))}
-//         </div>
-//       </div>
-
-//     </div>
-//   );
-// };
-
-// export default WorldMap;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // FILE: frontend/src/components/Campaign/WorldMap.jsx
-// FILE: frontend/src/components/Campaign/WorldMap.jsx
-
 import React, { useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
@@ -851,9 +512,9 @@ import {
   generateMockWorld,
 } from './campaignWorldData';
 
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Helpers
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 const REGION_TO_ZONE = {
   Array_Archipelago: 'array_archipelago',
   String_Shores: 'string_shores',
@@ -879,9 +540,9 @@ const getState = (nodeId, progress) => {
   return { state: 'locked' };
 };
 
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // Standard Node
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) => {
   const isLocked = state.state === 'locked';
   const isAvail = state.state === 'available';
@@ -890,17 +551,20 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
   const SZ = NODE_RADIUS * 2;
 
   const border = isLocked ? 'var(--border-color)' : isDone ? '#fbbf24' : accent;
-  const bg = isLocked ? 'var(--bg-secondary)' : isDone ? '#1a1200' : `${accent}15`;
 
-  const glow = isLocked
-    ? 'none'
-    : isSelected
-      ? `0 0 16px ${accent}, 0 0 32px ${accent}55`
-      : `0 0 10px ${accent}55`;
+  const bg = isLocked
+    ? 'var(--bg-secondary)'
+    : isDone
+      ? '#1a1200'
+      : `${accent}15`;
+
+  const glow = isLocked ? 'none' : `0 0 12px ${accent}55`;
+
+  const title = node.problemId?.title?.slice(0, 20) || `Node ${node.nodeNum}`;
 
   return (
     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.4 : 1 }}>
-      
+
       {isAvail && (
         <motion.div
           className="absolute rounded-full border pointer-events-none"
@@ -932,7 +596,10 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
             ))}
           </div>
         ) : (
-          <div className="w-2 h-2 rounded-full" style={{ background: accent }} />
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ background: accent }}
+          />
         )}
       </motion.div>
 
@@ -944,15 +611,15 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
           border: `1px solid var(--border-color)`
         }}
       >
-        {node.problemId?.title?.slice(0, 20)}
+        {title}
       </div>
     </div>
   );
 });
 
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // WorldMap
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId }) => {
   const scrollRef = useRef(null);
 
@@ -960,16 +627,6 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
     () => propNodes.length ? propNodes : generateMockWorld(),
     [propNodes]
   );
-
-  // ✅ FIXED: Stable stars (NO Math.random in render)
-  const starsRef = useRef(null);
-  if (!starsRef.current) {
-    starsRef.current = Array.from({ length: 60 }).map(() => ({
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-    }));
-  }
-  const stars = starsRef.current;
 
   const nodesByZone = useMemo(() => {
     const map = {};
@@ -1002,11 +659,14 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+    <div
+      className="relative w-full h-full overflow-hidden"
+      style={{ background: 'var(--bg-primary)' }}
+    >
 
       {/* Stars */}
       <div className="absolute inset-0 pointer-events-none">
-        {stars.map((s, i) => (
+        {Array.from({ length: 60 }).map((_, i) => (
           <div
             key={i}
             className="absolute rounded-full"
@@ -1014,8 +674,8 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
               background: 'var(--text-primary)',
               width: 1,
               height: 1,
-              left: `${s.left}%`,
-              top: `${s.top}%`,
+              left: `${Math.random()*100}%`,
+              top: `${Math.random()*100}%`,
               opacity: 0.2
             }}
           />
@@ -1027,7 +687,14 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
         <div className="relative mx-auto" style={{ width: ZONE_W }}>
 
           {ZONE_CONFIGS.map((zone, zIdx) => (
-            <div key={zone.id} style={{ height: ZONE_H, marginBottom: ZONE_GAP }}>
+            <div
+              key={zone.id}
+              className="relative"
+              style={{
+                height: ZONE_H,
+                marginBottom: ZONE_GAP
+              }}
+            >
               <ZoneContainer config={zone}>
                 {(nodesByZone[zone.id] || []).map(node => {
                   const { x, y } = node.localPos;
@@ -1080,3 +747,336 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
 };
 
 export default WorldMap;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // FILE: frontend/src/components/Campaign/WorldMap.jsx
+// // FILE: frontend/src/components/Campaign/WorldMap.jsx
+
+// import React, { useRef, useMemo } from 'react';
+// import { motion } from 'framer-motion';
+// import { Lock } from 'lucide-react';
+// import ZoneContainer from './ZoneContainer';
+// import BossNode from './BossNode';
+// import {
+//   ZONE_CONFIGS,
+//   ZONE_W, ZONE_H, ZONE_GAP,
+//   NODE_RADIUS,
+//   MID_BOSS_IDX, MAIN_BOSS_IDX,
+//   getLocalNodePos,
+//   generateMockWorld,
+// } from './campaignWorldData';
+
+// // ─────────────────────────────────────────
+// // Helpers
+// // ─────────────────────────────────────────
+// const REGION_TO_ZONE = {
+//   Array_Archipelago: 'array_archipelago',
+//   String_Shores: 'string_shores',
+//   Stack_Queue_Quarry: 'stack_quarry',
+//   HashMap_Highlands: 'hashmap_highlands',
+//   Tree_Territory: 'tree_tundra',
+//   Graph_Gorge: 'graph_gorge',
+//   DP_Dungeon: 'dp_dungeon',
+// };
+
+// const toZoneId = (node) => {
+//   if (node?.zoneId && ZONE_CONFIGS.some(z => z.id === node.zoneId)) return node.zoneId;
+//   if (node?.region && REGION_TO_ZONE[node.region]) return REGION_TO_ZONE[node.region];
+//   if (node?.region && ZONE_CONFIGS.some(z => z.id === node.region)) return node.region;
+//   return null;
+// };
+
+// const getState = (nodeId, progress) => {
+//   if (!progress) return { state: 'locked' };
+//   const done = progress.completedNodes?.find(n => n.nodeId === nodeId);
+//   if (done) return { state: 'completed', starsAwarded: done.starsAwarded ?? 0 };
+//   if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
+//   return { state: 'locked' };
+// };
+
+// // ─────────────────────────────────────────
+// // Standard Node
+// // ─────────────────────────────────────────
+// const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) => {
+//   const isLocked = state.state === 'locked';
+//   const isAvail = state.state === 'available';
+//   const isDone = state.state === 'completed';
+//   const stars = state.starsAwarded || 0;
+//   const SZ = NODE_RADIUS * 2;
+
+//   const border = isLocked ? 'var(--border-color)' : isDone ? '#fbbf24' : accent;
+//   const bg = isLocked ? 'var(--bg-secondary)' : isDone ? '#1a1200' : `${accent}15`;
+
+//   const glow = isLocked
+//     ? 'none'
+//     : isSelected
+//       ? `0 0 16px ${accent}, 0 0 32px ${accent}55`
+//       : `0 0 10px ${accent}55`;
+
+//   return (
+//     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.4 : 1 }}>
+      
+//       {isAvail && (
+//         <motion.div
+//           className="absolute rounded-full border pointer-events-none"
+//           style={{ width: SZ + 16, height: SZ + 16, borderColor: accent }}
+//           animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0, 0.7] }}
+//           transition={{ duration: 2, repeat: Infinity }}
+//         />
+//       )}
+
+//       <motion.div
+//         className="relative flex items-center justify-center rounded-full border cursor-pointer"
+//         style={{
+//           width: SZ,
+//           height: SZ,
+//           background: bg,
+//           borderColor: border,
+//           boxShadow: glow
+//         }}
+//         whileHover={{ scale: isLocked ? 1 : 1.1 }}
+//         whileTap={{ scale: isLocked ? 1 : 0.95 }}
+//         onClick={() => !isLocked && onClick?.(node)}
+//       >
+//         {isLocked ? (
+//           <Lock size={14} className="text-[var(--text-secondary)]" />
+//         ) : isDone ? (
+//           <div className="flex gap-0.5">
+//             {[1,2,3].map(i => (
+//               <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#444' }}>★</span>
+//             ))}
+//           </div>
+//         ) : (
+//           <div className="w-2 h-2 rounded-full" style={{ background: accent }} />
+//         )}
+//       </motion.div>
+
+//       <div
+//         className="px-2 py-0.5 rounded-full text-[8px] font-bold max-w-[80px] truncate text-center"
+//         style={{
+//           background: 'var(--bg-secondary)',
+//           color: 'var(--text-primary)',
+//           border: `1px solid var(--border-color)`
+//         }}
+//       >
+//         {node.problemId?.title?.slice(0, 20)}
+//       </div>
+//     </div>
+//   );
+// });
+
+// // ─────────────────────────────────────────
+// // WorldMap
+// // ─────────────────────────────────────────
+// const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId }) => {
+//   const scrollRef = useRef(null);
+
+//   const allNodes = useMemo(
+//     () => propNodes.length ? propNodes : generateMockWorld(),
+//     [propNodes]
+//   );
+
+//   // ✅ FIXED: Stable stars (NO Math.random in render)
+//   const starsRef = useRef(null);
+//   if (!starsRef.current) {
+//     starsRef.current = Array.from({ length: 60 }).map(() => ({
+//       left: Math.random() * 100,
+//       top: Math.random() * 100,
+//     }));
+//   }
+//   const stars = starsRef.current;
+
+//   const nodesByZone = useMemo(() => {
+//     const map = {};
+//     ZONE_CONFIGS.forEach(z => map[z.id] = []);
+
+//     allNodes.forEach(n => {
+//       const zid = toZoneId(n);
+//       if (!zid || !map[zid]) return;
+
+//       const index = (n.nodeNum ?? 1) - 1;
+
+//       map[zid].push({
+//         ...n,
+//         zoneId: zid,
+//         localIndex: index,
+//         localPos: getLocalNodePos(index),
+//       });
+//     });
+
+//     return map;
+//   }, [allNodes]);
+
+//   const zoneTops = ZONE_CONFIGS.map((_, i) => i * (ZONE_H + ZONE_GAP));
+
+//   const jumpToZone = (i) => {
+//     scrollRef.current?.scrollTo({
+//       top: zoneTops[i],
+//       behavior: 'smooth'
+//     });
+//   };
+
+//   return (
+//     <div className="relative w-full h-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+
+//       {/* Stars */}
+//       <div className="absolute inset-0 pointer-events-none">
+//         {stars.map((s, i) => (
+//           <div
+//             key={i}
+//             className="absolute rounded-full"
+//             style={{
+//               background: 'var(--text-primary)',
+//               width: 1,
+//               height: 1,
+//               left: `${s.left}%`,
+//               top: `${s.top}%`,
+//               opacity: 0.2
+//             }}
+//           />
+//         ))}
+//       </div>
+
+//       {/* Scroll */}
+//       <div ref={scrollRef} className="absolute inset-0 overflow-y-auto">
+//         <div className="relative mx-auto" style={{ width: ZONE_W }}>
+
+//           {ZONE_CONFIGS.map((zone, zIdx) => (
+//             <div key={zone.id} style={{ height: ZONE_H, marginBottom: ZONE_GAP }}>
+//               <ZoneContainer config={zone}>
+//                 {(nodesByZone[zone.id] || []).map(node => {
+//                   const { x, y } = node.localPos;
+//                   const state = getState(node.nodeId, progress);
+
+//                   return (
+//                     <div
+//                       key={node.nodeId}
+//                       className="absolute"
+//                       style={{
+//                         left: x,
+//                         top: y,
+//                         transform: 'translate(-50%, -50%)'
+//                       }}
+//                     >
+//                       <StandardNode
+//                         node={node}
+//                         state={state}
+//                         isSelected={node.nodeId === selectedNodeId}
+//                         accent={zone.accent}
+//                         onClick={onNodeClick}
+//                       />
+//                     </div>
+//                   );
+//                 })}
+//               </ZoneContainer>
+//             </div>
+//           ))}
+
+//         </div>
+//       </div>
+
+//       {/* Mini Map */}
+//       <div className="absolute top-3 right-3 z-50">
+//         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-3 py-2">
+//           {ZONE_CONFIGS.map((z,i)=>(
+//             <button
+//               key={z.id}
+//               className="block text-xs text-[var(--text-primary)]"
+//               onClick={() => jumpToZone(i)}
+//             >
+//               {z.name}
+//             </button>
+//           ))}
+//         </div>
+//       </div>
+
+//     </div>
+//   );
+// };
+
+// export default WorldMap;
