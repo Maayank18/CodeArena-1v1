@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class', // ✅ REQUIRED FIX
+  // darkMode: 'class', // ✅ REQUIRED FIX
 
   content: [
     "./index.html",

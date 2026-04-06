@@ -29,73 +29,127 @@
 /* ========================================= */
 
 body {
+  /* FIX: Removed 'h-screen overflow-hidden' to allow natural scrolling */
+  /* Added 'min-h-screen' to ensure full background coverage */
   @apply bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans min-h-screen transition-colors duration-300;
   margin: 0;
 }
 
-/* Smooth theme transitions */
-* {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
 /* ========================================= */
-/* 3. SCROLLBAR (THEME-AWARE FIX)            */
+/* 3. CUSTOM SCROLLBAR (Adaptive)            */
 /* ========================================= */
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--bg-primary); 
 }
-
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: var(--border-color); 
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--text-secondary); 
 }
-
 ::-webkit-scrollbar-corner {
   background: var(--bg-primary);
 }
 
-/* Firefox */
+/* Utility Class to force specific scroll behavior if needed elsewhere */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--bg-primary);
+}
+
+/* ========================================= */
+/* 4. ANIMATIONS                             */
+/* ========================================= */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Visualizer Active Line Highlight */
+.myLineDecoration {
+    background: rgba(46, 160, 67, 0.3); /* Transparent Green */
+    border-left: 2px solid #2ea043;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* src/styles/visualizer-styles.css */
+
+/* ====================================
+   CUSTOM SCROLLBAR STYLES
+   ==================================== */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0d1117;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* Firefox scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--border-color) var(--bg-primary);
+  scrollbar-color: #30363d #0d1117;
 }
 
-/* ========================================= */
-/* 4. ANIMATIONS (DEDUPLICATED)              */
-/* ========================================= */
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* ========================================= */
-/* 5. MONACO / VISUALIZER                   */
-/* ========================================= */
+/* ====================================
+   MONACO EDITOR LINE HIGHLIGHT
+   ==================================== */
 
 .active-line-highlight {
   background: rgba(88, 166, 255, 0.15) !important;
   border-left: 3px solid #58a6ff !important;
+  animation: lineHighlight 0.3s ease-out;
+}
+
+@keyframes lineHighlight {
+  0% {
+    background: rgba(88, 166, 255, 0.3);
+  }
+  100% {
+    background: rgba(88, 166, 255, 0.15);
+  }
 }
 
 .active-line-glyph {
@@ -105,9 +159,29 @@ body {
   border-radius: 2px;
 }
 
-/* ========================================= */
-/* 6. RANGE SLIDER                          */
-/* ========================================= */
+.active-line-decoration::before {
+  content: '▶';
+  color: #58a6ff;
+  font-size: 10px;
+  position: absolute;
+  left: -12px;
+  animation: pointerPulse 1s ease-in-out infinite;
+}
+
+@keyframes pointerPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(-2px);
+  }
+}
+
+/* ====================================
+   RANGE SLIDER CUSTOMIZATION
+   ==================================== */
 
 input[type="range"] {
   -webkit-appearance: none;
@@ -117,7 +191,7 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-track {
-  background: var(--border-color);
+  background: #374151;
   height: 8px;
   border-radius: 4px;
 }
@@ -130,29 +204,77 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: #3b82f6;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
   transition: all 0.2s;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   background: #60a5fa;
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
 }
 
 /* Firefox */
 input[type="range"]::-moz-range-track {
-  background: var(--border-color);
+  background: #374151;
+  height: 8px;
+  border-radius: 4px;
 }
 
 input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
   background: #3b82f6;
+  cursor: pointer;
   border: none;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
-/* ========================================= */
-/* 7. UTILITIES                             */
-/* ========================================= */
+/* ====================================
+   ANIMATION UTILITIES
+   ==================================== */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ====================================
+   SELECTION & TEXT UTILITIES
+   ==================================== */
 
 .select-none {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 
@@ -160,23 +282,20 @@ input[type="range"]::-moz-range-thumb {
   font-variant-numeric: tabular-nums;
 }
 
-/* ========================================= */
-/* 8. GLASS EFFECT (THEME SAFE)             */
-/* ========================================= */
+/* ====================================
+   GLASS MORPHISM EFFECTS
+   ==================================== */
 
 .glass-effect {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-}
-
-.dark .glass-effect {
   background: rgba(22, 27, 34, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* ========================================= */
-/* 9. GLOW EFFECTS                          */
-/* ========================================= */
+/* ====================================
+   GLOW EFFECTS
+   ==================================== */
 
 .glow-blue {
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
@@ -190,9 +309,39 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
 }
 
-/* ========================================= */
-/* 10. ACCESSIBILITY                        */
-/* ========================================= */
+/* ====================================
+   TOOLTIP ANIMATIONS
+   ==================================== */
+
+.tooltip-enter {
+  animation: tooltipEnter 0.2s ease-out;
+}
+
+@keyframes tooltipEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -5px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ====================================
+   RESPONSIVE UTILITIES
+   ==================================== */
+
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+/* ====================================
+   FOCUS STATES FOR ACCESSIBILITY
+   ==================================== */
 
 button:focus-visible,
 input:focus-visible {
@@ -200,9 +349,9 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-/* ========================================= */
-/* 11. PRINT                                */
-/* ========================================= */
+/* ====================================
+   PRINT STYLES (Hide UI chrome)
+   ==================================== */
 
 @media print {
   .no-print {
