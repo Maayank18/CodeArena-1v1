@@ -1109,7 +1109,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
         </div>
       </div>
 
-      {/* ── HUD: Zoom controls ──────────────────────────────────────── */}
+      {/* ── HUD: Zoom controls ────────────────────────────────────────
       <div className="absolute bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-auto">
         {[
           { label:'+', fn:()=>setZoom(z=>Math.min(z*1.18,2.2)) },
@@ -1121,14 +1121,14 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
             {b.label}
           </button>
         ))}
-      </div>
+      </div> */}
 
       {/* ── HUD: Jump to progress ───────────────────────────────────── */}
       <div className="absolute bottom-5 left-5 z-50 pointer-events-auto">
         <button
           onClick={jumpToProgress}
           className="flex items-center gap-2 px-3 py-2 bg-accent/15 hover:bg-accent/25 border border-accent/35 hover:border-accent/55 text-accent text-xs font-bold rounded-xl transition-all"
-          style={{ '--accent':'#4ade80' } as React.CSSProperties}
+          style={{ '--accent':'#4ade80' } }
         >
           <span className="text-sm">🎯</span> Continue
         </button>
