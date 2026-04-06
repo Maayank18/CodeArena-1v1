@@ -399,7 +399,7 @@
 
 
 // YE WALA REFRESH WALI PROBLEM KO SOLVE KARTA HAI + BADIA HAI 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect,useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
 import { Loader2, BookOpen } from 'lucide-react';
 import Navbar             from '../components/Navbar';
@@ -423,17 +423,74 @@ const Campaign = () => {
   const [showGuide,     setShowGuide]     = useState(false);
 
   // Safe JSON parse for user data
-  const user = (() => {
+//   const user = (() => {
+//     try { 
+//       return JSON.parse(localStorage.getItem('codearena_user') || '{}'); 
+//     } catch { 
+//       return {}; 
+//     }
+//   })();
+
+// Safe JSON parse, memoized to prevent infinite loops!
+  const user = useMemo(() => {
     try { 
       return JSON.parse(localStorage.getItem('codearena_user') || '{}'); 
     } catch { 
       return {}; 
     }
-  })();
+  }, []); // <-- The empty array ensures it only parses once on mount
 
-  // ── Load map + progress ───────────────────────────────────────────────────
+//   // ── Load map + progress ───────────────────────────────────────────────────
+//   useEffect(() => {
+//     // Auth Guard
+//     if (!user || Object.keys(user).length === 0) {
+//       toast.error('Please log in to access the campaign');
+//       navigate('/');
+//       return;
+//     }
+
+//     let cancelled = false;
+    
+//     const loadData = async () => {
+//       // ✅ RACE CONDITION FIX: 
+//       // If we arrived here from a successful submission, wait for DB consistency
+//       if (location.state?.refetch) {
+//         await new Promise(resolve => setTimeout(resolve, 500));
+        
+//         // Clean up navigation state so a manual refresh doesn't trigger the delay again
+//         window.history.replaceState({}, document.title);
+//       }
+
+//       setLoading(true);
+//       try {
+//         const [mapRes, progRes] = await Promise.all([
+//           api.get('/campaign/map'),
+//           api.get('/campaign/progress'),
+//         ]);
+        
+//         if (cancelled) return;
+
+//         setMapData(mapRes.data?.map || mapRes.data);
+//         setProgress(progRes.data?.progress || progRes.data);
+//       } catch (err) {
+//         if (cancelled) return;
+//         console.error('[CAMPAIGN ERROR]', err);
+//         toast.error('Failed to load Campaign world');
+//       } finally {
+//         if (!cancelled) setLoading(false);
+//       }
+//     };
+
+//     loadData();
+    
+//     return () => { 
+//       cancelled = true; 
+//     };
+//   }, [navigate, location.state]); // ✅ Dependency on location.state triggers reload on navigation
+
+
+// ── Load map + progress ───────────────────────────────────────────────────
   useEffect(() => {
-    // Auth Guard
     if (!user || Object.keys(user).length === 0) {
       toast.error('Please log in to access the campaign');
       navigate('/');
@@ -443,16 +500,23 @@ const Campaign = () => {
     let cancelled = false;
     
     const loadData = async () => {
-      // ✅ RACE CONDITION FIX: 
-      // If we arrived here from a successful submission, wait for DB consistency
-      if (location.state?.refetch) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      setLoading(true);
+
+      // ✅ INSTANT UI UPDATE: Use the fresh progress passed from the Editor
+      if (location.state?.newProgress) {
+        setProgress(location.state.newProgress);
+        // We still need the map data, but progress is instant
+        try {
+          const mapRes = await api.get('/campaign/map');
+          if (!cancelled) setMapData(mapRes.data?.map || mapRes.data);
+        } catch (e) { console.error(e); }
         
-        // Clean up navigation state so a manual refresh doesn't trigger the delay again
-        window.history.replaceState({}, document.title);
+        window.history.replaceState({}, document.title); // Clean up state
+        if (!cancelled) setLoading(false);
+        return; 
       }
 
-      setLoading(true);
+      // Normal load behavior
       try {
         const [mapRes, progRes] = await Promise.all([
           api.get('/campaign/map'),
@@ -460,24 +524,18 @@ const Campaign = () => {
         ]);
         
         if (cancelled) return;
-
         setMapData(mapRes.data?.map || mapRes.data);
         setProgress(progRes.data?.progress || progRes.data);
-      } catch (err) {
-        if (cancelled) return;
-        console.error('[CAMPAIGN ERROR]', err);
-        toast.error('Failed to load Campaign world');
+      } catch {
+        if (!cancelled) toast.error('Failed to load Campaign world');
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
     loadData();
-    
-    return () => { 
-      cancelled = true; 
-    };
-  }, [navigate, location.state]); // ✅ Dependency on location.state triggers reload on navigation
+    return () => { cancelled = true; };
+  }, [navigate, location.state, user]); // Added location.state and user to dependencies
 
   const handleNodeClick      = useCallback((node)   => setSelectedNode(node), []);
   const handleClosePanel     = useCallback(()       => setSelectedNode(null), []);

@@ -2511,7 +2511,20 @@ const CampaignEditor = () => {
         <button onClick={() => setMobileTab('editor')} className={`flex-1 py-2.5 text-xs font-bold border-b-2 ${mobileTab === 'editor' ? 'border-cyan-500 text-cyan-500' : 'border-transparent'}`}>Editor</button>
       </div>
 
+      {/* ... bottom of CampaignEditor.jsx */}
       <SuccessModal
+        isOpen={showSuccess}
+        result={successResult}
+        // ✅ Pass the new progress data directly to the Map
+        onViewMap={() => navigate('/campaign', { state: { newProgress: successResult?.progress } })} 
+        onContinue={() => {
+          setShowSuccess(false);
+          setRunResults(null);
+          setShowResults(false);
+        }}
+      />
+
+      {/* <SuccessModal
         isOpen={showSuccess}
         result={successResult}
         onViewMap={() => navigate('/campaign', { state: { refetch: true } })} // ✅ LEVEL UNLOCK FIX
@@ -2520,7 +2533,7 @@ const CampaignEditor = () => {
           setRunResults(null);
           setShowResults(false);
         }}
-      />
+      /> */}
     </div>
   );
 };

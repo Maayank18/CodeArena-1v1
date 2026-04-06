@@ -1271,6 +1271,7 @@ export const submitCampaignSolution = async (req, res) => {
             currentKP: progress.knowledgePoints,
             currentStars: progress.totalStars,
             currentStreak: progress.currentStreak,
+            progress: progress,
             message: `${stars} ⭐ — ${!existingNode ? 'Node Complete!' : isImprovement ? 'New Best!' : 'Already completed with this score.'}`
         });
 
