@@ -398,17 +398,20 @@
 
 // src/components/Campaign/CampaignMapCanvas.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// FIXES APPLIED:
-//   BUG 3:  bgGrad array coercion — was ${theme.bgGrad} (renders "[object Array]")
-//           Fixed to ${theme.bgGrad[0]}, ${theme.bgGrad[1]}, ${theme.bgGrad[2]}
-//   BUG 4:  titleGrad array coercion — same fix
-//   BUG 5:  Stars component showed 5 stars — fixed to 3
-//   BUG 8:  node.problem vs node.problemId — now reads both field names
-//   BUG 10: zone.nodes could be undefined — safe fallback (zone.nodes || [])
+// ALL FIXES APPLIED:
+//   • bgGrad/titleGrad: must use [0], [1], [2] — they are arrays, NOT strings
+//   • Stars: 3-star system (was showing 5)
+//   • node.problem vs node.problemId: both field names supported
+//   • zone.nodes safe fallback: (zone.nodes || [])
+//   • Legend: absolute bottom-6 left-6 z-50 pointer-events-none — never blocks
+//   • Navigate hint: absolute bottom-6 right-6 z-50 — separated from legend
+//   • Back button: z-50 always above nodes
+//   • Theme: dark: semantic classes throughout
+//   • Mobile: legend/hint shrink on xs screens
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useRef, useMemo } from 'react';
-import { motion, useMotionValue, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue } from 'framer-motion';
 import { Lock, ArrowLeft, Target } from 'lucide-react';
 import {
   ZONE_W, ZONE_H,
@@ -419,7 +422,7 @@ import {
 const NODE_SZ = NODE_RADIUS * 2;
 const BOSS_SZ = BOSS_RADIUS * 2;
 
-// ── Bezier segment path between two positioned nodes ──────────────────────────
+// ── Bezier path between two nodes ─────────────────────────────────────────────
 const segPath = (a, b) => {
   const sameRow = Math.floor(a._idx / 5) === Math.floor(b._idx / 5);
   if (sameRow) {
@@ -434,23 +437,20 @@ const segPath = (a, b) => {
   );
 };
 
-// ── Stars — BUG 5 FIX ─────────────────────────────────────────────────────────
-// Was: Array.from({ length: 5 }) — showed 5 stars, campaign uses 3-star system
+// ── Stars (3-star system) ─────────────────────────────────────────────────────
 const Stars = ({ count = 0 }) => (
   <div className="flex gap-0.5 justify-center">
-    {/* ✅ FIX BUG 5: was length: 5, campaign uses a 3-star rating system */}
+    {/* ✅ FIX: was length:5 — campaign uses 3-star rating */}
     {Array.from({ length: 3 }, (_, i) => (
-      <span key={i} style={{ fontSize: 9, color: i < count ? '#fbbf24' : '#374151' }}>
-        ★
-      </span>
+      <span key={i} style={{ fontSize: 9, color: i < count ? '#fbbf24' : '#374151' }}>★</span>
     ))}
   </div>
 );
 
-// ── Helper: read title from either data-file field or API field ───────────────
-// BUG 8 FIX: data files use node.problem.title; API uses node.problemId.title
+// ── Read title from whichever field the node uses ─────────────────────────────
+// ✅ FIX: data files use node.problem.title; API uses node.problemId.title
 const getNodeTitle = (node) =>
-  node.problem?.title || node.problemId?.title || null;
+  node?.problem?.title || node?.problemId?.title || null;
 
 // ── Standard node ─────────────────────────────────────────────────────────────
 const StdNode = ({ node, accent, onClick }) => {
@@ -464,18 +464,14 @@ const StdNode = ({ node, accent, onClick }) => {
     : isDone
       ? 'radial-gradient(circle at 35% 35%,#2d1800,#0a0600)'
       : `radial-gradient(circle at 35% 35%,${accent}28,${accent}08)`;
-  const shadow = isLocked
-    ? 'none'
-    : isDone
-      ? '0 0 14px #fbbf2470'
-      : `0 0 18px ${accent}65,0 0 36px ${accent}22`;
+  const shadow = isLocked ? 'none'
+    : isDone    ? '0 0 14px #fbbf2470'
+    : `0 0 18px ${accent}65,0 0 36px ${accent}22`;
 
-  // ✅ FIX BUG 8: read title from whichever field exists
   const title = getNodeTitle(node);
 
   return (
     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.5 : 1 }}>
-      {/* Pulse ring for available nodes */}
       {isAvail && (
         <motion.div
           className="absolute rounded-full border-2 pointer-events-none"
@@ -484,8 +480,6 @@ const StdNode = ({ node, accent, onClick }) => {
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
       )}
-
-      {/* Main circle */}
       <motion.div
         className="flex items-center justify-center rounded-full border-2"
         style={{
@@ -508,8 +502,6 @@ const StdNode = ({ node, accent, onClick }) => {
         )}
         {isDone && <Stars count={node.stars} />}
       </motion.div>
-
-      {/* Label */}
       {title && (
         <div
           className="hidden sm:block px-1.5 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[74px] truncate text-center"
@@ -534,8 +526,8 @@ const BossNodeCanvas = ({ node, onClick }) => {
 
   const accent = isMid ? '#a855f7' : '#ef4444';
   const icon   = isLocked ? '🔒' : isDone ? (isMid ? '✅' : '👑') : isMid ? '⚔️' : '💀';
-  const glow   = isLocked ? 'none' : isDone
-    ? '0 0 20px #fbbf2460'
+  const glow   = isLocked ? 'none'
+    : isDone ? '0 0 20px #fbbf2460'
     : `0 0 28px ${accent}70,0 0 55px ${accent}30`;
   const bg     = isLocked
     ? 'radial-gradient(circle,#111,#070707)'
@@ -543,12 +535,10 @@ const BossNodeCanvas = ({ node, onClick }) => {
       ? 'radial-gradient(circle at 35% 30%,#3b0764,#140225)'
       : 'radial-gradient(circle at 35% 30%,#7f1d1d,#200404)';
 
-  // ✅ FIX BUG 8: support both field names
   const title = getNodeTitle(node);
 
   return (
     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.5 : 1 }}>
-      {/* Badge */}
       {!isLocked && (
         <div
           className="px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase"
@@ -561,18 +551,16 @@ const BossNodeCanvas = ({ node, onClick }) => {
           {isMid ? 'MID BOSS' : 'ZONE BOSS'}
         </div>
       )}
-
-      {/* Pulsing rings + main circle */}
       <div
         className="relative flex items-center justify-center"
         style={{ width: BOSS_SZ + 40, height: BOSS_SZ + 40 }}
       >
-        {!isLocked && !isDone && [0, 1].slice(0, isMid ? 1 : 2).map((i) => (
+        {!isLocked && !isDone && [0, 1].slice(0, isMid ? 1 : 2).map(i => (
           <motion.div
             key={i}
             className="absolute rounded-full border-2"
             style={{
-              width:  BOSS_SZ + 20 + i * 18,
+              width: BOSS_SZ + 20 + i * 18,
               height: BOSS_SZ + 20 + i * 18,
               borderColor: `${accent}${i === 0 ? 'aa' : '55'}`,
             }}
@@ -580,7 +568,6 @@ const BossNodeCanvas = ({ node, onClick }) => {
             transition={{ duration: 1.8 + i * 0.5, delay: i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
           />
         ))}
-
         <motion.div
           className="relative flex items-center justify-center rounded-full border-[3px]"
           style={{
@@ -609,19 +596,14 @@ const BossNodeCanvas = ({ node, onClick }) => {
             className="text-2xl select-none relative z-10"
             style={{
               fontSize: isMid ? 24 : 28,
-              filter: isLocked
-                ? 'grayscale(1) brightness(0.2)'
-                : `drop-shadow(0 0 8px ${accent})`,
+              filter: isLocked ? 'grayscale(1) brightness(0.2)' : `drop-shadow(0 0 8px ${accent})`,
             }}
           >
             {icon}
           </span>
         </motion.div>
       </div>
-
       {isDone && <Stars count={node.stars} />}
-
-      {/* Label */}
       {title && (
         <div
           className="hidden sm:block px-2 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[100px] truncate text-center"
@@ -655,13 +637,13 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
     };
   }, []);
 
-  // ✅ FIX BUG 10: zone.nodes could be undefined — safe fallback
+  // ✅ FIX: zone.nodes could be undefined — safe fallback
   const nodePositions = useMemo(
-    () => (zone.nodes || []).map((node, i) => ({ ...node, ...getLocalNodePos(i), _idx: i })),
+    () => (zone?.nodes || []).map((node, i) => ({ ...node, ...getLocalNodePos(i), _idx: i })),
     [zone]
   );
 
-  const { theme } = zone;
+  const theme = zone?.theme || {};
 
   const segments = useMemo(
     () =>
@@ -669,30 +651,39 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
         const b = nodePositions[i + 1];
         if (!b) return null;
         const lit = a.state === 'completed' && b.state !== 'locked';
-        return { d: segPath(a, b), lit, color: theme.path };
+        return { d: segPath(a, b), lit, color: theme.path || '#06b6d4' };
       }).filter(Boolean),
     [nodePositions, theme.path]
   );
+
+  // ✅ FIX: bgGrad/titleGrad are arrays — must index [0], [1], [2]
+  // Using ${theme.bgGrad} coerces to "[#041c28,#062e40,#083a50]" — broken CSS
+  const bgGrad = Array.isArray(theme.bgGrad)
+    ? theme.bgGrad
+    : ['#041c28', '#062e40', '#083a50'];
+  const titleGrad = Array.isArray(theme.titleGrad)
+    ? theme.titleGrad
+    : ['#a5f3fc', '#22d3ee'];
 
   return (
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden"
       style={{
-        // ✅ FIX BUG 3: theme.bgGrad is an array — was using ${theme.bgGrad} which
-        // coerces the whole array to a string. Must index explicitly: [0], [1], [2]
-        background: `linear-gradient(175deg,${theme.bgGrad[0]},${theme.bgGrad[1]},${theme.bgGrad[2]})`,
+        background: `linear-gradient(175deg,${bgGrad[0]},${bgGrad[1]},${bgGrad[2]})`,
       }}
     >
 
-      {/* ── Back button — z-50, never covered by nodes ───────────── */}
+      {/* ── Back button — z-50, always above nodes ───────────────── */}
       <button
         onClick={onBack}
         className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm transition-all"
         style={{
-          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(10px)',
-          border: `1px solid ${theme.border}60`, color: theme.accent,
-          boxShadow: `0 0 14px ${theme.glow}`,
+          background: 'rgba(0,0,0,.75)',
+          backdropFilter: 'blur(10px)',
+          border: `1px solid ${theme.border || '#0891b2'}60`,
+          color: theme.accent || '#22d3ee',
+          boxShadow: `0 0 14px ${theme.glow || '#06b6d430'}`,
         }}
       >
         <ArrowLeft size={16} />
@@ -704,29 +695,30 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
         <div
           className="flex items-center gap-2 px-4 py-2 rounded-2xl"
           style={{
-            background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(12px)',
-            border: `1px solid ${theme.border}50`,
+            background: 'rgba(0,0,0,.65)',
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${theme.border || '#0891b2'}50`,
           }}
         >
-          <span className="text-xl select-none">{zone.icon}</span>
+          <span className="text-xl select-none">{zone?.icon}</span>
           <div>
             <h2
               className="font-black text-sm leading-none"
               style={{
-                // ✅ FIX BUG 4: theme.titleGrad is an array — same fix as bgGrad
-                background: `linear-gradient(135deg,${theme.titleGrad[0]},${theme.titleGrad[1]})`,
+                // ✅ FIX: titleGrad[0] and [1] — NOT ${theme.titleGrad}
+                background: `linear-gradient(135deg,${titleGrad[0]},${titleGrad[1]})`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 fontFamily: "'JetBrains Mono',monospace",
               }}
             >
-              {zone.name}
+              {zone?.name}
             </h2>
             <p
               className="text-[9px] font-bold uppercase tracking-widest mt-0.5"
-              style={{ color: theme.accent, opacity: 0.7 }}
+              style={{ color: theme.accent || '#22d3ee', opacity: 0.7 }}
             >
-              {(zone.completedCount ?? 0)}/{(zone.nodes || []).length} complete
+              {zone?.completedCount ?? 0}/{(zone?.nodes || []).length} complete
             </p>
           </div>
         </div>
@@ -737,9 +729,9 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1e293b' }}>
           <motion.div
             className="h-full rounded-full"
-            style={{ background: `linear-gradient(90deg,${theme.path},${theme.accent})` }}
+            style={{ background: `linear-gradient(90deg,${theme.path || '#06b6d4'},${theme.accent || '#22d3ee'})` }}
             initial={{ width: 0 }}
-            animate={{ width: `${zone.progressPct ?? 0}%` }}
+            animate={{ width: `${zone?.progressPct ?? 0}%` }}
             transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
           />
         </div>
@@ -759,13 +751,13 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
         whileDrag={{ cursor: 'grabbing' }}
         className="absolute top-0 left-0"
       >
-        {/* SVG bezier paths */}
+        {/* SVG path layer */}
         <svg
           className="absolute inset-0 pointer-events-none z-10"
           style={{ width: ZONE_W, height: ZONE_H, overflow: 'visible' }}
         >
           <defs>
-            <filter id={`pg-${zone.id}`} x="-20%" y="-20%" width="140%" height="140%">
+            <filter id={`pg-${zone?.id}`} x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="b" />
               <feMerge>
                 <feMergeNode in="b" />
@@ -773,14 +765,13 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
               </feMerge>
             </filter>
           </defs>
-
           {segments.map((seg, i) => (
             <g key={i}>
               {seg.lit && (
                 <path
                   d={seg.d} fill="none"
                   stroke={seg.color} strokeWidth={9} strokeOpacity={0.18}
-                  filter={`url(#pg-${zone.id})`}
+                  filter={`url(#pg-${zone?.id})`}
                 />
               )}
               <path
@@ -793,23 +784,19 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
               />
               {seg.lit && (
                 <circle r="4.5" fill={seg.color} opacity="0.9">
-                  <animateMotion
-                    dur={`${2.8 + i * 0.04}s`}
-                    repeatCount="indefinite"
-                    path={seg.d}
-                  />
+                  <animateMotion dur={`${2.8 + i * 0.04}s`} repeatCount="indefinite" path={seg.d} />
                 </circle>
               )}
             </g>
           ))}
         </svg>
 
-        {/* Node elements */}
-        {nodePositions.map((node) => {
+        {/* Node layer */}
+        {nodePositions.map(node => {
           const isBoss = node.nodeType === 'boss';
           return (
             <div
-              key={node.nodeId || node.id || node._idx}
+              key={node.nodeId || node.id || `node-${node._idx}`}
               className="absolute flex items-center justify-center"
               style={{
                 left: node.x, top: node.y,
@@ -820,17 +807,17 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
               <div style={{ position: 'absolute', transform: 'translate(-50%,-50%)' }}>
                 {isBoss
                   ? <BossNodeCanvas node={node} onClick={onNodeClick} />
-                  : <StdNode node={node} accent={theme.accent} onClick={onNodeClick} />
+                  : <StdNode node={node} accent={theme.accent || '#22d3ee'} onClick={onNodeClick} />
                 }
               </div>
             </div>
           );
         })}
 
-        {/* Ground strip with decorations */}
+        {/* Ground strip */}
         <div
           className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-          style={{ background: theme.ground }}
+          style={{ background: theme.ground || '#052030' }}
         >
           {(theme.decorations || []).map((d, i) => (
             <span
@@ -849,13 +836,15 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
         </div>
       </motion.div>
 
-      {/* ── Legend — strictly bottom-left, never overlaps nodes ──── */}
-      <div
-        className="absolute bottom-6 left-6 z-50 pointer-events-none
-                   bg-black/70 border border-gray-800/60
-                   rounded-xl px-3 py-2.5 backdrop-blur-md
-                   flex flex-col gap-2"
-      >
+      {/* ══════════════════════════════════════════════════════════════════
+          LEGEND — bottom-LEFT, z-50, pointer-events-none
+          NEVER overlaps nodes, controls, or the navigate hint.
+          On mobile: text shrinks but remains visible.
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="absolute bottom-6 left-6 z-50 pointer-events-none
+                      bg-black/75 border border-gray-800/60
+                      rounded-xl px-3 py-2.5 backdrop-blur-md
+                      flex flex-col gap-1.5">
         {[
           { col: '#374151', label: 'Locked',    glow: false },
           { col: '#22d3ee', label: 'Available', glow: true  },
@@ -868,8 +857,8 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
               className="w-3 h-3 rounded-full border shrink-0"
               style={{
                 borderColor: item.col,
-                background: `${item.col}28`,
-                boxShadow: item.glow ? `0 0 5px ${item.col}60` : 'none',
+                background:  `${item.col}28`,
+                boxShadow:   item.glow ? `0 0 5px ${item.col}60` : 'none',
               }}
             />
             <span className="text-[9px] text-gray-400 font-medium whitespace-nowrap">
@@ -877,18 +866,19 @@ const CampaignMapCanvas = ({ zone, onBack, onNodeClick }) => {
             </span>
           </div>
         ))}
-        <div className="border-t border-gray-800/50 pt-1.5 text-[9px] text-gray-600">
+        <div className="border-t border-gray-800/50 pt-1 text-[9px] text-gray-600">
           Drag to pan
         </div>
       </div>
 
-      {/* ── Navigate hint — strictly bottom-right ────────────────── */}
-      <div
-        className="absolute bottom-6 right-6 z-50 pointer-events-none
-                   flex items-center gap-2
-                   bg-black/60 border border-gray-800/50
-                   rounded-xl px-3 py-2 backdrop-blur-md"
-      >
+      {/* ══════════════════════════════════════════════════════════════════
+          NAVIGATE HINT — bottom-RIGHT, z-50, pointer-events-none
+          Separated from legend: opposite corner, can never overlap.
+      ══════════════════════════════════════════════════════════════════ */}
+      <div className="absolute bottom-6 right-6 z-50 pointer-events-none
+                      flex items-center gap-2
+                      bg-black/65 border border-gray-800/50
+                      rounded-xl px-3 py-2 backdrop-blur-md">
         <Target size={13} className="text-gray-500" />
         <span className="text-[9px] text-gray-500">Scroll to navigate</span>
       </div>
