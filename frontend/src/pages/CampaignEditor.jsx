@@ -336,6 +336,7 @@ const CampaignEditor = () => {
           navigate('/campaign');
         }
       } catch (err) {
+        console.log(err);
         if (cancelled) return;
         navigate('/campaign');
       } finally {
@@ -395,6 +396,7 @@ const CampaignEditor = () => {
         const expected = sanitize(tc.output);
         results.push({ caseNum: i + 1, input: tc.input, expected, actual: stdout, passed: stdout === expected && !stderr, stderr, isPublic: true });
       } catch (err) {
+        console.log(err);
         results.push({ caseNum: i + 1, input: tc.input, expected: sanitize(tc.output), actual: '', passed: false, error: 'Execution Error', isPublic: true });
       }
     }
@@ -434,6 +436,7 @@ const CampaignEditor = () => {
         if (data.sageShouldTrigger || failCount + 1 >= 3) setSageShouldShow(true);
       }
     } catch (err) {
+        console.log(err);
       toast.error('Submission failed');
     } finally {
       setIsSubmitting(false);

@@ -1,26 +1,3 @@
-// // src/components/Campaign/WorldMap.jsx
-// // ─────────────────────────────────────────────────────────────────────────────
-// // ALL BUGS FIXED:
-// //
-// //  BUG A (titles show "Challenge N"): StandardNode read node.problemId?.title
-// //    but batch-2 data stores title directly on node (node.title), not nested.
-// //    Fixed: getNodeTitle() checks all possible field paths.
-// //
-// //  BUG B (ALL nodes locked, cannot click): Backend initialises progress with
-// //    unlockedNodes:['array_01'] but mock node IDs are 'aa_01'. getState()
-// //    never finds a match → every node returns locked → clicks never fire.
-// //    Fixed: defensive fallback — if zero mock nodes match the backend's
-// //    unlockedNodes list, treat the very first node as 'available'.
-// //
-// //  BUG C (real DB nodes dropped from zones): DB nodes have
-// //    region:'Array_Archipelago' (capitalized Mongoose enum) but ZONE_CONFIGS
-// //    uses lowercase IDs. nodesByZone key lookup fails → all DB nodes dropped
-// //    → 15 placeholders per zone. Fixed: REGION_TO_ZONE normalisation table.
-// //
-// //  BUG D (Nodes squished to Slot 1): MongoDB uses 'nodeOrder' but frontend
-// //    expects 'nodeNum'. Normalized inside nodesByZone.
-// // ─────────────────────────────────────────────────────────────────────────────
-
 // import React, { useRef, useCallback, useMemo } from 'react';
 // import { motion } from 'framer-motion';
 // import { Lock } from 'lucide-react';
@@ -132,8 +109,7 @@
 //           <Lock size={14} className="text-gray-700" />
 //         ) : isDone ? (
 //           <div className="flex gap-0.5">
-//             {/* the error below need to be fixed and veriifed  */}
-//             {[1, 2, 3].map(i => (
+//             {[1,2,3].map(i => (
 //               <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>★</span>
 //             ))}
 //           </div>
@@ -204,8 +180,6 @@
 //       const zid = resolveZoneId(n);
 //       if (!zid || !m[zid]) return;
 
-//       // ✅ FIX BUG D: MongoDB uses `nodeOrder`, Frontend uses `nodeNum`. 
-//       // We must map it correctly here, otherwise every node acts like Node 1.
 //       const sequenceNum = n.nodeOrder ?? n.nodeNum ?? 1;
       
 //       const rawIndex  = n.localIndex ?? Math.max(0, sequenceNum - 1);
@@ -215,7 +189,7 @@
 //       m[zid].push({
 //         ...n,
 //         zoneId:     zid,
-//         nodeNum:    sequenceNum, // Inject the corrected sequence number
+//         nodeNum:    sequenceNum,
 //         localIndex: safeIndex,
 //         localPos,
 //       });
@@ -233,6 +207,7 @@
 //   }, [allNodes, progress]);
 
 //   const firstZoneFirstNodeId = useMemo(() => {
+//     // ✅ BUG FIX: Changed ZONE_CONFIGS?.id to ZONE_CONFIGS?.id
 //     const zone0Nodes = nodesByZone[ZONE_CONFIGS?.id] || [];
 //     return zone0Nodes?.nodeId || null;
 //   }, [nodesByZone]);
@@ -306,15 +281,15 @@
 //           >
 //             {ZONE_CONFIGS.slice(0, -1).map((zone, zIdx) => {
 //               const nextZone   = ZONE_CONFIGS[zIdx + 1];
-//               const zNodes     = nodesByZone[zone.id]      || [];
-//               const nextZNodes = nodesByZone[nextZone.id]  || [];
-//               const lastNode   = zNodes[zNodes.length - 1];
-//               const firstNode  = nextZNodes;
-//               if (!lastNode || !firstNode) return null;
+//               const zNodes     = nodesByZone[zone.id] || [];
 
-//               const fromLocal = lastNode.localPos  || getLocalNodePos(14);
-//               const toLocal   = firstNode.localPos || getLocalNodePos(0);
-//               const lit       = completedSet.has(lastNode.nodeId);
+//               // ✅ SPLIT-PATH FIX: Force the bridge to always connect Node 15 to Node 1
+//               const fromLocal = getLocalNodePos(14); // Index 14 = Node 15
+//               const toLocal   = getLocalNodePos(0);  // Index 0 = Node 1
+              
+//               // Only light up if the Zone Boss is complete
+//               const zoneBoss = zNodes.find(n => n.nodeNum === 15);
+//               const lit = zoneBoss ? completedSet.has(zoneBoss.nodeId) : false;
 
 //               return (
 //                 <InterZoneBridge
@@ -522,31 +497,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
@@ -555,7 +505,7 @@ import BossNode      from './BossNode';
 import {
   ZONE_CONFIGS,
   ZONE_W, ZONE_H, ZONE_GAP,
-  NODE_RADIUS, BOSS_RADIUS,
+  NODE_RADIUS,
   MID_BOSS_IDX, MAIN_BOSS_IDX,
   getLocalNodePos,
   generateMockWorld,
@@ -565,6 +515,8 @@ import {
 const REGION_TO_ZONE_ID = {
   Array_Archipelago:      'array_archipelago',
   String_Shores:          'string_shores',
+  Loop_Lagoon:            'loop_lagoon',
+  Sliding_Window_Sanctum: 'sliding_window_sanctum',
   HashMap_Highlands:      'hashmap_highlands',
   Stack_Queue_Quarry:     'stack_queue_quarry',
   Tree_Territory:         'tree_tundra',
@@ -583,9 +535,9 @@ const resolveZoneId = (node) => {
 
 // ── Get title from any possible node field shape ──────────────────────────────
 const getNodeTitle = (node) =>
-  node?.problemId?.title ||   // API / generateMockWorld alias
-  node?.problem?.title    ||  // Batch-1 data files
-  node?.title             ||  // Batch-2 flat data
+  node?.problemId?.title ||   // populated from DB via .populate()
+  node?.problem?.title    ||  // campaignData.js flat shape
+  node?.title             ||  // campaignDataBatch2.js flat shape
   null;
 
 // ── Node progress state ───────────────────────────────────────────────────────
@@ -593,16 +545,16 @@ const getState = (nodeId, progress, isFirstNodeFallback = false) => {
   if (!progress) {
     return isFirstNodeFallback ? { state: 'available' } : { state: 'locked' };
   }
-
   const done = progress.completedNodes?.find(n => n.nodeId === nodeId);
   if (done) return { state: 'completed', starsAwarded: done.starsAwarded ?? 0 };
-
   if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
-
   if (isFirstNodeFallback) return { state: 'available' };
-
   return { state: 'locked' };
 };
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+// FIX 1: Star array defined once — avoids re-creating [1,2,3] inline on every render
+const STAR_INDICES = [1, 2, 3];
 
 // ── StandardNode ──────────────────────────────────────────────────────────────
 const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) => {
@@ -616,16 +568,22 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
   const bg     = isLocked
     ? 'radial-gradient(circle,#0e1117,#070a0f)'
     : isDone
-      ? `radial-gradient(circle at 35% 35%, ${['#2d1800','#2d2200','#1f1600'][Math.min(stars, 3) - 1] || '#2d1800'}, #080600)`
+      ? `radial-gradient(circle at 35% 35%, ${
+          ['#2d1800', '#2d2200', '#1f1600'][Math.min(stars, 3) - 1] ?? '#2d1800'
+        }, #080600)`
       : `radial-gradient(circle at 35% 35%, ${accent}28, ${accent}08)`;
-  const glow = isLocked ? 'none'
-    : isDone ? `0 0 16px #fbbf2470`
-    : `0 0 18px ${accent}65, 0 0 36px ${accent}25`;
+  const glow = isLocked
+    ? 'none'
+    : isDone
+      ? '0 0 16px #fbbf2470'
+      : `0 0 18px ${accent}65, 0 0 36px ${accent}25`;
 
-  const title = getNodeTitle(node) || `Node ${node.nodeNum || '?'}`;
+  const title = getNodeTitle(node) || `Node ${node.nodeNum ?? '?'}`;
 
   return (
     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.4 : 1 }}>
+
+      {/* Available pulse ring */}
       {isAvail && (
         <motion.div
           className="absolute rounded-full border-2 pointer-events-none"
@@ -635,6 +593,7 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
         />
       )}
 
+      {/* Selection ring */}
       {isSelected && (
         <div
           className="absolute rounded-full pointer-events-none"
@@ -645,10 +604,12 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
       <motion.div
         className="relative flex items-center justify-center rounded-full border-2"
         style={{
-          width: SZ, height: SZ,
-          background: bg, borderColor: border,
-          boxShadow: isSelected ? `0 0 0 3px rgba(255,255,255,.2),${glow}` : glow,
-          cursor: isLocked ? 'not-allowed' : 'pointer',
+          width:      SZ,
+          height:     SZ,
+          background: bg,
+          borderColor: border,
+          boxShadow:  isSelected ? `0 0 0 3px rgba(255,255,255,.2),${glow}` : glow,
+          cursor:     isLocked ? 'not-allowed' : 'pointer',
         }}
         whileHover={{ scale: isLocked ? 1 : 1.1 }}
         whileTap={{ scale: isLocked ? 1 : 0.93 }}
@@ -657,9 +618,12 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
         {isLocked ? (
           <Lock size={14} className="text-gray-700" />
         ) : isDone ? (
+          // FIX 1: was `{.map(...)` — missing source array; now maps over STAR_INDICES
           <div className="flex gap-0.5">
-            {.map(i => (
-              <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>★</span>
+            {STAR_INDICES.map(i => (
+              <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>
+                ★
+              </span>
             ))}
           </div>
         ) : (
@@ -675,8 +639,9 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
       <div
         className="px-2 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[76px] truncate text-center"
         style={{
-          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(4px)',
-          color: isLocked ? '#374151' : isDone ? '#fbbf24' : accent,
+          background:    'rgba(0,0,0,.7)',
+          backdropFilter: 'blur(4px)',
+          color:  isLocked ? '#374151' : isDone ? '#fbbf24' : accent,
           border: `1px solid ${isLocked ? '#1f2937' : isDone ? '#92400e40' : `${accent}30`}`,
         }}
       >
@@ -685,21 +650,28 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
     </div>
   );
 });
+StandardNode.displayName = 'StandardNode';
 
 // ── Inter-zone SVG bridge ─────────────────────────────────────────────────────
+// FIX 3: Bridge always uses hardcoded slot indices (14 → slot 0) so that
+// an incomplete DB seed can never cause the line to originate from a mid-node.
+// x/y coords are absolute canvas coords (zoneTop already factored in by caller).
 const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, toColor, lit }) => {
-  const fx = fromLocal.x, fy = zoneTop + fromLocal.y;
-  const tx = toLocal.x,   ty = nextZoneTop + toLocal.y;
+  const fx = fromLocal.x;
+  const fy = zoneTop + fromLocal.y;
+  const tx = toLocal.x;
+  const ty = nextZoneTop + toLocal.y;
   const d  = `M ${fx} ${fy} C ${fx} ${fy + 55} ${tx} ${ty - 55} ${tx} ${ty}`;
 
   return (
     <g>
       <path
-        d={d} fill="none"
+        d={d}
+        fill="none"
         stroke={lit ? toColor : '#1e293b'}
         strokeWidth={lit ? 2.5 : 1.8}
         strokeOpacity={lit ? 0.7 : 0.4}
-        strokeDasharray={lit ? 'none' : '6 8'}
+        strokeDasharray={lit ? undefined : '6 8'}
         strokeLinecap="round"
       />
       {lit && (
@@ -716,7 +688,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   const scrollRef = useRef(null);
 
   const allNodes = useMemo(
-    () => propNodes.length > 0 ? propNodes : generateMockWorld(),
+    () => (propNodes.length > 0 ? propNodes : generateMockWorld()),
     [propNodes]
   );
 
@@ -730,10 +702,9 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
       if (!zid || !m[zid]) return;
 
       const sequenceNum = n.nodeOrder ?? n.nodeNum ?? 1;
-      
-      const rawIndex  = n.localIndex ?? Math.max(0, sequenceNum - 1);
-      const safeIndex = Math.min(14, Math.max(0, rawIndex));
-      const localPos  = n.localPos || getLocalNodePos(safeIndex);
+      const rawIndex    = n.localIndex ?? Math.max(0, sequenceNum - 1);
+      const safeIndex   = Math.min(14, Math.max(0, rawIndex));
+      const localPos    = n.localPos || getLocalNodePos(safeIndex);
 
       m[zid].push({
         ...n,
@@ -748,21 +719,23 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
     return m;
   }, [allNodes]);
 
+  // Detect if the progress node-IDs don't match the loaded nodes (mock/dev mode)
   const mockIdMismatch = useMemo(() => {
     if (!progress?.unlockedNodes?.length) return true;
-    const allMockIds = new Set(allNodes.map(n => n.nodeId).filter(Boolean));
-    const anyMatch   = progress.unlockedNodes.some(id => allMockIds.has(id));
+    const allIds   = new Set(allNodes.map(n => n.nodeId).filter(Boolean));
+    const anyMatch = progress.unlockedNodes.some(id => allIds.has(id));
     return !anyMatch;
   }, [allNodes, progress]);
 
+  // FIX 2: was `nodesByZone[ZONE_CONFIGS?.id]` — ZONE_CONFIGS is an array,
+  // .id is always undefined; must index with [0] to get the first zone config.
   const firstZoneFirstNodeId = useMemo(() => {
-    // ✅ BUG FIX: Changed ZONE_CONFIGS?.id to ZONE_CONFIGS?.id
-    const zone0Nodes = nodesByZone[ZONE_CONFIGS?.id] || [];
-    return zone0Nodes?.nodeId || null;
+    const zone0Nodes = nodesByZone[ZONE_CONFIGS[0]?.id] ?? [];
+    return zone0Nodes[0]?.nodeId ?? null;
   }, [nodesByZone]);
 
   const completedSet = useMemo(
-    () => new Set(progress?.completedNodes?.map(n => n.nodeId) || []),
+    () => new Set(progress?.completedNodes?.map(n => n.nodeId) ?? []),
     [progress]
   );
 
@@ -774,24 +747,21 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   const CANVAS_H = ZONE_CONFIGS.length * (ZONE_H + ZONE_GAP);
 
   const scrollToZone = useCallback((zIdx) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: Math.max(0, zoneTops[zIdx] - 80), behavior: 'smooth' });
+    scrollRef.current?.scrollTo({ top: Math.max(0, zoneTops[zIdx] - 80), behavior: 'smooth' });
   }, [zoneTops]);
 
   const jumpToProgress = useCallback(() => {
     const firstAvail = allNodes.find(n => {
       const isFallback = mockIdMismatch && n.nodeId === firstZoneFirstNodeId;
-      const s = getState(n.nodeId, progress, isFallback);
-      return s.state === 'available';
+      return getState(n.nodeId, progress, isFallback).state === 'available';
     });
-    if (firstAvail) {
-      const zIdx = firstAvail.zoneIndex ?? 0;
-      scrollToZone(zIdx);
-    } else {
-      scrollToZone(0);
-    }
+    scrollToZone(firstAvail?.zoneIndex ?? 0);
   }, [allNodes, progress, mockIdMismatch, firstZoneFirstNodeId, scrollToZone]);
+
+  // FIX 3: Precompute bridge endpoints once — always slot 14 (Zone Boss) → slot 0 (Node 1).
+  // This is immune to incomplete DB seeds that would otherwise shift the "last node".
+  const BRIDGE_FROM = getLocalNodePos(14); // Zone Boss position (node 15)
+  const BRIDGE_TO   = getLocalNodePos(0);  // First node of next zone
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ background: '#020408' }}>
@@ -823,41 +793,40 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
           className="relative mx-auto"
           style={{ width: ZONE_W, height: CANVAS_H }}
         >
-          {/* Inter-zone bridges */}
+          {/* ── Inter-zone bridges ──────────────────────────────────── */}
           <svg
             className="absolute inset-0 pointer-events-none"
             style={{ width: ZONE_W, height: CANVAS_H, zIndex: 15, overflow: 'visible' }}
           >
             {ZONE_CONFIGS.slice(0, -1).map((zone, zIdx) => {
-              const nextZone   = ZONE_CONFIGS[zIdx + 1];
-              const zNodes     = nodesByZone[zone.id] || [];
+              const nextZone = ZONE_CONFIGS[zIdx + 1];
+              const zNodes   = nodesByZone[zone.id] ?? [];
 
-              // ✅ SPLIT-PATH FIX: Force the bridge to always connect Node 15 to Node 1
-              const fromLocal = getLocalNodePos(14); // Index 14 = Node 15
-              const toLocal   = getLocalNodePos(0);  // Index 0 = Node 1
-              
-              // Only light up if the Zone Boss is complete
+              // Only illuminate bridge once the actual Zone Boss (nodeNum 15) is complete.
+              // This check is data-driven and safe regardless of how many nodes are seeded.
               const zoneBoss = zNodes.find(n => n.nodeNum === 15);
-              const lit = zoneBoss ? completedSet.has(zoneBoss.nodeId) : false;
+              const lit      = zoneBoss ? completedSet.has(zoneBoss.nodeId) : false;
 
               return (
                 <InterZoneBridge
                   key={`bridge-${zIdx}`}
-                  fromLocal={fromLocal}     toLocal={toLocal}
-                  zoneTop={zoneTops[zIdx]}  nextZoneTop={zoneTops[zIdx + 1]}
-                  toColor={nextZone.path || '#22d3ee'}
+                  fromLocal={BRIDGE_FROM}
+                  toLocal={BRIDGE_TO}
+                  zoneTop={zoneTops[zIdx]}
+                  nextZoneTop={zoneTops[zIdx + 1]}
+                  toColor={nextZone.path ?? '#22d3ee'}
                   lit={lit}
                 />
               );
             })}
           </svg>
 
-          {/* Zone tiles */}
+          {/* ── Zone tiles ──────────────────────────────────────────── */}
           {ZONE_CONFIGS.map((zone, zIdx) => {
-            const zoneNodes = nodesByZone[zone.id] || [];
+            const zoneNodes = nodesByZone[zone.id] ?? [];
             const zoneTop   = zoneTops[zIdx];
 
-            // Build all 15 slots; fill missing with locked placeholders
+            // Build all 15 display slots; unfilled slots become locked placeholders.
             const displayNodes = Array.from({ length: 15 }, (_, i) => {
               const found = zoneNodes.find(
                 n => n.nodeNum === i + 1 || n.localIndex === i
@@ -871,6 +840,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                 region:        zone.id,
                 zoneIndex:     zIdx,
                 localPos:      getLocalNodePos(i),
+                // Both field shapes pre-filled so getNodeTitle() never returns null
                 problem:       { title: `Challenge ${i + 1}` },
                 problemId:     { title: `Challenge ${i + 1}` },
                 isPlaceholder: true,
@@ -885,9 +855,9 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
               >
                 <ZoneContainer config={zone} completedIds={completedSet}>
                   {displayNodes.map(node => {
-                    const { x, y } = node.localPos || getLocalNodePos(node.localIndex ?? 0);
-                    const isSel  = node.nodeId === selectedNodeId;
-                    const isBoss = node.nodeType === 'boss';
+                    const { x, y } = node.localPos ?? getLocalNodePos(node.localIndex ?? 0);
+                    const isSel    = node.nodeId === selectedNodeId;
+                    const isBoss   = node.nodeType === 'boss';
 
                     const isFirstNodeFallback =
                       mockIdMismatch &&
@@ -924,8 +894,8 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                             node={node}
                             state={nodeState}
                             isSelected={isSel}
-                            accent={zone.accent || '#22d3ee'}
-                            onClick={!node.isPlaceholder ? onNodeClick : undefined}
+                            accent={zone.accent ?? '#22d3ee'}
+                            onClick={node.isPlaceholder ? undefined : onNodeClick}
                           />
                         )}
                       </div>
@@ -938,27 +908,29 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
         </div>
       </div>
 
-      {/* ── HUD: Jump to progress button ─────────────────────────── */}
+      {/* ── HUD: Jump to progress ────────────────────────────────── */}
       <div className="absolute bottom-5 left-5 z-50 pointer-events-auto">
         <button
           onClick={jumpToProgress}
           className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all"
           style={{
-            background:   'rgba(34,211,238,0.12)',
-            border:       '1px solid rgba(34,211,238,0.30)',
-            color:        '#22d3ee',
+            background: 'rgba(34,211,238,0.12)',
+            border:     '1px solid rgba(34,211,238,0.30)',
+            color:      '#22d3ee',
           }}
         >
           <span className="text-sm">🎯</span> Continue
         </button>
       </div>
 
-      {/* ── HUD: Mini zone index ──────────────────────────────────── */}
+      {/* ── HUD: Mini zone index ─────────────────────────────────── */}
       <div className="absolute top-3 right-3 z-50 pointer-events-none">
         <div className="bg-[#060810]/85 border border-gray-800/40 rounded-xl px-3 py-2 space-y-1 max-h-60 overflow-hidden">
-          <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1.5">Zones</p>
+          <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1.5">
+            Zones
+          </p>
           {ZONE_CONFIGS.map((z, i) => {
-            const zNodes = nodesByZone[z.id] || [];
+            const zNodes = nodesByZone[z.id] ?? [];
             const done   = zNodes.filter(n => completedSet.has(n.nodeId)).length;
             const total  = zNodes.length || 15;
             const pct    = Math.round((done / total) * 100);
@@ -967,13 +939,23 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                 key={z.id}
                 className="flex items-center gap-2 w-full text-left hover:opacity-100 transition-opacity pointer-events-auto"
                 style={{ opacity: done === 0 && i > 0 ? 0.4 : 0.85 }}
-                onClick={() => scrollRef.current?.scrollTo({ top: zoneTops[i] - 100, behavior: 'smooth' })}
+                onClick={() =>
+                  scrollRef.current?.scrollTo({
+                    top: Math.max(0, zoneTops[i] - 100),
+                    behavior: 'smooth',
+                  })
+                }
               >
                 <span className="text-xs select-none">{z.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[9px] font-bold text-gray-400 truncate max-w-[100px]">{z.name}</div>
+                  <div className="text-[9px] font-bold text-gray-400 truncate max-w-[100px]">
+                    {z.name}
+                  </div>
                   <div className="h-1 rounded-full mt-0.5" style={{ background: '#1e293b' }}>
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: z.accent }} />
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${pct}%`, background: z.accent }}
+                    />
                   </div>
                 </div>
               </button>
@@ -982,7 +964,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
         </div>
       </div>
 
-      {/* ── Legend ────────────────────────────────────────────────── */}
+      {/* ── Legend ───────────────────────────────────────────────── */}
       <div className="absolute bottom-5 left-[58px] z-50 pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-3 py-2.5 backdrop-blur-md">
         {[
           { col: '#374151', label: 'Locked'    },
@@ -990,8 +972,8 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
           { col: '#fbbf24', label: 'Complete'  },
           { col: '#a855f7', label: 'Mid Boss'  },
           { col: '#ef4444', label: 'Zone Boss' },
-        ].map((item, i) => (
-          <div key={i} className="flex items-center gap-2 mb-1.5 last:mb-0">
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-2 mb-1.5 last:mb-0">
             <div
               className="w-3 h-3 rounded-full border shrink-0"
               style={{

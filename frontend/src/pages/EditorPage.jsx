@@ -14,17 +14,27 @@ import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal } from 'luc
 import TestCaseResults from '../components/TestCaseResults';
 
 // ✅ FIXED TIMER: Receives initial time via props
-const Timer = React.memo(({ initialTime, socket, roomId }) => {
-    const [timeLeft, setTimeLeft] = useState(initialTime); // ✅ Initialize from prop
+// room id removed becasue it was not being used anywhere 
+const Timer = React.memo(({ initialTime, socket }) => {
+    // const [timeLeft, setTimeLeft] = useState(initialTime); // ✅ Initialize from prop
+    // const [timeLeft, setTimeLeft] = useState(initialTime ?? 0);
+    const [timeLeft, setTimeLeft] = useState(() => initialTime ?? 0);
+
     const intervalRef = useRef(null);
 
     // ✅ Update when initialTime prop changes (on reconnect)
+    // useEffect(() => {
+    //     if (initialTime !== null && initialTime !== undefined) {
+    //         console.log(`[TIMER] Setting from prop: ${initialTime}s`);
+    //         setTimeLeft(initialTime);
+    //     }
+    // }, [initialTime]);
     useEffect(() => {
-        if (initialTime !== null && initialTime !== undefined) {
-            console.log(`[TIMER] Setting from prop: ${initialTime}s`);
-            setTimeLeft(initialTime);
-        }
-    }, [initialTime]);
+  if (initialTime == null) return;
+
+  setTimeLeft(initialTime);
+}, [initialTime]);
+
 
     // ✅ Client-side countdown
     useEffect(() => {
