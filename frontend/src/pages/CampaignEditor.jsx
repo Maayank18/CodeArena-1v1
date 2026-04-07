@@ -414,13 +414,20 @@ const CampaignEditor = () => {
       const normResults = (data.results || []).map(normaliseResult);
       setRunResults(normResults);
 
-      if (data.allPassed) {
-        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-        setSuccessResult({ ...data, elapsedSeconds });
-        setShowSuccess(true);
-        // Clean storage for this specific lang/node on win
-        localStorage.removeItem(getStorageKey(nodeId, language));
-      } else {
+    //   if (data.allPassed) {
+    //     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+    //     setSuccessResult({ ...data, elapsedSeconds });
+    //     setShowSuccess(true);
+    //     // Clean storage for this specific lang/node on win
+    //     localStorage.removeItem(getStorageKey(nodeId, language));
+    //   } 
+        if (data.allPassed) {
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            setSuccessResult({ ...data, elapsedSeconds });
+            setShowSuccess(true);
+            localStorage.removeItem(getStorageKey(nodeId, language));
+        }
+      else {
         setFailCount(f => f + 1);
         setLastFailedCode(code);
         setLastError(normResults.find(r => !r.passed)?.stderr || 'Wrong Answer');
@@ -512,7 +519,7 @@ const CampaignEditor = () => {
         <button onClick={() => setMobileTab('editor')} className={`flex-1 py-2.5 text-xs font-bold border-b-2 ${mobileTab === 'editor' ? 'border-cyan-500 text-cyan-500' : 'border-transparent'}`}>Editor</button>
       </div>
 
-      {/* ... bottom of CampaignEditor.jsx */}
+      {/* ... bottom of CampaignEditor.jsx
       <SuccessModal
         isOpen={showSuccess}
         result={successResult}
@@ -523,18 +530,24 @@ const CampaignEditor = () => {
           setRunResults(null);
           setShowResults(false);
         }}
-      />
+      /> */}
 
-      {/* <SuccessModal
+      <SuccessModal
         isOpen={showSuccess}
         result={successResult}
-        onViewMap={() => navigate('/campaign', { state: { refetch: true } })} // ✅ LEVEL UNLOCK FIX
+        onViewMap={() =>
+            navigate('/campaign', {
+                state: { newProgress: successResult?.progress }  // ← pass it here
+            })
+        }
         onContinue={() => {
-          setShowSuccess(false);
-          setRunResults(null);
-          setShowResults(false);
+            setShowSuccess(false);
+            setRunResults(null);
+            setShowResults(false);
         }}
-      /> */}
+    />
+
+      
     </div>
   );
 };

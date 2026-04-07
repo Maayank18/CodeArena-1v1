@@ -1,18 +1,25 @@
 // src/data/campaignDataBatch2.js
 // ─────────────────────────────────────────────────────────────────────────────
-// Batch 2: Zones 4, 5, 6  (45 nodes total)
-// Zone 4 — Sliding Window Sanctum    (The Glass Valley)
-// Zone 5 — HashMap Highlands         (The Cartographer's Peak)
-// Zone 6 — Stack & Queue Quarry      (The Forge of Order)
+// Zone 4 — Sliding Window Sanctum   (sw_01 → sw_15)
+// Zone 5 — HashMap Highlands        (hm_01 → hm_15)
+// Zone 6 — Stack & Queue Quarry     (sq_01 → sq_15)
 //
-// Scaling per zone: Nodes 1–7 = Easy, Node 8 = Mid-Boss (Medium),
-//                   Nodes 9–14 = Medium, Node 15 = Zone Boss (Hard)
+// Progression rule:
+//   • Within a zone  : node N requires node N-1
+//   • Node 8         : Mid-Boss  — unlocks node 9 of the SAME zone
+//   • Node 15        : Zone Boss — unlocks node 1 of the NEXT zone ONLY
+//   • sw_01 requires ll_15  (Zone 3 boss)
+//   • hm_01 requires sw_15  (Zone 4 boss)
+//   • sq_01 requires hm_15  (Zone 5 boss)
+//
+// Node IDs mirror the seed file:
+//   sw = Sliding Window, hm = HashMap, sq = Stack & Queue
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const BATCH_2_ZONES = [
 
   // ══════════════════════════════════════════════════════════════════════════
-  // ZONE 4 — Sliding Window Sanctum  "The Glass Valley"
+  // ZONE 4 — Sliding Window Sanctum   (unlocks after ll_15)
   // ══════════════════════════════════════════════════════════════════════════
   {
     id:       'sliding_window_sanctum',
@@ -21,194 +28,437 @@ export const BATCH_2_ZONES = [
     icon:     '🔭',
     weather:  'mist',
     theme: {
-      bgGrad:     ['#060e1a', '#0a1a30', '#0e2445'],
-      accent:     '#818cf8',
-      path:       '#6366f1',
-      titleGrad:  ['#c7d2fe', '#818cf8'],
-      border:     '#4f46e5',
-      glow:       '#6366f140',
-      ground:     '#080f22',
-      decorations:['🔭','🌀','💠','✦'],
+      bgGrad:      ['#060e1a', '#0a1a30', '#0e2445'],
+      accent:      '#818cf8',
+      path:        '#6366f1',
+      titleGrad:   ['#c7d2fe', '#818cf8'],
+      border:      '#4f46e5',
+      glow:        '#6366f140',
+      ground:      '#080f22',
+      decorations: ['🔭', '🌀', '💠', '✦'],
     },
     nodes: [
+
+      // ── Nodes 1–7: Easy ───────────────────────────────────────────────────
       {
-        id: 'zone4-node1', title: 'The Portcullis Sum', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'The castle gate opens only when the sum of K consecutive stones equals a target. Given an array of N integers and a window size K, find the maximum sum of any K consecutive elements. The Glass Valley\'s first test of focus.',
+        nodeId: 'sw_01', nodeNum: 1, nodeType: 'standard',
+        problem: {
+          title: 'Max Window Sum', difficulty: 'Easy', slug: 'max-window-sum',
+          description:
+            'Given an array of N integers and a window size K, find the maximum sum of any K consecutive elements.',
+          examples: [{ input: '7 3\n2 1 5 1 3 2 4', output: '9' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁵', '−10⁴ ≤ arr[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone4-node2', title: 'Average of the Panes', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'The sanctum\'s stained glass panels display the average luminescence of every K-width segment. Given an array of brightness values and K, return an array of all K-window averages rounded to 2 decimal places.',
+        nodeId: 'sw_02', nodeNum: 2, nodeType: 'standard',
+        problem: {
+          title: 'Window Averages', difficulty: 'Easy', slug: 'window-averages',
+          description:
+            'Given an array and window size K, return all K-window averages rounded to 2 decimal places, space-separated.',
+          examples: [{ input: '5 3\n1 3 2 6 4', output: '2.00 3.67 4.00' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁴', '0 ≤ arr[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone4-node3', title: 'The Consistent Corridor', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'A corridor in the sanctum is considered "stable" if all elements within a window of size K are identical. Count the number of stable windows in the given array of N integers.',
+        nodeId: 'sw_03', nodeNum: 3, nodeType: 'standard',
+        problem: {
+          title: 'Stable Windows', difficulty: 'Easy', slug: 'stable-windows',
+          description:
+            'A window of size K is "stable" if all elements inside it are identical. Count the number of stable windows.',
+          examples: [{ input: '6 3\n1 1 1 2 2 2', output: '2' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁵', '0 ≤ arr[i] ≤ 10⁶'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone4-node4', title: 'The Treasure Streak', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'A relic hunter claims the longest unbroken chain of positive integers in a sequence is the true treasure. Find the length of the longest contiguous subarray where all elements are positive.',
+        nodeId: 'sw_04', nodeNum: 4, nodeType: 'standard',
+        problem: {
+          title: 'Longest Positive Streak', difficulty: 'Easy', slug: 'longest-positive-streak',
+          description:
+            'Find the length of the longest contiguous subarray where all elements are strictly positive.',
+          examples: [{ input: '8\n1 2 -1 3 4 5 -2 6', output: '3' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '−10⁴ ≤ arr[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone4-node5', title: 'The Minimum Pane', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'For each window of size K sliding across the Glass Valley\'s sensor grid, the Elder records only the minimum value. Given an integer array and K, output the minimum of each sliding window of size K.',
+        nodeId: 'sw_05', nodeNum: 5, nodeType: 'standard',
+        problem: {
+          title: 'Sliding Window Minimum', difficulty: 'Easy', slug: 'sliding-window-minimum',
+          description:
+            'For each window of size K sliding across the array, output the minimum of each window, space-separated.',
+          examples: [{ input: '5 3\n5 3 1 4 2', output: '1 1 1' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁴', '0 ≤ arr[i] ≤ 10⁶'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 250, threeStarTimeMs: 90 },
       },
       {
-        id: 'zone4-node6', title: 'The Fixed-Width Oracle', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'The Oracle speaks only in fixed-width revelations. Given a binary array and window size K, count how many windows of size K contain exactly M ones. Return the total count.',
+        nodeId: 'sw_06', nodeNum: 6, nodeType: 'standard',
+        problem: {
+          title: 'Binary Window Ones', difficulty: 'Easy', slug: 'binary-window-ones',
+          description:
+            'Given a binary array, window size K, and target M, count windows of size K that contain exactly M ones.',
+          examples: [{ input: '7 3 2\n1 0 1 0 1 1 0', output: '3' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁵', '0 ≤ M ≤ K'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 250, threeStarTimeMs: 90 },
       },
       {
-        id: 'zone4-node7', title: 'The Count of Blessings', difficulty: 'Easy',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'A blessing is bestowed upon a window of size K only if its sum is greater than or equal to a sacred threshold T. Count the number of windows of size K in the array that are "blessed".',
+        nodeId: 'sw_07', nodeNum: 7, nodeType: 'standard',
+        problem: {
+          title: 'Blessed Windows', difficulty: 'Easy', slug: 'blessed-windows',
+          description:
+            'Count the number of windows of size K whose sum is ≥ threshold T.',
+          examples: [{ input: '6 3 10\n4 5 2 7 1 8', output: '3' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁵', '1 ≤ T ≤ 10⁹'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
+      },
+
+      // ── Node 8: Mid-Boss ─────────────────────────────────────────────────
+      {
+        nodeId: 'sw_08', nodeNum: 8, nodeType: 'boss', bossType: 'mid',
+        problem: {
+          title: 'Min Subarray Length', difficulty: 'Medium', slug: 'min-subarray-length',
+          description:
+            'Find the length of the smallest contiguous subarray whose sum is ≥ S. Return 0 if none exists. Must run in O(N).',
+          examples: [{ input: '7\n2 3 1 2 4 3\n7', output: '2' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '1 ≤ S ≤ 10⁹', '0 < arr[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 30, twoStarKP: 50, threeStarKP: 80 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
+      },
+
+      // ── Nodes 9–14: Medium ───────────────────────────────────────────────
+      {
+        nodeId: 'sw_09', nodeNum: 9, nodeType: 'standard',
+        problem: {
+          title: 'Distinct Character Subarrays', difficulty: 'Medium',
+          slug: 'distinct-subarrays',
+          description:
+            'Find the number of subarrays of length K that contain exactly K distinct characters.',
+          examples: [{ input: '6 3\naabcdd', output: '3' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone4-node8', title: 'The Glass Vault Guardian', difficulty: 'Medium',
-        isBoss: true, topic: 'Sliding Window',
-        description: 'The Mid-Boss of the Glass Valley: find the smallest contiguous subarray whose sum is ≥ S. The Guardian warps the valley — the window shrinks and grows dynamically. Return the minimum length, or 0 if none exists. Time complexity must be O(N).',
+        nodeId: 'sw_10', nodeNum: 10, nodeType: 'standard',
+        problem: {
+          title: 'Longest No-Repeat Substring', difficulty: 'Medium',
+          slug: 'longest-no-repeat',
+          description:
+            'Find the length of the longest substring without any repeating characters.',
+          examples: [{ input: 'abcabcbb', output: '3' }],
+          constraints: ['0 ≤ |S| ≤ 5×10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone4-node9', title: 'The Distinct Prism', difficulty: 'Medium',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'Each prism in the sanctum displays exactly K distinct colours. Find the number of subarrays of length K that contain exactly K distinct characters. A challenge for the keen-eyed wanderer.',
+        nodeId: 'sw_11', nodeNum: 11, nodeType: 'standard',
+        problem: {
+          title: 'Permutation in String', difficulty: 'Medium',
+          slug: 'permutation-in-string',
+          description:
+            'Check if any permutation of pattern P exists as a substring of string S. Print YES or NO.',
+          examples: [{ input: 'ab\noiabcd', output: 'YES' }],
+          constraints: ['1 ≤ |P| ≤ |S| ≤ 5×10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone4-node10', title: 'The Long Mirage', difficulty: 'Medium',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'In the Glass Valley\'s desert flank, a mirage stretches as far as it can without repeating the same symbol twice. Find the length of the longest substring without any repeating characters.',
+        nodeId: 'sw_12', nodeNum: 12, nodeType: 'standard',
+        problem: {
+          title: 'Longest Char Replacement', difficulty: 'Medium',
+          slug: 'longest-char-replacement',
+          description:
+            'Find the length of the longest substring containing only one distinct character achievable after at most K replacements.',
+          examples: [{ input: 'AABABBA\n1', output: '4' }],
+          constraints: ['1 ≤ |S| ≤ 10⁵', '0 ≤ K ≤ |S|'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone4-node11', title: 'The Permutation Lens', difficulty: 'Medium',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'A lens reveals hidden patterns — specifically, whether any permutation of a pattern string P exists as a substring of string S. Return YES if found, NO otherwise. Your window must equal |P| in size.',
+        nodeId: 'sw_13', nodeNum: 13, nodeType: 'standard',
+        problem: {
+          title: 'Fruits in Baskets', difficulty: 'Medium', slug: 'fruits-in-baskets',
+          description:
+            'You have exactly 2 baskets, each holding one fruit type. Find the longest contiguous segment of trees containing at most 2 distinct fruit types.',
+          examples: [{ input: '6\nA B C B B C', output: '5' }],
+          constraints: ['1 ≤ N ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone4-node12', title: 'The Replacement Ritual', difficulty: 'Medium',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'The sanctum\'s scribes can replace at most K characters in a string. Find the length of the longest substring containing only one distinct character that can be achieved after at most K replacements.',
+        nodeId: 'sw_14', nodeNum: 14, nodeType: 'standard',
+        problem: {
+          title: 'Max Consecutive Ones III', difficulty: 'Medium',
+          slug: 'max-consecutive-ones',
+          description:
+            'Given a binary array and integer K, you may flip at most K zeros to ones. Find the maximum number of consecutive ones achievable.',
+          examples: [{ input: '6 2\n1 1 0 0 1 1', output: '6' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '0 ≤ K ≤ N'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
+
+      // ── Node 15: Zone Boss ───────────────────────────────────────────────
       {
-        id: 'zone4-node13', title: 'The Fruit Picker\'s Path', difficulty: 'Medium',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'A picker carries exactly 2 baskets — each basket holds only one fruit type. Walking along a row of fruit trees (represented as characters), find the longest contiguous segment containing at most 2 distinct fruit types.',
-      },
-      {
-        id: 'zone4-node14', title: 'The Flip of the Lens', difficulty: 'Medium',
-        isBoss: false, topic: 'Sliding Window',
-        description: 'Given a binary array and integer K, you may flip at most K zeros to ones. Find the maximum number of consecutive ones achievable in the resulting array. The valley\'s penultimate trial.',
-      },
-      {
-        id: 'zone4-node15', title: 'The Sanctum Sentinel', difficulty: 'Hard',
-        isBoss: true, topic: 'Sliding Window',
-        description: 'The Sanctum\'s supreme boss: find the minimum window substring of S that contains all characters of T (including duplicates). The Sentinel shifts forms — only the most optimal sliding approach survives. Return "" if impossible.',
+        nodeId: 'sw_15', nodeNum: 15, nodeType: 'boss', bossType: 'main',
+        problem: {
+          title: 'Minimum Window Substring', difficulty: 'Hard',
+          slug: 'min-window-substring',
+          description:
+            'Find the minimum window substring of S that contains all characters of T (including duplicates). Return "" if impossible.',
+          examples: [{ input: 'ADOBECODEBANC\nABC', output: 'BANC' }],
+          constraints: ['1 ≤ |S|, |T| ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 50, twoStarKP: 80, threeStarKP: 120 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 120 },
+        lootPool: [
+          { itemId: 'title_glasswarden', itemType: 'title',  dropChance: 0.4  },
+          { itemId: 'border_prism',      itemType: 'border', dropChance: 0.25 },
+        ],
       },
     ],
   },
 
   // ══════════════════════════════════════════════════════════════════════════
-  // ZONE 5 — HashMap Highlands  "The Cartographer's Peak"
+  // ZONE 5 — HashMap Highlands   (unlocks after sw_15)
   // ══════════════════════════════════════════════════════════════════════════
   {
     id:       'hashmap_highlands',
     name:     'HashMap Highlands',
-    subtitle: 'Map the Unmappable',
+    subtitle: "Map the Unmappable",
     icon:     '🗺️',
     weather:  'mist',
     theme: {
-      bgGrad:     ['#1a0e00', '#2d1a08', '#3d2510'],
-      accent:     '#fb923c',
-      path:       '#f97316',
-      titleGrad:  ['#fed7aa', '#fb923c'],
-      border:     '#ea580c',
-      glow:       '#f9731640',
-      ground:     '#2d1e0a',
-      decorations:['⛰️','🦅','🪨','🗺️'],
+      bgGrad:      ['#1a0e00', '#2d1a08', '#3d2510'],
+      accent:      '#fb923c',
+      path:        '#f97316',
+      titleGrad:   ['#fed7aa', '#fb923c'],
+      border:      '#ea580c',
+      glow:        '#f9731640',
+      ground:      '#2d1e0a',
+      decorations: ['⛰️', '🦅', '🪨', '🗺️'],
     },
     nodes: [
+
+      // ── Nodes 1–7: Easy ───────────────────────────────────────────────────
       {
-        id: 'zone5-node1', title: 'The Frequency Census', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'The Cartographer\'s first task: survey the highlands and count how often each element appears. Given an array of N integers, return a map of each element to its frequency of occurrence, printed in ascending key order.',
+        nodeId: 'hm_01', nodeNum: 1, nodeType: 'standard',
+        problem: {
+          title: 'Element Frequency', difficulty: 'Easy', slug: 'element-frequency',
+          description:
+            'Given an array of N integers, print each distinct element and its frequency in ascending key order.',
+          examples: [{ input: '5\n3 1 3 2 1', output: '1 2\n2 1\n3 2' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '1 ≤ arr[i] ≤ 10⁶'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone5-node2', title: 'The Duplicate Beacon', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'Beacon fires across the peaks signal duplicate sightings. Given an array of integers, determine if any value appears more than once. Print YES if a duplicate exists, NO otherwise.',
+        nodeId: 'hm_02', nodeNum: 2, nodeType: 'standard',
+        problem: {
+          title: 'Contains Duplicate', difficulty: 'Easy', slug: 'contains-duplicate',
+          description:
+            'Given an array of integers, print YES if any value appears more than once, NO otherwise.',
+          examples: [{ input: '4\n1 2 3 1', output: 'YES' }],
+          constraints: ['1 ≤ N ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone5-node3', title: 'The Anagram Codex', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'Scrolls in the Cartographer\'s archive are considered twins if they contain identical letter frequencies. Given two strings, print YES if they are anagrams of each other, NO otherwise. Use a frequency map.',
+        nodeId: 'hm_03', nodeNum: 3, nodeType: 'standard',
+        problem: {
+          title: 'Anagram Strings', difficulty: 'Easy', slug: 'anagram-strings',
+          description:
+            'Given two strings, print YES if they are anagrams of each other using a frequency map, NO otherwise.',
+          examples: [{ input: 'listen\nsilent', output: 'YES' }],
+          constraints: ['1 ≤ |S| ≤ 10⁵', 'Lowercase letters only'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone5-node4', title: 'The Intersection Rift', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'Two rival guilds claim the same mountain pass. Find all elements that appear in both arrays (intersection). Return them sorted in ascending order, with each element appearing as many times as it appears in both.',
+        nodeId: 'hm_04', nodeNum: 4, nodeType: 'standard',
+        problem: {
+          title: 'Array Intersection', difficulty: 'Easy', slug: 'array-intersection',
+          description:
+            'Find all elements that appear in both arrays. Return them sorted in ascending order; each element appears as many times as it appears in both.',
+          examples: [{ input: '4 5\n1 2 2 1\n2 2 3 4 5', output: '2 2' }],
+          constraints: ['1 ≤ N, M ≤ 10⁴', '0 ≤ arr[i] ≤ 10⁶'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone5-node5', title: 'The First Unique Scout', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'Among all scouts dispatched to the peak, the Cartographer trusts only the first one with no duplicate report. Find and print the index (0-based) of the first non-repeating character in a string. Print -1 if none.',
+        nodeId: 'hm_05', nodeNum: 5, nodeType: 'standard',
+        problem: {
+          title: 'First Unique Char', difficulty: 'Easy', slug: 'first-unique-char',
+          description:
+            'Find and print the 0-based index of the first non-repeating character in a string. Print -1 if none.',
+          examples: [{ input: 'leetcode', output: '0' }],
+          constraints: ['1 ≤ |S| ≤ 10⁵', 'Lowercase letters only'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone5-node6', title: 'The Ransom Map', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'A ransom note can be constructed only if all its letters can be sourced from a magazine. Given two strings (note and magazine), print YES if the note can be built from the magazine\'s characters, NO otherwise.',
+        nodeId: 'hm_06', nodeNum: 6, nodeType: 'standard',
+        problem: {
+          title: 'Ransom Note', difficulty: 'Easy', slug: 'ransom-note',
+          description:
+            "Given a ransom note and a magazine string, print YES if the note can be built from the magazine's characters, NO otherwise.",
+          examples: [{ input: 'aa\naab', output: 'YES' }],
+          constraints: ['1 ≤ |note|, |magazine| ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone5-node7', title: 'The Ruin of Isomorphs', difficulty: 'Easy',
-        isBoss: false, topic: 'HashMap',
-        description: 'Two ancient ruins are said to be isomorphic if their glyph patterns map perfectly onto each other. Given two strings S and T, determine if they are isomorphic (one-to-one character mapping). Print YES or NO.',
+        nodeId: 'hm_07', nodeNum: 7, nodeType: 'standard',
+        problem: {
+          title: 'Isomorphic Strings', difficulty: 'Easy', slug: 'isomorphic-strings',
+          description:
+            'Given two strings S and T of equal length, determine if they are isomorphic (one-to-one character mapping). Print YES or NO.',
+          examples: [{ input: 'egg\nadd', output: 'YES' }],
+          constraints: ['1 ≤ |S| = |T| ≤ 5×10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
+      },
+
+      // ── Node 8: Mid-Boss ─────────────────────────────────────────────────
+      {
+        nodeId: 'hm_08', nodeNum: 8, nodeType: 'boss', bossType: 'mid',
+        problem: {
+          title: 'Two Sum HashMap', difficulty: 'Medium', slug: 'two-sum-hashmap',
+          description:
+            'Given an unsorted array and target K, find two numbers that sum to K. Print their 1-indexed positions. Must run in O(N). Print -1 if no solution.',
+          examples: [{ input: '4 9\n2 7 11 15', output: '1 2' }],
+          constraints: ['2 ≤ N ≤ 10⁵', '−10⁹ ≤ K ≤ 10⁹'],
+        },
+        rewards:        { oneStarKP: 30, twoStarKP: 50, threeStarKP: 80 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
+      },
+
+      // ── Nodes 9–14: Medium ───────────────────────────────────────────────
+      {
+        nodeId: 'hm_09', nodeNum: 9, nodeType: 'standard',
+        problem: {
+          title: 'Longest Subarray Sum K', difficulty: 'Medium',
+          slug: 'longest-subarray-k',
+          description:
+            'Find the length of the longest subarray whose elements sum to exactly K. Return 0 if none exists.',
+          examples: [{ input: '6 3\n1 2 0 3 -1 4', output: '5' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '−10⁶ ≤ K ≤ 10⁶'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone5-node8', title: 'The Summit Siege', difficulty: 'Medium',
-        isBoss: true, topic: 'HashMap',
-        description: 'The Mid-Boss of the Highlands: given an unsorted array of integers and a target K, find two numbers that add up to K and return their indices (1-indexed). The Siege demands O(N) time — a brute-force assault will fail. Print -1 if no solution exists.',
+        nodeId: 'hm_10', nodeNum: 10, nodeType: 'standard',
+        problem: {
+          title: 'Group Anagrams', difficulty: 'Medium', slug: 'group-anagrams',
+          description:
+            'Given a list of words, group all anagrams together. Return each group as a sorted list. Order of groups does not matter.',
+          examples: [{ input: '6\neat tea tan ate nat bat', output: 'ate eat tea\nbat\nnat tan' }],
+          constraints: ['1 ≤ N ≤ 10⁴', '1 ≤ |word| ≤ 100'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone5-node9', title: 'The Contiguous Ridgeline', difficulty: 'Medium',
-        isBoss: false, topic: 'HashMap',
-        description: 'A ridgeline of balance: find the length of the longest subarray whose elements sum to exactly K. Using a prefix-sum map is the highland-approved technique. Return 0 if no such subarray exists.',
+        nodeId: 'hm_11', nodeNum: 11, nodeType: 'standard',
+        problem: {
+          title: 'Subarray Sum Zero', difficulty: 'Medium', slug: 'subarray-sum-zero',
+          description:
+            'Count the total number of subarrays whose sum equals zero.',
+          examples: [{ input: '5\n1 -1 2 -2 3', output: '2' }],
+          constraints: ['1 ≤ N ≤ 10⁴', '−10⁴ ≤ arr[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone5-node10', title: 'The Group Expedition', difficulty: 'Medium',
-        isBoss: false, topic: 'HashMap',
-        description: 'The Cartographer groups explorers who share the same letter-set. Given a list of words, group all anagrams together and return each group as a sorted list of words. The order of groups does not matter.',
+        nodeId: 'hm_12', nodeNum: 12, nodeType: 'standard',
+        problem: {
+          title: 'Top K Frequent', difficulty: 'Medium', slug: 'top-k-frequent',
+          description:
+            'Given an integer array and K, return the K most frequent elements sorted by frequency descending. Break ties by value ascending.',
+          examples: [{ input: '6 2\n1 1 1 2 2 3', output: '1 2' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone5-node11', title: 'The Subarray Zero Rift', difficulty: 'Medium',
-        isBoss: false, topic: 'HashMap',
-        description: 'A subarray is said to "balance" if its sum equals zero — a mythical equilibrium in the highlands. Count the total number of such balanced subarrays in the given integer array.',
+        nodeId: 'hm_13', nodeNum: 13, nodeType: 'standard',
+        problem: {
+          title: 'Longest Harmonious Subsequence', difficulty: 'Medium',
+          slug: 'longest-harmonious',
+          description:
+            'Find the length of the longest harmonious subsequence where max and min differ by exactly 1.',
+          examples: [{ input: '8\n1 3 2 2 5 2 3 7', output: '5' }],
+          constraints: ['1 ≤ N ≤ 2×10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone5-node12', title: 'The Frequency Peak', difficulty: 'Medium',
-        isBoss: false, topic: 'HashMap',
-        description: 'The K highest-frequency lookouts are the most valuable to the Cartographer. Given an integer array and K, return the K most frequent elements sorted by frequency descending. Break ties by value ascending.',
+        nodeId: 'hm_14', nodeNum: 14, nodeType: 'standard',
+        problem: {
+          title: 'Word Pattern', difficulty: 'Medium', slug: 'word-pattern',
+          description:
+            'Given a pattern string and a sentence, print YES if the sentence follows the pattern (bijective word-to-character mapping), NO otherwise.',
+          examples: [{ input: 'abba\ndog cat cat dog', output: 'YES' }],
+          constraints: ['1 ≤ |pattern| ≤ 300', '1 ≤ words ≤ 300'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
+
+      // ── Node 15: Zone Boss ───────────────────────────────────────────────
       {
-        id: 'zone5-node13', title: 'The Longest Harmonic Trail', difficulty: 'Medium',
-        isBoss: false, topic: 'HashMap',
-        description: 'A trail is "harmonious" if it contains both the minimum and maximum values differing by at most 1. Find the length of the longest harmonious subsequence in the array where the max and min differ by exactly 1.',
-      },
-      {
-        id: 'zone5-node14', title: 'The Pattern Patrol', difficulty: 'Medium',
-        isBoss: false, topic: 'HashMap',
-        description: 'A patrol pattern is valid if each word in a sentence maps uniquely to a letter in a pattern string, and vice versa. Given a pattern string and a sentence, print YES if the sentence follows the pattern, NO otherwise.',
-      },
-      {
-        id: 'zone5-node15', title: 'The Cartographer King', difficulty: 'Hard',
-        isBoss: true, topic: 'HashMap',
-        description: 'The final reckoning on the peak: given an integer array, find the length of the longest consecutive sequence of integers (e.g., [100,4,200,1,3,2] → 4 from 1,2,3,4). The King demands O(N) time — sorting is forbidden by highland law.',
+        nodeId: 'hm_15', nodeNum: 15, nodeType: 'boss', bossType: 'main',
+        problem: {
+          title: 'Longest Consecutive Sequence', difficulty: 'Hard',
+          slug: 'longest-consecutive',
+          description:
+            'Find the length of the longest consecutive sequence of integers. Must run in O(N); sorting is not allowed.',
+          examples: [{ input: '6\n100 4 200 1 3 2', output: '4' }],
+          constraints: ['0 ≤ N ≤ 10⁵', '−10⁹ ≤ arr[i] ≤ 10⁹'],
+        },
+        rewards:        { oneStarKP: 50, twoStarKP: 80, threeStarKP: 120 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 120 },
+        lootPool: [
+          { itemId: 'title_cartographer', itemType: 'title',  dropChance: 0.4  },
+          { itemId: 'theme_cyberpunk',    itemType: 'theme',  dropChance: 0.2  },
+        ],
       },
     ],
   },
 
   // ══════════════════════════════════════════════════════════════════════════
-  // ZONE 6 — Stack & Queue Quarry  "The Forge of Order"
+  // ZONE 6 — Stack & Queue Quarry   (unlocks after hm_15)
   // ══════════════════════════════════════════════════════════════════════════
   {
     id:       'stack_queue_quarry',
@@ -217,101 +467,232 @@ export const BATCH_2_ZONES = [
     icon:     '⚒️',
     weather:  'sparks',
     theme: {
-      bgGrad:     ['#160b00', '#2e1800', '#3d2200'],
-      accent:     '#fbbf24',
-      path:       '#f59e0b',
-      titleGrad:  ['#fef08a', '#fbbf24'],
-      border:     '#d97706',
-      glow:       '#f59e0b40',
-      ground:     '#2a1500',
-      decorations:['⚙️','🔩','⚒️','💎'],
+      bgGrad:      ['#160b00', '#2e1800', '#3d2200'],
+      accent:      '#fbbf24',
+      path:        '#f59e0b',
+      titleGrad:   ['#fef08a', '#fbbf24'],
+      border:      '#d97706',
+      glow:        '#f59e0b40',
+      ground:      '#2a1500',
+      decorations: ['⚙️', '🔩', '⚒️', '💎'],
     },
     nodes: [
+
+      // ── Nodes 1–7: Easy ───────────────────────────────────────────────────
       {
-        id: 'zone6-node1', title: 'The Forge\'s First Stack', difficulty: 'Easy',
-        isBoss: false, topic: 'Stack',
-        description: 'The Forge Keeper\'s first lesson: a stack of ingots follows Last-In-First-Out order. Implement a stack supporting push, pop, and peek using only an array. Process Q operations and print the result of each peek/pop.',
+        nodeId: 'sq_01', nodeNum: 1, nodeType: 'standard',
+        problem: {
+          title: 'Implement Stack', difficulty: 'Easy', slug: 'implement-stack',
+          description:
+            'Implement a stack using an array supporting push, pop, and peek. Process Q operations and print the result of each peek/pop.',
+          examples: [{ input: '3\npush 5\npush 3\npeek', output: '3' }],
+          constraints: ['1 ≤ Q ≤ 10⁴', 'Values fit in 32-bit integer'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone6-node2', title: 'The Balanced Brackets of the Forge', difficulty: 'Easy',
-        isBoss: false, topic: 'Stack',
-        description: 'Every forge structure must have its brackets perfectly balanced — mismatched brackets collapse the entire assembly. Given a string of brackets (, ), {, }, [, ], determine if it is valid. Print YES or NO.',
+        nodeId: 'sq_02', nodeNum: 2, nodeType: 'standard',
+        problem: {
+          title: 'Valid Brackets Forge', difficulty: 'Easy', slug: 'valid-brackets-forge',
+          description:
+            'Given a string of brackets (, ), {, }, [, ], determine if it is valid. Print YES or NO.',
+          examples: [{ input: '{[()]}', output: 'YES' }],
+          constraints: ['1 ≤ |S| ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone6-node3', title: 'The Ore Queue', difficulty: 'Easy',
-        isBoss: false, topic: 'Queue',
-        description: 'Ore arrives at the quarry gate and is processed in First-In-First-Out order. Implement a queue using two stacks. Support enqueue, dequeue, and isEmpty operations. Process Q operations and output all dequeue results.',
+        nodeId: 'sq_03', nodeNum: 3, nodeType: 'standard',
+        problem: {
+          title: 'Queue Using Stacks', difficulty: 'Easy', slug: 'queue-using-stacks',
+          description:
+            'Implement a queue using two stacks. Support enqueue, dequeue, and isEmpty. Process Q operations and output all dequeue results.',
+          examples: [{ input: '4\nenqueue 1\nenqueue 2\ndequeue\ndequeue', output: '1\n2' }],
+          constraints: ['1 ≤ Q ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone6-node4', title: 'The Reversal Crucible', difficulty: 'Easy',
-        isBoss: false, topic: 'Stack',
-        description: 'A crucible in the forge reverses the order of all elements poured into it. Given a queue of N integers, reverse its order using only a stack. Print the resulting queue in order.',
+        nodeId: 'sq_04', nodeNum: 4, nodeType: 'standard',
+        problem: {
+          title: 'Reverse a Queue', difficulty: 'Easy', slug: 'reverse-queue',
+          description:
+            'Given a queue of N integers, reverse its order using only a stack. Print the resulting queue front-to-back.',
+          examples: [{ input: '4\n1 2 3 4', output: '4 3 2 1' }],
+          constraints: ['1 ≤ N ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 100 },
       },
       {
-        id: 'zone6-node5', title: 'The Cooling Conveyor', difficulty: 'Easy',
-        isBoss: false, topic: 'Queue',
-        description: 'Hot ingots cool on a circular conveyor belt. Simulate a circular queue of size K: process N enqueue and dequeue operations. Print the front element after each operation, or "Empty" if the queue is empty.',
+        nodeId: 'sq_05', nodeNum: 5, nodeType: 'standard',
+        problem: {
+          title: 'Circular Queue', difficulty: 'Easy', slug: 'circular-queue',
+          description:
+            'Simulate a circular queue of size K. Process N enqueue/dequeue operations. Print the front element after each, or "Empty" if the queue is empty.',
+          examples: [{ input: '3 4\nenqueue 1\nenqueue 2\ndequeue\nenqueue 3', output: '1\n1\n2\n2' }],
+          constraints: ['1 ≤ K ≤ 1000', '1 ≤ N ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 250, threeStarTimeMs: 90 },
       },
       {
-        id: 'zone6-node6', title: 'The Postfix Rune', difficulty: 'Easy',
-        isBoss: false, topic: 'Stack',
-        description: 'Ancient Forge runes are written in postfix (Reverse Polish) notation. Evaluate a valid postfix expression string containing single-digit operands and operators (+, -, *, /). Return the integer result.',
+        nodeId: 'sq_06', nodeNum: 6, nodeType: 'standard',
+        problem: {
+          title: 'Postfix Evaluation', difficulty: 'Easy', slug: 'postfix-evaluation',
+          description:
+            'Evaluate a valid postfix (Reverse Polish Notation) expression with single-digit operands and operators +, −, *, /. Return the integer result.',
+          examples: [{ input: '2 3 4 * +', output: '14' }],
+          constraints: ['1 ≤ tokens ≤ 100', 'Result fits in 32-bit integer'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 250, threeStarTimeMs: 90 },
       },
       {
-        id: 'zone6-node7', title: 'The Minimum Anvil', difficulty: 'Easy',
-        isBoss: false, topic: 'Stack',
-        description: 'The Forge Keeper needs instant access to the lightest ingot at any moment. Implement a min-stack that supports push, pop, and getMin in O(1) time. Process Q operations and output the result of each getMin call.',
+        nodeId: 'sq_07', nodeNum: 7, nodeType: 'standard',
+        problem: {
+          title: 'Min Stack', difficulty: 'Easy', slug: 'min-stack',
+          description:
+            'Implement a min-stack supporting push, pop, and getMin in O(1) time. Process Q operations and output the result of each getMin call.',
+          examples: [{ input: '4\npush 5\npush 3\npush 7\ngetMin', output: '3' }],
+          constraints: ['1 ≤ Q ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 10, twoStarKP: 20, threeStarKP: 35 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
+      },
+
+      // ── Node 8: Mid-Boss ─────────────────────────────────────────────────
+      {
+        nodeId: 'sq_08', nodeNum: 8, nodeType: 'boss', bossType: 'mid',
+        problem: {
+          title: 'Next Greater Element', difficulty: 'Medium',
+          slug: 'next-greater-element',
+          description:
+            'For each element in the array, find the next greater element to its right using a monotonic stack in O(N). Print -1 if none exists.',
+          examples: [{ input: '4\n4 5 2 10', output: '5 10 10 -1' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '0 ≤ arr[i] ≤ 10⁹'],
+        },
+        rewards:        { oneStarKP: 30, twoStarKP: 50, threeStarKP: 80 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
+      },
+
+      // ── Nodes 9–14: Medium ───────────────────────────────────────────────
+      {
+        nodeId: 'sq_09', nodeNum: 9, nodeType: 'standard',
+        problem: {
+          title: 'Stock Span', difficulty: 'Medium', slug: 'stock-span',
+          description:
+            "Calculate the stock span for each day: the number of consecutive days up to today where the price was ≤ today's price.",
+          examples: [{ input: '7\n100 80 60 70 60 75 85', output: '1 1 1 2 1 4 6' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '1 ≤ price[i] ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone6-node8', title: 'The Forge Sentinel', difficulty: 'Medium',
-        isBoss: true, topic: 'Stack',
-        description: 'The Mid-Boss of the Forge: for each element in the array, find the Next Greater Element to its right. The Sentinel blocks all O(N²) approaches — only a monotonic stack breaks through in O(N). Print -1 if no greater element exists.',
+        nodeId: 'sq_10', nodeNum: 10, nodeType: 'standard',
+        problem: {
+          title: 'Largest Rectangle in Histogram', difficulty: 'Medium',
+          slug: 'largest-histogram-rect',
+          description:
+            'Find the area of the largest rectangle that can be formed within a histogram.',
+          examples: [{ input: '6\n2 1 5 6 2 3', output: '10' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '0 ≤ height[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone6-node9', title: 'The Span of the Hammer', difficulty: 'Medium',
-        isBoss: false, topic: 'Stack',
-        description: 'The stock price span is the number of consecutive days leading up to today where the price was ≤ today\'s price. Given N daily stock prices, calculate the stock span for each day using a monotonic stack.',
+        nodeId: 'sq_11', nodeNum: 11, nodeType: 'standard',
+        problem: {
+          title: 'Trapping Water Stack', difficulty: 'Medium',
+          slug: 'trapping-water-stack',
+          description:
+            'Calculate the total units of water trapped between elevation bars using a stack-based approach.',
+          examples: [{ input: '12\n0 1 0 2 1 0 1 3 2 1 2 1', output: '6' }],
+          constraints: ['1 ≤ N ≤ 10⁵', '0 ≤ height[i] ≤ 10⁴'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone6-node10', title: 'The Lava Histogram', difficulty: 'Medium',
-        isBoss: false, topic: 'Stack',
-        description: 'Molten rock has pooled into a histogram of bars. Find the area of the largest rectangle that can be formed within the histogram. The Forge\'s hottest puzzle — a monotonic stack is the only tool that survives.',
+        nodeId: 'sq_12', nodeNum: 12, nodeType: 'standard',
+        problem: {
+          title: 'Sliding Window Maximum', difficulty: 'Medium',
+          slug: 'sliding-window-max-deque',
+          description:
+            'Find the maximum value in each sliding window of size K using a monotonic deque in O(N) total time.',
+          examples: [{ input: '8 3\n1 3 -1 -3 5 3 6 7', output: '3 3 5 5 6 7' }],
+          constraints: ['1 ≤ K ≤ N ≤ 10⁵'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone6-node11', title: 'The Trapped Coolant', difficulty: 'Medium',
-        isBoss: false, topic: 'Stack',
-        description: 'Water pools between the forge\'s cooling bars. Given an elevation map array, calculate the total units of water that can be trapped between the bars after rainfall. A classic quarry challenge reforged.',
+        nodeId: 'sq_13', nodeNum: 13, nodeType: 'standard',
+        problem: {
+          title: 'Josephus Problem', difficulty: 'Medium', slug: 'josephus-problem',
+          description:
+            'N workers stand in a queue. Every Kth worker is removed. Simulate using a queue and return the 1-indexed position of the last remaining worker.',
+          examples: [{ input: '7 3', output: '4' }],
+          constraints: ['1 ≤ N ≤ 10⁴', '1 ≤ K ≤ N'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
       {
-        id: 'zone6-node12', title: 'The Deque of Flames', difficulty: 'Medium',
-        isBoss: false, topic: 'Queue',
-        description: 'A deque (double-ended queue) governs the flame intensity across K-wide windows of the forge. Find the maximum value in each sliding window of size K using a monotonic deque in O(N) total time.',
+        nodeId: 'sq_14', nodeNum: 14, nodeType: 'standard',
+        problem: {
+          title: 'Decode String', difficulty: 'Medium', slug: 'decode-string',
+          description:
+            'Decode an encoded string where K[s] means repeat s K times. E.g. "3[a2[c]]" → "accaccacc".',
+          examples: [{ input: '3[a2[c]]', output: 'accaccacc' }],
+          constraints: ['1 ≤ |S| ≤ 30', '1 ≤ K ≤ 300'],
+        },
+        rewards:        { oneStarKP: 15, twoStarKP: 25, threeStarKP: 45 },
+        starThresholds: { twoStarTimeMs: 200, threeStarTimeMs: 80 },
       },
+
+      // ── Node 15: Zone Boss ───────────────────────────────────────────────
       {
-        id: 'zone6-node13', title: 'The Ore Processor\'s Rotation', difficulty: 'Medium',
-        isBoss: false, topic: 'Queue',
-        description: 'N workers stand in a queue. Every Kth worker is removed (Josephus problem). Simulate the process using a queue and return the position (1-indexed) of the last remaining worker.',
-      },
-      {
-        id: 'zone6-node14', title: 'The Bracket Decoder', difficulty: 'Medium',
-        isBoss: false, topic: 'Stack',
-        description: 'Encoded blueprints follow the rule: K[encodedString] means repeat encodedString K times. Decode a given encoded string using a stack. For example, "3[a2[c]]" decodes to "accaccacc".',
-      },
-      {
-        id: 'zone6-node15', title: 'The Grand Forge Master', difficulty: 'Hard',
-        isBoss: true, topic: 'Stack',
-        description: 'The ultimate reckoning: design an LRU (Least Recently Used) cache supporting get(key) and put(key, value) in O(1) time. The Grand Forge Master discards the least-used ingot when capacity is reached. Implement using a doubly linked list + HashMap.',
+        nodeId: 'sq_15', nodeNum: 15, nodeType: 'boss', bossType: 'main',
+        problem: {
+          title: 'LRU Cache', difficulty: 'Hard', slug: 'lru-cache',
+          description:
+            'Design an LRU (Least Recently Used) cache supporting get(key) and put(key, value) in O(1). Implement using a doubly linked list + HashMap.',
+          examples: [
+            {
+              input:  '2\n4\nput 1 1\nput 2 2\nget 1\nput 3 3\nget 2',
+              output: '1\n-1',
+            },
+          ],
+          constraints: ['1 ≤ capacity ≤ 3000', '0 ≤ key, value ≤ 10⁴', '1 ≤ Q ≤ 2×10⁴'],
+        },
+        rewards:        { oneStarKP: 50, twoStarKP: 80, threeStarKP: 120 },
+        starThresholds: { twoStarTimeMs: 300, threeStarTimeMs: 120 },
+        lootPool: [
+          { itemId: 'title_forgemaster', itemType: 'title',  dropChance: 0.4  },
+          { itemId: 'border_neon',       itemType: 'border', dropChance: 0.25 },
+        ],
       },
     ],
   },
 ];
 
-// ── Merge helper: append batch 2 zones to the main ZONES array ────────────────
-// In your campaignData.js, add at the bottom:
+// ── Merge helper ───────────────────────────────────────────────────────────────
+// In campaignData.js add at the bottom:
+//   import { BATCH_2_ZONES } from './campaignDataBatch2';
+//   export const ALL_ZONES = [...ZONES, ...BATCH_2_ZONES];
 //
-// import { BATCH_2_ZONES } from './campaignDataBatch2';
-// export const ALL_ZONES = [...ZONES, ...BATCH_2_ZONES];
-//
-// Then use ALL_ZONES wherever you previously used ZONES.
+// Then substitute ALL_ZONES for ZONES everywhere in the app.
+
+// ── Lookup helpers (mirror campaignData.js) ───────────────────────────────────
+export const getZoneById    = (id)     => BATCH_2_ZONES.find(z => z.id === id) ?? null;
+export const getNodeById    = (nodeId) => BATCH_2_ZONES.flatMap(z => z.nodes).find(n => n.nodeId === nodeId) ?? null;
+export const getZoneForNode = (nodeId) => BATCH_2_ZONES.find(z => z.nodes.some(n => n.nodeId === nodeId)) ?? null;
+export const ALL_BATCH2_NODES = BATCH_2_ZONES.flatMap(z => z.nodes);
 
 export default BATCH_2_ZONES;
