@@ -16,9 +16,12 @@
 // //    region:'Array_Archipelago' (capitalized Mongoose enum) but ZONE_CONFIGS
 // //    uses lowercase IDs. nodesByZone key lookup fails → all DB nodes dropped
 // //    → 15 placeholders per zone. Fixed: REGION_TO_ZONE normalisation table.
+// //
+// //  BUG D (Nodes squished to Slot 1): MongoDB uses 'nodeOrder' but frontend
+// //    expects 'nodeNum'. Normalized inside nodesByZone.
 // // ─────────────────────────────────────────────────────────────────────────────
 
-// import React, { useRef, useState, useCallback, useMemo } from 'react';
+// import React, { useRef, useCallback, useMemo } from 'react';
 // import { motion } from 'framer-motion';
 // import { Lock } from 'lucide-react';
 // import ZoneContainer from './ZoneContainer';
@@ -33,11 +36,7 @@
 // } from './campaignWorldData';
 
 // // ── Region → ZONE_CONFIG id normalisation ────────────────────────────────────
-// // Handles Mongoose enum values (capitalized) AND zone.id values (lowercase).
-// // ✅ FIX BUG C: DB nodes arrive with region:'Array_Archipelago' but ZONE_CONFIGS
-// //    uses 'array_archipelago'. Without this map the nodes silently disappear.
 // const REGION_TO_ZONE_ID = {
-//   // DB Mongoose enum → ZONE_CONFIG id
 //   Array_Archipelago:      'array_archipelago',
 //   String_Shores:          'string_shores',
 //   HashMap_Highlands:      'hashmap_highlands',
@@ -47,22 +46,16 @@
 //   DP_Dungeon:             'dp_dungeon',
 // };
 
-// /** Resolve the ZONE_CONFIGS id from any node's region/zoneId field */
 // const resolveZoneId = (node) => {
 //   const raw = node?.zoneId || node?.region || '';
-//   // Already a valid zone config id (lowercase hyphen form)
 //   if (ZONE_CONFIGS.some(z => z.id === raw)) return raw;
-//   // Mongoose enum → zone config id
 //   if (REGION_TO_ZONE_ID[raw]) return REGION_TO_ZONE_ID[raw];
-//   // Try lowercase fallback
 //   const lower = raw.toLowerCase().replace(/ /g, '_');
 //   const found = ZONE_CONFIGS.find(z => z.id === lower || z.id.includes(lower));
 //   return found ? found.id : null;
 // };
 
 // // ── Get title from any possible node field shape ──────────────────────────────
-// // ✅ FIX BUG A: Batch-2 data has title on node directly (node.title), not in
-// //    node.problem or node.problemId. The old code only checked problemId.title.
 // const getNodeTitle = (node) =>
 //   node?.problemId?.title ||   // API / generateMockWorld alias
 //   node?.problem?.title    ||  // Batch-1 data files
@@ -70,15 +63,9 @@
 //   null;
 
 // // ── Node progress state ───────────────────────────────────────────────────────
-// // ✅ FIX BUG B: Returns { state, starsAwarded } for any node.
-// // The `firstNodeIds` set is passed in so we can mark the first node as
-// // 'available' when no backend progress matches the mock data node IDs.
 // const getState = (nodeId, progress, isFirstNodeFallback = false) => {
 //   if (!progress) {
-//     // No progress at all → first node available, rest locked
-//     return isFirstNodeFallback
-//       ? { state: 'available' }
-//       : { state: 'locked' };
+//     return isFirstNodeFallback ? { state: 'available' } : { state: 'locked' };
 //   }
 
 //   const done = progress.completedNodes?.find(n => n.nodeId === nodeId);
@@ -86,10 +73,6 @@
 
 //   if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
 
-//   // ✅ FIX BUG B (fallback): If the progress came from a backend that uses a
-//   //    different node ID format (e.g. 'array_01' vs 'aa_01'), and NO nodes in
-//   //    the mock set are unlocked, the first node in zone 0 should still be
-//   //    playable. This flag is passed from WorldMap when it detects the mismatch.
 //   if (isFirstNodeFallback) return { state: 'available' };
 
 //   return { state: 'locked' };
@@ -113,12 +96,10 @@
 //     : isDone ? `0 0 16px #fbbf2470`
 //     : `0 0 18px ${accent}65, 0 0 36px ${accent}25`;
 
-//   // ✅ FIX BUG A: use getNodeTitle helper that checks all field paths
 //   const title = getNodeTitle(node) || `Node ${node.nodeNum || '?'}`;
 
 //   return (
 //     <div className="flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.4 : 1 }}>
-//       {/* Available pulse ring */}
 //       {isAvail && (
 //         <motion.div
 //           className="absolute rounded-full border-2 pointer-events-none"
@@ -128,7 +109,6 @@
 //         />
 //       )}
 
-//       {/* Selection ring */}
 //       {isSelected && (
 //         <div
 //           className="absolute rounded-full pointer-events-none"
@@ -136,7 +116,6 @@
 //         />
 //       )}
 
-//       {/* Node circle */}
 //       <motion.div
 //         className="relative flex items-center justify-center rounded-full border-2"
 //         style={{
@@ -153,6 +132,7 @@
 //           <Lock size={14} className="text-gray-700" />
 //         ) : isDone ? (
 //           <div className="flex gap-0.5">
+//             {/* the error below need to be fixed and veriifed  */}
 //             {[1, 2, 3].map(i => (
 //               <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>★</span>
 //             ))}
@@ -167,7 +147,6 @@
 //         )}
 //       </motion.div>
 
-//       {/* Label */}
 //       <div
 //         className="px-2 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[76px] truncate text-center"
 //         style={{
@@ -211,16 +190,12 @@
 // const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId }) => {
 //   const scrollRef = useRef(null);
 
-//   // Use mock data when backend hasn't been seeded yet
 //   const allNodes = useMemo(
 //     () => propNodes.length > 0 ? propNodes : generateMockWorld(),
 //     [propNodes]
 //   );
 
 //   // ── Group nodes by zone ───────────────────────────────────────────────────
-//   // ✅ FIX BUG C: resolveZoneId handles both DB capitalized and data-file
-//   //    lowercase region formats. Old code did `n.region || n.zoneId` directly
-//   //    which failed for DB nodes with region:'Array_Archipelago'.
 //   const nodesByZone = useMemo(() => {
 //     const m = {};
 //     ZONE_CONFIGS.forEach(z => { m[z.id] = []; });
@@ -229,39 +204,37 @@
 //       const zid = resolveZoneId(n);
 //       if (!zid || !m[zid]) return;
 
-//       const rawIndex  = n.localIndex ?? Math.max(0, (n.nodeNum ?? 1) - 1);
+//       // ✅ FIX BUG D: MongoDB uses `nodeOrder`, Frontend uses `nodeNum`. 
+//       // We must map it correctly here, otherwise every node acts like Node 1.
+//       const sequenceNum = n.nodeOrder ?? n.nodeNum ?? 1;
+      
+//       const rawIndex  = n.localIndex ?? Math.max(0, sequenceNum - 1);
 //       const safeIndex = Math.min(14, Math.max(0, rawIndex));
 //       const localPos  = n.localPos || getLocalNodePos(safeIndex);
 
 //       m[zid].push({
 //         ...n,
 //         zoneId:     zid,
-//         nodeNum:    n.nodeNum ?? safeIndex + 1,
+//         nodeNum:    sequenceNum, // Inject the corrected sequence number
 //         localIndex: safeIndex,
 //         localPos,
 //       });
 //     });
 
-//     // Sort by nodeNum within each zone
 //     Object.values(m).forEach(arr => arr.sort((a, b) => (a.nodeNum ?? 0) - (b.nodeNum ?? 0)));
 //     return m;
 //   }, [allNodes]);
 
-//   // ── Detect ID format mismatch between mock data and backend progress ──────
-//   // ✅ FIX BUG B: Backend initialises progress with unlockedNodes:['array_01']
-//   //    but mock nodes use 'aa_01'. Detect when zero mock nodes match and flip
-//   //    the first node of zone-0 to 'available' as a fallback.
 //   const mockIdMismatch = useMemo(() => {
-//     if (!progress?.unlockedNodes?.length) return true; // no progress → treat first as available
+//     if (!progress?.unlockedNodes?.length) return true;
 //     const allMockIds = new Set(allNodes.map(n => n.nodeId).filter(Boolean));
 //     const anyMatch   = progress.unlockedNodes.some(id => allMockIds.has(id));
-//     return !anyMatch; // true → none of the backend IDs match our mock node IDs
+//     return !anyMatch;
 //   }, [allNodes, progress]);
 
-//   // ── First node ID in zone 0 (for fallback available state) ───────────────
 //   const firstZoneFirstNodeId = useMemo(() => {
-//     const zone0Nodes = nodesByZone[ZONE_CONFIGS[0]?.id] || [];
-//     return zone0Nodes[0]?.nodeId || null;
+//     const zone0Nodes = nodesByZone[ZONE_CONFIGS?.id] || [];
+//     return zone0Nodes?.nodeId || null;
 //   }, [nodesByZone]);
 
 //   const completedSet = useMemo(
@@ -269,7 +242,6 @@
 //     [progress]
 //   );
 
-//   // Zone top Y positions in the scroll canvas
 //   const zoneTops = useMemo(
 //     () => ZONE_CONFIGS.map((_, i) => i * (ZONE_H + ZONE_GAP)),
 //     []
@@ -277,7 +249,6 @@
 
 //   const CANVAS_H = ZONE_CONFIGS.length * (ZONE_H + ZONE_GAP);
 
-//   // ── Scroll helpers ─────────────────────────────────────────────────────────
 //   const scrollToZone = useCallback((zIdx) => {
 //     const el = scrollRef.current;
 //     if (!el) return;
@@ -285,7 +256,6 @@
 //   }, [zoneTops]);
 
 //   const jumpToProgress = useCallback(() => {
-//     // Find the first available (non-locked, non-completed) node
 //     const firstAvail = allNodes.find(n => {
 //       const isFallback = mockIdMismatch && n.nodeId === firstZoneFirstNodeId;
 //       const s = getState(n.nodeId, progress, isFallback);
@@ -339,7 +309,7 @@
 //               const zNodes     = nodesByZone[zone.id]      || [];
 //               const nextZNodes = nodesByZone[nextZone.id]  || [];
 //               const lastNode   = zNodes[zNodes.length - 1];
-//               const firstNode  = nextZNodes[0];
+//               const firstNode  = nextZNodes;
 //               if (!lastNode || !firstNode) return null;
 
 //               const fromLocal = lastNode.localPos  || getLocalNodePos(14);
@@ -395,10 +365,6 @@
 //                     const isSel  = node.nodeId === selectedNodeId;
 //                     const isBoss = node.nodeType === 'boss';
 
-//                     // ✅ FIX BUG B: isFirstNodeFallback ensures first node in
-//                     //    first zone is ALWAYS clickable even when backend's
-//                     //    unlockedNodes has a different ID format ('array_01')
-//                     //    than the mock data ('aa_01').
 //                     const isFirstNodeFallback =
 //                       mockIdMismatch &&
 //                       zIdx === 0 &&
@@ -581,45 +547,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// src/components/Campaign/WorldMap.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// ALL BUGS FIXED:
-//
-//  BUG A (titles show "Challenge N"): StandardNode read node.problemId?.title
-//    but batch-2 data stores title directly on node (node.title), not nested.
-//    Fixed: getNodeTitle() checks all possible field paths.
-//
-//  BUG B (ALL nodes locked, cannot click): Backend initialises progress with
-//    unlockedNodes:['array_01'] but mock node IDs are 'aa_01'. getState()
-//    never finds a match → every node returns locked → clicks never fire.
-//    Fixed: defensive fallback — if zero mock nodes match the backend's
-//    unlockedNodes list, treat the very first node as 'available'.
-//
-//  BUG C (real DB nodes dropped from zones): DB nodes have
-//    region:'Array_Archipelago' (capitalized Mongoose enum) but ZONE_CONFIGS
-//    uses lowercase IDs. nodesByZone key lookup fails → all DB nodes dropped
-//    → 15 placeholders per zone. Fixed: REGION_TO_ZONE normalisation table.
-//
-//  BUG D (Nodes squished to Slot 1): MongoDB uses 'nodeOrder' but frontend
-//    expects 'nodeNum'. Normalized inside nodesByZone.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import React, { useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
@@ -731,8 +658,7 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
           <Lock size={14} className="text-gray-700" />
         ) : isDone ? (
           <div className="flex gap-0.5">
-            {/* the error below need to be fixed and veriifed  */}
-            {[1, 2, 3].map(i => (
+            {.map(i => (
               <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>★</span>
             ))}
           </div>
@@ -803,8 +729,6 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
       const zid = resolveZoneId(n);
       if (!zid || !m[zid]) return;
 
-      // ✅ FIX BUG D: MongoDB uses `nodeOrder`, Frontend uses `nodeNum`. 
-      // We must map it correctly here, otherwise every node acts like Node 1.
       const sequenceNum = n.nodeOrder ?? n.nodeNum ?? 1;
       
       const rawIndex  = n.localIndex ?? Math.max(0, sequenceNum - 1);
@@ -814,7 +738,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
       m[zid].push({
         ...n,
         zoneId:     zid,
-        nodeNum:    sequenceNum, // Inject the corrected sequence number
+        nodeNum:    sequenceNum,
         localIndex: safeIndex,
         localPos,
       });
@@ -832,6 +756,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   }, [allNodes, progress]);
 
   const firstZoneFirstNodeId = useMemo(() => {
+    // ✅ BUG FIX: Changed ZONE_CONFIGS?.id to ZONE_CONFIGS?.id
     const zone0Nodes = nodesByZone[ZONE_CONFIGS?.id] || [];
     return zone0Nodes?.nodeId || null;
   }, [nodesByZone]);
@@ -905,15 +830,15 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
           >
             {ZONE_CONFIGS.slice(0, -1).map((zone, zIdx) => {
               const nextZone   = ZONE_CONFIGS[zIdx + 1];
-              const zNodes     = nodesByZone[zone.id]      || [];
-              const nextZNodes = nodesByZone[nextZone.id]  || [];
-              const lastNode   = zNodes[zNodes.length - 1];
-              const firstNode  = nextZNodes;
-              if (!lastNode || !firstNode) return null;
+              const zNodes     = nodesByZone[zone.id] || [];
 
-              const fromLocal = lastNode.localPos  || getLocalNodePos(14);
-              const toLocal   = firstNode.localPos || getLocalNodePos(0);
-              const lit       = completedSet.has(lastNode.nodeId);
+              // ✅ SPLIT-PATH FIX: Force the bridge to always connect Node 15 to Node 1
+              const fromLocal = getLocalNodePos(14); // Index 14 = Node 15
+              const toLocal   = getLocalNodePos(0);  // Index 0 = Node 1
+              
+              // Only light up if the Zone Boss is complete
+              const zoneBoss = zNodes.find(n => n.nodeNum === 15);
+              const lit = zoneBoss ? completedSet.has(zoneBoss.nodeId) : false;
 
               return (
                 <InterZoneBridge
