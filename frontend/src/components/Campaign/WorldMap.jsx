@@ -308,11 +308,13 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
 
       <div
         ref={scrollRef}
-        className="absolute inset-0 overflow-y-auto overflow-x-hidden"
+        data-campaign-scroll
+        // overflow-x-hidden removed from below
+        className="absolute inset-0 overflow-y-auto"
         style={{
           scrollbarWidth: 'none',
           WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain',
+          msOverflowStyle: 'none',
         }}
       >
         <div
