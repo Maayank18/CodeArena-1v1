@@ -40,3 +40,4 @@ const Avatar = ({ username, className }) => {
 };
 
 export default Avatar;
+// V 1.5

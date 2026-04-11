@@ -34,3 +34,4 @@ export const sanitizeOutput = (raw) => {
  */
 export const outputsMatch = (actual, expected) =>
   sanitizeOutput(actual) === sanitizeOutput(expected);
+// V 1.5

@@ -130,3 +130,4 @@ router.post('/leaderboard/reset-season', adminAuth, resetSeasonScores);
 router.post('/leaderboard/reset-all',    adminAuth, resetAllStats);
 
 export default router;
+// V 1.5

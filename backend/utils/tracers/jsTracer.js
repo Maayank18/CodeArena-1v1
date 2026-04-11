@@ -675,3 +675,4 @@ function instrumentJs(code) {
 
 //     return { code: output, scopeMap: inserts };
 // }
+// V 1.5

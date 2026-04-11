@@ -132,3 +132,4 @@ const Navbar = ({ user, onLogout }) => {
 };
 
 export default React.memo(Navbar);
+// V 1.5

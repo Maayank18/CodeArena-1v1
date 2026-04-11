@@ -696,3 +696,4 @@ export const getZoneForNode = (nodeId) => BATCH_2_ZONES.find(z => z.nodes.some(n
 export const ALL_BATCH2_NODES = BATCH_2_ZONES.flatMap(z => z.nodes);
 
 export default BATCH_2_ZONES;
+// V 1.5

@@ -119,3 +119,4 @@ export const clearStatsCache = () => {
   statsCache = null;
   statsCacheTimestamp = 0;
 };
+// V 1.5

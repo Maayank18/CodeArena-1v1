@@ -53,3 +53,4 @@ router.post('/equip', ensureProgress, equipCosmetic);
 router.post('/mentor', ensureProgress, getSageHint);
 
 export default router;
+// V 1.5

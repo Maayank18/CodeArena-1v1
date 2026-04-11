@@ -212,3 +212,4 @@ const SuccessModal = ({ isOpen, result, onViewMap, onContinue }) => {
 };
 
 export default SuccessModal;
+// V 1.5

@@ -246,13 +246,4 @@ const CycleArrow = ({ startIndex, endIndex, itemWidth, nodeWidth }) => {
 };
 
 export default LinkedListViz;
-
-
-
-
-
-
-
-
-
-
+// V 1.5

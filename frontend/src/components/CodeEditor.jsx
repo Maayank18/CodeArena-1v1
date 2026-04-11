@@ -77,3 +77,4 @@ const CodeEditor = ({ roomId, side, isReadOnly, ydoc, provider, language }) => {
 };
 
 export default CodeEditor;
+// V 1.5

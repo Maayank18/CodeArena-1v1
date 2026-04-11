@@ -129,40 +129,4 @@ const ArrayViz = memo(({ data, pointers }) => {
 });
 
 export default ArrayViz;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// V 1.5

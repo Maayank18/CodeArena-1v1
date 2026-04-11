@@ -273,3 +273,4 @@ const LegendItem = memo(({ color, label }) => (
 ));
 
 export default GraphViz;
+// V 1.5

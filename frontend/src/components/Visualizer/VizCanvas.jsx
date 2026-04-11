@@ -423,3 +423,4 @@ const NoVarsState = () => (
 );
 
 export default VizCanvas;
+// V 1.5

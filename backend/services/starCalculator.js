@@ -23,3 +23,4 @@ export const shouldUpdateNode = (newStars, newTimeMs, existingNode) => {
     if (newStars === existingNode.starsAwarded && newTimeMs < existingNode.bestTimeMs) return true;
     return false;
 };
+// V 1.5

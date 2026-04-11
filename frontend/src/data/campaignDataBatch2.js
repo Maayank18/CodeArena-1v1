@@ -315,3 +315,4 @@ export const BATCH_2_ZONES = [
 // Then use ALL_ZONES wherever you previously used ZONES.
 
 export default BATCH_2_ZONES;
+// V 1.5

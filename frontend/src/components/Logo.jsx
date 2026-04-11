@@ -18,3 +18,4 @@ export const Logo = ({ className }) => (
     </span>
   </div>
 );
+// V 1.5

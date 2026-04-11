@@ -259,3 +259,4 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
 };
 
 export default NodeDetailPanel;
+// V 1.5

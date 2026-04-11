@@ -521,3 +521,4 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
 };
 
 export default WorldMap;
+// V 1.5

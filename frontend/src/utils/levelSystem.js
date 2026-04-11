@@ -67,3 +67,4 @@ export const getLevelInfo = (rating) => {
         progressPercentage: progress
     };
 };
+// V 1.5

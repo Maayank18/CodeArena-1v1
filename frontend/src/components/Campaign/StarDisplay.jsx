@@ -22,3 +22,4 @@ const StarDisplay = ({ stars = 0, total = 3, size = 'md' }) => {
 };
 
 export default StarDisplay;
+// V 1.5

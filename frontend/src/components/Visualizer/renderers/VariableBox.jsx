@@ -98,3 +98,4 @@ const VariableBox = ({ name, value }) => {
 };
 
 export default VariableBox;
+// V 1.5

@@ -1,4 +1,4 @@
-﻿// YE WALA OPTIMAL HIA PLUS REFRESH WALO PROBLEM SOLVE BHI KARTA HAI 
+// YE WALA OPTIMAL HIA PLUS REFRESH WALO PROBLEM SOLVE BHI KARTA HAI 
 
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -15,7 +15,7 @@ import SuccessModal from '../components/Campaign/SuccessModal';
 import SagePanel    from '../components/Campaign/SagePanel';
 import StarDisplay  from '../components/Campaign/StarDisplay';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// --- Constants ----------------------------------------------------------------
 
 const MONACO_LANG = {
   javascript: 'javascript',
@@ -42,7 +42,7 @@ const fmt = (s) =>
 
 const getStorageKey = (nodeId, lang) => `codearena_campaign_${nodeId}_${lang}`;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 
 const sanitize = (raw) => {
   if (raw == null) return '';
@@ -82,7 +82,7 @@ const normaliseResult = (r, index) => {
   };
 };
 
-// ─── Micro-Components ─────────────────────────────────────────────────────────
+// --- Micro-Components ---------------------------------------------------------
 
 const TimerDisplay = ({ startTime, isStopped }) => {
   const [now, setNow] = useState(() => Date.now());
@@ -151,7 +151,7 @@ const ProblemPanel = ({ node, existingBest }) => {
       <div className="px-4 sm:px-5 py-5 space-y-5 text-[13px]">
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-2">
-            {node?.nodeType === 'boss' && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25">⚔️ Boss</span>}
+            {node?.nodeType === 'boss' && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25">?? Boss</span>}
             {problem.difficulty && <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${DIFF_BADGE[problem.difficulty] || DIFF_BADGE.Easy}`}>{problem.difficulty}</span>}
             {problem.timeLimit && <span className="text-[11px] text-slate-400 dark:text-gray-600 flex items-center gap-1"><Clock size={10} />{problem.timeLimit}ms limit</span>}
           </div>
@@ -175,7 +175,7 @@ const ProblemPanel = ({ node, existingBest }) => {
             <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-2">Constraints</p>
             <ul className="space-y-1">
               {problem.constraints.map((c, i) => (
-                <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-gray-500"><span className="text-cyan-500 mt-0.5 shrink-0">›</span><span className="font-mono text-[12px]">{c}</span></li>
+                <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-gray-500"><span className="text-cyan-500 mt-0.5 shrink-0">�</span><span className="font-mono text-[12px]">{c}</span></li>
               ))}
             </ul>
           </div>
@@ -208,7 +208,7 @@ const ProblemPanel = ({ node, existingBest }) => {
   );
 };
 
-// ─── EditorPane ───────────────────────────────────────────────────────────────
+// --- EditorPane ---------------------------------------------------------------
 
 const EditorPane = ({
   code, setCode, language, handleEditorMount, nodeId,
@@ -250,10 +250,10 @@ const EditorPane = ({
               <div className="flex items-center gap-2">
                 {allPassed ? <CheckCircle size={14} className="text-emerald-400" /> : <XCircle size={14} className="text-red-400" />}
                 <span className={`text-xs font-bold ${allPassed ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {execType === 'run' ? 'Run' : 'Submit'} · {passedCount}/{totalCount} passed
+                  {execType === 'run' ? 'Run' : 'Submit'} � {passedCount}/{totalCount} passed
                 </span>
               </div>
-              <button onClick={() => setShowResults(false)} className="text-gray-600 hover:text-gray-300 text-xs px-1">✕</button>
+              <button onClick={() => setShowResults(false)} className="text-gray-600 hover:text-gray-300 text-xs px-1">?</button>
             </div>
             <div className="px-3 py-3 space-y-2">
               {runResults.map((r, i) => <ResultRow key={i} result={r} index={i} />)}
@@ -274,7 +274,7 @@ const EditorPane = ({
   </div>
 );
 
-// ─── Main CampaignEditor ──────────────────────────────────────────────────────
+// --- Main CampaignEditor ------------------------------------------------------
 
 const CampaignEditor = () => {
   const { nodeId } = useParams();
@@ -306,7 +306,7 @@ const CampaignEditor = () => {
 
   const editorRef = useRef(null);
 
-  // ── Load node and recover session code (REFRESH FIX) ──────────────────
+  // -- Load node and recover session code (REFRESH FIX) ------------------
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -359,7 +359,7 @@ const CampaignEditor = () => {
     monaco.editor.setTheme('ca-dark');
   }, []);
 
-  // ── Language switch (PERSISTENCE FIX) ──────────────────────────────────
+  // -- Language switch (PERSISTENCE FIX) ----------------------------------
   const handleLanguageChange = useCallback((lang) => {
     const currentStarter = node?.problemId?.starterCode?.[language] || '';
     if (code !== currentStarter && code.trim().length > 0) {
@@ -443,7 +443,7 @@ const CampaignEditor = () => {
     }
   }, [code, language, nodeId, isSubmitting, isRunning, failCount, startTime]);
 
-  // ── Keyboard Shortcuts (STABLE BUILD FIX) ────────────────────────────────
+  // -- Keyboard Shortcuts (STABLE BUILD FIX) --------------------------------
   const actionsRef = useRef({ run: handleRun, submit: handleSubmit });
   useEffect(() => { 
     actionsRef.current = { run: handleRun, submit: handleSubmit }; 
@@ -470,7 +470,7 @@ const CampaignEditor = () => {
   if (loading) return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#06080e] flex items-center justify-center gap-4">
       <Loader2 size={32} className="animate-spin text-cyan-500" />
-      <p className="text-slate-500 dark:text-gray-500 font-bold text-sm">Loading challenge…</p>
+      <p className="text-slate-500 dark:text-gray-500 font-bold text-sm">Loading challenge�</p>
     </div>
   );
 
@@ -526,7 +526,7 @@ const CampaignEditor = () => {
       <SuccessModal
         isOpen={showSuccess}
         result={successResult}
-        // ✅ Pass the new progress data directly to the Map
+        // ? Pass the new progress data directly to the Map
         onViewMap={() => navigate('/campaign', { state: { newProgress: successResult?.progress } })} 
         onContinue={() => {
           setShowSuccess(false);
@@ -540,7 +540,7 @@ const CampaignEditor = () => {
         result={successResult}
         onViewMap={() =>
             navigate('/campaign', {
-                state: { newProgress: successResult?.progress }  // ← pass it here
+                state: { newProgress: successResult?.progress }  // ? pass it here
             })
         }
         onContinue={() => {
@@ -556,3 +556,4 @@ const CampaignEditor = () => {
 };
 
 export default CampaignEditor;
+// V 1.5
