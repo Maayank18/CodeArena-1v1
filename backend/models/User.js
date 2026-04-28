@@ -189,6 +189,18 @@ const userSchema = new mongoose.Schema({
         required: true, 
         minlength: 7 
     },
+    passwordChangedAt: {
+        type: Date,
+        default: null
+    },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0
+    },
+    lockUntil: {
+        type: Date,
+        default: null
+    },
 
     avatar: { 
         type: String, 
@@ -294,6 +306,10 @@ userSchema.statics.findByUsername = async function(username) {
 };
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
+    if (typeof enteredPassword !== 'string' || typeof this.password !== 'string' || !this.password) {
+        return false;
+    }
+
     return await bcrypt.compare(enteredPassword, this.password);
 };
 

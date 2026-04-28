@@ -76,7 +76,7 @@ const connectDB = async () => {
     } catch (error) {
         console.error(`[DB] 💥 Connection Error: ${error.message}`);
         console.error('[DB] Stack:', error.stack);
-        process.exit(1);
+        throw error;
     }
 };
 

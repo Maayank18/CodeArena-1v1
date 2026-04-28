@@ -1,45 +1,108 @@
-// FILE: frontend/src/pages/Login.jsx
-// PRODUCTION-OPTIMIZED VERSION
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Logo } from '../components/Logo.jsx';
-import api from '../api.js'; 
 import toast from 'react-hot-toast';
-import { 
-    User, Mail, Lock, Phone, ArrowRight, Loader2, 
-    Eye, EyeOff, ShieldCheck, AlertCircle 
+import {
+    AlertCircle,
+    ArrowLeft,
+    ArrowRight,
+    Eye,
+    EyeOff,
+    Loader2,
+    Lock,
+    Mail,
+    Phone,
+    ShieldCheck,
+    User,
 } from 'lucide-react';
+import api from '../api.js';
+import { Logo } from '../components/Logo.jsx';
+
+const initialFormData = {
+    fullName: '',
+    username: '',
+    email: '',
+    phone: '',
+    password: '',
+    rememberMe: true,
+};
+
+const initialRecoveryData = {
+    email: '',
+    otp: '',
+    password: '',
+    confirmPassword: '',
+    resetToken: '',
+    resendAvailableIn: 0,
+    devOtp: '',
+};
+
+const getResetPasswordError = (password) => {
+    if (!password) {
+        return null;
+    }
+
+    if (password.length < 7) {
+        return 'Password must be at least 7 characters';
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        return 'Password must include at least one uppercase letter';
+    }
+
+    if (!/[a-z]/.test(password)) {
+        return 'Password must include at least one lowercase letter';
+    }
+
+    if (!/[0-9]/.test(password)) {
+        return 'Password must include at least one number';
+    }
+
+    return null;
+};
 
 const Login = () => {
     const [isRegister, setIsRegister] = useState(false);
-    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
+    const [recoveryStep, setRecoveryStep] = useState('');
+    const [formData, setFormData] = useState(initialFormData);
+    const [recoveryData, setRecoveryData] = useState(initialRecoveryData);
+    const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        fullName: '',
-        username: '',
-        email: '',
-        phone: '',
-        password: ''
-    });
+    const isRecoveryMode = recoveryStep !== '';
 
-    // ✅ OPTIMIZED: Clear form when switching modes
     useEffect(() => {
-        setFormData({
-            fullName: '',
-            username: '',
-            email: '',
-            phone: '',
-            password: ''
-        });
-        setShowPassword(false);
-    }, [isRegister]);
+        if (!isRecoveryMode) {
+            setFormData((prev) => ({
+                ...prev,
+                fullName: '',
+                username: '',
+                phone: '',
+                password: '',
+            }));
+            setShowPassword(false);
+        }
+    }, [isRegister, isRecoveryMode]);
 
-    // ✅ OPTIMIZED: Memoized form validation
+    useEffect(() => {
+        if (!recoveryData.resendAvailableIn) {
+            return undefined;
+        }
+
+        const timer = window.setInterval(() => {
+            setRecoveryData((prev) => ({
+                ...prev,
+                resendAvailableIn: prev.resendAvailableIn > 0 ? prev.resendAvailableIn - 1 : 0,
+            }));
+        }, 1000);
+
+        return () => window.clearInterval(timer);
+    }, [recoveryData.resendAvailableIn]);
+
     const validation = useMemo(() => {
         const errors = [];
-        
+
         if (isRegister) {
             if (formData.fullName.trim().length < 2) {
                 errors.push('Full name must be at least 2 characters');
@@ -51,35 +114,36 @@ const Login = () => {
                 errors.push('Phone number must be at least 10 digits');
             }
         }
-        
-        // Email validation
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (formData.email && !emailRegex.test(formData.email)) {
             errors.push('Invalid email format');
         }
-        
-        // Password validation
+
         if (formData.password.length > 0 && formData.password.length < 7) {
             errors.push('Password must be at least 7 characters');
         }
-        
+
         return {
             isValid: errors.length === 0,
-            errors
+            errors,
         };
     }, [formData, isRegister]);
 
-    // ✅ OPTIMIZED: Password strength indicator
     const passwordStrength = useMemo(() => {
-        if (!formData.password) return { strength: 0, label: '', color: '' };
-        
+        const password = isRecoveryMode ? recoveryData.password : formData.password;
+
+        if (!password) {
+            return { strength: 0, label: '', color: '' };
+        }
+
         let strength = 0;
-        if (formData.password.length >= 7) strength++;
-        if (formData.password.length >= 10) strength++;
-        if (/[A-Z]/.test(formData.password)) strength++;
-        if (/[0-9]/.test(formData.password)) strength++;
-        if (/[^A-Za-z0-9]/.test(formData.password)) strength++;
-        
+        if (password.length >= 7) strength += 1;
+        if (password.length >= 10) strength += 1;
+        if (/[A-Z]/.test(password)) strength += 1;
+        if (/[0-9]/.test(password)) strength += 1;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
         const levels = [
             { strength: 0, label: '', color: '' },
             { strength: 1, label: 'Weak', color: 'bg-red-500' },
@@ -88,31 +152,68 @@ const Login = () => {
             { strength: 4, label: 'Strong', color: 'bg-green-500' },
             { strength: 5, label: 'Very Strong', color: 'bg-emerald-500' },
         ];
-        
+
         return levels[strength];
-    }, [formData.password]);
+    }, [formData.password, isRecoveryMode, recoveryData.password]);
 
-    // ✅ OPTIMIZED: Memoized handlers
+    const recoveryPasswordError = useMemo(
+        () => getResetPasswordError(recoveryData.password),
+        [recoveryData.password]
+    );
+
     const handleChange = useCallback((e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, type, value, checked } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value,
+        }));
     }, []);
 
-    const togglePasswordVisibility = useCallback(() => {
-        setShowPassword(prev => !prev);
+    const handleRecoveryChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setRecoveryData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
     }, []);
+
+    const resetRecoveryState = useCallback((email = '') => {
+        setRecoveryStep('');
+        setRecoveryData({
+            ...initialRecoveryData,
+            email,
+        });
+        setShowRecoveryPassword(false);
+    }, []);
+
+    const toggleMode = useCallback(() => {
+        resetRecoveryState(formData.email);
+        setIsRegister((prev) => !prev);
+    }, [formData.email, resetRecoveryState]);
+
+    const openForgotPassword = useCallback(() => {
+        setIsRegister(false);
+        setRecoveryStep('request');
+        setRecoveryData((prev) => ({
+            ...initialRecoveryData,
+            email: formData.email.trim() || prev.email,
+        }));
+    }, [formData.email]);
+
+    const goBackToLogin = useCallback(() => {
+        resetRecoveryState(recoveryData.email || formData.email);
+    }, [formData.email, recoveryData.email, resetRecoveryState]);
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        
-        // Validation
+
         if (!formData.email || !formData.password) {
-            toast.error("Email and password are required");
+            toast.error('Email and password are required');
             return;
         }
 
         if (isRegister && (!formData.username || !formData.fullName || !formData.phone)) {
-            toast.error("All fields are required for registration");
+            toast.error('All fields are required for registration');
             return;
         }
 
@@ -123,227 +224,531 @@ const Login = () => {
 
         setIsLoading(true);
         const endpoint = isRegister ? '/auth/register' : '/auth/login';
-        
+
         try {
-            const { data } = await api.post(endpoint, formData);
-            
-            // ✅ Clear old data
-            localStorage.removeItem('codearena_user'); 
+            const payload = isRegister ? formData : {
+                email: formData.email,
+                password: formData.password,
+                rememberMe: formData.rememberMe,
+            };
+
+            const { data } = await api.post(endpoint, payload);
+
+            localStorage.removeItem('codearena_user');
             localStorage.removeItem('dashboard_profile_cache');
             localStorage.removeItem('leaderboard_cache');
             localStorage.removeItem('history_cache');
-            
-            // ✅ Store new data
             localStorage.setItem('codearena_user', JSON.stringify(data));
-            
-            toast.success(`Welcome, ${data.username}!`, {
-                icon: '🎉',
-                duration: 3000,
-            });
 
-            // Navigate after short delay
-            setTimeout(() => {
-                navigate('/dashboard');
-            }, 500);
-
+            toast.success(`Welcome, ${data.username}!`, { duration: 3000 });
+            window.setTimeout(() => navigate('/dashboard'), 500);
         } catch (error) {
-            console.error("[AUTH] Error:", error);
-            const msg = error.response?.data?.message || 'Authentication failed. Please try again.';
-            toast.error(msg, { duration: 5000 });
+            const message = error.response?.data?.message || 'Authentication failed. Please try again.';
+            toast.error(message, { duration: 5000 });
         } finally {
             setIsLoading(false);
         }
-    }, [formData, isRegister, validation, navigate]);
+    }, [formData, isRegister, navigate, validation]);
 
-    // ✅ OPTIMIZED: Toggle mode handler
-    const toggleMode = useCallback(() => {
-        setIsRegister(prev => !prev);
-    }, []);
+    const handleForgotPassword = useCallback(async (e) => {
+        e.preventDefault();
+
+        if (!recoveryData.email) {
+            toast.error('Email is required');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const { data } = await api.post('/auth/forgot-password', {
+                email: recoveryData.email,
+            });
+
+            setRecoveryData((prev) => ({
+                ...prev,
+                resendAvailableIn: data.resendAvailableIn || 0,
+                devOtp: data.devOtp || '',
+            }));
+            setRecoveryStep('verify');
+            toast.success(data.message || 'Verification code sent');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Unable to send verification code');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [recoveryData.email]);
+
+    const handleVerifyOtp = useCallback(async (e) => {
+        e.preventDefault();
+
+        if (!recoveryData.email || !recoveryData.otp) {
+            toast.error('Email and code are required');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const { data } = await api.post('/auth/verify-otp', {
+                email: recoveryData.email,
+                otp: recoveryData.otp,
+            });
+
+            setRecoveryData((prev) => ({
+                ...prev,
+                resetToken: data.resetToken,
+                otp: '',
+            }));
+            setRecoveryStep('reset');
+            toast.success(data.message || 'Verification successful');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Invalid verification code');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [recoveryData.email, recoveryData.otp]);
+
+    const handleResetPassword = useCallback(async (e) => {
+        e.preventDefault();
+
+        if (!recoveryData.password || !recoveryData.confirmPassword) {
+            toast.error('Please fill in both password fields');
+            return;
+        }
+
+        if (recoveryPasswordError) {
+            toast.error(recoveryPasswordError);
+            return;
+        }
+
+        if (recoveryData.password !== recoveryData.confirmPassword) {
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const { data } = await api.post('/auth/reset-password', {
+                resetToken: recoveryData.resetToken,
+                password: recoveryData.password,
+            });
+
+            localStorage.removeItem('codearena_user');
+            resetRecoveryState(recoveryData.email);
+            setFormData((prev) => ({
+                ...prev,
+                email: recoveryData.email,
+                password: '',
+            }));
+            toast.success(data.message || 'Password reset successful');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Unable to reset password');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [recoveryData, recoveryPasswordError, resetRecoveryState]);
+
+    const handleResendOtp = useCallback(async () => {
+        if (recoveryData.resendAvailableIn > 0) {
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const { data } = await api.post('/auth/forgot-password', {
+                email: recoveryData.email,
+            });
+
+            setRecoveryData((prev) => ({
+                ...prev,
+                resendAvailableIn: data.resendAvailableIn || 0,
+                devOtp: data.devOtp || prev.devOtp,
+            }));
+            toast.success(data.message || 'Verification code resent');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Unable to resend verification code');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [recoveryData.email, recoveryData.resendAvailableIn]);
+
+    const headerTitle = isRecoveryMode
+        ? recoveryStep === 'request'
+            ? 'Reset Password'
+            : recoveryStep === 'verify'
+                ? 'Verify Code'
+                : 'Choose New Password'
+        : isRegister
+            ? 'Create Account'
+            : 'Welcome Back';
+
+    const headerDescription = isRecoveryMode
+        ? recoveryStep === 'request'
+            ? 'We will send a verification code to your email'
+            : recoveryStep === 'verify'
+                ? 'Enter the 6 digit code to continue'
+                : 'Set a new password for your account'
+        : isRegister
+            ? 'Join the coding arena today'
+            : 'Continue your coding journey';
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] p-4 relative overflow-hidden transition-colors duration-300">
-            
-            {/* ✅ Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 sm:w-96 sm:h-96 bg-accent/20 blur-[100px] sm:blur-[120px] rounded-full pointer-events-none animate-pulse"></div>
-            
-            {/* ✅ Login Card */}
+
             <div className="bg-[var(--bg-secondary)] p-6 sm:p-8 rounded-2xl w-full max-w-[340px] sm:max-w-md border border-[var(--border-color)] shadow-2xl relative z-10 transition-all">
-                
-                {/* Logo */}
                 <div className="flex justify-center mb-6 sm:mb-8 scale-125 sm:scale-150">
                     <Logo />
                 </div>
-                
-                {/* Header */}
+
                 <div className="text-center mb-6 sm:mb-8">
                     <h2 className="text-xl sm:text-2xl font-bold mb-2 text-[var(--text-primary)]">
-                        {isRegister ? 'Create Account' : 'Welcome Back'}
+                        {headerTitle}
                     </h2>
                     <p className="text-sm text-[var(--text-secondary)]">
-                        {isRegister 
-                            ? 'Join the coding arena today' 
-                            : 'Continue your coding journey'
-                        }
+                        {headerDescription}
                     </p>
                 </div>
-                
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                    
-                    {/* Register Fields */}
-                    {isRegister && (
-                        <>
-                            {/* Full Name */}
-                            <div className="relative group">
-                                <User className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
-                                <input 
-                                    name="fullName" 
-                                    type="text" 
-                                    placeholder="Full Name" 
-                                    required
-                                    autoComplete="name"
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm sm:text-base focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
-                                    onChange={handleChange} 
-                                    value={formData.fullName}
-                                />
-                            </div>
 
-                            {/* Username */}
-                            <div className="relative group">
-                                <ShieldCheck className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
-                                <input 
-                                    name="username" 
-                                    type="text" 
-                                    placeholder="Username" 
-                                    required
-                                    autoComplete="username"
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
-                                    onChange={handleChange} 
-                                    value={formData.username}
-                                />
-                            </div>
-
-                            {/* Phone */}
-                            <div className="relative group">
-                                <Phone className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
-                                <input 
-                                    name="phone" 
-                                    type="tel" 
-                                    placeholder="Phone Number" 
-                                    required
-                                    autoComplete="tel"
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
-                                    onChange={handleChange} 
-                                    value={formData.phone}
-                                />
-                            </div>
-                        </>
-                    )}
-                    
-                    {/* Email */}
-                    <div className="relative group">
-                        <Mail className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
-                        <input 
-                            name="email" 
-                            type="email" 
-                            placeholder="Email Address" 
-                            required
-                            autoComplete="email"
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
-                            onChange={handleChange} 
-                            value={formData.email}
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div className="relative group">
-                        <Lock className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
-                        <input 
-                            name="password" 
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Password" 
-                            required
-                            autoComplete={isRegister ? "new-password" : "current-password"}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
-                            onChange={handleChange} 
-                            value={formData.password}
-                        />
-                        <button
-                            type="button"
-                            onClick={togglePasswordVisibility}
-                            className="absolute right-3 top-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                            aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </button>
-                    </div>
-
-                    {/* ✅ Password Strength Indicator (Register only) */}
-                    {isRegister && formData.password && (
-                        <div className="space-y-1">
-                            <div className="flex gap-1">
-                                {[1, 2, 3, 4, 5].map((level) => (
-                                    <div
-                                        key={level}
-                                        className={`h-1 flex-1 rounded-full transition-all ${
-                                            level <= passwordStrength.strength
-                                                ? passwordStrength.color
-                                                : 'bg-[var(--border-color)]'
-                                        }`}
-                                    />
-                                ))}
-                            </div>
-                            {passwordStrength.label && (
-                                <p className="text-xs text-[var(--text-secondary)] text-center">
-                                    Password strength: <span className="font-semibold">{passwordStrength.label}</span>
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ✅ Validation Errors */}
-                    {!validation.isValid && formData.password && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2">
-                            <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
-                            <div className="text-xs text-red-400">
-                                {validation.errors.map((error, idx) => (
-                                    <div key={idx}>{error}</div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Submit Button */}
-                    <button 
-                        type="submit"
-                        disabled={isLoading || (formData.password && !validation.isValid)} 
-                        className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
-                    >
-                        {isLoading ? (
-                            <Loader2 className="animate-spin" size={20} />
-                        ) : (
+                {!isRecoveryMode && (
+                    <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                        {isRegister && (
                             <>
-                                {isRegister ? 'Sign Up' : 'Login'}
-                                <ArrowRight size={18} />
+                                <div className="relative group">
+                                    <User className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
+                                    <input
+                                        name="fullName"
+                                        type="text"
+                                        placeholder="Full Name"
+                                        required
+                                        autoComplete="name"
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm sm:text-base focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                        onChange={handleChange}
+                                        value={formData.fullName}
+                                    />
+                                </div>
+
+                                <div className="relative group">
+                                    <ShieldCheck className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
+                                    <input
+                                        name="username"
+                                        type="text"
+                                        placeholder="Username"
+                                        required
+                                        autoComplete="username"
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                        onChange={handleChange}
+                                        value={formData.username}
+                                    />
+                                </div>
+
+                                <div className="relative group">
+                                    <Phone className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
+                                    <input
+                                        name="phone"
+                                        type="tel"
+                                        placeholder="Phone Number"
+                                        required
+                                        autoComplete="tel"
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                        onChange={handleChange}
+                                        value={formData.phone}
+                                    />
+                                </div>
                             </>
                         )}
-                    </button>
-                </form>
 
-                {/* Toggle Mode */}
-                <p className="text-center text-[var(--text-secondary)] mt-6 text-sm">
-                    {isRegister ? 'Already have an account?' : "Don't have an account?"} {' '}
-                    <button 
-                        onClick={toggleMode} 
-                        className="text-accent font-bold hover:underline transition-all"
-                    >
-                        {isRegister ? 'Login' : 'Register'}
-                    </button>
-                </p>
+                        <div className="relative group">
+                            <Mail className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
+                            <input
+                                name="email"
+                                type="email"
+                                placeholder="Email Address"
+                                required
+                                autoComplete="email"
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                onChange={handleChange}
+                                value={formData.email}
+                            />
+                        </div>
+
+                        <div className="relative group">
+                            <Lock className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
+                            <input
+                                name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="Password"
+                                required
+                                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                onChange={handleChange}
+                                value={formData.password}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                className="absolute right-3 top-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+
+                        {!isRegister && (
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                                <label className="flex items-center gap-2 text-[var(--text-secondary)]">
+                                    <input
+                                        type="checkbox"
+                                        name="rememberMe"
+                                        checked={formData.rememberMe}
+                                        onChange={handleChange}
+                                        className="accent-emerald-400"
+                                    />
+                                    Remember me
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={openForgotPassword}
+                                    className="text-accent font-semibold hover:underline"
+                                >
+                                    Forgot Password?
+                                </button>
+                            </div>
+                        )}
+
+                        {isRegister && formData.password && (
+                            <div className="space-y-1">
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((level) => (
+                                        <div
+                                            key={level}
+                                            className={`h-1 flex-1 rounded-full transition-all ${
+                                                level <= passwordStrength.strength ? passwordStrength.color : 'bg-[var(--border-color)]'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                                {passwordStrength.label && (
+                                    <p className="text-xs text-[var(--text-secondary)] text-center">
+                                        Password strength: <span className="font-semibold">{passwordStrength.label}</span>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {!validation.isValid && formData.password && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2">
+                                <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                                <div className="text-xs text-red-400">
+                                    {validation.errors.map((error, idx) => (
+                                        <div key={idx}>{error}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={isLoading || (formData.password && !validation.isValid)}
+                            className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="animate-spin" size={20} />
+                            ) : (
+                                <>
+                                    {isRegister ? 'Sign Up' : 'Login'}
+                                    <ArrowRight size={18} />
+                                </>
+                            )}
+                        </button>
+                    </form>
+                )}
+
+                {recoveryStep === 'request' && (
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <div className="relative group">
+                            <Mail className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 group-focus-within:text-accent transition-colors pointer-events-none" />
+                            <input
+                                name="email"
+                                type="email"
+                                placeholder="Email Address"
+                                required
+                                autoComplete="email"
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                onChange={handleRecoveryChange}
+                                value={recoveryData.email}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <>Send Code <ArrowRight size={18} /></>}
+                        </button>
+                    </form>
+                )}
+
+                {recoveryStep === 'verify' && (
+                    <form onSubmit={handleVerifyOtp} className="space-y-4">
+                        <div className="relative group">
+                            <Mail className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 pointer-events-none" />
+                            <input
+                                name="email"
+                                type="email"
+                                disabled
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl pl-10 pr-4 py-3 text-sm"
+                                value={recoveryData.email}
+                            />
+                        </div>
+
+                        <div className="relative group">
+                            <ShieldCheck className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 pointer-events-none" />
+                            <input
+                                name="otp"
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={6}
+                                placeholder="6 digit verification code"
+                                required
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm tracking-[0.3em] focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                onChange={handleRecoveryChange}
+                                value={recoveryData.otp}
+                            />
+                        </div>
+
+                        {recoveryData.devOtp && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-300">
+                                Development OTP: <span className="font-semibold tracking-[0.2em]">{recoveryData.devOtp}</span>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-sm">
+                            <button
+                                type="button"
+                                onClick={handleResendOtp}
+                                disabled={isLoading || recoveryData.resendAvailableIn > 0}
+                                className="text-accent font-semibold hover:underline disabled:opacity-50 disabled:no-underline"
+                            >
+                                {recoveryData.resendAvailableIn > 0
+                                    ? `Resend in ${recoveryData.resendAvailableIn}s`
+                                    : 'Resend code'}
+                            </button>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <>Verify Code <ArrowRight size={18} /></>}
+                        </button>
+                    </form>
+                )}
+
+                {recoveryStep === 'reset' && (
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                        <div className="relative group">
+                            <Lock className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 pointer-events-none" />
+                            <input
+                                name="password"
+                                type={showRecoveryPassword ? 'text' : 'password'}
+                                placeholder="New Password"
+                                required
+                                autoComplete="new-password"
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                onChange={handleRecoveryChange}
+                                value={recoveryData.password}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowRecoveryPassword((prev) => !prev)}
+                                className="absolute right-3 top-3.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                aria-label={showRecoveryPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showRecoveryPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+
+                        <div className="relative group">
+                            <Lock className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 pointer-events-none" />
+                            <input
+                                name="confirmPassword"
+                                type={showRecoveryPassword ? 'text' : 'password'}
+                                placeholder="Confirm New Password"
+                                required
+                                autoComplete="new-password"
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-[var(--text-secondary)]"
+                                onChange={handleRecoveryChange}
+                                value={recoveryData.confirmPassword}
+                            />
+                        </div>
+
+                        {recoveryData.password && (
+                            <div className="space-y-1">
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((level) => (
+                                        <div
+                                            key={level}
+                                            className={`h-1 flex-1 rounded-full transition-all ${
+                                                level <= passwordStrength.strength ? passwordStrength.color : 'bg-[var(--border-color)]'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                                {passwordStrength.label && (
+                                    <p className="text-xs text-[var(--text-secondary)] text-center">
+                                        Password strength: <span className="font-semibold">{passwordStrength.label}</span>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {(recoveryPasswordError || (recoveryData.confirmPassword && recoveryData.password !== recoveryData.confirmPassword)) && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2">
+                                <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                                <div className="text-xs text-red-400">
+                                    <div>{recoveryPasswordError || 'Passwords do not match'}</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={isLoading || Boolean(recoveryPasswordError)}
+                            className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <>Reset Password <ArrowRight size={18} /></>}
+                        </button>
+                    </form>
+                )}
+
+                <div className="text-center text-[var(--text-secondary)] mt-6 text-sm">
+                    {isRecoveryMode ? (
+                        <button
+                            type="button"
+                            onClick={goBackToLogin}
+                            className="inline-flex items-center gap-2 text-accent font-bold hover:underline"
+                        >
+                            <ArrowLeft size={16} />
+                            Back to Login
+                        </button>
+                    ) : (
+                        <>
+                            {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+                            <button
+                                type="button"
+                                onClick={toggleMode}
+                                className="text-accent font-bold hover:underline transition-all"
+                            >
+                                {isRegister ? 'Login' : 'Register'}
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
 export default Login;
-// V 1.5

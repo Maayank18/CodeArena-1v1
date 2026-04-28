@@ -504,7 +504,9 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 import cron from 'node-cron';
 import axios from 'axios';
@@ -536,18 +538,20 @@ import { clearStatsCache } from './controllers/statsController.js';
 
 dotenv.config();
 
+const isDatabaseReady = () => mongoose.connection.readyState === 1;
+
 // ✅ DATABASE CONNECTION with retry logic
-const initDB = async () => {
+const waitForDatabase = async () => {
     try {
         await connectDB();
         console.log('[DB] ✅ Connected Successfully');
     } catch (err) {
         console.error('[DB] ❌ Connection Failed:', err);
         console.log('[DB] 🔄 Retrying in 5 seconds...');
-        setTimeout(initDB, 5000);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return waitForDatabase();
     }
 };
-initDB();
 
 // ✅ EXPRESS APP SETUP
 const app = express();
@@ -564,6 +568,7 @@ app.use(cors({
 }));
 
 // ✅ SECURITY: Limit request body size
+app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 
 // ✅ REQUEST LOGGER (excluding health checks)
@@ -572,6 +577,18 @@ app.use((req, res, next) => {
      console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
   }
   next();
+});
+
+// ✅ READINESS GATE: avoid buffering DB-backed requests during local startup/reconnects
+app.use('/api', (req, res, next) => {
+  if (isDatabaseReady()) {
+    return next();
+  }
+
+  return res.status(503).json({
+    success: false,
+    message: 'Server is still connecting to the database. Please retry in a few seconds.'
+  });
 });
 
 // ✅ REGISTER ROUTES
@@ -590,10 +607,17 @@ app.use('/api/campaign', campaignRoutes);
 // ✅ HEALTH CHECK (Enhanced)
 app.get('/health', (req, res) => {
     const memUsage = process.memoryUsage();
-    res.status(200).json({ 
-        status: 'OK', 
+    const dbReady = isDatabaseReady();
+
+    res.status(dbReady ? 200 : 503).json({ 
+        status: dbReady ? 'OK' : 'DEGRADED',
         uptime: Math.floor(process.uptime()),
         timestamp: new Date().toISOString(),
+        database: {
+            ready: dbReady,
+            readyState: mongoose.connection.readyState,
+            host: mongoose.connection.host || null,
+        },
         memory: {
             heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
             heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
@@ -1184,8 +1208,11 @@ process.on('SIGTERM', () => {
 
 // ✅ START SERVER
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-    console.log(`
+const startServer = async () => {
+    await waitForDatabase();
+
+    server.listen(PORT, () => {
+        console.log(`
     ╔═══════════════════════════════════════════╗
     ║     CodeArena 1v1 Server Started! 🚀     ║
     ╠═══════════════════════════════════════════╣
@@ -1194,5 +1221,11 @@ server.listen(PORT, () => {
     ║   Max Concurrent Matches: 150-200         ║
     ╚═══════════════════════════════════════════╝
     `);
+    });
+};
+
+startServer().catch((error) => {
+    console.error('[SERVER] ❌ Failed to start:', error);
+    process.exit(1);
 });
 // V 1.5

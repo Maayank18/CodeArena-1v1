@@ -1,10 +1,25 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-export const verifyToken = (req, res, next) => {
+const getTokenFromRequest = (req) => {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+    }
+
+    if (req.cookies?.codearena_access_token) {
+        return req.cookies.codearena_access_token;
+    }
+
+    return null;
+};
+
+export const verifyToken = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization || req.headers.Authorization;
+        const token = getTokenFromRequest(req);
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!token) {
             return res.status(401).json({ success: false, message: 'Unauthorized' });
         }
 
@@ -12,11 +27,24 @@ export const verifyToken = (req, res, next) => {
             return res.status(500).json({ success: false, message: 'Server auth misconfigured' });
         }
 
-        const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         if (!decoded?.id) {
             return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+
+        const user = await User.findById(decoded.id).select('_id passwordChangedAt').lean();
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+
+        if (user.passwordChangedAt && decoded.iat) {
+            const passwordChangedAtMs = new Date(user.passwordChangedAt).getTime();
+            const tokenIssuedAtMs = decoded.iat * 1000;
+
+            if (tokenIssuedAtMs < passwordChangedAtMs - 1000) {
+                return res.status(401).json({ success: false, message: 'Token expired after password reset' });
+            }
         }
 
         req.user = { _id: decoded.id };
@@ -25,4 +53,3 @@ export const verifyToken = (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
 };
-// V 1.5

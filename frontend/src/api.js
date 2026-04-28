@@ -116,6 +116,14 @@ const requestCache = new Map();
 // ✅ PENDING REQUESTS (prevent duplicate simultaneous requests)
 const pendingRequests = new Map();
 
+const AUTH_FLOW_ENDPOINTS = new Set([
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/verify-otp',
+    '/auth/reset-password',
+]);
+
 const normalizeApiBase = (url) => {
     const trimmed = (url || '').trim().replace(/\/+$/, '');
     if (!trimmed) return '';
@@ -124,28 +132,31 @@ const normalizeApiBase = (url) => {
 
 // ✅ DYNAMIC BASE URL with fallback
 const getBaseURL = () => {
+    // In local development, use relative path to leverage Vite proxy
+    // This perfectly solves CORS errors and works across any local IP/port
+    if (!import.meta.env.PROD) {
+        return '/api';
+    }
+
     const envURLRaw = import.meta.env.VITE_API_URL;
-    
     if (envURLRaw) {
-        const isLocalEnvUrl = /localhost|127\.0\.0\.1/i.test(envURLRaw);
-        if (!(import.meta.env.PROD && isLocalEnvUrl)) {
-            return normalizeApiBase(envURLRaw);
-        }
+        return normalizeApiBase(envURLRaw);
     }
     
     // Production fallback
-    if (window.location.hostname !== 'localhost') {
-        return 'https://codearena-1v1.onrender.com/api';
-    }
+    return 'https://codearena-1v1.onrender.com/api';
+};
 
-    // Local development
-    return 'http://localhost:5000/api';
+const isAuthFlowRequest = (config) => {
+    const url = config?.url || '';
+    return AUTH_FLOW_ENDPOINTS.has(url);
 };
 
 // ✅ CREATE AXIOS INSTANCE
 const api = axios.create({
     baseURL: getBaseURL(),
     timeout: CONFIG.timeout,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -257,11 +268,13 @@ api.interceptors.response.use(
 
         // ✅ HANDLE 401 (Unauthorized)
         if (error.response?.status === 401) {
-            console.log('[API] 401 Unauthorized - clearing auth');
-            localStorage.removeItem('codearena_user');
-            
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
+            if (!isAuthFlowRequest(config)) {
+                console.log('[API] 401 Unauthorized - clearing auth');
+                localStorage.removeItem('codearena_user');
+                
+                if (!window.location.pathname.includes('/login')) {
+                    window.location.href = '/login';
+                }
             }
             return Promise.reject(error);
         }

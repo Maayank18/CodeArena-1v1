@@ -111,7 +111,7 @@ const Sidebar = () => {
             <h4 className="text-[var(--text-primary)] font-bold text-sm mb-1 flex items-center gap-2">
                 <Zap size={16} className="text-yellow-400 fill-current" /> Pro Plan
             </h4>
-            <button className="w-full py-2 mt-2 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-bold hover:opacity-80">Upgrade</button>
+            <button onClick={() => navigate('/pricing')} className="w-full py-2 mt-2 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-bold hover:opacity-80 transition-opacity">Upgrade</button>
           </div>
         </div>
       </aside>
@@ -132,7 +132,7 @@ const Sidebar = () => {
               </div>
           </div>
 
-          <button className="flex items-center gap-1 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20 text-[10px] font-bold hover:bg-yellow-500/20">
+          <button onClick={() => navigate('/pricing')} className="flex items-center gap-1 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20 text-[10px] font-bold hover:bg-yellow-500/20 transition-colors">
               <Zap size={12} className="fill-current" /> Upgrade
           </button>
       </div>
