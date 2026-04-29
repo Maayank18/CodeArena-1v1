@@ -1362,16 +1362,18 @@ import {
     ArrowDown, Target, HardDrive,
     Wifi, AlertCircle, Info, Layers,
     UserCheck, BarChart2, PieChart, TrendingDown,
-    Server
+    Server, Radio
 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
+import LiveUsersTable from '../components/LiveUsersTable';
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 const TABS = [
     { id: 'overview',    icon: Activity,  label: 'Overview'    },
+    { id: 'live',        icon: Radio,     label: 'Live'        },
     { id: 'users',       icon: Users,     label: 'Users'       },
     { id: 'matches',     icon: Trophy,    label: 'Matches'     },
     { id: 'problems',    icon: Code,      label: 'Problems'    },
@@ -2170,6 +2172,13 @@ const AdminDashboard = () => {
                 {/* ════════ SYSTEM TAB ════════ */}
                 {activeTab === 'system' && (
                     <SystemTab health={systemHealth} users={users} matches={matches} problems={problems} adminUser={adminUser}/>
+                )}
+
+                {/* ════════ LIVE PRESENCE TAB ════════ */}
+                {activeTab === 'live' && (
+                    <div className="bg-gradient-to-br from-[#111] to-[#0a0a0a] rounded-xl border border-gray-800/60 p-6 shadow-xl">
+                        <LiveUsersTable />
+                    </div>
                 )}
 
             </main>

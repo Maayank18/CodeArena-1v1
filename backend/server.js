@@ -536,6 +536,9 @@ import { calculateMatchOutcome } from './utils/elo.js';
 import { clearLeaderboardCache } from './controllers/userController.js';
 import { clearStatsCache } from './controllers/statsController.js';
 
+// ✅ PRESENCE TRACKING (Real-time admin telemetry)
+import { attachPresenceTracking } from './services/presenceTracker.js';
+
 dotenv.config();
 
 const isDatabaseReady = () => mongoose.connection.readyState === 1;
@@ -663,6 +666,9 @@ const io = new Server(server, {
 
 // Make io accessible in routes
 app.locals.io = io;
+
+// ✅ PRESENCE TRACKING: Attach non-destructive telemetry handlers
+attachPresenceTracking(io);
 
 // ✅ IN-MEMORY STORAGE
 const rooms = new Map();

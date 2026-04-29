@@ -14,7 +14,13 @@ import Campaign       from './pages/Campaign';
 import CampaignEditor from './pages/CampaignEditor';
 import Pricing from './pages/Pricing';
 
+// ✅ TELEMETRY: Real-time presence tracking for admin dashboard
+import useTelemetry from './hooks/useTelemetry';
+
 function App() {
+    // ✅ Emits user_connected + debounced route activity to backend
+    useTelemetry();
+
     return (
         <Routes>
             <Route path="/" element={<Landing />} />
