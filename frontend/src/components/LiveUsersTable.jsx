@@ -45,10 +45,10 @@ const LiveUsersTable = () => {
 
     // ── Socket lifecycle ──────────────────────────────────
     useEffect(() => {
-        const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
 
         socketRef.current = io(socketUrl, {
-            transports: ['websocket'],
+            transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 10,
         });

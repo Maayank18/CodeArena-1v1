@@ -72,10 +72,10 @@ export default function useTelemetry() {
 
         if (!storedUser?.username) return; // Not logged in — skip
 
-        const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
 
         socketRef.current = io(socketUrl, {
-            transports: ['websocket'],
+            transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 5,
         });
