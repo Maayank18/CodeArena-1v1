@@ -160,7 +160,8 @@ const Dashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 
-                <div className="bg-[var(--bg-secondary)] p-6 md:p-8 rounded-2xl border border-[var(--border-color)] shadow-xl shadow-black/5 space-y-6 md:space-y-8 h-full flex flex-col justify-center">
+                {/* Legacy Bright Theme Hero Card Surface (for quick reversal): bg-[var(--bg-secondary)] */}
+                <div className="bg-[var(--surface-elevated)] p-6 md:p-8 rounded-2xl border border-[var(--border-color)] shadow-[0_24px_48px_-28px_var(--shadow-color)] space-y-6 md:space-y-8 h-full flex flex-col justify-center">
                   
                   <div>
                     <label className="text-xs md:text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3 block">
@@ -205,21 +206,21 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[var(--bg-secondary)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-lg hover:border-accent/50 transition-colors">
+                  <div className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
                     <span className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2">
                       {user.stats?.matchesPlayed || 0}
                     </span>
                     <span className="text-[var(--text-secondary)] font-medium text-sm">Matches</span>
                   </div>
 
-                  <div className="bg-[var(--bg-secondary)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-lg hover:border-accent/50 transition-colors">
+                  <div className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
                     <span className="text-3xl md:text-4xl font-extrabold text-accent mb-2">
                       {user.stats?.wins || 0}
                     </span>
                     <span className="text-[var(--text-secondary)] font-medium text-sm">Wins</span>
                   </div>
 
-                  <div className="col-span-2 bg-[var(--bg-secondary)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col shadow-lg hover:border-accent/50 transition-colors">
+                  <div className="col-span-2 bg-[var(--surface-elevated)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex flex-col">
                         <h3 className={`text-2xl font-black ${rankInfo.color} uppercase tracking-tighter`}>
@@ -229,7 +230,7 @@ const Dashboard = () => {
                           Current Rank
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
+                      <div className="flex items-center gap-2 bg-[var(--bg-tertiary)] px-4 py-2 rounded-xl border border-[var(--border-color)]">
                         <Trophy size={18} className="text-yellow-500" />
                         <span className="text-xl font-mono font-black text-[var(--text-primary)]">
                           {user.rating || 1000}
@@ -270,11 +271,14 @@ const Dashboard = () => {
       </div>
 
       {isNavigating && (
-        <div className="fixed inset-0 z- bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in pointer-events-auto px-4 text-center">
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center animate-fade-in pointer-events-auto px-4 text-center"
+          style={{ backgroundColor: 'var(--overlay-scrim)', backdropFilter: 'blur(6px)' }}
+        >
            <div className="scale-125 md:scale-150 mb-8">
              <Logo />
            </div>
-           <div className="flex flex-col md:flex-row items-center gap-3 text-white text-lg md:text-xl font-bold">
+           <div className="flex flex-col md:flex-row items-center gap-3 text-[var(--text-primary)] text-lg md:text-xl font-bold">
               <Loader2 className="animate-spin text-accent" size={24} />
               <span>{loadingText}</span>
            </div>

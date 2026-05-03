@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 // FILE: frontend/src/pages/EditorPage.jsx
 // ✅ FIXED VERSION - Timer receives data via props, not socket events
 
@@ -12,6 +13,7 @@ import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js';
 import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal } from 'lucide-react';
 import TestCaseResults from '../components/TestCaseResults';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 // ✅ FIXED TIMER: Receives initial time via props
 // room id removed becasue it was not being used anywhere 
@@ -99,6 +101,7 @@ const EditorPage = () => {
     const location = useLocation();
     const { roomId } = useParams();
     const navigate = useNavigate();
+    const { theme } = useTheme();
     
     // UI State
     const [clients, setClients] = useState([]);
@@ -565,7 +568,101 @@ const EditorPage = () => {
     }
 
     return (
-        <div className="relative h-screen w-screen bg-dark text-gray-300 overflow-hidden font-sans flex flex-col">
+        <div
+            className="arena-shell relative h-screen w-screen overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300"
+            data-theme={theme}
+        >
+            <style>{`
+                .arena-shell[data-theme="light"] .arena-pane,
+                .arena-shell[data-theme="light"] .arena-problem-pane,
+                .arena-shell[data-theme="light"] .arena-problem-footer,
+                .arena-shell[data-theme="light"] .arena-mobile-tabs {
+                    background: #fffdf8;
+                    color: #1f2937;
+                }
+
+                .arena-shell[data-theme="light"] .arena-pane,
+                .arena-shell[data-theme="light"] .arena-problem-pane {
+                    border-color: #e5e7eb !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-pane-header {
+                    background: #ffffff;
+                    border-color: #e5e7eb !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-pane-title,
+                .arena-shell[data-theme="light"] .arena-room-id {
+                    color: #1f2937 !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-pane-muted,
+                .arena-shell[data-theme="light"] .arena-problem-copy,
+                .arena-shell[data-theme="light"] .arena-mobile-tab {
+                    color: #64748b !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-score-pill {
+                    background: #f5f5f4 !important;
+                    color: #166534 !important;
+                    border: 1px solid #d6d3d1;
+                }
+
+                .arena-shell[data-theme="light"] .arena-lang-select {
+                    background: #f8fafc !important;
+                    color: #1f2937 !important;
+                    border-color: #d1d5db !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-problem-copy:hover,
+                .arena-shell[data-theme="light"] .arena-lang-select:hover {
+                    background: #f1f5f9 !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-problem-text,
+                .arena-shell[data-theme="light"] .arena-problem-text * {
+                    color: #334155 !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-problem-card,
+                .arena-shell[data-theme="light"] .arena-results-panel,
+                .arena-shell[data-theme="light"] .arena-room-box {
+                    background: #ffffff !important;
+                    border-color: #e5e7eb !important;
+                    color: #1f2937 !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-code-preview {
+                    background: #f8fafc !important;
+                    color: #334155 !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-run-btn {
+                    background: #f5f5f4 !important;
+                    color: #1f2937 !important;
+                    border: 1px solid #d6d3d1;
+                }
+
+                .arena-shell[data-theme="light"] .arena-run-btn:hover {
+                    background: #e7e5e4 !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-mobile-tab.is-active {
+                    background: #ffffff !important;
+                    color: #2563eb !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-modal-card {
+                    background: #ffffff !important;
+                    color: #1f2937 !important;
+                    border-color: #e5e7eb !important;
+                }
+
+                .arena-shell[data-theme="light"] .arena-modal-strip {
+                    background: #f5f5f4 !important;
+                    color: #334155 !important;
+                }
+            `}</style>
             
             {hasConnectedOnce.current && (connectionStatus === 'disconnected' || connectionStatus === 'error') && (
                 <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-black text-center py-2 text-sm font-bold z-50 animate-pulse">
@@ -575,8 +672,11 @@ const EditorPage = () => {
 
             {/* GAME OVER MODAL - Same as before */}
             {gameOverData && (
-                <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in p-4">
-                    <div className="bg-[#1e1e1e] p-6 md:p-10 rounded-2xl border border-accent shadow-2xl text-center w-full max-w-lg">
+                <div
+                    className="absolute inset-0 z-50 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in p-4"
+                    style={{ backgroundColor: 'var(--overlay-scrim)' }}
+                >
+                    <div className="arena-modal-card bg-[#1e1e1e] p-6 md:p-10 rounded-2xl border border-accent shadow-2xl text-center w-full max-w-lg">
                         <h1 className="text-6xl mb-4">
                             {gameOverData.isDisqualified ? "🚫" : "🏆"}
                         </h1>
@@ -598,15 +698,15 @@ const EditorPage = () => {
 
                         <div className="space-y-2 mb-8">
                             {Object.entries(gameOverData.scores).map(([user, score]) => (
-                                <div key={user} className="flex justify-between bg-[#2d2d2d] p-3 rounded-lg">
-                                    <span className="font-bold text-white">{user}</span>
+                                <div key={user} className="arena-modal-strip flex justify-between bg-[#2d2d2d] p-3 rounded-lg">
+                                    <span className="font-bold text-white arena-pane-title">{user}</span>
                                     <span className="text-accent font-mono">{score} pts</span>
                                 </div>
                             ))}
                         </div>
                         
                         {gameOverData.eloChanges && (
-                            <div className="space-y-2 mb-8 bg-[#2d2d2d] p-4 rounded-lg">
+                            <div className="arena-modal-strip space-y-2 mb-8 bg-[#2d2d2d] p-4 rounded-lg">
                                 <h3 className="text-sm font-bold text-gray-400 mb-3">Rating Changes</h3>
                                 {Object.entries(gameOverData.eloChanges).map(([key, data]) => (
                                     <div key={key} className="space-y-1">
@@ -640,13 +740,13 @@ const EditorPage = () => {
             <div className="flex-1 flex flex-col md:grid md:grid-cols-3 min-h-0">
                 
                 {/* LEFT PANE */}
-                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-col border-r border-[#3e3e42] h-full min-w-0 min-h-0 order-2 md:order-1`}>
-                    <div className="bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
+                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} arena-pane md:flex flex-col border-r border-[#3e3e42] h-full min-w-0 min-h-0 order-2 md:order-1`}>
+                    <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="font-bold text-sm truncate text-white max-w-[100px]">
+                            <span className="arena-pane-title font-bold text-sm truncate text-white max-w-[100px]">
                                 {getPlayerName('left')}
                             </span>
-                            <span className="bg-black/50 px-2 py-0.5 rounded text-green-400 text-xs font-mono shrink-0">
+                            <span className="arena-score-pill bg-black/50 px-2 py-0.5 rounded text-green-400 text-xs font-mono shrink-0">
                                 {scores[getPlayerName('left')] || 0} pts
                             </span>
                             {mySide === 'left' && (
@@ -657,7 +757,7 @@ const EditorPage = () => {
                         </div>
                         {mySide === 'left' && (
                             <select 
-                                className="bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer hover:bg-[#4e4e52] transition-colors" 
+                                className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer hover:bg-[#4e4e52] transition-colors" 
                                 value={language} 
                                 onChange={(e) => setLanguage(e.target.value)}
                             >
@@ -683,11 +783,11 @@ const EditorPage = () => {
                 </div>
 
                 {/* CENTER PROBLEM PANE */}
-                <div className={`${activeTab === 'problem' ? 'flex' : 'hidden'} md:flex flex-col border-r border-[#3e3e42] bg-[#252526] h-full min-w-0 min-h-0 order-1 md:order-2`}>
+                <div className={`${activeTab === 'problem' ? 'flex' : 'hidden'} arena-problem-pane md:flex flex-col border-r border-[#3e3e42] bg-[#252526] h-full min-w-0 min-h-0 order-1 md:order-2`}>
                     
                     {/* ✅ FIXED: Pass remainingTime as prop */}
-                    <div className="bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
-                        <span className="font-bold truncate text-sm max-w-[200px] text-white">
+                    <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
+                        <span className="arena-pane-title font-bold truncate text-sm max-w-[200px] text-white">
                             {problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}
                         </span>
                         <Timer 
@@ -718,17 +818,17 @@ const EditorPage = () => {
                                         Description
                                     </h3>
                                     <div 
-                                        className="text-gray-300 prose prose-invert prose-sm max-w-none" 
+                                        className="arena-problem-text text-gray-300 prose prose-invert prose-sm max-w-none" 
                                         dangerouslySetInnerHTML={{ __html: problem.description.replace(/\n/g, '<br/>') }} 
                                     />
                                 </div>
                                 
                                 {problem.constraints && problem.constraints.length > 0 && (
-                                    <div className="bg-[#1e1e1e] p-4 rounded-lg border border-[#3e3e42]">
+                                    <div className="arena-problem-card bg-[#1e1e1e] p-4 rounded-lg border border-[#3e3e42]">
                                         <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">
                                             Constraints
                                         </h3>
-                                        <ul className="list-disc list-inside text-gray-400 space-y-1">
+                                        <ul className="arena-pane-muted list-disc list-inside text-gray-400 space-y-1">
                                             {problem.constraints.map((c, i) => (
                                                 <li key={i} className="font-mono text-xs">{c}</li>
                                             ))}
@@ -741,12 +841,12 @@ const EditorPage = () => {
                                         Examples
                                     </h3>
                                     {problem.testCases.filter(tc => tc.isPublic).map((tc, i) => (
-                                        <div key={i} className="mb-4 bg-[#1e1e1e] p-3 rounded border border-[#3e3e42]">
+                                        <div key={i} className="arena-problem-card mb-4 bg-[#1e1e1e] p-3 rounded border border-[#3e3e42]">
                                             <div className="mb-2">
                                                 <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">
                                                     Input
                                                 </span>
-                                                <code className="block bg-[#2d2d2d] p-2 rounded text-gray-300 font-mono text-xs break-words whitespace-pre-wrap">
+                                                <code className="arena-code-preview block bg-[#2d2d2d] p-2 rounded text-gray-300 font-mono text-xs break-words whitespace-pre-wrap">
                                                     {tc.input}
                                                 </code>
                                             </div>
@@ -754,7 +854,7 @@ const EditorPage = () => {
                                                 <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">
                                                     Expected Output
                                                 </span>
-                                                <code className="block bg-[#2d2d2d] p-2 rounded text-green-400 font-mono text-xs break-words whitespace-pre-wrap">
+                                                <code className="arena-code-preview block bg-[#2d2d2d] p-2 rounded text-green-400 font-mono text-xs break-words whitespace-pre-wrap">
                                                     {tc.output}
                                                 </code>
                                             </div>
@@ -770,7 +870,7 @@ const EditorPage = () => {
                     </div>
                     
                     {/* Test Results & Actions - same as before... */}
-                    <div className="p-0 bg-[#1e1e1e] border-t border-[#3e3e42] shrink-0 flex flex-col max-h-[40%]">
+                    <div className="arena-problem-footer p-0 bg-[#1e1e1e] border-t border-[#3e3e42] shrink-0 flex flex-col max-h-[40%]">
                         
                         {executionStatus === 'queued' && (
                             <div className="bg-yellow-500/10 border-b border-yellow-500/30 p-3 text-yellow-400 text-sm text-center font-bold">
@@ -785,24 +885,24 @@ const EditorPage = () => {
                         )}
                         
                         {runResults && runResults.length > 0 && (
-                            <div className="bg-[#252526] border-b border-[#3e3e42] p-4 overflow-y-auto custom-scrollbar">
+                            <div className="arena-results-panel bg-[#252526] border-b border-[#3e3e42] p-4 overflow-y-auto custom-scrollbar">
                                 <TestCaseResults results={runResults} />
                             </div>
                         )}
                         
                         <div className="p-4 space-y-4">
-                            <div className="flex items-center justify-between bg-[#252526] p-2 rounded border border-[#3e3e42]">
+                            <div className="arena-room-box flex items-center justify-between bg-[#252526] p-2 rounded border border-[#3e3e42]">
                                 <div className="flex flex-col overflow-hidden">
-                                    <span className="text-[10px] text-gray-500 font-bold uppercase">
+                                    <span className="arena-pane-muted text-[10px] text-gray-500 font-bold uppercase">
                                         Room ID
                                     </span>
-                                    <span className="text-xs font-mono text-white select-all truncate">
+                                    <span className="arena-room-id text-xs font-mono text-white select-all truncate">
                                         {roomId}
                                     </span>
                                 </div>
                                 <button 
                                     onClick={copyRoomId} 
-                                    className="p-2 hover:bg-[#3e3e42] rounded text-gray-400 hover:text-white transition-colors"
+                                    className="arena-problem-copy p-2 hover:bg-[#3e3e42] rounded text-gray-400 hover:text-white transition-colors"
                                     aria-label="Copy Room ID"
                                 >
                                     <Copy size={16} />
@@ -813,7 +913,7 @@ const EditorPage = () => {
                                 <button 
                                     onClick={runCode} 
                                     disabled={isRunning || !problem} 
-                                    className="flex-1 py-3 rounded bg-white text-black font-bold hover:bg-gray-200 text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="arena-run-btn flex-1 py-3 rounded bg-white text-black font-bold hover:bg-gray-200 text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {executionStatus === 'queued' && '⏳ Queued'}
                                     {executionStatus === 'running' && '⚡ Running'}
@@ -839,13 +939,13 @@ const EditorPage = () => {
                 </div>
 
                 {/* RIGHT PANE - same as before... */}
-                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-col border-l border-[#3e3e42] h-full min-w-0 min-h-0 order-3`}>
-                    <div className="bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
+                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} arena-pane md:flex flex-col border-l border-[#3e3e42] h-full min-w-0 min-h-0 order-3`}>
+                    <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="font-bold text-sm truncate text-white max-w-[100px]">
+                            <span className="arena-pane-title font-bold text-sm truncate text-white max-w-[100px]">
                                 {getPlayerName('right')}
                             </span>
-                            <span className="bg-black/50 px-2 py-0.5 rounded text-green-400 text-xs font-mono shrink-0">
+                            <span className="arena-score-pill bg-black/50 px-2 py-0.5 rounded text-green-400 text-xs font-mono shrink-0">
                                 {scores[getPlayerName('right')] || 0} pts
                             </span>
                             {mySide === 'right' && (
@@ -856,7 +956,7 @@ const EditorPage = () => {
                         </div>
                         {mySide === 'right' && (
                             <select 
-                                className="bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer hover:bg-[#4e4e52] transition-colors" 
+                                className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer hover:bg-[#4e4e52] transition-colors" 
                                 value={language} 
                                 onChange={(e) => setLanguage(e.target.value)}
                             >
@@ -883,11 +983,11 @@ const EditorPage = () => {
             </div>
 
             {/* MOBILE TABS */}
-            <div className="md:hidden flex border-t border-[#3e3e42] bg-[#1e1e1e] h-14 shrink-0">
+            <div className="arena-mobile-tabs md:hidden flex border-t border-[#3e3e42] bg-[#1e1e1e] h-14 shrink-0">
                 <button 
                     onClick={() => setActiveTab('left')} 
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
-                        activeTab === 'left' ? 'text-accent bg-[#2d2d2d]' : 'text-gray-500'
+                    className={`arena-mobile-tab flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+                        activeTab === 'left' ? 'is-active text-accent bg-[#2d2d2d]' : 'text-gray-500'
                     }`}
                 >
                     <Code2 size={18} />
@@ -896,8 +996,8 @@ const EditorPage = () => {
                 
                 <button 
                     onClick={() => setActiveTab('problem')} 
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
-                        activeTab === 'problem' ? 'text-accent bg-[#2d2d2d]' : 'text-gray-500'
+                    className={`arena-mobile-tab flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+                        activeTab === 'problem' ? 'is-active text-accent bg-[#2d2d2d]' : 'text-gray-500'
                     }`}
                 >
                     <FileText size={18} />
@@ -906,8 +1006,8 @@ const EditorPage = () => {
                 
                 <button 
                     onClick={() => setActiveTab('right')} 
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
-                        activeTab === 'right' ? 'text-accent bg-[#2d2d2d]' : 'text-gray-500'
+                    className={`arena-mobile-tab flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+                        activeTab === 'right' ? 'is-active text-accent bg-[#2d2d2d]' : 'text-gray-500'
                     }`}
                 >
                     <Terminal size={18} />

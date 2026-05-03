@@ -1,80 +1,100 @@
-// RESPONSIVE UPDATE FOR CODE EDITOR
 import React, { useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
 import { cpp } from '@codemirror/lang-cpp';
 import { java } from '@codemirror/lang-java';
-import { vscodeDark } from '@uiw/codemirror-theme-vscode';
+import { vscodeDark, vscodeLightInit } from '@uiw/codemirror-theme-vscode';
 import { yCollab } from 'y-codemirror.next';
 import * as Y from 'yjs';
+import { useTheme } from '../context/ThemeContext.jsx';
 
-const CodeEditor = ({ roomId, side, isReadOnly, ydoc, provider, language }) => {
-    
-    // FIX 1: MEMOIZE YJS OBJECTS (Kept intact)
-    const { ytext, undoManager } = useMemo(() => {
-        const text = ydoc.getText(`code-${side}`);
-        const manager = new Y.UndoManager(text);
-        return { ytext: text, undoManager: manager };
-    }, [ydoc, side]);
+const softLightEditorTheme = vscodeLightInit({
+  settings: {
+    background: '#fffdf8',
+    foreground: '#1f2937',
+    caret: '#2563eb',
+    selection: '#dbeafe',
+    selectionMatch: '#bfdbfe',
+    gutterBackground: '#fafaf9',
+    gutterForeground: '#94a3b8',
+    gutterActiveForeground: '#334155',
+    lineHighlight: '#ebe7de',
+  },
+});
 
-    const getLanguageExtension = (lang) => {
-        switch (lang) {
-            case 'javascript': return javascript({ jsx: true });
-            case 'python': return python();
-            case 'cpp': return cpp();
-            case 'java': return java();
-            default: return javascript();
-        }
-    };
+const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, language }) => {
+  const { theme } = useTheme();
 
-    return (
-        // Container fills the parent (which will be controlled by Tabs on mobile)
-        <div className="h-full w-full relative flex flex-col bg-[#1e1e1e]">
-            {isReadOnly && (
-                <div className="absolute inset-0 z-10 bg-black/40 cursor-not-allowed" />
-            )}
+  const { ytext, undoManager } = useMemo(() => {
+    const text = ydoc.getText(`code-${side}`);
+    const manager = new Y.UndoManager(text);
+    return { ytext: text, undoManager: manager };
+  }, [ydoc, side]);
 
-            <CodeMirror
-                // ✅ RESPONSIVE UPDATE:
-                // Mobile: text-xs (12px) | Tablet: text-sm (14px) | Desktop: text-base (16px)
-                className="flex-1 overflow-hidden text-xs sm:text-sm md:text-base" 
-                height="100%" 
-                theme={vscodeDark}
-                extensions={[
-                    getLanguageExtension(language),
-                    yCollab(ytext, provider?.awareness, { undoManager }) 
-                ]}
-                readOnly={isReadOnly}
-                basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLineGutter: true,
-                    highlightSpecialChars: true,
-                    history: true,
-                    drawSelection: true,
-                    dropCursor: true,
-                    allowMultipleSelections: true,
-                    indentOnInput: true,
-                    syntaxHighlighting: true,
-                    bracketMatching: true,
-                    closeBrackets: true,
-                    autocompletion: true,
-                    rectangularSelection: true,
-                    crosshairCursor: true,
-                    highlightActiveLine: true,
-                    highlightSelectionMatches: true,
-                    closeBracketsKeymap: true,
-                    defaultKeymap: true,
-                    searchKeymap: true,
-                    historyKeymap: true,
-                    foldKeymap: true,
-                    completionKeymap: true,
-                    lintKeymap: true,
-                }}
-            />
-        </div>
-    );
+  const languageExtension = useMemo(() => {
+    switch (language) {
+      case 'javascript':
+        return javascript({ jsx: true });
+      case 'python':
+        return python();
+      case 'cpp':
+        return cpp();
+      case 'java':
+        return java();
+      default:
+        return javascript();
+    }
+  }, [language]);
+
+  const editorTheme = theme === 'dark' ? vscodeDark : softLightEditorTheme;
+
+  return (
+    <>
+      {/* Legacy Bright Theme Editor Surface (for quick reversal): bg-[#1e1e1e] */}
+    <div className={`relative flex h-full w-full flex-col ${theme === 'dark' ? 'bg-[#1e1e1e]' : 'bg-[#fffdf8]'}`}>
+      {isReadOnly && (
+        <div className={`absolute inset-0 z-10 cursor-not-allowed ${theme === 'dark' ? 'bg-black/40' : 'bg-stone-100/50'}`} />
+      )}
+
+      <CodeMirror
+        className="flex-1 overflow-hidden text-xs sm:text-sm md:text-base"
+        height="100%"
+        theme={editorTheme}
+        extensions={[
+          languageExtension,
+          yCollab(ytext, provider?.awareness, { undoManager }),
+        ]}
+        readOnly={isReadOnly}
+        basicSetup={{
+          lineNumbers: true,
+          highlightActiveLineGutter: true,
+          highlightSpecialChars: true,
+          history: true,
+          drawSelection: true,
+          dropCursor: true,
+          allowMultipleSelections: true,
+          indentOnInput: true,
+          syntaxHighlighting: true,
+          bracketMatching: true,
+          closeBrackets: true,
+          autocompletion: true,
+          rectangularSelection: true,
+          crosshairCursor: true,
+          highlightActiveLine: true,
+          highlightSelectionMatches: true,
+          closeBracketsKeymap: true,
+          defaultKeymap: true,
+          searchKeymap: true,
+          historyKeymap: true,
+          foldKeymap: true,
+          completionKeymap: true,
+          lintKeymap: true,
+        }}
+      />
+    </div>
+    </>
+  );
 };
 
 export default CodeEditor;
-// V 1.5

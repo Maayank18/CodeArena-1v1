@@ -99,7 +99,7 @@ const Leaderboard = () => {
       return (
         <div 
           key={player._id || index} 
-          className={`grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center hover:bg-[var(--bg-secondary)]/50 transition-colors group cursor-default ${
+          className={`grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center hover:bg-[var(--bg-tertiary)] transition-colors group cursor-default ${
             isCurrentUser ? 'bg-accent/5 border-l-4 border-l-accent' : ''
           }`}
         >
@@ -185,13 +185,13 @@ const Leaderboard = () => {
                 </p>
               </div>
 
-              {/* Search */}
+              {/* Legacy Bright Theme Search Surface (for quick reversal): bg-[var(--bg-secondary)] */}
               <div className="relative w-full md:w-72 group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-green-400 transition-colors h-4 w-4" />
                 <input 
                   type="text" 
                   placeholder="Find a player..." 
-                  className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
+                  className="w-full bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 shadow-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   aria-label="Search players"
@@ -199,8 +199,8 @@ const Leaderboard = () => {
               </div>
             </div>
 
-            {/* Leaderboard Table */}
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-2xl relative">
+            {/* Legacy Bright Theme Table Surface (for quick reversal): bg-[var(--bg-secondary)] */}
+            <div className="bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-[0_24px_48px_-28px_var(--shadow-color)] relative">
               
               {/* Table Header */}
               <div className="grid grid-cols-12 gap-2 sm:gap-4 p-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]/50 text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider items-center">

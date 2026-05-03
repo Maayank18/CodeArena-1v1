@@ -1,13 +1,12 @@
-// FILE: frontend/src/components/Navbar.jsx
-import React, { useMemo, useCallback, useEffect, useState } from 'react';
-import { Logo } from './Logo';
-import Avatar from './Avatar';
-import { LogOut, Moon, Settings, Sun } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { LogOut, Moon, Settings, Sun } from 'lucide-react';
+import { Logo } from './Logo';
+import Avatar from './Avatar';
+import SettingsModal from './SettingsModal.jsx';
 import { useTheme } from '../context/ThemeContext';
 import { getLevelInfo } from '../utils/levelSystem';
-import SettingsModal from './SettingsModal.jsx';
 
 const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
@@ -31,9 +30,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
     return () => window.removeEventListener('click', handleWindowClick);
   }, [isMenuOpen]);
 
-  const levelInfo = useMemo(() => {
-    return getLevelInfo(displayUser?.rating || 1000);
-  }, [displayUser?.rating]);
+  const levelInfo = useMemo(() => getLevelInfo(displayUser?.rating || 1000), [displayUser?.rating]);
 
   const handleLogoClick = useCallback(() => {
     navigate('/dashboard');
@@ -55,140 +52,124 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
   return (
     <>
+      {/* Legacy Bright Theme Navbar Surface (for quick reversal): bg-white dark:bg-[var(--bg-secondary)] */}
       <nav
         className="
-        h-[64px] sm:h-[72px]
-        border-b
-        px-4 sm:px-8
-        flex items-center justify-between
-        sticky top-0 z-50
-        transition-all shadow-sm
-
-        /* ✅ FIX: fallback + CSS variables */
-        bg-white dark:bg-[var(--bg-secondary)]
-        border-gray-200 dark:border-[var(--border-color)]
-      "
+          h-[64px] sm:h-[72px]
+          border-b
+          px-4 sm:px-8
+          flex items-center justify-between
+          sticky top-0 z-50
+          transition-all shadow-sm
+          bg-[var(--surface-elevated)] dark:bg-[var(--surface-elevated)]
+          border-gray-200 dark:border-[var(--border-color)]
+        "
       >
-      
-      {/* Logo Section */}
-      <button 
-        onClick={handleLogoClick}
-        className="flex-shrink-0 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-accent rounded-lg"
-        aria-label="Go to Dashboard"
-      >
-        <Logo />
-      </button>
-
-      {/* Actions Section */}
-      <div className="flex items-center gap-3 sm:gap-8">
-        
-        {/* Theme Toggle */}
-        <button 
-          onClick={toggleTheme} 
-          className="
-            p-2 rounded-full transition-colors
-            focus:outline-none focus:ring-2 focus:ring-accent
-
-            /* ✅ FIX */
-            text-gray-600 dark:text-[var(--text-secondary)]
-            hover:text-gray-900 dark:hover:text-[var(--text-primary)]
-            hover:bg-gray-100 dark:hover:bg-[var(--bg-primary)]
-          "
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        <button
+          onClick={handleLogoClick}
+          className="flex-shrink-0 rounded-lg transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-accent"
+          aria-label="Go to Dashboard"
         >
-          {theme === 'dark' ? (
-            <Sun size={20} className="sm:w-[22px] sm:h-[22px]" />
-          ) : (
-            <Moon size={20} className="sm:w-[22px] sm:h-[22px]" />
-          )}
+          <Logo />
         </button>
 
-        <div className="h-6 w-px bg-gray-200 dark:bg-[var(--border-color)] sm:h-8" />
-
-        {/* User Profile Dropdown */}
-        <div className="flex items-center gap-3 sm:gap-4 relative">
+        <div className="flex items-center gap-3 sm:gap-8">
           <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              setIsMenuOpen((prev) => !prev);
-            }}
-            className="flex items-center gap-3 sm:gap-4 rounded-2xl p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-[var(--bg-primary)]"
+            onClick={toggleTheme}
+            className="
+              p-2 rounded-full transition-colors
+              focus:outline-none focus:ring-2 focus:ring-accent
+              text-gray-500 dark:text-[var(--text-secondary)]
+              hover:text-gray-800 dark:hover:text-[var(--text-primary)]
+              hover:bg-[var(--bg-tertiary)] dark:hover:bg-[var(--bg-primary)]
+            "
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
-          <Avatar 
-            username={displayUser?.username}
-            src={displayUser?.avatar}
-            className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-transparent transition-all" 
-          />
-          
-          {/* User Info (Desktop) */}
-          <div className="hidden sm:flex flex-col">
-            <span className="text-sm sm:text-base font-bold leading-none mb-0.5 max-w-[120px] truncate text-gray-900 dark:text-[var(--text-primary)]">
-              {displayUser?.username || 'Guest'}
-            </span>
-            <span className={`text-[10px] sm:text-xs font-semibold ${levelInfo.color}`}>
-              Level {levelInfo.level} {levelInfo.title}
-            </span>
-          </div>
+            {theme === 'dark' ? (
+              <Sun size={20} className="sm:h-[22px] sm:w-[22px]" />
+            ) : (
+              <Moon size={20} className="sm:h-[22px] sm:w-[22px]" />
+            )}
           </button>
 
-          {/* Dropdown Menu */}
-          <div
-            className={`
-              absolute right-0 top-full mt-3 w-48 py-2
-              border rounded-xl shadow-2xl
-              transition-all duration-200 transform z-50
-              bg-white dark:bg-[var(--bg-secondary)]
-              border-gray-200 dark:border-[var(--border-color)]
-              ${isMenuOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}
-            `}
-            onClick={(event) => event.stopPropagation()}
-          >
-            
-            {/* Mobile User Info */}
-            <div className="sm:hidden px-4 py-3 border-b border-gray-200 dark:border-[var(--border-color)]">
-              <p className="font-bold truncate text-gray-900 dark:text-[var(--text-primary)]">
-                {displayUser?.username}
-              </p>
-              <p className={`text-xs ${levelInfo.color} mt-1`}>
-                Level {levelInfo.level} {levelInfo.title}
-              </p>
-            </div>
+          <div className="h-6 w-px bg-gray-200 dark:bg-[var(--border-color)] sm:h-8" />
 
+          <div className="relative flex items-center gap-3 sm:gap-4">
             <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                setIsSettingsOpen(true);
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsMenuOpen((prev) => !prev);
               }}
-              className="
-                w-full px-4 py-3 text-left text-sm flex items-center gap-3 rounded-lg transition-colors
-                text-gray-700 dark:text-[var(--text-primary)]
-                hover:bg-gray-100 dark:hover:bg-[var(--bg-primary)]
-              "
+              className="flex items-center gap-3 rounded-2xl p-1.5 transition-colors hover:bg-[var(--bg-tertiary)] dark:hover:bg-[var(--bg-primary)] sm:gap-4"
             >
-              <Settings size={16} />
-              <span>Settings</span>
-            </button>
-            
-            {/* Logout Button */}
-            <button 
-              onClick={() => {
-                setIsMenuOpen(false);
-                onLogout?.();
-              }}
-              className="
-                w-full px-4 py-3 text-left text-sm flex items-center gap-3 rounded-lg transition-colors
+              <Avatar
+                username={displayUser?.username}
+                src={displayUser?.avatar}
+                className="h-8 w-8 ring-2 ring-transparent transition-all sm:h-10 sm:w-10"
+              />
 
-                text-red-500
-                hover:bg-gray-100 dark:hover:bg-[var(--bg-primary)]
-              "
-            >
-              <LogOut size={16} />
-              <span>Sign Out</span>
+              <div className="hidden flex-col sm:flex">
+                <span className="mb-0.5 max-w-[120px] truncate text-sm font-bold leading-none text-gray-800 dark:text-[var(--text-primary)] sm:text-base">
+                  {displayUser?.username || 'Guest'}
+                </span>
+                <span className={`text-[10px] font-semibold sm:text-xs ${levelInfo.color}`}>
+                  Level {levelInfo.level} {levelInfo.title}
+                </span>
+              </div>
             </button>
+
+            {/* Legacy Bright Theme Dropdown Surface (for quick reversal): bg-white dark:bg-[var(--bg-secondary)] */}
+            <div
+              className={`
+                absolute right-0 top-full z-50 mt-3 w-48 rounded-xl border py-2 shadow-2xl transition-all duration-200
+                bg-[var(--surface-elevated)] dark:bg-[var(--surface-elevated)]
+                border-gray-200 dark:border-[var(--border-color)]
+                ${isMenuOpen ? 'visible translate-y-0 opacity-100' : 'invisible translate-y-2 opacity-0'}
+              `}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="border-b border-gray-200 px-4 py-3 dark:border-[var(--border-color)] sm:hidden">
+                <p className="truncate font-bold text-gray-800 dark:text-[var(--text-primary)]">
+                  {displayUser?.username}
+                </p>
+                <p className={`mt-1 text-xs ${levelInfo.color}`}>
+                  Level {levelInfo.level} {levelInfo.title}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsSettingsOpen(true);
+                }}
+                className="
+                  flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-colors
+                  text-gray-700 dark:text-[var(--text-primary)]
+                  hover:bg-[var(--bg-tertiary)] dark:hover:bg-[var(--bg-primary)]
+                "
+              >
+                <Settings size={16} />
+                <span>Settings</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onLogout?.();
+                }}
+                className="
+                  flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-colors
+                  text-red-500
+                  hover:bg-[var(--bg-tertiary)] dark:hover:bg-[var(--bg-primary)]
+                "
+              >
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       </nav>
 
       <SettingsModal
@@ -203,4 +184,3 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 };
 
 export default React.memo(Navbar);
-// V 1.5

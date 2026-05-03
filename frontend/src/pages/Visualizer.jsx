@@ -14,6 +14,7 @@ import CodePanel from '../components/Visualizer/CodePanel';
 import VizCanvas from '../components/Visualizer/VizCanvas';
 import ControlBar from '../components/Visualizer/ControlBar';
 import api from '../api.js';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 // ─── ALGORITHM EXAMPLES ──────────────────────────────────────────────────────
 const EXAMPLES = {
@@ -181,6 +182,7 @@ const DEFAULT_SPEED_INDEX = 1; // 1× = 800ms
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 const Visualizer = () => {
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useTheme();
 
     // ── Core state ────────────────────────────────────────────────────────────
     const [code, setCode]               = useState(EXAMPLES.bubbleSort.code);
@@ -192,23 +194,6 @@ const Visualizer = () => {
     // ── Theme ─────────────────────────────────────────────────────────────────
     // Reads the current theme from <html> or <body> class set by global theme system.
     // Falls back to local state if no global system is present.
-    const [localTheme, setLocalTheme] = useState(() => {
-        if (typeof document !== 'undefined') {
-            return document.documentElement.classList.contains('light') ? 'light' : 'dark';
-        }
-        return 'dark';
-    });
-
-    const toggleTheme = useCallback(() => {
-        setLocalTheme(prev => {
-            const next = prev === 'dark' ? 'light' : 'dark';
-            // Sync with global theme class if a global system isn't managing it
-            document.documentElement.classList.remove('dark', 'light');
-            document.documentElement.classList.add(next);
-            return next;
-        });
-    }, []);
-
     // ── Playback ──────────────────────────────────────────────────────────────
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying]     = useState(false);
@@ -346,7 +331,7 @@ const Visualizer = () => {
     return (
         <div
             className="viz-root h-screen flex flex-col overflow-hidden font-sans transition-colors duration-300"
-            data-theme={localTheme}
+            data-theme={theme}
         >
             {/* Inject scoped CSS variables for both themes */}
             <style>{`
@@ -364,15 +349,21 @@ const Visualizer = () => {
                     --vz-badge-bg:     rgba(88,166,255,0.1);
                 }
                 .viz-root[data-theme="light"] {
+                    /* Legacy Bright Theme Visualizer Tokens (for quick reversal)
                     --vz-bg-primary:   #ffffff;
                     --vz-bg-secondary: #f6f8fa;
                     --vz-bg-hover:     #eaeef2;
                     --vz-border:       #d0d7de;
+                    */
+                    --vz-bg-primary:   #fafaf9;
+                    --vz-bg-secondary: #ffffff;
+                    --vz-bg-hover:     #f1f5f9;
+                    --vz-border:       #e5e7eb;
                     --vz-text-primary: #1f2328;
-                    --vz-text-muted:   #656d76;
+                    --vz-text-muted:   #64748b;
                     --vz-accent:       #0969da;
                     --vz-accent-glow:  rgba(9,105,218,0.1);
-                    --vz-green:        #1a7f37;
+                    --vz-green:        #166534;
                     --vz-red:          #cf222e;
                     --vz-badge-bg:     rgba(9,105,218,0.08);
                 }
@@ -426,7 +417,7 @@ const Visualizer = () => {
 
             {/* ── TOP BAR ────────────────────────────────────────────────── */}
             <TopBar
-                localTheme={localTheme}
+                theme={theme}
                 toggleTheme={toggleTheme}
                 mobileTab={mobileTab}
                 setMobileTab={setMobileTab}
@@ -453,7 +444,7 @@ const Visualizer = () => {
                         code={code}
                         setCode={setCode}
                         activeLine={currentLine}
-                        theme={localTheme}
+                        theme={theme}
                     />
                 </div>
 
@@ -513,7 +504,7 @@ const Visualizer = () => {
 // ─── SUB-COMPONENTS ──────────────────────────────────────────────────────────
 
 const TopBar = ({
-    localTheme, toggleTheme,
+    theme, toggleTheme,
     mobileTab, setMobileTab,
     showExamples, setShowExamples,
     groupedExamples, loadExample, navigate,
@@ -586,9 +577,9 @@ const TopBar = ({
                 onClick={toggleTheme}
                 className="p-2 rounded-lg border vz-border vz-bg-p vz-muted
                            hover:vz-text transition-colors hover:bg-[var(--vz-bg-hover)]"
-                title={localTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-                {localTheme === 'dark'
+                {theme === 'dark'
                     ? <Sun size={16} />
                     : <Moon size={16} />
                 }

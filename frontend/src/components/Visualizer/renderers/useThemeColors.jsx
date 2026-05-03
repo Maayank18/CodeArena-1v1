@@ -27,17 +27,20 @@ const DARK = {
 };
 
 const LIGHT = {
-    bgPrimary:    '#ffffff',
-    bgSecondary:  '#f6f8fa',
+    // Legacy Bright Theme Renderer Tokens (for quick reversal)
+    // bgPrimary:    '#ffffff',
+    // bgSecondary:  '#f6f8fa',
+    bgPrimary:    '#fafaf9',
+    bgSecondary:  '#ffffff',
     bgCard:       '#ffffff',
-    bgHover:      '#eaeef2',
-    bgInput:      '#f6f8fa',
-    border:       '#d0d7de',
-    borderStrong: '#afb8c1',
-    textPrimary:  '#1f2328',
-    textSecondary:'#24292f',
-    textMuted:    '#57606a',
-    textFaint:    '#6e7781',
+    bgHover:      '#f1f5f9',
+    bgInput:      '#f5f5f4',
+    border:       '#e5e7eb',
+    borderStrong: '#cbd5e1',
+    textPrimary:  '#1f2937',
+    textSecondary:'#334155',
+    textMuted:    '#64748b',
+    textFaint:    '#94a3b8',
     // Semantic (same across themes — amber/red are universal)
     activeCell:   'rgba(245,158,11,0.12)',
     activeBorder: '#f59e0b',
@@ -51,7 +54,9 @@ function getCurrentTheme() {
     if (typeof document === 'undefined') return 'dark';
     const attr = document.documentElement.getAttribute('data-theme');
     const cls  = document.documentElement.classList;
-    if (attr === 'light' || cls.contains('light')) return 'light';
+    if (attr === 'light') return 'light';
+    if (attr === 'dark') return 'dark';
+    if (cls.contains('dark')) return 'dark';
     return 'dark';
 }
 
@@ -70,6 +75,4 @@ export function useThemeColors() {
 
     return theme === 'light' ? LIGHT : DARK;
 }
-
-export { DARK, LIGHT };
 // V 1.5
