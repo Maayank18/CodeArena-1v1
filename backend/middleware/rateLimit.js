@@ -21,10 +21,13 @@ const getClientIp = (req) => {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 };
 
-export const createRateLimiter = ({ keyPrefix, limit, windowMs, message }) => {
+export const createRateLimiter = ({ keyPrefix, limit, windowMs, message, getKey }) => {
     return (req, res, next) => {
         const now = Date.now();
-        const bucketKey = `${keyPrefix}:${getClientIp(req)}`;
+        const keySource = typeof getKey === 'function'
+            ? getKey(req)
+            : null;
+        const bucketKey = `${keyPrefix}:${keySource || getClientIp(req)}`;
         const existing = buckets.get(bucketKey);
 
         if (!existing || existing.resetAt <= now) {

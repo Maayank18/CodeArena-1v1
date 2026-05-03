@@ -270,6 +270,22 @@ const userSchema = new mongoose.Schema({
         default: () => ({}),
         select: false,
     },
+    isPro: {
+        type: Boolean,
+        default: false,
+    },
+    planId: {
+        type: String,
+        default: null,
+        validate: {
+            validator: (value) => value === null || ['plus', 'pro', 'premium'].includes(value),
+            message: 'Invalid plan selected for user',
+        },
+    },
+    proActivatedAt: {
+        type: Date,
+        default: null,
+    },
 
     rating: { 
         type: Number, 

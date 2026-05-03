@@ -1,19 +1,82 @@
-export const adminAuth = (req, res, next) => {
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+
+const getTokenFromRequest = (req) => {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+    }
+
+    if (req.cookies?.codearena_access_token) {
+        return req.cookies.codearena_access_token;
+    }
+
+    return null;
+};
+
+export const isAdmin = async (req, res, next) => {
     try {
-        const { username } = req.body;
-        
-        // Check if user is admin (set in environment variable)
-        const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-        
-        if (username !== adminUsername) {
-            return res.status(403).json({ 
-                message: 'Access Denied: Admin privileges required' 
+        const token = getTokenFromRequest(req);
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized',
             });
         }
-        
-        next();
+
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server auth misconfigured',
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded?.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token',
+            });
+        }
+
+        const user = await User.findById(decoded.id)
+            .select('_id username usernameLower email')
+            .lean();
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token',
+            });
+        }
+
+        const adminUsername = (process.env.ADMIN_USERNAME || 'Maya').trim().toLowerCase();
+        const currentUsername = (user.usernameLower || user.username || '').trim().toLowerCase();
+
+        if (currentUsername !== adminUsername) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: admin privileges required',
+            });
+        }
+
+        req.user = {
+            ...(req.user || {}),
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            isAdmin: true,
+        };
+
+        return next();
     } catch (error) {
-        res.status(500).json({ message: 'Authentication error' });
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token',
+        });
     }
 };
-// V 1.5
+
+export const adminAuth = isAdmin;

@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, CheckCircle2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Loader2,
+  QrCode,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../api';
+import paymentQr from '../assets/payment-QR.png';
 
 const SubscriptionModal = ({ isOpen, onClose, plan }) => {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionComplete, setSubmissionComplete] = useState(false);
+  const [submittedTransaction, setSubmittedTransaction] = useState(null);
+  const [utrNumber, setUtrNumber] = useState('');
   const [orderData, setOrderData] = useState({
     fullName: '',
     college: '',
@@ -13,142 +26,186 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
     agreedToTC: false,
   });
 
-  // Fetch user from localStorage for pre-filling email
-  const user = JSON.parse(localStorage.getItem('codearena_user')) || {};
+  const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
   const email = user.email || 'user@example.com';
 
   useEffect(() => {
-    if (isOpen) {
-      setStep(1);
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen]);
 
-  if (!plan) return null;
+    setStep(1);
+    setIsSubmitting(false);
+    setSubmissionComplete(false);
+    setSubmittedTransaction(null);
+    setUtrNumber('');
+    setOrderData({
+      fullName: user.fullName || '',
+      college: '',
+      phone: user.phone || '',
+      passoutYear: '2026',
+      agreedToTC: false,
+    });
+  }, [isOpen, user.fullName, user.phone]);
 
-  const { name, price, features, color, icon: Icon } = plan;
+  const pricing = useMemo(() => {
+    const basePrice = Number(plan?.basePrice || 0);
+    const gst = Math.round(basePrice * 0.18);
 
-  // Price calculations
-  const basePrice = parseInt(price.replace('₹', '')) || 0;
-  const gst = Math.round(basePrice * 0.18);
-  const totalPrice = basePrice + gst;
+    return {
+      basePrice,
+      gst,
+      totalPrice: basePrice + gst,
+    };
+  }, [plan?.basePrice]);
 
-  const handleNext = () => setStep((prev) => prev + 1);
-  const handleBack = () => setStep((prev) => prev - 1);
+  if (!plan) {
+    return null;
+  }
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setOrderData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
+  const { name, planId, features, color, icon: Icon } = plan;
+  const { basePrice, gst, totalPrice } = pricing;
 
-  const isFormValid = orderData.fullName.trim() !== '' && 
-                     orderData.college.trim() !== '' && 
-                     orderData.phone.trim().length >= 10 && 
-                     orderData.agreedToTC;
+  const isFormValid = (
+    orderData.fullName.trim() !== ''
+    && orderData.college.trim() !== ''
+    && orderData.phone.trim().length >= 10
+    && orderData.agreedToTC
+  );
 
   const steps = [
     { id: 1, name: 'Plan' },
     { id: 2, name: 'Details' },
-    { id: 3, name: 'Summary' },
+    { id: 3, name: 'Pay' },
   ];
 
+  const closeModal = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    onClose();
+  };
+
+  const handleInputChange = (event) => {
+    const { name: fieldName, value, type, checked } = event.target;
+
+    setOrderData((current) => ({
+      ...current,
+      [fieldName]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleUtrChange = (event) => {
+    const digitsOnly = event.target.value.replace(/\D/g, '').slice(0, 12);
+    setUtrNumber(digitsOnly);
+  };
+
+  const handleSubmitUtr = async () => {
+    if (!/^\d{12}$/.test(utrNumber)) {
+      toast.error('Enter a valid 12-digit UTR number');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await api.post('/payments/submit-utr', {
+        planId,
+        utrNumber,
+      });
+
+      setSubmittedTransaction(response.data.transaction);
+      setSubmissionComplete(true);
+      toast.success(response.data.message || 'Payment request submitted');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to submit payment request');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const slideVariants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 50 : -50,
+    enter: {
+      x: 40,
       opacity: 0,
-    }),
+    },
     center: {
-      zIndex: 1,
       x: 0,
       opacity: 1,
     },
-    exit: (direction) => ({
-      zIndex: 0,
-      x: direction < 0 ? 50 : -50,
+    exit: {
+      x: -40,
       opacity: 0,
-    }),
+    },
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden p-4 sm:p-8 py-8 sm:py-12">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={closeModal}
             className="absolute inset-0 backdrop-blur-md bg-black/60"
           />
 
-          {/* Modal Surface */}
           <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative z-10 flex w-full max-w-md max-h-[90vh] flex-col overflow-hidden rounded-[2.5rem] border border-gray-800 bg-[#121212] shadow-2xl"
+            className="relative z-10 flex w-full max-w-lg max-h-[92vh] flex-col overflow-hidden rounded-[2.5rem] border border-gray-800 bg-[#121212] shadow-2xl"
             style={{ boxShadow: `0 0 50px -10px ${color}30` }}
           >
-            {/* Close Button */}
             <button
-              onClick={onClose}
-              className="absolute right-6 top-6 z-30 rounded-full border border-gray-800 bg-gray-900/50 p-2 text-gray-400 transition-colors hover:text-white"
+              onClick={closeModal}
+              className="absolute right-6 top-6 z-30 rounded-full border border-gray-800 bg-gray-900/50 p-2 text-gray-400 transition-colors hover:text-white disabled:opacity-40"
+              disabled={isSubmitting}
             >
               <X size={18} />
             </button>
 
-            {/* Stepper (Visible on Step 2 and 3) */}
             <div className="relative p-8 pb-0 flex-shrink-0">
-              <AnimatePresence mode="wait">
-                {step > 1 && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center justify-center gap-4 mb-4"
-                  >
-                    {steps.map((s, idx) => (
-                      <React.Fragment key={s.id}>
-                        <div className="flex flex-col items-center gap-1.5">
-                          <div 
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-500 ${
-                              step >= s.id ? 'text-black' : 'bg-gray-900 text-gray-600 border border-gray-800'
-                            }`}
-                            style={step >= s.id ? { backgroundColor: color } : {}}
-                          >
-                            {step > s.id ? <CheckCircle2 size={14} /> : s.id}
-                          </div>
-                          <span className={`text-[8px] font-black uppercase tracking-widest ${step >= s.id ? 'text-white' : 'text-gray-600'}`}>
-                            {s.name}
-                          </span>
-                        </div>
-                        {idx < steps.length - 1 && (
-                          <div className="h-[1px] w-10 rounded-full bg-gray-800 overflow-hidden">
-                             <motion.div 
-                               initial={{ width: 0 }}
-                               animate={{ width: step > s.id ? '100%' : '0%' }}
-                               className="h-full"
-                               style={{ backgroundColor: color }}
-                             />
-                          </div>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <div className="flex items-center justify-center gap-4 mb-4">
+                {steps.map((item, idx) => (
+                  <React.Fragment key={item.id}>
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-500 ${
+                          step >= item.id ? 'text-black' : 'bg-gray-900 text-gray-600 border border-gray-800'
+                        }`}
+                        style={step >= item.id ? { backgroundColor: color } : undefined}
+                      >
+                        {step > item.id ? <CheckCircle2 size={14} /> : item.id}
+                      </div>
+                      <span className={`text-[8px] font-black uppercase tracking-widest ${step >= item.id ? 'text-white' : 'text-gray-600'}`}>
+                        {item.name}
+                      </span>
+                    </div>
+
+                    {idx < steps.length - 1 && (
+                      <div className="h-[1px] w-10 rounded-full bg-gray-800 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: step > item.id ? '100%' : '0%' }}
+                          className="h-full"
+                          style={{ backgroundColor: color }}
+                        />
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
 
             <div className="relative flex-1 overflow-y-auto custom-scrollbar">
-              <AnimatePresence mode="wait" custom={step}>
+              <AnimatePresence mode="wait">
                 {step === 1 && (
                   <motion.div
-                    key="step1"
-                    custom={step}
+                    key="step-1"
                     variants={slideVariants}
                     initial="enter"
                     animate="center"
@@ -168,24 +225,24 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                       <h2 className="text-xs font-black uppercase tracking-[0.4em] mb-2" style={{ color }}>
                         {name} PLAN
                       </h2>
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-6xl font-black text-white tracking-tighter">{price}</span>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-5xl font-black text-white tracking-tighter whitespace-nowrap">Rs. {basePrice}</span>
                         <span className="font-bold text-gray-500">/mo</span>
                       </div>
                       <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">
-                        Billed Monthly • Cancel Anytime
+                        Secure manual UPI verification
                       </p>
                     </div>
 
                     <div className="w-full mb-8 rounded-3xl border border-gray-800 bg-[#1a1a1a]/50 p-6">
                       <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
-                        What's included:
+                        What&apos;s included
                       </h3>
                       <ul className="space-y-4">
                         {features.slice(0, 5).map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-3">
                             <div className="mt-1 w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}20` }}>
-                               <CheckCircle2 size={12} style={{ color }} />
+                              <CheckCircle2 size={12} style={{ color }} />
                             </div>
                             <span className="text-xs font-semibold leading-tight text-gray-300">{feature}</span>
                           </li>
@@ -194,22 +251,21 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                     </div>
 
                     <button
-                      onClick={handleNext}
+                      onClick={() => setStep(2)}
                       className="w-full rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-black shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
                         backgroundColor: color,
                         boxShadow: `0 15px 35px -10px ${color}60`,
                       }}
                     >
-                      Get Started Now
+                      Continue
                     </button>
                   </motion.div>
                 )}
 
                 {step === 2 && (
                   <motion.div
-                    key="step2"
-                    custom={step}
+                    key="step-2"
                     variants={slideVariants}
                     initial="enter"
                     animate="center"
@@ -218,10 +274,12 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                     className="p-8 pt-4"
                   >
                     <div className="mb-6">
-                       <h2 className="text-2xl font-black text-white tracking-tight">Personal Details</h2>
-                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Fill in your information to proceed</p>
+                      <h2 className="text-2xl font-black text-white tracking-tight">Personal Details</h2>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                        Fill in your information to proceed
+                      </p>
                     </div>
-                    
+
                     <div className="space-y-4 mb-8">
                       <div className="space-y-1.5">
                         <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Email (Registered)</label>
@@ -241,7 +299,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                           value={orderData.fullName}
                           onChange={handleInputChange}
                           placeholder="Your official name"
-                          className="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-4 py-3.5 text-xs text-white focus:outline-none transition-all focus:border-opacity-100 placeholder:text-gray-700 font-semibold"
+                          className="w-full bg-[#1a1a1a] border border-gray-800 rounded-xl px-4 py-3.5 text-xs text-white focus:outline-none transition-all placeholder:text-gray-700 font-semibold"
                           style={{ borderColor: orderData.fullName ? color : undefined }}
                         />
                       </div>
@@ -275,6 +333,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                             />
                           </div>
                         </div>
+
                         <div className="space-y-1.5">
                           <label className="text-[9px] font-black uppercase tracking-widest text-gray-500 ml-1">Passout Year</label>
                           <select
@@ -299,27 +358,30 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                           onChange={handleInputChange}
                           className="hidden"
                         />
-                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${orderData.agreedToTC ? 'border-transparent' : 'border-gray-800 bg-[#1a1a1a]'}`}
-                             style={orderData.agreedToTC ? { backgroundColor: color } : {}}>
+                        <div
+                          className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${orderData.agreedToTC ? 'border-transparent' : 'border-gray-800 bg-[#1a1a1a]'}`}
+                          style={orderData.agreedToTC ? { backgroundColor: color } : undefined}
+                        >
                           {orderData.agreedToTC && <CheckCircle2 size={14} className="text-black" />}
                         </div>
                         <span className="text-[10px] font-bold text-gray-500 group-hover:text-gray-300 transition-colors">
-                          I agree to the <span className="underline decoration-gray-700">Terms and Conditions</span>
+                          I agree to the Terms and Conditions
                         </span>
                       </label>
                     </div>
 
                     <div className="flex flex-col gap-4">
                       <button
-                        onClick={handleNext}
+                        onClick={() => setStep(3)}
                         disabled={!isFormValid}
                         className={`w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest text-black transition-all ${!isFormValid ? 'opacity-30 cursor-not-allowed bg-gray-600' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
-                        style={isFormValid ? { backgroundColor: color, boxShadow: `0 10px 30px -10px ${color}60` } : {}}
+                        style={isFormValid ? { backgroundColor: color, boxShadow: `0 10px 30px -10px ${color}60` } : undefined}
                       >
-                        Review Order
+                        Continue to Payment
                       </button>
-                      <button 
-                        onClick={handleBack} 
+
+                      <button
+                        onClick={() => setStep(1)}
                         className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors"
                       >
                         <ArrowLeft size={12} /> Back to Plan
@@ -330,8 +392,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
 
                 {step === 3 && (
                   <motion.div
-                    key="step3"
-                    custom={step}
+                    key="step-3"
                     variants={slideVariants}
                     initial="enter"
                     animate="center"
@@ -339,78 +400,173 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     className="p-8 pt-4"
                   >
-                    <div className="mb-6">
-                       <h2 className="text-2xl font-black text-white tracking-tight">Order Summary</h2>
-                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Final check before payment</p>
-                    </div>
+                    {!submissionComplete ? (
+                      <>
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-black text-white tracking-tight">Scan, Pay, Submit UTR</h2>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                            Pay the exact amount and enter your 12-digit UTR
+                          </p>
+                        </div>
 
-                    <div className="rounded-[2rem] border border-gray-800 bg-[#1a1a1a]/50 overflow-hidden mb-8">
-                       <div className="p-6 border-b border-gray-800 flex items-center gap-4 bg-white/5">
-                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: `${color}20`, border: `1px solid ${color}30` }}>
-                             <Icon size={28} style={{ color }} />
+                        <div className="rounded-[2rem] border border-gray-800 bg-[#1a1a1a]/50 overflow-hidden mb-6">
+                          <div className="p-6 border-b border-gray-800 flex items-center gap-4 bg-white/5">
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: `${color}20`, border: `1px solid ${color}30` }}>
+                              <Icon size={28} style={{ color }} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-white uppercase tracking-widest">{name} MEMBERSHIP</p>
+                              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Manual UPI verification</p>
+                            </div>
                           </div>
-                          <div>
-                             <p className="text-sm font-black text-white uppercase tracking-widest">{name} MEMBERSHIP</p>
-                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">Priority Access Plan</p>
-                          </div>
-                       </div>
-                       
-                       <div className="p-6 space-y-4">
-                          <div className="flex justify-between text-xs">
-                             <span className="text-gray-500 font-bold uppercase tracking-widest">Base Subscription</span>
-                             <span className="text-white font-black">₹{basePrice}.00</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                             <span className="text-gray-500 font-bold uppercase tracking-widest">GST Support (18%)</span>
-                             <span className="text-white font-black">₹{gst}.00</span>
-                          </div>
-                          <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
-                             <div>
+
+                          <div className="p-6 space-y-4">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500 font-bold uppercase tracking-widest">Base Subscription</span>
+                              <span className="text-white font-black whitespace-nowrap">Rs. {basePrice}.00</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500 font-bold uppercase tracking-widest">GST (18%)</span>
+                              <span className="text-white font-black whitespace-nowrap">Rs. {gst}.00</span>
+                            </div>
+                            <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
+                              <div>
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Payable Amount</p>
-                                <p className="text-3xl font-black text-white tracking-tighter">₹{totalPrice}</p>
-                             </div>
-                             <div className="flex flex-col items-end">
-                                <span className="text-[9px] font-black text-gray-600 uppercase tracking-tighter">Secure Transaction</span>
-                                <div className="flex gap-1 mt-1 opacity-40">
-                                   <div className="w-6 h-3 bg-gray-700 rounded-sm" />
-                                   <div className="w-6 h-3 bg-gray-700 rounded-sm" />
-                                </div>
-                             </div>
+                                <p className="text-3xl font-black text-white tracking-tighter whitespace-nowrap">Rs. {totalPrice}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[9px] font-black text-gray-600 uppercase tracking-tighter">UTR required</p>
+                                <p className="text-[10px] font-bold text-gray-400 mt-1">Exactly 12 digits</p>
+                              </div>
+                            </div>
                           </div>
-                       </div>
-                    </div>
+                        </div>
 
-                    <div className="flex flex-col gap-4">
-                       <button
-                         onClick={() => {
-                           toast.success('Redirecting to UPI Payment Gateway...');
-                           // Implementation for UPI QR Code Flow
-                           if (typeof window !== 'undefined' && window.triggerUPIFlow) {
-                              window.triggerUPIFlow({ amount: totalPrice, plan: name });
-                           }
-                         }}
-                         className="w-full rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-black shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-                         style={{
-                           backgroundColor: color,
-                           boxShadow: `0 15px 35px -10px ${color}60`,
-                         }}
-                       >
-                         Proceed to Payment
-                       </button>
-                       <button 
-                        onClick={handleBack} 
-                        className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors"
-                      >
-                        <ArrowLeft size={12} /> Edit Details
-                      </button>
-                    </div>
+                        <div className="grid gap-5 md:grid-cols-[1.1fr,0.9fr] mb-6">
+                          <div className="rounded-[2rem] border border-gray-800 bg-[#171717] p-5">
+                            <div className="flex items-center gap-2 mb-3">
+                              <QrCode size={16} className="text-gray-400" />
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Payment QR</p>
+                            </div>
+                            <div className="rounded-[1.5rem] bg-white p-4">
+                              <img
+                                src={paymentQr}
+                                alt="CodeArena UPI payment QR"
+                                className="w-full rounded-2xl object-contain"
+                              />
+                            </div>
+                          </div>
 
-                    <div className="mt-10 flex flex-col items-center gap-2 opacity-30">
-                       <div className="flex items-center gap-2">
-                          <ShieldCheck size={14} className="text-gray-400" />
-                          <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Merchant Security Verified</span>
-                       </div>
-                    </div>
+                          <div className="rounded-[2rem] border border-gray-800 bg-[#171717] p-5">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">Instructions</p>
+                            <div className="space-y-3 text-xs text-gray-300">
+                              <p>1. Scan the QR using any UPI app.</p>
+                              <p>2. Pay the exact amount shown above.</p>
+                              <p>3. Copy the 12-digit UTR from the successful payment screen.</p>
+                              <p>4. Submit the UTR below for admin verification.</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-[2rem] border border-gray-800 bg-[#171717] p-5 mb-6">
+                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 block">
+                            Enter 12-digit UTR
+                          </label>
+                          <input
+                            type="text"
+                            value={utrNumber}
+                            onChange={handleUtrChange}
+                            placeholder="000000000000"
+                            inputMode="numeric"
+                            maxLength={12}
+                            className="w-full rounded-2xl border border-gray-800 bg-[#101010] px-4 py-4 text-lg tracking-[0.25em] text-white placeholder:text-gray-700 focus:outline-none"
+                            style={{ borderColor: utrNumber.length === 12 ? color : undefined }}
+                          />
+                          <p className="mt-3 text-[11px] text-gray-500">
+                            Your request is email-confirmed after successful submission and then reviewed by admin.
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                          <button
+                            onClick={handleSubmitUtr}
+                            disabled={isSubmitting || utrNumber.length !== 12}
+                            className="w-full rounded-2xl py-5 text-sm font-black uppercase tracking-widest text-black shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                            style={{
+                              backgroundColor: color,
+                              boxShadow: `0 15px 35px -10px ${color}60`,
+                            }}
+                          >
+                            {isSubmitting ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <Loader2 size={16} className="animate-spin" /> Submitting
+                              </span>
+                            ) : (
+                              'Submit UTR for Verification'
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() => setStep(2)}
+                            className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 hover:text-white transition-colors"
+                            disabled={isSubmitting}
+                          >
+                            <ArrowLeft size={12} /> Edit Details
+                          </button>
+                        </div>
+
+                        <div className="mt-8 flex flex-col items-center gap-2 opacity-70">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={14} className="text-gray-400" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Merchant Security Verified</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="py-8">
+                        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
+                          <CheckCircle2 size={34} className="text-emerald-400" />
+                        </div>
+
+                        <div className="text-center mb-8">
+                          <h2 className="text-2xl font-black text-white tracking-tight">Request Received</h2>
+                          <p className="mt-2 text-sm text-gray-400">
+                            Your payment request is now in the verification queue.
+                          </p>
+                        </div>
+
+                        <div className="rounded-[2rem] border border-gray-800 bg-[#171717] p-5 mb-6 space-y-3">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500 font-bold uppercase tracking-widest">Plan</span>
+                            <span className="text-white font-black">{submittedTransaction?.planName || name}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500 font-bold uppercase tracking-widest">Amount</span>
+                            <span className="text-white font-black whitespace-nowrap">Rs. {submittedTransaction?.amount || totalPrice}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500 font-bold uppercase tracking-widest">UTR</span>
+                            <span className="text-white font-black tracking-[0.2em]">{submittedTransaction?.utrNumber || utrNumber}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500 font-bold uppercase tracking-widest">Status</span>
+                            <span className="text-amber-300 font-black uppercase">{submittedTransaction?.status || 'pending'}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-center text-[11px] text-gray-500 mb-6">
+                          You&apos;ll receive an email when the request is approved or rejected.
+                        </p>
+
+                        <button
+                          onClick={closeModal}
+                          className="w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest text-black"
+                          style={{ backgroundColor: color }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -423,4 +579,3 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
 };
 
 export default SubscriptionModal;
-

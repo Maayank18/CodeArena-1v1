@@ -524,12 +524,14 @@ import visualizerRoutes from './routes/visualizerRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import campaignRoutes from './routes/campaignRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import { verifySmtpConnection } from './services/authEmailService.js';
 
 // ✅ MODELS
 import Problem from './models/Problem.js';
 import User from './models/User.js';
 import Match from './models/Match.js';
+import { ensurePaymentTransactionIndexes } from './models/PaymentTransaction.js';
 
 // ✅ UTILS
 import { calculateMatchOutcome } from './utils/elo.js';
@@ -606,6 +608,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/visualize', visualizerRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/campaign', campaignRoutes);
@@ -1219,6 +1222,7 @@ process.on('SIGTERM', () => {
 const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     await waitForDatabase();
+    await ensurePaymentTransactionIndexes();
     await verifySmtpConnection();
 
     server.listen(PORT, () => {

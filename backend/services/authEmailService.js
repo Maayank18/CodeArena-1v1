@@ -5,8 +5,6 @@ let cachedTransporter = null;
 const hasSmtpConfig = () => {
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-    const host = process.env.SMTP_HOST || 'smtp.gmail.com'; // Fallback to Gmail if using EMAIL_USER
-    const port = process.env.SMTP_PORT || '465';
 
     return Boolean(user && pass);
 };
@@ -37,42 +35,15 @@ const getTransporter = () => {
     return cachedTransporter;
 };
 
-export const verifySmtpConnection = async () => {
+const sendMailOrLog = async ({ to, subject, html, debugLabel }) => {
     const transporter = getTransporter();
-    if (!transporter) {
-        console.log('[SMTP] ⚠️ No SMTP configuration found. Skipping verification.');
-        return false;
-    }
-
-    try {
-        await transporter.verify();
-        console.log('[SMTP] ✅ Connection verified successfully');
-        return true;
-    } catch (error) {
-        console.error('[SMTP] ❌ Verification failed:', error.message);
-        return false;
-    }
-};
-
-export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinutes }) => {
-    const transporter = getTransporter();
-    const subject = 'CodeArena 1v1 password reset code';
-    const html = `
-        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
-            <p>Hi ${name || 'there'},</p>
-            <p>Your CodeArena 1v1 password reset code is:</p>
-            <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${otp}</p>
-            <p>This code expires in ${expiresInMinutes} minutes.</p>
-            <p>If you did not request this, you can ignore this email.</p>
-        </div>
-    `;
 
     if (!transporter) {
         if (process.env.NODE_ENV === 'production') {
-            throw new Error('SMTP is not configured for password reset emails');
+            throw new Error(`SMTP is not configured for ${debugLabel}`);
         }
 
-        console.log(`[AUTH OTP][DEV] ${to} -> ${otp}`);
+        console.log(`[${debugLabel.toUpperCase()}][DEV] ${to}`);
         return { delivered: false, debug: true };
     }
 
@@ -86,8 +57,44 @@ export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinute
     return { delivered: true, debug: false };
 };
 
-export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes, requestedChanges = [] }) => {
+export const verifySmtpConnection = async () => {
     const transporter = getTransporter();
+    if (!transporter) {
+        console.log('[SMTP] No SMTP configuration found. Skipping verification.');
+        return false;
+    }
+
+    try {
+        await transporter.verify();
+        console.log('[SMTP] Connection verified successfully');
+        return true;
+    } catch (error) {
+        console.error('[SMTP] Verification failed:', error.message);
+        return false;
+    }
+};
+
+export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinutes }) => {
+    const subject = 'CodeArena 1v1 password reset code';
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
+            <p>Hi ${name || 'there'},</p>
+            <p>Your CodeArena 1v1 password reset code is:</p>
+            <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${otp}</p>
+            <p>This code expires in ${expiresInMinutes} minutes.</p>
+            <p>If you did not request this, you can ignore this email.</p>
+        </div>
+    `;
+
+    return sendMailOrLog({
+        to,
+        subject,
+        html,
+        debugLabel: 'password reset emails',
+    });
+};
+
+export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes, requestedChanges = [] }) => {
     const subject = 'CodeArena 1v1 security verification code';
     const changeSummary = requestedChanges.length
         ? requestedChanges.map((item) => `<li style="margin-bottom: 6px;">${item}</li>`).join('')
@@ -114,21 +121,72 @@ export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes, re
         </div>
     `;
 
-    if (!transporter) {
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error('SMTP is not configured for settings verification emails');
-        }
-
-        console.log(`[SETTINGS OTP][DEV] ${to} -> ${otp}`);
-        return { delivered: false, debug: true };
-    }
-
-    await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.EMAIL_USER,
+    return sendMailOrLog({
         to,
         subject,
         html,
+        debugLabel: 'settings verification emails',
     });
+};
 
-    return { delivered: true, debug: false };
+export const sendPaymentSubmissionEmail = async ({ to, name, planName, amount, utrNumber }) => {
+    const subject = `CodeArena 1v1 payment received for ${planName}`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+            <p>Hi ${name || 'there'},</p>
+            <p>We received your manual UPI payment request for <strong>${planName}</strong>.</p>
+            <p>Amount: <strong>Rs. ${amount}</strong></p>
+            <p>UTR: <strong>${utrNumber}</strong></p>
+            <p>Our team is verifying the payment now. You will receive another email once it is approved or rejected.</p>
+        </div>
+    `;
+
+    return sendMailOrLog({
+        to,
+        subject,
+        html,
+        debugLabel: 'payment submission emails',
+    });
+};
+
+export const sendPaymentApprovedEmail = async ({ to, name, planName, amount }) => {
+    const subject = `Welcome to CodeArena 1v1 ${planName}`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+            <p>Hi ${name || 'there'},</p>
+            <p>Your payment for <strong>${planName}</strong> has been approved.</p>
+            <p>Amount received: <strong>Rs. ${amount}</strong></p>
+            <p>Welcome to Pro. Your premium access is now active in CodeArena 1v1.</p>
+        </div>
+    `;
+
+    return sendMailOrLog({
+        to,
+        subject,
+        html,
+        debugLabel: 'payment approval emails',
+    });
+};
+
+export const sendPaymentRejectedEmail = async ({ to, name, planName, amount, adminNotes }) => {
+    const subject = 'CodeArena 1v1 payment could not be verified';
+    const notesBlock = adminNotes
+        ? `<p>Reviewer note: <strong>${adminNotes}</strong></p>`
+        : '<p>Please check the UTR with your bank or payment app and try again.</p>';
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+            <p>Hi ${name || 'there'},</p>
+            <p>We could not verify your payment request for <strong>${planName}</strong>.</p>
+            <p>Amount expected: <strong>Rs. ${amount}</strong></p>
+            ${notesBlock}
+            <p>You can submit a fresh payment request with the correct 12-digit UTR once the issue is resolved.</p>
+        </div>
+    `;
+
+    return sendMailOrLog({
+        to,
+        subject,
+        html,
+        debugLabel: 'payment rejection emails',
+    });
 };

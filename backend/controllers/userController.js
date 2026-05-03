@@ -118,7 +118,7 @@ export const getUserProfile = async (req, res) => {
         const user = await User.findOne({ 
             usernameLower: username.toLowerCase() 
         })
-        .select('username rating seasonScore stats avatar email fullName phone bio preferences')
+        .select('username rating seasonScore stats avatar email fullName phone bio preferences isPro planId proActivatedAt')
         .lean();
 
         if (!user) {
