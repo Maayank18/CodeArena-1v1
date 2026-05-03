@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "yjs": "node run-yjs.cjs",
     "seed": "node seeder.js",
-    "reset-password": "node resetUserPassword.js"
+    "reset-password": "node resetUserPassword.js",
+    "audit-auth-users": "node sanitizeAuthUsers.js audit"
   },
   "keywords": [],
   "author": "",

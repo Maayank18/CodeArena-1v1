@@ -151,6 +151,7 @@
 // OPTIMIZED VERSION - BACKWARD COMPATIBLE
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
 const userPreferencesSchema = new mongoose.Schema({
     emailNotifications: {
@@ -376,8 +377,9 @@ userSchema.statics.findByUsername = async function(username) {
 };
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
-    // Defensive check for production: If password was not selected in the query, return false instead of crashing
-    if (!this.password) {
+    const passwordHash = typeof this.password === 'string' ? this.password.trim() : '';
+
+    if (!passwordHash) {
         console.error('[MODEL] ❌ matchPassword failed: Password hash is missing from the document instance.');
         return false;
     }
@@ -386,7 +388,12 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
         return false;
     }
 
-    return await bcrypt.compare(enteredPassword, this.password);
+    if (!BCRYPT_HASH_REGEX.test(passwordHash)) {
+        console.error('[MODEL] matchPassword failed: password hash is not a valid bcrypt string.');
+        return false;
+    }
+
+    return await bcrypt.compare(enteredPassword, passwordHash);
 };
 
 const User = mongoose.model('User', userSchema);
