@@ -40,55 +40,57 @@ const Pricing = () => {
   }
 
   const featuresPlus = [
-    "Unlimited 1v1 Battles",
-    "Access to All Languages",
-    "Basic Analytics",
-    "Friend Challenges",
-    "Community Support"
+    "Unlimited 1v1 battle",
+    "Access to all code languages",
+    "Access to your match history",
+    "Access to leaderboards",
+    "Access to limited AI assistance"
   ];
 
   const featuresPro = [
     "Everything in Plus",
-    "Advanced Analytics",
-    "Custom Battle Rooms",
-    "Priority Matchmaking",
-    "No Ads",
-    "Exclusive Badges"
+    "Access to learn section",
+    "Analytics (Advanced)",
+    "Priority matchmaking",
+    "Exclusive badges",
+    "Contest participation",
+    "Community support",
+    "Profile customization"
   ];
 
   const featuresPremium = [
     "Everything in Pro",
-    "Detailed Performance Insights",
-    "Voice Chat in Battles",
-    "Early Access to New Features",
-    "Profile Customization",
-    "Premium Support"
+    "Code visualization tool",
+    "Advanced theme optimization",
+    "Campaign Mode access",
+    "Full AI support",
+    "Weekly report generation"
   ];
 
   const handleOpenModal = (planType) => {
     const configs = {
       plus: {
         name: 'PLUS',
-        price: '₹149',
+        price: '₹49',
         features: featuresPlus,
         color: '#22c55e',
         icon: Star
       },
       pro: {
         name: 'PRO',
-        price: '₹249',
+        price: '₹99',
         features: featuresPro,
         color: '#4aee88',
         icon: Crown
       },
       premium: {
         name: 'PREMIUM',
-        price: '₹349',
+        price: '₹149',
         features: featuresPremium,
         color: '#a855f7',
         icon: Diamond
       }
-    };
+    }; 
     setModalConfig({ isOpen: true, plan: configs[planType] });
   };
 
