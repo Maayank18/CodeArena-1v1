@@ -524,6 +524,7 @@ import visualizerRoutes from './routes/visualizerRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import campaignRoutes from './routes/campaignRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import { verifySmtpConnection } from './services/authEmailService.js';
 
 // ✅ MODELS
 import Problem from './models/Problem.js';
@@ -1218,6 +1219,7 @@ process.on('SIGTERM', () => {
 const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     await waitForDatabase();
+    await verifySmtpConnection();
 
     server.listen(PORT, () => {
         console.log(`

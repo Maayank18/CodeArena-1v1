@@ -98,7 +98,11 @@ export const forgotPassword = async (req, res) => {
     } catch (error) {
         console.error('FORGOT PASSWORD ERROR:', error.message);
         console.error(error.stack);
-        return res.status(500).json({ success: false, message: 'Unable to start password reset right now.' });
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Unable to start password reset right now.',
+            error: error.message 
+        });
     }
 };
 
@@ -148,7 +152,11 @@ export const verifyPasswordResetOtp = async (req, res) => {
     } catch (error) {
         console.error('VERIFY OTP ERROR:', error.message);
         console.error(error.stack);
-        return res.status(500).json({ success: false, message: 'Unable to verify code right now.' });
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Unable to verify code right now.',
+            error: error.message 
+        });
     }
 };
 
@@ -208,6 +216,10 @@ export const resetPasswordWithOtp = async (req, res) => {
 
         console.error('RESET PASSWORD ERROR:', error.message);
         console.error(error.stack);
-        return res.status(500).json({ success: false, message: 'Unable to reset password right now.' });
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Unable to reset password right now.',
+            error: error.message 
+        });
     }
 };

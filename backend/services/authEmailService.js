@@ -3,13 +3,12 @@ import nodemailer from 'nodemailer';
 let cachedTransporter = null;
 
 const hasSmtpConfig = () => {
-    return Boolean(
-        process.env.SMTP_HOST &&
-        process.env.SMTP_PORT &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASS &&
-        process.env.SMTP_FROM
-    );
+    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+    const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com'; // Fallback to Gmail if using EMAIL_USER
+    const port = process.env.SMTP_PORT || '465';
+
+    return Boolean(user && pass);
 };
 
 const getTransporter = () => {
@@ -18,18 +17,41 @@ const getTransporter = () => {
     }
 
     if (!cachedTransporter) {
+        const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+        const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+        const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+        const port = Number(process.env.SMTP_PORT) || 465;
+        const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
         cachedTransporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: Number(process.env.SMTP_PORT),
-            secure: process.env.SMTP_SECURE === 'true',
+            host,
+            port,
+            secure,
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                user,
+                pass,
             },
         });
     }
 
     return cachedTransporter;
+};
+
+export const verifySmtpConnection = async () => {
+    const transporter = getTransporter();
+    if (!transporter) {
+        console.log('[SMTP] ⚠️ No SMTP configuration found. Skipping verification.');
+        return false;
+    }
+
+    try {
+        await transporter.verify();
+        console.log('[SMTP] ✅ Connection verified successfully');
+        return true;
+    } catch (error) {
+        console.error('[SMTP] ❌ Verification failed:', error.message);
+        return false;
+    }
 };
 
 export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinutes }) => {
@@ -55,7 +77,7 @@ export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinute
     }
 
     await transporter.sendMail({
-        from: process.env.SMTP_FROM,
+        from: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.EMAIL_USER,
         to,
         subject,
         html,
@@ -102,7 +124,7 @@ export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes, re
     }
 
     await transporter.sendMail({
-        from: process.env.SMTP_FROM,
+        from: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.EMAIL_USER,
         to,
         subject,
         html,
