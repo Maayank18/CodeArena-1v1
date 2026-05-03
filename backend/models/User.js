@@ -376,7 +376,13 @@ userSchema.statics.findByUsername = async function(username) {
 };
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
-    if (typeof enteredPassword !== 'string' || typeof this.password !== 'string' || !this.password) {
+    // Defensive check for production: If password was not selected in the query, return false instead of crashing
+    if (!this.password) {
+        console.error('[MODEL] ❌ matchPassword failed: Password hash is missing from the document instance.');
+        return false;
+    }
+
+    if (typeof enteredPassword !== 'string') {
         return false;
     }
 

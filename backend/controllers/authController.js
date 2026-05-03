@@ -137,9 +137,9 @@ export const loginUser = async (req, res) => {
 
         const trimmedEmail = email.trim().toLowerCase();
         
-        // Use a clean selection to avoid any schema issues
+        // Use explicit selection with +password to ensure it's loaded even if select:false was set
         const user = await User.findOne({ email: trimmedEmail })
-            .select('password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
+            .select('+password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
 
         if (!user) {
             console.log(`[AUTH] ❌ User not found: ${trimmedEmail}`);
