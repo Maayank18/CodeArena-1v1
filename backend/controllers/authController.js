@@ -129,16 +129,18 @@ export const loginUser = async (req, res) => {
     const { email, password, rememberMe } = req.body;
 
     try {
-        console.log('Login attempt for email:', email);
+        console.log(`[AUTH] Login attempt: ${email}`);
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Please provide email and password' });
         }
 
-        const user = await User.findOne({ email: email.trim().toLowerCase() })
-            .select('password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
+        const trimmedEmail = email.trim().toLowerCase();
+        const user = await User.findOne({ email: trimmedEmail })
+            .select('+password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
 
         if (!user) {
+            console.log(`[AUTH] User not found: ${trimmedEmail}`);
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
@@ -146,54 +148,44 @@ export const loginUser = async (req, res) => {
             return res.status(423).json({ message: buildLockoutMessage(user.lockUntil) });
         }
 
-        let passwordHash = typeof user.password === 'string' && user.password ? user.password : null;
-        if (!passwordHash) {
-            passwordHash = await getRawPasswordHash(user._id);
-            if (passwordHash) {
-                user.password = passwordHash;
-            }
-        }
-
-        if (!passwordHash) {
-            console.error('LOGIN ERROR: User record is missing a password hash', {
-                email: user.email,
-                userId: user._id.toString()
-            });
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-
-        const isPasswordMatch = await bcrypt.compare(password, passwordHash);
+        // Verify password
+        const isPasswordMatch = await user.matchPassword(password);
 
         if (!isPasswordMatch) {
-            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-
-            if (user.failedLoginAttempts >= AUTH_LIMITS.loginMaxFailures) {
-                user.lockUntil = new Date(Date.now() + AUTH_LIMITS.lockMinutes * 60 * 1000);
-                user.failedLoginAttempts = 0;
+            console.log(`[AUTH] Password mismatch for: ${trimmedEmail}`);
+            
+            // Increment failed attempts using atomic update to avoid save() hooks
+            const failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+            const update = { $set: { failedLoginAttempts } };
+            
+            if (failedLoginAttempts >= AUTH_LIMITS.loginMaxFailures) {
+                update.$set.lockUntil = new Date(Date.now() + AUTH_LIMITS.lockMinutes * 60 * 1000);
+                update.$set.failedLoginAttempts = 0;
             }
-
-            await user.save();
+            
+            await User.updateOne({ _id: user._id }, update);
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        let shouldPersistUser = false;
-
-        if (!user.usernameLower) {
-            user.usernameLower = user.username.toLowerCase();
-            shouldPersistUser = true;
+        // Success - Generate Token
+        let token;
+        try {
+            token = generateToken(user._id, { rememberMe });
+        } catch (tokenError) {
+            console.error('[AUTH] Token Generation Failed:', tokenError.message);
+            return res.status(500).json({ 
+                message: 'Authentication service configuration error', 
+                error: tokenError.message 
+            });
         }
 
-        if (user.failedLoginAttempts || user.lockUntil) {
-            user.failedLoginAttempts = 0;
-            user.lockUntil = null;
-            shouldPersistUser = true;
+        // Cleanup lockout/failures if necessary
+        if (user.failedLoginAttempts || user.lockUntil || !user.usernameLower) {
+            const update = { $set: { failedLoginAttempts: 0, lockUntil: null } };
+            if (!user.usernameLower) update.$set.usernameLower = user.username.toLowerCase();
+            await User.updateOne({ _id: user._id }, update);
         }
 
-        if (shouldPersistUser) {
-            await user.save();
-        }
-
-        const token = generateToken(user._id, { rememberMe });
         attachAccessCookie(res, token, { rememberMe });
 
         return res.json({
@@ -211,11 +203,11 @@ export const loginUser = async (req, res) => {
             token,
         });
     } catch (error) {
-        console.error('LOGIN ERROR:', error.message);
-        console.error(error.stack);
+        console.error('[AUTH] CRITICAL LOGIN ERROR:', error);
         return res.status(500).json({ 
-            message: 'Server Error during login', 
-            error: error.message 
+            message: 'An internal server error occurred during login', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

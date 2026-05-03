@@ -247,8 +247,9 @@ const Login = () => {
             toast.success(`Welcome, ${data.username}!`, { duration: 3000 });
             window.setTimeout(() => navigate('/dashboard'), 500);
         } catch (error) {
-            const message = error.response?.data?.message || 'Authentication failed. Please try again.';
-            toast.error(message, { duration: 5000 });
+            const errorData = error.response?.data;
+            const message = errorData?.error || errorData?.message || 'Authentication failed. Please try again.';
+            toast.error(message, { duration: 6000 });
         } finally {
             setIsLoading(false);
         }
