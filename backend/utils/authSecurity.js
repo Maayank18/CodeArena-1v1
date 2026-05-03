@@ -34,8 +34,8 @@ export const safeEqualHex = (left, right) => {
 };
 
 export const validatePasswordStrength = (password) => {
-    if (typeof password !== 'string' || password.length < 7) {
-        return 'Password must be at least 7 characters';
+    if (typeof password !== 'string' || password.length < 8) {
+        return 'Password must be at least 8 characters';
     }
 
     if (!/[A-Z]/.test(password)) {
@@ -48,6 +48,10 @@ export const validatePasswordStrength = (password) => {
 
     if (!/[0-9]/.test(password)) {
         return 'Password must include at least one number';
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return 'Password must include at least one special character';
     }
 
     return null;

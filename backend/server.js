@@ -523,6 +523,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import visualizerRoutes from './routes/visualizerRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import campaignRoutes from './routes/campaignRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 
 // ✅ MODELS
 import Problem from './models/Problem.js';
@@ -601,6 +602,7 @@ app.use('/api/problems', problemRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes); 
+app.use('/api/settings', settingsRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/visualize', visualizerRoutes);

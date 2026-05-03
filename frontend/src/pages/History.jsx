@@ -182,7 +182,7 @@ const History = () => {
             <Sidebar />
             
             <div className="flex-1 flex flex-col min-w-0 h-full relative">
-                <Navbar user={user} onLogout={handleLogout} />
+                <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
                 
                 <div className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar pb-20 md:pb-8">
                     <div className="max-w-4xl mx-auto">

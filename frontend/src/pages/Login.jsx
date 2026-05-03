@@ -41,8 +41,8 @@ const getResetPasswordError = (password) => {
         return null;
     }
 
-    if (password.length < 7) {
-        return 'Password must be at least 7 characters';
+    if (password.length < 8) {
+        return 'Password must be at least 8 characters';
     }
 
     if (!/[A-Z]/.test(password)) {
@@ -55,6 +55,10 @@ const getResetPasswordError = (password) => {
 
     if (!/[0-9]/.test(password)) {
         return 'Password must include at least one number';
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return 'Password must include at least one special character';
     }
 
     return null;
@@ -120,8 +124,8 @@ const Login = () => {
             errors.push('Invalid email format');
         }
 
-        if (formData.password.length > 0 && formData.password.length < 7) {
-            errors.push('Password must be at least 7 characters');
+        if (formData.password.length > 0 && formData.password.length < 8) {
+            errors.push('Password must be at least 8 characters');
         }
 
         return {
@@ -138,7 +142,7 @@ const Login = () => {
         }
 
         let strength = 0;
-        if (password.length >= 7) strength += 1;
+        if (password.length >= 8) strength += 1;
         if (password.length >= 10) strength += 1;
         if (/[A-Z]/.test(password)) strength += 1;
         if (/[0-9]/.test(password)) strength += 1;

@@ -267,6 +267,21 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
+@keyframes bounceSlow {
+  0%, 100% {
+    transform: translateY(-5%) translateX(-50%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0) translateX(-50%);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 3s infinite;
+}
+
 /* ====================================
    SELECTION & TEXT UTILITIES
    ==================================== */
@@ -287,10 +302,11 @@ input[type="range"]::-moz-range-thumb {
    ==================================== */
 
 .glass-effect {
-  background: rgba(22, 27, 34, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(22, 27, 34, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 /* ====================================
@@ -303,6 +319,14 @@ input[type="range"]::-moz-range-thumb {
 
 .glow-green {
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.text-glow-accent {
+  text-shadow: 0 0 15px rgba(74, 238, 136, 0.5);
+}
+
+.text-glow-green {
+  text-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
 }
 
 .glow-amber {

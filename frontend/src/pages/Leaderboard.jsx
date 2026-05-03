@@ -17,9 +17,9 @@ const Leaderboard = () => {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('codearena_user') || '{}'));
   
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
 
   // ✅ OPTIMIZED: Memoized logout handler
   const handleLogout = useCallback(() => {
@@ -168,7 +168,7 @@ const Leaderboard = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col relative min-w-0">
-        <Navbar user={user} onLogout={handleLogout} />
+        <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 pb-24 md:pb-8 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent bg-[var(--bg-primary)]">
           <div className="max-w-5xl mx-auto space-y-6">

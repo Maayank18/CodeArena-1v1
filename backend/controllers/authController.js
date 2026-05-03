@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { AUTH_LIMITS } from '../utils/authSecurity.js';
+import { AUTH_LIMITS, validatePasswordStrength } from '../utils/authSecurity.js';
 
 const generateToken = (id, options = {}) => {
     if (!process.env.JWT_SECRET) {
@@ -59,8 +59,9 @@ export const registerUser = async (req, res) => {
         const trimmedEmail = email.trim().toLowerCase();
         const trimmedPhone = phone.trim();
 
-        if (password.length < 7) {
-            return res.status(400).json({ message: 'Password must be at least 7 characters' });
+        const passwordValidationError = validatePasswordStrength(password);
+        if (passwordValidationError) {
+            return res.status(400).json({ message: passwordValidationError });
         }
 
         const [emailExists, userExists] = await Promise.all([
@@ -97,6 +98,8 @@ export const registerUser = async (req, res) => {
             email: user.email,
             phone: user.phone,
             avatar: user.avatar,
+            bio: user.bio || '',
+            preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
             rating: user.rating,
             seasonScore: user.seasonScore,
             stats: user.stats,
@@ -133,7 +136,7 @@ export const loginUser = async (req, res) => {
         }
 
         const user = await User.findOne({ email: email.trim().toLowerCase() })
-            .select('password username fullName email phone avatar rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
+            .select('password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
@@ -200,6 +203,8 @@ export const loginUser = async (req, res) => {
             email: user.email,
             phone: user.phone,
             avatar: user.avatar,
+            bio: user.bio || '',
+            preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
             rating: user.rating,
             seasonScore: user.seasonScore,
             stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },

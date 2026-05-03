@@ -1,5 +1,5 @@
 // perfect with apt responsiveness 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, BookOpen } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -22,13 +22,13 @@ const Campaign = () => {
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
-  const user = useMemo(() => {
+  const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('codearena_user') || '{}');
     } catch {
       return {};
     }
-  }, []);
+  });
 
   useEffect(() => {
     if (!user || Object.keys(user).length === 0) {
@@ -124,7 +124,7 @@ const Campaign = () => {
 
   return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col overflow-hidden">
-      <Navbar user={user} onLogout={handleLogout} />
+      <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
 
       <CampaignHUD
         progress={progress}

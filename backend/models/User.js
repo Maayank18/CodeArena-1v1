@@ -152,6 +152,36 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const userPreferencesSchema = new mongoose.Schema({
+    emailNotifications: {
+        type: Boolean,
+        default: true,
+    },
+    marketingUpdates: {
+        type: Boolean,
+        default: false,
+    },
+}, { _id: false });
+
+const pendingUpdatesSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+    },
+    phone: {
+        type: String,
+        trim: true,
+    },
+    password: {
+        type: String,
+    },
+    requestedAt: {
+        type: Date,
+        default: null,
+    },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
     fullName: { 
         type: String, 
@@ -205,6 +235,39 @@ const userSchema = new mongoose.Schema({
     avatar: { 
         type: String, 
         default: '' 
+    },
+    bio: {
+        type: String,
+        default: '',
+        maxlength: 240,
+        trim: true,
+    },
+    preferences: {
+        type: userPreferencesSchema,
+        default: () => ({
+            emailNotifications: true,
+            marketingUpdates: false,
+        }),
+    },
+    otpCode: {
+        type: String,
+        default: null,
+        select: false,
+    },
+    otpExpiry: {
+        type: Date,
+        default: null,
+        select: false,
+    },
+    otpAttemptCount: {
+        type: Number,
+        default: 0,
+        select: false,
+    },
+    pendingUpdates: {
+        type: pendingUpdatesSchema,
+        default: () => ({}),
+        select: false,
     },
 
     rating: { 
@@ -276,6 +339,13 @@ userSchema.pre('save', async function () {
     // 3. Ensure stats object exists
     if (!this.stats) {
         this.stats = { wins: 0, losses: 0, matchesPlayed: 0 };
+    }
+
+    if (!this.preferences) {
+        this.preferences = {
+            emailNotifications: true,
+            marketingUpdates: false,
+        };
     }
 
     // 4. ✅ PERFORMANCE FIX: Only generate avatar on NEW users
