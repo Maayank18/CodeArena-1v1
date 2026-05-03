@@ -272,8 +272,7 @@ const Dashboard = () => {
 
       {isNavigating && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center animate-fade-in pointer-events-auto px-4 text-center"
-          style={{ backgroundColor: 'var(--overlay-scrim)', backdropFilter: 'blur(6px)' }}
+          className="fixed inset-0 z-[999] flex flex-col items-center justify-center animate-fade-in pointer-events-auto px-4 text-center bg-black/80 backdrop-blur-sm"
         >
            <div className="scale-125 md:scale-150 mb-8">
              <Logo />
