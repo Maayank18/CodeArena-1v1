@@ -129,64 +129,83 @@ export const loginUser = async (req, res) => {
     const { email, password, rememberMe } = req.body;
 
     try {
-        console.log(`[AUTH] Login attempt: ${email}`);
+        console.log(`[AUTH] 🛡️ Login attempt started: ${email}`);
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Please provide email and password' });
         }
 
         const trimmedEmail = email.trim().toLowerCase();
+        
+        // Use a clean selection to avoid any schema issues
         const user = await User.findOne({ email: trimmedEmail })
-            .select('+password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
+            .select('password username fullName email phone avatar bio preferences rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
 
         if (!user) {
-            console.log(`[AUTH] User not found: ${trimmedEmail}`);
+            console.log(`[AUTH] ❌ User not found: ${trimmedEmail}`);
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        console.log(`[AUTH] 👤 User found: ${user.username} (ID: ${user._id})`);
+
         if (user.lockUntil && user.lockUntil > new Date()) {
+            console.log(`[AUTH] 🔒 Account locked: ${user.username}`);
             return res.status(423).json({ message: buildLockoutMessage(user.lockUntil) });
         }
 
         // Verify password
+        console.log(`[AUTH] 🔑 Verifying password...`);
         const isPasswordMatch = await user.matchPassword(password);
 
         if (!isPasswordMatch) {
-            console.log(`[AUTH] Password mismatch for: ${trimmedEmail}`);
+            console.warn(`[AUTH] ⚠️ Password mismatch for: ${trimmedEmail}`);
             
-            // Increment failed attempts using atomic update to avoid save() hooks
             const failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
             const update = { $set: { failedLoginAttempts } };
             
             if (failedLoginAttempts >= AUTH_LIMITS.loginMaxFailures) {
                 update.$set.lockUntil = new Date(Date.now() + AUTH_LIMITS.lockMinutes * 60 * 1000);
                 update.$set.failedLoginAttempts = 0;
+                console.log(`[AUTH] 🚫 Max attempts reached. Locking ${user.username}`);
             }
             
             await User.updateOne({ _id: user._id }, update);
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        console.log(`[AUTH] ✅ Password verified for: ${user.username}`);
+
         // Success - Generate Token
         let token;
         try {
-            token = generateToken(user._id, { rememberMe });
+            const secret = (process.env.JWT_SECRET || '').trim();
+            if (!secret) throw new Error('JWT_SECRET is empty or missing');
+            
+            token = jwt.sign(
+                { id: user._id },
+                secret,
+                { expiresIn: rememberMe === false ? '1d' : '30d' }
+            );
         } catch (tokenError) {
-            console.error('[AUTH] Token Generation Failed:', tokenError.message);
+            console.error('[AUTH] 💥 Token Generation Error:', tokenError.message);
             return res.status(500).json({ 
                 message: 'Authentication service configuration error', 
                 error: tokenError.message 
             });
         }
 
-        // Cleanup lockout/failures if necessary
-        if (user.failedLoginAttempts || user.lockUntil || !user.usernameLower) {
+        // Cleanup lockout/failures
+        try {
             const update = { $set: { failedLoginAttempts: 0, lockUntil: null } };
             if (!user.usernameLower) update.$set.usernameLower = user.username.toLowerCase();
             await User.updateOne({ _id: user._id }, update);
+        } catch (updateError) {
+            console.error('[AUTH] ⚠️ Post-login update failed (non-critical):', updateError.message);
         }
 
         attachAccessCookie(res, token, { rememberMe });
+
+        console.log(`[AUTH] 🚀 Login successful: ${user.username}`);
 
         return res.json({
             _id: user._id,
@@ -203,11 +222,11 @@ export const loginUser = async (req, res) => {
             token,
         });
     } catch (error) {
-        console.error('[AUTH] CRITICAL LOGIN ERROR:', error);
+        console.error('[AUTH] 🔥 CRITICAL LOGIN ERROR:', error);
         return res.status(500).json({ 
             message: 'An internal server error occurred during login', 
             error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            stack: error.stack
         });
     }
 };
