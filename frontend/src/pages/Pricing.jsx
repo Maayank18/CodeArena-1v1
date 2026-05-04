@@ -40,7 +40,7 @@ const Pricing = () => {
   }, [navigate]);
 
   const featuresPlus = [
-    'Unlimited 1v1 battle',
+    '100 1v1 battle/month',
     'Access to all code languages',
     'Access to your match history',
     'Access to leaderboards',
@@ -50,7 +50,7 @@ const Pricing = () => {
   const featuresPro = [
     'Everything in Plus',
     'Access to learn section',
-    'Analytics (Advanced)',
+    'Analytics and insights',
     'Priority matchmaking',
     'Exclusive badges',
     'Contest participation',
