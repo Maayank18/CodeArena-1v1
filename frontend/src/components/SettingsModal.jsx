@@ -14,12 +14,28 @@ import {
   Smartphone,
   UserRound,
   X,
+  BarChart3,
+  Activity,
+  Info,
 } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 import api from '../api.js';
 import Avatar from './Avatar.jsx';
 
 const tabs = [
   { id: 'profile', label: 'Profile', icon: UserRound },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'preferences', label: 'Preferences', icon: Bell },
 ];
@@ -73,6 +89,130 @@ const ToggleCard = ({ title, description, checked, onChange }) => (
     </span>
   </label>
 );
+
+const AnalyticsTab = () => {
+  const analyticsData = {
+    stats: [
+      { label: 'Total Problems Solved', value: '248', color: 'text-emerald-400' },
+      { label: 'Overall Accuracy (%)', value: '78.5%', color: 'text-blue-400' },
+      { label: 'Total Time Spent (hrs)', value: '142', color: 'text-yellow-400' },
+      { label: 'Current Streak (days)', value: '12', color: 'text-orange-400' },
+    ],
+    activity: [
+      { name: 'Mon', solved: 4 },
+      { name: 'Tue', solved: 7 },
+      { name: 'Wed', solved: 5 },
+      { name: 'Thu', solved: 9 },
+      { name: 'Fri', solved: 12 },
+      { name: 'Sat', solved: 8 },
+      { name: 'Sun', solved: 10 },
+    ],
+    topics: [
+      { name: 'Arrays', value: 40 },
+      { name: 'DP', value: 20 },
+      { name: 'Graphs', value: 25 },
+      { name: 'Math', value: 15 },
+    ],
+  };
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      {/* Row 1: KPI Stats */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {analyticsData.stats.map((stat, idx) => (
+          <div key={idx} className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-4 shadow-sm transition-colors hover:border-gray-700">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stat.label}</p>
+            <p className={`mt-2 text-2xl font-black ${stat.color}`}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Row 2: Charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Activity Bar Chart */}
+        <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <Activity size={16} className="text-emerald-400" />
+              Activity Over Time
+            </h4>
+            <span className="text-[10px] font-medium text-gray-500">Last 7 Days</span>
+          </div>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analyticsData.activity}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#737373', fontSize: 10 }}
+                />
+                <YAxis 
+                  hide={true}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px' }}
+                  itemStyle={{ color: '#fff', fontSize: '12px' }}
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                />
+                <Bar dataKey="solved" fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Topics Pie Chart */}
+        <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              <BarChart3 size={16} className="text-blue-400" />
+              Topic Distribution
+            </h4>
+          </div>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={analyticsData.topics}
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {analyticsData.topics.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
+                  ))}
+                </Pie>
+                <Tooltip 
+                   contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px' }}
+                   itemStyle={{ color: '#fff', fontSize: '12px' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Insights */}
+      <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-5">
+        <div className="flex items-start gap-4">
+          <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
+            <Info size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white">Performance Analysis</h4>
+            <p className="mt-2 text-xs leading-relaxed text-gray-300">
+              You have a high accuracy in <span className="font-bold text-emerald-400">Data Structures</span>, but your speed drops during <span className="font-bold text-blue-400">Dynamic Programming</span> challenges. Consider practicing more DP fundamentals to balance your competitive edge. Your activity peaked on Friday, showing high engagement during weekend starts.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const VerifiedBadge = ({ label }) => (
   <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
@@ -331,7 +471,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.98 }}
           transition={{ duration: 0.2 }}
-          className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-gray-800 bg-[#121212] shadow-[0_24px_80px_rgba(0,0,0,0.45)] max-h-[90vh]"
+          className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-gray-800 bg-[#121212] shadow-[0_24px_80px_rgba(0,0,0,0.45)] h-[650px]"
         >
           <div className="flex items-start justify-between gap-4 border-b border-gray-800 px-5 py-5 sm:px-7">
             <div>
@@ -373,7 +513,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
               </div>
             </aside>
 
-            <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-7">
+            <div className="flex-1 overflow-y-auto scrollbar-hide px-5 py-5 sm:px-7">
               {loadingProfile ? (
                 <div className="flex min-h-[420px] items-center justify-center text-sm text-gray-400">
                   Loading your settings...
@@ -548,6 +688,8 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                       </div>
                     </div>
                   )}
+
+                  {activeTab === 'analytics' && <AnalyticsTab />}
                 </>
               )}
             </div>

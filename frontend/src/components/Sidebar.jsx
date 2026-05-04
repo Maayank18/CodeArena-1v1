@@ -94,56 +94,29 @@ const Sidebar = () => {
           })}
         </div>
 
-        <div className="mt-auto space-y-4 px-4">
-          <div className="space-y-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-4">
+        <div className="mt-auto px-4 pb-4">
+          <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-2 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                <Globe size={14} className="text-blue-500" />
-                <span className="text-xs font-bold">Total Users</span>
-              </div>
-              <span className="text-xs font-mono font-bold text-[var(--text-primary)]">{stats.total}</span>
-            </div>
-            <div className="h-px w-full bg-[var(--border-color)]" />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                <div className="relative flex h-2 w-2">
+                <div className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
                 </div>
-                <span className="text-xs font-bold">Online Now</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Online Now</span>
               </div>
               <span className="text-xs font-mono font-bold text-accent">{stats.live}</span>
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-4">
-            <h4 className="mb-1 flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
-              <Zap size={16} className="fill-current text-yellow-500" /> Pro Plan
-            </h4>
-            {/* Legacy Bright Theme Upgrade Button (for quick reversal): bg-[var(--bg-secondary)] */}
-            <button
-              onClick={() => navigate('/pricing')}
-              className="mt-2 w-full rounded-lg border border-[var(--border-color)] bg-[var(--surface-elevated)] py-2 text-xs font-bold text-[var(--text-primary)] transition-opacity hover:opacity-80"
-            >
-              Upgrade
-            </button>
           </div>
         </div>
       </aside>
 
       <div className="fixed bottom-16 left-0 right-0 z-40 flex h-12 items-center justify-between border-t border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4 md:hidden">
-        <div className="flex items-center gap-4 text-[10px]">
-          <div className="flex items-center gap-1.5">
-            <div className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
-            </div>
-            <span className="font-bold text-[var(--text-secondary)]">Live: <span className="text-accent">{stats.live}</span></span>
+        <div className="flex items-center gap-1.5">
+          <div className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
           </div>
-          <div className="flex items-center gap-1.5">
-            <Globe size={10} className="text-blue-500" />
-            <span className="font-bold text-[var(--text-secondary)]">Total: <span className="text-[var(--text-primary)]">{stats.total}</span></span>
-          </div>
+          <span className="text-[10px] font-bold text-[var(--text-secondary)]">Online Now: <span className="text-accent">{stats.live}</span></span>
         </div>
 
         <button

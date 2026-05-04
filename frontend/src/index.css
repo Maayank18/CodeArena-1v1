@@ -412,3 +412,11 @@ input:focus-visible {
   }
 }
 /* V 1.5 */
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

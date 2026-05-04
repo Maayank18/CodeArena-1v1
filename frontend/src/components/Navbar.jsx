@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LogOut, Moon, Settings, Sun } from 'lucide-react';
+import { LogOut, Moon, Settings, Sun, Zap, Trophy } from 'lucide-react';
 import { Logo } from './Logo';
 import Avatar from './Avatar';
 import SettingsModal from './SettingsModal.jsx';
@@ -74,6 +74,22 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
         </button>
 
         <div className="flex items-center gap-3 sm:gap-8">
+          <button
+            onClick={() => toast('Contests coming soon!')}
+            className="hidden items-center gap-2 text-sm font-bold text-[var(--text-secondary)] transition-all cursor-pointer hover:text-[var(--text-primary)] hover:underline sm:flex"
+          >
+            <Trophy size={16} />
+            <span>Contest</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/pricing')}
+            className="hidden items-center gap-2 text-sm font-bold text-yellow-400 transition-all cursor-pointer hover:text-yellow-300 hover:underline sm:flex"
+          >
+            <Zap size={16} className="fill-current" />
+            <span>Upgrade</span>
+          </button>
+
           <button
             onClick={toggleTheme}
             className="
