@@ -40,17 +40,23 @@ const getNodeTitle = (node) =>
   node?.problemId?.title ||
   node?.problem?.title ||
   node?.title ||
-  null;
+  'Unknown Challenge';
 
 // ── Node progress state ───────────────────────────────────────────────────────
-const getState = (nodeId, progress, isFirstNodeFallback = false) => {
+const getState = (node, progress, isFirstNodeFallback = false) => {
+  const nodeId = node?.nodeId;
+  const isRootNode =
+    Boolean(node?.isEntryNode) ||
+    (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
+    node?.nodeNum === 1;
+
   if (!progress) {
-    return isFirstNodeFallback ? { state: 'available' } : { state: 'locked' };
+    return isFirstNodeFallback || isRootNode ? { state: 'available' } : { state: 'locked' };
   }
   const done = progress.completedNodes?.find(n => n.nodeId === nodeId);
   if (done) return { state: 'completed', starsAwarded: done.starsAwarded ?? 0 };
   if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
-  if (isFirstNodeFallback) return { state: 'available' };
+  if (isFirstNodeFallback || isRootNode) return { state: 'available' };
   return { state: 'locked' };
 };
 
@@ -176,7 +182,13 @@ const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, toColor, li
 };
 
 // ── WorldMap ──────────────────────────────────────────────────────────────────
-const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId }) => {
+const WorldMap = ({
+  nodes: propNodes = [],
+  progress,
+  onNodeClick,
+  selectedNodeId,
+  useMockData = true,
+}) => {
   const scrollRef = useRef(null);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1440));
   const [viewportHeight, setViewportHeight] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 900));
@@ -198,8 +210,8 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   }, []);
 
   const allNodes = useMemo(
-    () => (propNodes.length > 0 ? propNodes : generateMockWorld()),
-    [propNodes]
+    () => (propNodes.length > 0 || !useMockData ? propNodes : generateMockWorld()),
+    [propNodes, useMockData]
   );
 
   const nodesByZone = useMemo(() => {
@@ -280,7 +292,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
   const jumpToProgress = useCallback(() => {
     const firstAvail = allNodes.find(n => {
       const isFallback = mockIdMismatch && n.nodeId === firstZoneFirstNodeId;
-      return getState(n.nodeId, progress, isFallback).state === 'available';
+      return getState(n, progress, isFallback).state === 'available';
     });
     scrollToZone(firstAvail?.zoneIndex ?? 0);
   }, [allNodes, progress, mockIdMismatch, firstZoneFirstNodeId, scrollToZone]);
@@ -391,9 +403,9 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                       zIdx === 0 &&
                       node.nodeId === firstZoneFirstNodeId;
 
-                    const nodeState = node.isPlaceholder
+                    const nodeState = node.isPlaceholder || node.hasProblemData === false
                       ? { state: 'locked' }
-                      : getState(node.nodeId, progress, isFirstNodeFallback);
+                      : getState(node, progress, isFirstNodeFallback);
 
                     return (
                       <div
@@ -413,7 +425,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                             isDone={nodeState.state === 'completed'}
                             stars={nodeState.starsAwarded ?? 0}
                             isSelected={isSel}
-                            onClick={() => !node.isPlaceholder && onNodeClick?.(node)}
+                            onClick={() => !node.isPlaceholder && node.hasProblemData !== false && onNodeClick?.(node)}
                             title={getNodeTitle(node)}
                           />
                         ) : (
@@ -422,7 +434,7 @@ const WorldMap = ({ nodes: propNodes = [], progress, onNodeClick, selectedNodeId
                             state={nodeState}
                             isSelected={isSel}
                             accent={zone.accent ?? '#22d3ee'}
-                            onClick={node.isPlaceholder ? undefined : onNodeClick}
+                            onClick={node.isPlaceholder || node.hasProblemData === false ? undefined : onNodeClick}
                           />
                         )}
                       </div>

@@ -5,6 +5,11 @@ import CampaignProgress from '../models/CampaignProgress.js';
 import { executeForCampaign } from '../services/campaignExecutor.js';
 import { calculateStars, calculateKP, shouldUpdateNode } from '../services/starCalculator.js';
 import { outputsMatch } from '../utils/sanitizeOutput.js';
+import {
+    ensureEntryNodesUnlocked,
+    getEntryNodeIds,
+    isEntryNode,
+} from '../utils/campaignProgressBootstrap.js';
 
 // replace: actual === expected
 // with:    outputsMatch(actual, expected)
@@ -57,17 +62,23 @@ export const getCampaignProgress = async (req, res) => {
         let progress = await CampaignProgress.findOne({ userId }).lean();
 
         if (!progress) {
-            // First time — initialize with the first node unlocked
-            const firstNode = await CampaignMap.findOne({ 
-                isActive: true, 
-                prerequisites: { $size: 0 } // no prerequisites = starting node
-            }).sort({ regionOrder: 1, nodeOrder: 1 });
+            const entryNodeIds = await getEntryNodeIds();
 
             progress = await CampaignProgress.create({
                 userId,
-                unlockedNodes: firstNode ? [firstNode.nodeId] : ['array_01']
+                unlockedNodes: entryNodeIds,
             });
             progress = progress.toObject();
+        } else {
+            const entryNodeIds = await getEntryNodeIds();
+            const repaired = ensureEntryNodesUnlocked(progress, entryNodeIds);
+            if (repaired.changed) {
+                await CampaignProgress.updateOne(
+                    { userId },
+                    { $set: { unlockedNodes: repaired.unlockedNodes } }
+                );
+                progress.unlockedNodes = repaired.unlockedNodes;
+            }
         }
 
         return res.json({ success: true, progress });
@@ -88,13 +99,6 @@ export const getNodeDetails = async (req, res) => {
 
         // Verify node is unlocked for this user
         const progress = await CampaignProgress.findOne({ userId }).lean();
-        if (!progress || !(progress.unlockedNodes ?? []).includes(nodeId)) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Node not unlocked. Complete prerequisites first.' 
-            });
-        }
-
         const node = await CampaignMap.findOne({ nodeId, isActive: true })
             .populate({
                 path: 'problemId',
@@ -103,6 +107,14 @@ export const getNodeDetails = async (req, res) => {
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
+        }
+
+        const isUnlocked = Boolean(progress && (progress.unlockedNodes ?? []).includes(nodeId));
+        if (!isUnlocked && !isEntryNode(node)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Node not unlocked. Complete prerequisites first.' 
+            });
         }
 
         // Only send PUBLIC test cases to frontend
@@ -145,19 +157,24 @@ export const submitCampaignSolution = async (req, res) => {
 
         // 1. Verify this node is unlocked for the user
         const progress = await CampaignProgress.findOne({ userId });
-        if (!progress || !(progress.unlockedNodes ?? []).includes(nodeId)) {
+        const entryNodeIds = await getEntryNodeIds();
+        if (progress) {
+            ensureEntryNodesUnlocked(progress, entryNodeIds);
+        }
+
+        const node = await CampaignMap.findOne({ nodeId, isActive: true })
+            .populate('problemId', 'testCases goldenSolution prerequisites nodeOrder isEntryNode');
+
+        if (!node) {
+            return res.status(404).json({ success: false, message: 'Node not found' });
+        }
+
+        const isUnlocked = Boolean(progress && (progress.unlockedNodes ?? []).includes(nodeId));
+        if (!isUnlocked && !isEntryNode(node)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Node not unlocked' 
             });
-        }
-
-        // 2. Get node + ALL test cases (hidden + public) from DB
-        const node = await CampaignMap.findOne({ nodeId, isActive: true })
-            .populate('problemId', 'testCases goldenSolution');
-
-        if (!node) {
-            return res.status(404).json({ success: false, message: 'Node not found' });
         }
 
         const allTestCases = node.problemId?.testCases ?? []; // both public + hidden

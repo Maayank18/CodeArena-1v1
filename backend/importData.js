@@ -130,7 +130,14 @@ const buildCampaignDocs = (nodes, slugToId) => {
         }
 
         const { problemSlug, ...rest } = node;
-        return { ...rest, problemId };
+        const prerequisites = Array.isArray(node.prerequisites) ? node.prerequisites : [];
+
+        return {
+            ...rest,
+            problemId,
+            prerequisites,
+            isEntryNode: prerequisites.length === 0 || node.nodeOrder === 1,
+        };
     });
 };
 

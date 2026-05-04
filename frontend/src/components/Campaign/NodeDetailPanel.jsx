@@ -12,17 +12,23 @@ const DIFF_COLOR = {
 const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
   if (!node) return null;
 
-  const isLocked = !progress?.unlockedNodes?.includes(node.nodeId);
+  const isEntryNode =
+    Boolean(node.isEntryNode) ||
+    (Array.isArray(node.prerequisites) && node.prerequisites.length === 0) ||
+    node.nodeNum === 1;
+  const isLocked = !isEntryNode && !progress?.unlockedNodes?.includes(node.nodeId);
   const completion = progress?.completedNodes?.find(n => n.nodeId === node.nodeId);
   const isCompleted = !!completion;
   const stars = completion?.starsAwarded ?? 0;
   const isBoss = node.nodeType === 'boss';
   const isMidBoss = node.bossType === 'mid';
+  const hasProblemData = node.hasProblemData !== false && Boolean(node.problemId || node.problem);
 
   const title =
     node.problem?.title ||
     node.problemId?.title ||
-    `Challenge ${node.nodeNum}`;
+    node.title ||
+    `Unknown Challenge ${node.nodeNum ?? ''}`.trim();
 
   const difficulty =
     node.problem?.difficulty ||
@@ -30,6 +36,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
     'Easy';
 
   const accentColor = isMidBoss ? '#a855f7' : isBoss ? '#ef4444' : '#22d3ee';
+  const effectiveLocked = isLocked || !hasProblemData;
 
   return (
     <AnimatePresence>
@@ -113,11 +120,13 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto px-3.5 pb-2 space-y-3 min-h-0 sm:px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {isLocked ? (
+              {effectiveLocked ? (
                 <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl">
                   <Lock size={14} className="text-gray-400 dark:text-gray-600 shrink-0" />
                   <p className="text-xs text-gray-500 dark:text-gray-600">
-                    Complete the previous node to unlock this challenge.
+                    {hasProblemData
+                      ? 'Complete the previous node to unlock this challenge.'
+                      : 'This challenge is not available in the current local dataset yet.'}
                   </p>
                 </div>
               ) : isCompleted ? (
@@ -150,7 +159,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                 </div>
               )}
 
-              {node.rewards && (
+              {hasProblemData && node.rewards && (
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest mb-1.5">
                     Rewards
@@ -180,7 +189,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                 </div>
               )}
 
-              {node.starThresholds && (
+              {hasProblemData && node.starThresholds && (
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest mb-1.5">
                     Star Thresholds
@@ -204,7 +213,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                 </div>
               )}
 
-              {isBoss && node.rewards?.lootPool?.length > 0 && (
+              {hasProblemData && isBoss && node.rewards?.lootPool?.length > 0 && (
                 <div className="p-3 bg-purple-50 dark:bg-purple-950/15 border border-purple-200 dark:border-purple-800/30 rounded-xl">
                   <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1.5">
                     Loot Pool
@@ -226,12 +235,12 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
             </div>
 
             <div className="px-3.5 py-3 border-t border-slate-200 dark:border-gray-800/50 shrink-0 sm:px-4">
-              {isLocked ? (
+              {effectiveLocked ? (
                 <button
                   disabled
                   className="w-full py-3 rounded-xl text-sm font-black bg-gray-100 dark:bg-gray-900/50 text-gray-400 dark:text-gray-600 cursor-not-allowed flex items-center justify-center gap-2 touch-manipulation"
                 >
-                  <Lock size={14} /> Locked
+                  <Lock size={14} /> {hasProblemData ? 'Locked' : 'Coming Soon'}
                 </button>
               ) : isCompleted ? (
                 <button

@@ -6,6 +6,11 @@
 
 import CampaignMap      from '../models/CampaignMap.js';
 import CampaignProgress from '../models/CampaignProgress.js';
+import {
+    ensureEntryNodesUnlocked,
+    getEntryNodeIds,
+    isEntryNode,
+} from '../utils/campaignProgressBootstrap.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ensureProgress
@@ -25,17 +30,7 @@ export const ensureProgress = async (req, res, next) => {
         let progress = await CampaignProgress.findOne({ userId });
 
         if (!progress) {
-            // First-ever visit — initialise with the entry node(s)
-            const entryNodes = await CampaignMap.find({
-                isActive:      true,
-                prerequisites: { $size: 0 },   // no prerequisites = starting nodes
-            })
-                .sort({ regionOrder: 1, nodeOrder: 1 })
-                .lean();
-
-            const startIds = entryNodes.length > 0
-                ? entryNodes.map(n => n.nodeId)
-                : ['array_01']; // hard fallback if seed hasn't run yet
+            const startIds = await getEntryNodeIds();
 
             progress = await CampaignProgress.create({
                 userId,
@@ -43,6 +38,15 @@ export const ensureProgress = async (req, res, next) => {
             });
 
             console.log(`[CAMPAIGN] Initialised progress for user ${userId} — unlocked: ${startIds}`);
+        } else {
+            const startIds = await getEntryNodeIds();
+            const { changed } = ensureEntryNodesUnlocked(progress, startIds);
+
+            if (changed) {
+                progress.markModified('unlockedNodes');
+                await progress.save();
+                console.log(`[CAMPAIGN] Repaired entry unlocks for user ${userId} — unlocked: ${progress.unlockedNodes}`);
+            }
         }
 
         req.campaignProgress = progress;
@@ -82,6 +86,14 @@ export const verifyNodeUnlocked = async (req, res, next) => {
         }
 
         if (!progress.unlockedNodes.includes(nodeId)) {
+            const node = await CampaignMap.findOne({ nodeId, isActive: true })
+                .select('nodeId prerequisites nodeOrder isEntryNode')
+                .lean();
+
+            if (isEntryNode(node)) {
+                return next();
+            }
+
             return res.status(403).json({
                 success: false,
                 message: 'Node is locked. Complete prerequisites first.',

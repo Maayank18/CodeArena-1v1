@@ -11,6 +11,39 @@ import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
 import api from '../api';
 import toast from 'react-hot-toast';
 
+const EMPTY_MAP = { nodes: [] };
+
+const normalizeCampaignNodes = (rawMap) => {
+  const sourceNodes = Array.isArray(rawMap?.nodes)
+    ? rawMap.nodes
+    : Array.isArray(rawMap)
+      ? rawMap
+      : [];
+
+  return {
+    ...(rawMap && typeof rawMap === 'object' && !Array.isArray(rawMap) ? rawMap : {}),
+    nodes: sourceNodes.map((node, index) => {
+      const problemData = node?.problemId ?? node?.problem ?? null;
+      const fallbackTitle = node?.title || `Unknown Challenge ${index + 1}`;
+
+      return {
+        ...node,
+        prerequisites: Array.isArray(node?.prerequisites) ? node.prerequisites : [],
+        isEntryNode:
+          Boolean(node?.isEntryNode) ||
+          (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
+          node?.nodeOrder === 1,
+        problem: problemData,
+        problemId: problemData,
+        hasProblemData: Boolean(problemData),
+        title: problemData?.title || fallbackTitle,
+        difficulty: problemData?.difficulty || 'Easy',
+        slug: problemData?.slug || null,
+      };
+    }),
+  };
+};
+
 const Campaign = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,6 +51,7 @@ const Campaign = () => {
   const [mapData, setMapData] = useState(null);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasLiveMapData, setHasLiveMapData] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -47,9 +81,14 @@ const Campaign = () => {
 
         try {
           const mapRes = await api.get('/campaign/map');
-          if (!cancelled) setMapData(mapRes.data?.map ?? mapRes.data);
+          if (!cancelled) {
+            const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
+            setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
+            setHasLiveMapData(true);
+          }
         } catch (e) {
           console.error('[MAP LOAD]', e);
+          if (!cancelled) setHasLiveMapData(false);
         }
 
         window.history.replaceState({}, document.title);
@@ -65,10 +104,15 @@ const Campaign = () => {
 
         if (cancelled) return;
 
-        setMapData(mapRes.data?.map ?? mapRes.data);
+        const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
+        setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
         setProgress(progRes.data?.progress ?? progRes.data);
+        setHasLiveMapData(true);
       } catch {
-        if (!cancelled) toast.error('Failed to load Campaign world');
+        if (!cancelled) {
+          setHasLiveMapData(false);
+          toast.error('Failed to load Campaign world');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -153,6 +197,7 @@ const Campaign = () => {
           progress={progress}
           onNodeClick={handleNodeClick}
           selectedNodeId={selectedNode?.nodeId}
+          useMockData={!hasLiveMapData}
         />
 
         {selectedNode && (
@@ -165,7 +210,7 @@ const Campaign = () => {
           />
         )}
 
-        {!nodes.length && !progress?.unlockedNodes?.length && (
+        {!hasLiveMapData && !nodes.length && !progress?.unlockedNodes?.length && (
           <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-xs">
             <div className="bg-slate-900/90 border border-slate-700/60 rounded-xl px-4 py-3 text-center backdrop-blur-md shadow-lg">
               <p className="text-slate-400 text-xs mb-2">

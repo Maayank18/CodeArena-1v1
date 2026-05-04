@@ -42,6 +42,9 @@ const campaignMapSchema = new mongoose.Schema({
     // Map graph edges — what must be done before this unlocks
     prerequisites: [{ type: String }], // array of nodeIds
 
+    // Root nodes must always remain available for new users.
+    isEntryNode: { type: Boolean, default: false },
+
     // Visual position on the map (frontend uses these for SVG layout)
     mapPosition: {
         x: { type: Number, required: true },

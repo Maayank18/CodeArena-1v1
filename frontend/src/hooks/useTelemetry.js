@@ -78,6 +78,7 @@ export default function useTelemetry() {
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 5,
+            timeout: 5000,
         });
 
         socketRef.current.on('connect', () => {
@@ -87,6 +88,14 @@ export default function useTelemetry() {
                 avatar:   storedUser.avatar || '',
                 activity: resolveActivity(window.location.pathname),
             });
+        });
+
+        socketRef.current.on('connect_error', (error) => {
+            console.warn('[Telemetry] Socket connect failed; continuing without realtime presence.', error?.message || error);
+        });
+
+        socketRef.current.on('error', (error) => {
+            console.warn('[Telemetry] Socket error ignored.', error?.message || error);
         });
 
         return () => {
