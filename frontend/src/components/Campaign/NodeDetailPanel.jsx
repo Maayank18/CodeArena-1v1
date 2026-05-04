@@ -8,14 +8,21 @@ const DIFF_COLOR = {
   Hard: 'text-red-400 bg-red-500/10 border-red-500/25',
 };
 
+const ROOT_NODE_ID = 'aa_01';
+
+const isAbsoluteRootNode = (node) =>
+  node?.nodeId === ROOT_NODE_ID ||
+  (node?.regionOrder === 1 && node?.nodeOrder === 1);
+
 const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
   if (!node) return null;
 
-  const isEntryNode =
-    Boolean(node.isEntryNode) ||
-    (Array.isArray(node.prerequisites) && node.prerequisites.length === 0) ||
-    node.nodeNum === 1;
-  const isLocked = !isEntryNode && !progress?.unlockedNodes?.includes(node.nodeId);
+  const completedSet = new Set(progress?.completedNodes?.map((entry) => entry.nodeId) ?? []);
+  const prerequisites = Array.isArray(node.prerequisites)
+    ? node.prerequisites.filter(Boolean)
+    : [];
+  const isEntryNode = isAbsoluteRootNode(node);
+  const isLocked = !isEntryNode && !prerequisites.every((prereq) => completedSet.has(prereq));
   const completion = progress?.completedNodes?.find((n) => n.nodeId === node.nodeId);
   const isCompleted = !!completion;
   const stars = completion?.starsAwarded ?? 0;

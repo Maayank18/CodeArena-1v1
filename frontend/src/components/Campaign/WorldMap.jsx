@@ -29,6 +29,7 @@ const REGION_TO_ZONE_ID = {
 };
 
 const STAR_INDICES = [1, 2, 3];
+const ROOT_NODE_ID = 'aa_01';
 
 const resolveZoneId = (node) => {
   const raw = node?.zoneId || node?.region || '';
@@ -45,25 +46,53 @@ const getNodeTitle = (node) =>
   node?.title ||
   'Unknown Challenge';
 
-const isGuaranteedEntryNode = (node) =>
-  Boolean(node?.isEntryNode) ||
-  (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
-  node?.nodeNum === 1 ||
-  node?.nodeOrder === 1 ||
-  node?.localIndex === 0;
+const isAbsoluteRootNode = (node) => {
+  const regionOrder =
+    node?.regionOrder ??
+    (typeof node?.zoneIndex === 'number' ? node.zoneIndex + 1 : null);
+  const nodeOrder =
+    node?.nodeOrder ??
+    node?.nodeNum ??
+    (typeof node?.localIndex === 'number' ? node.localIndex + 1 : null);
 
-const getState = (node, progress, isFirstNodeFallback = false) => {
+  return node?.nodeId === ROOT_NODE_ID || (regionOrder === 1 && nodeOrder === 1);
+};
+
+const isZoneStartNode = (node) => {
+  const nodeOrder =
+    node?.nodeOrder ??
+    node?.nodeNum ??
+    (typeof node?.localIndex === 'number' ? node.localIndex + 1 : null);
+
+  return nodeOrder === 1;
+};
+
+const getState = (node, completedSet, completedStarsById, previousZoneBossCompleted = false, isFirstNodeFallback = false) => {
   const nodeId = node?.nodeId;
-  const isRootNode = isGuaranteedEntryNode(node);
+  const prerequisites = Array.isArray(node?.prerequisites)
+    ? node.prerequisites.filter(Boolean)
+    : [];
+  const isRootNode = isAbsoluteRootNode(node);
 
-  if (!progress) {
+  if (!completedSet) {
     return isFirstNodeFallback || isRootNode ? { state: 'available' } : { state: 'locked' };
   }
 
-  const done = progress.completedNodes?.find((entry) => entry.nodeId === nodeId);
-  if (done) return { state: 'completed', starsAwarded: done.starsAwarded ?? 0 };
-  if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
+  if (completedSet.has(nodeId)) {
+    return {
+      state: 'completed',
+      starsAwarded: completedStarsById.get(nodeId) ?? 0,
+    };
+  }
   if (isFirstNodeFallback || isRootNode) return { state: 'available' };
+  if (prerequisites.length > 0) {
+    return prerequisites.every((prereq) => completedSet.has(prereq))
+      ? { state: 'available' }
+      : { state: 'locked' };
+  }
+  if (isZoneStartNode(node)) {
+    return previousZoneBossCompleted ? { state: 'available' } : { state: 'locked' };
+  }
   return { state: 'locked' };
 };
 
@@ -235,7 +264,7 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
   const { x, y } = node.localPos ?? getLocalNodePos(node.localIndex ?? 0);
   const isBoss = node.nodeType === 'boss';
   const effectiveNodeState = useMemo(() => {
-    if (isGuaranteedEntryNode(node) && nodeState.state === 'locked') {
+    if (isAbsoluteRootNode(node) && nodeState.state === 'locked') {
       return { ...nodeState, state: 'available' };
     }
 
@@ -254,12 +283,13 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
 
   return (
     <div
-      className="absolute"
+      className="absolute pointer-events-auto"
       style={{
         left: x,
         top: y,
         transform: 'translate(-50%,-50%)',
         zIndex: isBoss ? 30 : 20,
+        touchAction: 'manipulation',
       }}
     >
       {isBoss ? (
@@ -396,9 +426,20 @@ const WorldMapScene = React.memo(function WorldMapScene({
     const unlockedIds = progress?.unlockedNodes ?? [];
     const allIds = new Set(allNodes.map((node) => node.nodeId).filter(Boolean));
     const mockIdMismatch = unlockedIds.length > 0 && !unlockedIds.some((id) => allIds.has(id));
+    const completedSet = new Set(progress?.completedNodes?.map((entry) => entry.nodeId) ?? []);
+    const completedStarsById = new Map(
+      (progress?.completedNodes ?? []).map((entry) => [entry.nodeId, entry.starsAwarded ?? 0])
+    );
 
     ZONE_CONFIGS.forEach((zone, zoneIndex) => {
       const zoneNodes = displayNodesByZone[zone.id] ?? [];
+      const previousZone = zoneIndex > 0 ? ZONE_CONFIGS[zoneIndex - 1] : null;
+      const previousZoneBossNode = previousZone
+        ? (displayNodesByZone[previousZone.id] ?? []).find((node) => node.nodeNum === 15)
+        : null;
+      const previousZoneBossCompleted = previousZoneBossNode
+        ? completedSet.has(previousZoneBossNode.nodeId)
+        : false;
 
       zoneNodes.forEach((node) => {
         const isFirstNodeFallback =
@@ -408,7 +449,13 @@ const WorldMapScene = React.memo(function WorldMapScene({
 
         stateMap[node.nodeId] = node.isPlaceholder || node.hasProblemData === false
           ? { state: 'locked', starsAwarded: 0 }
-          : getState(node, progress, isFirstNodeFallback);
+          : getState(
+            node,
+            completedSet,
+            completedStarsById,
+            previousZoneBossCompleted,
+            isFirstNodeFallback
+          );
       });
     });
 
@@ -483,6 +530,10 @@ const WorldMapScene = React.memo(function WorldMapScene({
           scrollbarWidth: 'none',
           WebkitOverflowScrolling: 'touch',
           msOverflowStyle: 'none',
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          contain: 'layout paint style',
+          willChange: 'transform',
         }}
       >
         <div
@@ -490,9 +541,10 @@ const WorldMapScene = React.memo(function WorldMapScene({
           style={{
             width: ZONE_W,
             height: canvasH,
-            transform: `scale(${mapScale})`,
+            transform: `translate3d(0,0,0) scale(${mapScale})`,
             transformOrigin: 'top center',
             willChange: 'transform',
+            backfaceVisibility: 'hidden',
             marginBottom: scaledCanvasHeight * (1 / mapScale - 1),
           }}
         >
@@ -528,7 +580,16 @@ const WorldMapScene = React.memo(function WorldMapScene({
               <div
                 key={zone.id}
                 className="absolute"
-                style={{ left: 0, top: zoneTop, width: ZONE_W, height: ZONE_H, zIndex: 10 }}
+                style={{
+                  left: 0,
+                  top: zoneTop,
+                  width: ZONE_W,
+                  height: ZONE_H,
+                  zIndex: 10,
+                  transform: 'translateZ(0)',
+                  contentVisibility: 'auto',
+                  containIntrinsicSize: `${ZONE_H}px ${ZONE_W}px`,
+                }}
               >
                 <ZoneContainer
                   config={zone}

@@ -1,16 +1,20 @@
 import CampaignMap from '../models/CampaignMap.js';
 
 export const DEFAULT_ENTRY_NODE_ID = 'aa_01';
+const DEFAULT_ROOT_FILTER = {
+    isActive: true,
+    $or: [
+        { nodeId: DEFAULT_ENTRY_NODE_ID },
+        { regionOrder: 1, nodeOrder: 1 },
+    ],
+};
+
+export const isAbsoluteCampaignRoot = (node) =>
+    node?.nodeId === DEFAULT_ENTRY_NODE_ID ||
+    (node?.regionOrder === 1 && node?.nodeOrder === 1);
 
 export const getEntryNodes = async () => {
-    return CampaignMap.find({
-        isActive: true,
-        $or: [
-            { isEntryNode: true },
-            { prerequisites: { $size: 0 } },
-            { nodeOrder: 1 },
-        ],
-    })
+    return CampaignMap.find(DEFAULT_ROOT_FILTER)
         .sort({ regionOrder: 1, nodeOrder: 1 })
         .lean();
 };
@@ -42,6 +46,4 @@ export const ensureEntryNodesUnlocked = (progressLike, entryNodeIds) => {
 };
 
 export const isEntryNode = (node) =>
-    Boolean(node?.isEntryNode) ||
-    (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
-    node?.nodeOrder === 1;
+    isAbsoluteCampaignRoot(node);

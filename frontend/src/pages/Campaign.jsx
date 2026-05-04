@@ -11,6 +11,11 @@ import toast from 'react-hot-toast';
 
 const EMPTY_MAP = { nodes: [] };
 const DEMO_MODE_TOAST = 'Challenge not available in demo mode. Please run the local seeder.';
+const ROOT_NODE_ID = 'aa_01';
+
+const isAbsoluteRootNode = (node) =>
+  node?.nodeId === ROOT_NODE_ID ||
+  (node?.regionOrder === 1 && node?.nodeOrder === 1);
 
 const normalizeCampaignNodes = (rawMap) => {
   const sourceNodes = Array.isArray(rawMap?.nodes)
@@ -28,10 +33,7 @@ const normalizeCampaignNodes = (rawMap) => {
       return {
         ...node,
         prerequisites: Array.isArray(node?.prerequisites) ? node.prerequisites : [],
-        isEntryNode:
-          Boolean(node?.isEntryNode) ||
-          (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
-          node?.nodeOrder === 1,
+        isEntryNode: isAbsoluteRootNode(node),
         problem: problemData,
         problemId: problemData,
         hasProblemData: Boolean(problemData),

@@ -105,9 +105,16 @@ const ensureRootNodesUnlockedForNewUsers = (progress, entryNodeIds) => {
     const hasSolvedChallenges = Array.isArray(safeProgress.completedNodes) && safeProgress.completedNodes.length > 0;
 
     if (!hasSolvedChallenges) {
-        const repaired = ensureEntryNodesUnlocked(safeProgress, entryNodeIds);
-        safeProgress.unlockedNodes = repaired.unlockedNodes;
-        return { changed: repaired.changed, progress: safeProgress };
+        const canonicalUnlockedNodes = [...new Set((entryNodeIds ?? []).filter(Boolean))];
+        const currentUnlockedNodes = Array.isArray(safeProgress.unlockedNodes)
+            ? safeProgress.unlockedNodes.filter(Boolean)
+            : [];
+        const changed =
+            canonicalUnlockedNodes.length !== currentUnlockedNodes.length ||
+            canonicalUnlockedNodes.some((nodeId, index) => nodeId !== currentUnlockedNodes[index]);
+
+        safeProgress.unlockedNodes = canonicalUnlockedNodes;
+        return { changed, progress: safeProgress };
     }
 
     return { changed: false, progress: safeProgress };

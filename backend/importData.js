@@ -9,6 +9,7 @@ import connectDB from './config/db.js';
 import Problem from './models/Problem.js';
 import CampaignMap from './models/CampaignMap.js';
 import campaignMapSeed from './data/campaignMapSeed.js';
+import { isAbsoluteCampaignRoot } from './utils/campaignProgressBootstrap.js';
 
 dotenv.config();
 
@@ -136,7 +137,7 @@ const buildCampaignDocs = (nodes, slugToId) => {
             ...rest,
             problemId,
             prerequisites,
-            isEntryNode: prerequisites.length === 0 || node.nodeOrder === 1,
+            isEntryNode: isAbsoluteCampaignRoot(node),
         };
     });
 };

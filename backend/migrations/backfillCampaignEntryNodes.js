@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 
 import connectDB from '../config/db.js';
 import CampaignMap from '../models/CampaignMap.js';
+import { DEFAULT_ENTRY_NODE_ID } from '../utils/campaignProgressBootstrap.js';
 
 dotenv.config();
 
@@ -21,37 +22,59 @@ const run = async () => {
     try {
         await connectDB();
 
-        const filter = {
+        const rootFilter = {
             isActive: true,
             $or: [
-                { prerequisites: { $exists: false } },
-                { prerequisites: { $size: 0 } },
-                { nodeOrder: 1 },
+                { nodeId: DEFAULT_ENTRY_NODE_ID },
+                { regionOrder: 1, nodeOrder: 1 },
+            ],
+        };
+        const nonRootEntryFilter = {
+            isActive: true,
+            nodeId: { $ne: DEFAULT_ENTRY_NODE_ID },
+            $or: [
+                { isEntryNode: true },
+                { nodeOrder: 1, regionOrder: { $gt: 1 } },
             ],
         };
 
-        const preview = await CampaignMap.find(filter)
-            .select('nodeId region nodeOrder prerequisites isEntryNode')
-            .lean();
+        const [rootPreview, nonRootPreview] = await Promise.all([
+            CampaignMap.find(rootFilter)
+                .select('nodeId region regionOrder nodeOrder prerequisites isEntryNode')
+                .lean(),
+            CampaignMap.find(nonRootEntryFilter)
+                .select('nodeId region regionOrder nodeOrder prerequisites isEntryNode')
+                .lean(),
+        ]);
 
-        console.log(`[MIGRATION] Found ${preview.length} entry candidate node(s).`);
+        console.log(`[MIGRATION] Found ${rootPreview.length} absolute root node(s).`);
+        console.log(`[MIGRATION] Found ${nonRootPreview.length} non-root entry candidate node(s) to normalize.`);
 
-        const result = await CampaignMap.collection.updateMany(
-            filter,
-            {
-                $set: {
-                    isEntryNode: true,
-                    isLocked: false,
-                },
-            }
-        );
+        const [clearResult, rootResult] = await Promise.all([
+            CampaignMap.collection.updateMany(
+                nonRootEntryFilter,
+                {
+                    $set: { isEntryNode: false },
+                    $unset: { isLocked: '' },
+                }
+            ),
+            CampaignMap.collection.updateMany(
+                rootFilter,
+                {
+                    $set: {
+                        isEntryNode: true,
+                        isLocked: false,
+                    },
+                }
+            ),
+        ]);
 
-        console.log(`[MIGRATION] Matched ${result.matchedCount} node(s).`);
-        console.log(`[MIGRATION] Updated ${result.modifiedCount} node(s).`);
-        console.log('[MIGRATION] Campaign entry nodes backfilled successfully.');
+        console.log(`[MIGRATION] Normalized ${clearResult.modifiedCount} non-root entry node(s).`);
+        console.log(`[MIGRATION] Confirmed ${rootResult.modifiedCount} root node(s) as unlocked.`);
+        console.log('[MIGRATION] Campaign root normalization completed successfully.');
     } catch (error) {
         exitCode = 1;
-        console.error('[MIGRATION] Failed to backfill campaign entry nodes:', error.message);
+        console.error('[MIGRATION] Failed to normalize campaign root nodes:', error.message);
     } finally {
         try {
             if (mongoose.connection.readyState !== 0) {
