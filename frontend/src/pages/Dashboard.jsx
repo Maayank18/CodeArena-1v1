@@ -12,6 +12,7 @@ import { Loader2, Trophy } from 'lucide-react';
 import api from '../api.js'; 
 import { getLevelInfo } from '../utils/levelSystem';
 import ChatWidget from '../components/ChatWIdget.jsx';
+import ConsistencyCalendar from '../components/ConsistencyCalendar';
 
 const CACHE_KEY = 'dashboard_profile_cache';
 const CACHE_DURATION = 60000; // 60 seconds
@@ -263,6 +264,11 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Mobile Consistency Calendar - Visible only on small screens */}
+              <div className="px-4 pb-8 lg:hidden">
+                <ConsistencyCalendar className="w-full" />
               </div>
             </div>
             <Footer />

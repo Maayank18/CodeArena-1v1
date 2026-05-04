@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye, Map } from 'lucide-react';
+import ConsistencyCalendar from './ConsistencyCalendar';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -68,7 +69,7 @@ const Sidebar = () => {
   return (
     <>
       {/* Legacy Bright Theme Sidebar Surface (for quick reversal): bg-[var(--bg-secondary)] */}
-      <aside className="hidden h-auto w-64 flex-col border-r border-[var(--border-color)] bg-[var(--surface-elevated)] py-6 md:flex">
+      <aside className="hidden h-full w-64 flex-col border-r border-[var(--border-color)] bg-[var(--surface-elevated)] py-6 md:flex">
         <div className="mb-6 px-4">
           <h3 className="px-2 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Main Menu</h3>
         </div>
@@ -94,7 +95,11 @@ const Sidebar = () => {
           })}
         </div>
 
-        <div className="mt-auto px-4 pb-4">
+        <div className="flex-grow flex flex-col justify-center py-4">
+          <ConsistencyCalendar className="mx-3 hidden lg:block" />
+        </div>
+
+        <div className="mt-auto px-4 pb-10">
           <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-2 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[var(--text-secondary)]">
