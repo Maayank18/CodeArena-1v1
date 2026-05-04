@@ -1,26 +1,17 @@
-// updated corrected with proper ui and responsivenss 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import WeatherEffect from './WeatherEffect';
 import {
-  buildZonePath,
-  getLocalNodePos,
   ZONE_W,
   ZONE_H,
-  MID_BOSS_IDX,
-  MAIN_BOSS_IDX,
-  NODE_RADIUS,
-  BOSS_RADIUS,
+  getLocalNodePos,
 } from './campaignWorldData';
-
-// Pre-built path is the same for every zone (only colours differ)
-const SHARED_PATH = buildZonePath();
 
 // Decorative ground strip geometry
 const GROUND_H_DESKTOP = 90;
 const GROUND_H_MOBILE = 72;
 
-const ZoneContainer = ({ config, completedIds = new Set(), children }) => {
+const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = false, nodes = [] }) => {
   const {
     id,
     name,
@@ -35,27 +26,7 @@ const ZoneContainer = ({ config, completedIds = new Set(), children }) => {
     border,
     glow,
     decorations,
-    nodes,
   } = config || {};
-
-  const [viewportWidth, setViewportWidth] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 1440
-  );
-
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-
-    onResize();
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-
-    return () => {
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onResize);
-    };
-  }, []);
-
-  const isMobile = viewportWidth < 640;
   const groundH = isMobile ? GROUND_H_MOBILE : GROUND_H_DESKTOP;
 
   // 🛡️ CRITICAL FIX: Robust path lighting logic

@@ -1,19 +1,21 @@
-// This one is perfect worldMap with the proper responsivness
 import React, { useRef, useCallback, useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
 import ZoneContainer from './ZoneContainer';
 import BossNode from './BossNode';
+import NodeDetailPanel from './NodeDetailPanel';
 import {
   ZONE_CONFIGS,
-  ZONE_W, ZONE_H, ZONE_GAP,
+  ZONE_W,
+  ZONE_H,
+  ZONE_GAP,
   NODE_RADIUS,
-  MID_BOSS_IDX, MAIN_BOSS_IDX,
+  MID_BOSS_IDX,
+  MAIN_BOSS_IDX,
   getLocalNodePos,
   generateMockWorld,
 } from './campaignWorldData';
 
-// ── Region → ZONE_CONFIG id normalisation ────────────────────────────────────
 const REGION_TO_ZONE_ID = {
   Array_Archipelago: 'array_archipelago',
   String_Shores: 'string_shores',
@@ -26,23 +28,23 @@ const REGION_TO_ZONE_ID = {
   DP_Dungeon: 'dp_dungeon',
 };
 
+const STAR_INDICES = [1, 2, 3];
+
 const resolveZoneId = (node) => {
   const raw = node?.zoneId || node?.region || '';
-  if (ZONE_CONFIGS.some(z => z.id === raw)) return raw;
+  if (ZONE_CONFIGS.some((z) => z.id === raw)) return raw;
   if (REGION_TO_ZONE_ID[raw]) return REGION_TO_ZONE_ID[raw];
   const lower = raw.toLowerCase().replace(/ /g, '_');
-  const found = ZONE_CONFIGS.find(z => z.id === lower || z.id.includes(lower));
+  const found = ZONE_CONFIGS.find((z) => z.id === lower || z.id.includes(lower));
   return found ? found.id : null;
 };
 
-// ── Get title from any possible node field shape ──────────────────────────────
 const getNodeTitle = (node) =>
   node?.problemId?.title ||
   node?.problem?.title ||
   node?.title ||
   'Unknown Challenge';
 
-// ── Node progress state ───────────────────────────────────────────────────────
 const getState = (node, progress, isFirstNodeFallback = false) => {
   const nodeId = node?.nodeId;
   const isRootNode =
@@ -53,23 +55,63 @@ const getState = (node, progress, isFirstNodeFallback = false) => {
   if (!progress) {
     return isFirstNodeFallback || isRootNode ? { state: 'available' } : { state: 'locked' };
   }
-  const done = progress.completedNodes?.find(n => n.nodeId === nodeId);
+
+  const done = progress.completedNodes?.find((entry) => entry.nodeId === nodeId);
   if (done) return { state: 'completed', starsAwarded: done.starsAwarded ?? 0 };
   if (progress.unlockedNodes?.includes(nodeId)) return { state: 'available' };
   if (isFirstNodeFallback || isRootNode) return { state: 'available' };
   return { state: 'locked' };
 };
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const STAR_INDICES = [1, 2, 3];
+const useRafViewport = () => {
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1440,
+    height: typeof window !== 'undefined' ? window.innerHeight : 900,
+  }));
 
-// ── StandardNode ──────────────────────────────────────────────────────────────
-const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) => {
+  useEffect(() => {
+    let frameId = null;
+
+    const handleResize = () => {
+      if (frameId !== null) return;
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        setViewport((prev) => {
+          const nextWidth = window.innerWidth;
+          const nextHeight = window.innerHeight;
+
+          if (prev.width === nextWidth && prev.height === nextHeight) {
+            return prev;
+          }
+
+          return { width: nextWidth, height: nextHeight };
+        });
+      });
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleResize, { passive: true });
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
+  return viewport;
+};
+
+const StandardNode = React.memo(function StandardNode({ node, state, accent, onClick }) {
   const isLocked = state.state === 'locked';
   const isAvail = state.state === 'available';
   const isDone = state.state === 'completed';
   const stars = state.starsAwarded || 0;
-  const SZ = NODE_RADIUS * 2;
+  const sz = NODE_RADIUS * 2;
 
   const border = isLocked ? '#374151' : isDone ? '#fbbf24' : accent;
   const bg = isLocked
@@ -90,38 +132,31 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
       {isAvail && (
         <motion.div
           className="absolute rounded-full border-2 pointer-events-none"
-          style={{ width: SZ + 18, height: SZ + 18, borderColor: `${accent}60` }}
+          style={{ width: sz + 18, height: sz + 18, borderColor: `${accent}60` }}
           animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      )}
-
-      {isSelected && (
-        <div
-          className="absolute rounded-full pointer-events-none"
-          style={{ width: SZ + 12, height: SZ + 12, border: '2px solid rgba(255,255,255,.5)' }}
         />
       )}
 
       <motion.div
         className="relative flex items-center justify-center rounded-full border-2"
         style={{
-          width: SZ,
-          height: SZ,
+          width: sz,
+          height: sz,
           background: bg,
           borderColor: border,
-          boxShadow: isSelected ? `0 0 0 3px rgba(255,255,255,.2),${glow}` : glow,
+          boxShadow: glow,
           cursor: isLocked ? 'not-allowed' : 'pointer',
         }}
         whileHover={{ scale: isLocked ? 1 : 1.08 }}
         whileTap={{ scale: isLocked ? 1 : 0.94 }}
-        onClick={() => !isLocked && onClick?.(node)}
+        onClick={() => !isLocked && onClick(node)}
       >
         {isLocked ? (
           <Lock size={14} className="text-gray-700" />
         ) : isDone ? (
           <div className="flex gap-0.5">
-            {STAR_INDICES.map(i => (
+            {STAR_INDICES.map((i) => (
               <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>
                 ★
               </span>
@@ -151,10 +186,15 @@ const StandardNode = React.memo(({ node, state, isSelected, accent, onClick }) =
     </div>
   );
 });
-StandardNode.displayName = 'StandardNode';
 
-// ── Inter-zone SVG bridge ─────────────────────────────────────────────────────
-const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, toColor, lit }) => {
+const InterZoneBridge = React.memo(function InterZoneBridge({
+  fromLocal,
+  toLocal,
+  zoneTop,
+  nextZoneTop,
+  toColor,
+  lit,
+}) {
   const fx = fromLocal.x;
   const fy = zoneTop + fromLocal.y;
   const tx = toLocal.x;
@@ -179,140 +219,243 @@ const InterZoneBridge = ({ fromLocal, toLocal, zoneTop, nextZoneTop, toColor, li
       )}
     </g>
   );
-};
+});
 
-// ── WorldMap ──────────────────────────────────────────────────────────────────
-const WorldMap = ({
-  nodes: propNodes = [],
+const MapNodeSlot = React.memo(function MapNodeSlot({
+  node,
+  nodeState,
+  accent,
+  onNodeClick,
+  isMobile,
+}) {
+  const { x, y } = node.localPos ?? getLocalNodePos(node.localIndex ?? 0);
+  const isBoss = node.nodeType === 'boss';
+  const isInteractive = !node.isPlaceholder && node.hasProblemData !== false && nodeState.state !== 'locked';
+
+  const handleClick = useCallback(() => {
+    if (isInteractive) {
+      onNodeClick(node);
+    }
+  }, [isInteractive, node, onNodeClick]);
+
+  return (
+    <div
+      className="absolute"
+      style={{
+        left: x,
+        top: y,
+        transform: 'translate(-50%,-50%)',
+        zIndex: isBoss ? 30 : 20,
+      }}
+    >
+      {isBoss ? (
+        <BossNode
+          bossType={node.bossType}
+          isLocked={nodeState.state === 'locked'}
+          isDone={nodeState.state === 'completed'}
+          stars={nodeState.starsAwarded ?? 0}
+          onClick={handleClick}
+          title={getNodeTitle(node)}
+          isMobile={isMobile}
+        />
+      ) : (
+        <StandardNode
+          node={node}
+          state={nodeState}
+          accent={accent}
+          onClick={handleClick}
+        />
+      )}
+    </div>
+  );
+}, (prev, next) => (
+  prev.node === next.node &&
+  prev.accent === next.accent &&
+  prev.isMobile === next.isMobile &&
+  prev.onNodeClick === next.onNodeClick &&
+  prev.nodeState.state === next.nodeState.state &&
+  prev.nodeState.starsAwarded === next.nodeState.starsAwarded
+));
+
+const ZoneProgressButton = React.memo(function ZoneProgressButton({ zone, done, total, zoneTop, onJump }) {
+  const pct = Math.round((done / total) * 100);
+
+  return (
+    <button
+      className="flex items-center gap-2 w-full text-left hover:opacity-100 transition-opacity pointer-events-auto"
+      style={{ opacity: done === 0 && zone.index > 0 ? 0.4 : 0.85 }}
+      onClick={() => onJump(zoneTop)}
+    >
+      <span className="text-xs select-none">{zone.icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[9px] font-bold text-gray-400 truncate max-w-[100px]">
+          {zone.name}
+        </div>
+        <div className="h-1 rounded-full mt-0.5" style={{ background: '#1e293b' }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${pct}%`, background: zone.accent }}
+          />
+        </div>
+      </div>
+    </button>
+  );
+});
+
+const WorldMapScene = React.memo(function WorldMapScene({
+  nodes,
   progress,
   onNodeClick,
-  selectedNodeId,
-  useMockData = true,
-}) => {
+  useMockData,
+}) {
   const scrollRef = useRef(null);
-  const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1440));
-  const [viewportHeight, setViewportHeight] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 900));
-
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportWidth(window.innerWidth);
-      setViewportHeight(window.innerHeight);
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, []);
+  const { width: viewportWidth, height: viewportHeight } = useRafViewport();
 
   const allNodes = useMemo(
-    () => (propNodes.length > 0 || !useMockData ? propNodes : generateMockWorld()),
-    [propNodes, useMockData]
+    () => (nodes.length > 0 || !useMockData ? nodes : generateMockWorld()),
+    [nodes, useMockData]
   );
+  const isMobile = viewportWidth < 640;
 
   const nodesByZone = useMemo(() => {
-    const m = {};
-    ZONE_CONFIGS.forEach(z => {
-      m[z.id] = [];
+    const map = {};
+    ZONE_CONFIGS.forEach((zone) => {
+      map[zone.id] = [];
     });
 
-    allNodes.forEach(n => {
-      const zid = resolveZoneId(n);
-      if (!zid || !m[zid]) return;
+    allNodes.forEach((node) => {
+      const zoneId = resolveZoneId(node);
+      if (!zoneId || !map[zoneId]) return;
 
-      const sequenceNum = n.nodeOrder ?? n.nodeNum ?? 1;
-      const rawIndex = n.localIndex ?? Math.max(0, sequenceNum - 1);
+      const sequenceNum = node.nodeOrder ?? node.nodeNum ?? 1;
+      const rawIndex = node.localIndex ?? Math.max(0, sequenceNum - 1);
       const safeIndex = Math.min(14, Math.max(0, rawIndex));
-      const localPos = n.localPos || getLocalNodePos(safeIndex);
+      const localPos = node.localPos || getLocalNodePos(safeIndex);
 
-      m[zid].push({
-        ...n,
-        zoneId: zid,
+      map[zoneId].push({
+        ...node,
+        zoneId,
         nodeNum: sequenceNum,
         localIndex: safeIndex,
         localPos,
       });
     });
 
-    Object.values(m).forEach(arr => arr.sort((a, b) => (a.nodeNum ?? 0) - (b.nodeNum ?? 0)));
-    return m;
+    Object.values(map).forEach((zoneNodes) => {
+      zoneNodes.sort((a, b) => (a.nodeNum ?? 0) - (b.nodeNum ?? 0));
+    });
+
+    return map;
   }, [allNodes]);
 
-  const mockIdMismatch = useMemo(() => {
-    if (!progress?.unlockedNodes?.length) return true;
-    const allIds = new Set(allNodes.map(n => n.nodeId).filter(Boolean));
-    const anyMatch = progress.unlockedNodes.some(id => allIds.has(id));
-    return !anyMatch;
-  }, [allNodes, progress]);
+  const displayNodesByZone = useMemo(() => {
+    const map = {};
 
-  const firstZoneFirstNodeId = useMemo(() => {
-    const zone0Nodes = nodesByZone[ZONE_CONFIGS[0]?.id] ?? [];
-    return zone0Nodes[0]?.nodeId ?? null;
+    ZONE_CONFIGS.forEach((zone, zoneIndex) => {
+      const zoneNodes = nodesByZone[zone.id] ?? [];
+
+      map[zone.id] = Array.from({ length: 15 }, (_, nodeIndex) => {
+        const found = zoneNodes.find((node) => node.nodeNum === nodeIndex + 1 || node.localIndex === nodeIndex);
+        return found ?? {
+          nodeId: `${zone.id}_${nodeIndex + 1}_ph`,
+          nodeNum: nodeIndex + 1,
+          localIndex: nodeIndex,
+          nodeType: nodeIndex === MID_BOSS_IDX || nodeIndex === MAIN_BOSS_IDX ? 'boss' : 'standard',
+          bossType: nodeIndex === MID_BOSS_IDX ? 'mid' : nodeIndex === MAIN_BOSS_IDX ? 'main' : null,
+          region: zone.id,
+          zoneIndex,
+          localPos: getLocalNodePos(nodeIndex),
+          problem: { title: `Challenge ${nodeIndex + 1}` },
+          problemId: { title: `Challenge ${nodeIndex + 1}` },
+          isPlaceholder: true,
+          hasProblemData: false,
+        };
+      });
+    });
+
+    return map;
   }, [nodesByZone]);
 
+  const nodeStateById = useMemo(() => {
+    const stateMap = {};
+    const firstZoneFirstNodeId = displayNodesByZone[ZONE_CONFIGS[0]?.id]?.[0]?.nodeId ?? null;
+    const unlockedIds = progress?.unlockedNodes ?? [];
+    const allIds = new Set(allNodes.map((node) => node.nodeId).filter(Boolean));
+    const mockIdMismatch = unlockedIds.length > 0 && !unlockedIds.some((id) => allIds.has(id));
+
+    ZONE_CONFIGS.forEach((zone, zoneIndex) => {
+      const zoneNodes = displayNodesByZone[zone.id] ?? [];
+
+      zoneNodes.forEach((node) => {
+        const isFirstNodeFallback =
+          mockIdMismatch &&
+          zoneIndex === 0 &&
+          node.nodeId === firstZoneFirstNodeId;
+
+        stateMap[node.nodeId] = node.isPlaceholder || node.hasProblemData === false
+          ? { state: 'locked', starsAwarded: 0 }
+          : getState(node, progress, isFirstNodeFallback);
+      });
+    });
+
+    return stateMap;
+  }, [allNodes, displayNodesByZone, progress]);
+
   const completedSet = useMemo(
-    () => new Set(progress?.completedNodes?.map(n => n.nodeId) ?? []),
+    () => new Set(progress?.completedNodes?.map((entry) => entry.nodeId) ?? []),
     [progress]
   );
 
   const zoneTops = useMemo(
-    () => ZONE_CONFIGS.map((_, i) => i * (ZONE_H + ZONE_GAP)),
+    () => ZONE_CONFIGS.map((_, index) => index * (ZONE_H + ZONE_GAP)),
     []
   );
 
-  const CANVAS_H = ZONE_CONFIGS.length * (ZONE_H + ZONE_GAP);
+  const canvasH = ZONE_CONFIGS.length * (ZONE_H + ZONE_GAP);
 
   const mapScale = useMemo(() => {
-    const baseWidth = ZONE_W;
     const safePadding = viewportWidth < 640 ? 24 : viewportWidth < 1024 ? 48 : 80;
-    const widthLimited = (viewportWidth - safePadding) / baseWidth;
-
-    const heightLimited = viewportHeight < 720
-      ? 0.92
-      : viewportHeight < 900
-        ? 0.98
-        : 1;
-
+    const widthLimited = (viewportWidth - safePadding) / ZONE_W;
+    const heightLimited = viewportHeight < 720 ? 0.92 : viewportHeight < 900 ? 0.98 : 1;
     const mobileBoost = viewportWidth < 640 ? 0.86 : 1;
 
     return Math.max(0.72, Math.min(1, widthLimited, heightLimited) * mobileBoost);
-  }, [viewportWidth, viewportHeight]);
+  }, [viewportHeight, viewportWidth]);
 
-//   const scaledCanvasWidth = ZONE_W * mapScale;
-  const scaledCanvasHeight = CANVAS_H * mapScale;
+  const scaledCanvasHeight = canvasH * mapScale;
 
-  const scrollToZone = useCallback((zIdx) => {
-    scrollRef.current?.scrollTo({ top: Math.max(0, zoneTops[zIdx] - 80), behavior: 'smooth' });
-  }, [zoneTops]);
+  const scrollToOffset = useCallback((top) => {
+    scrollRef.current?.scrollTo({
+      top: Math.max(0, top - 80),
+      behavior: 'smooth',
+    });
+  }, []);
 
   const jumpToProgress = useCallback(() => {
-    const firstAvail = allNodes.find(n => {
-      const isFallback = mockIdMismatch && n.nodeId === firstZoneFirstNodeId;
-      return getState(n, progress, isFallback).state === 'available';
+    const firstAvailableZoneIndex = ZONE_CONFIGS.findIndex((zone) => {
+      const zoneNodes = displayNodesByZone[zone.id] ?? [];
+      return zoneNodes.some((node) => nodeStateById[node.nodeId]?.state === 'available');
     });
-    scrollToZone(firstAvail?.zoneIndex ?? 0);
-  }, [allNodes, progress, mockIdMismatch, firstZoneFirstNodeId, scrollToZone]);
 
-  const BRIDGE_FROM = getLocalNodePos(14);
-  const BRIDGE_TO = getLocalNodePos(0);
+    scrollToOffset(zoneTops[Math.max(0, firstAvailableZoneIndex)] ?? 0);
+  }, [displayNodesByZone, nodeStateById, scrollToOffset, zoneTops]);
+
+  const bridgeFrom = useMemo(() => getLocalNodePos(14), []);
+  const bridgeTo = useMemo(() => getLocalNodePos(0), []);
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ background: '#020408' }}>
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 80 }, (_, i) => (
+        {Array.from({ length: 80 }, (_, index) => (
           <div
-            key={i}
+            key={index}
             className="absolute rounded-full bg-white"
             style={{
-              width: i % 5 < 2 ? 1.5 : 0.8,
-              height: i % 5 < 2 ? 1.5 : 0.8,
-              left: `${(i * 137.5) % 100}%`,
-              top: `${(i * 97.3) % 100}%`,
-              opacity: i % 3 === 0 ? 0.5 : 0.15,
+              width: index % 5 < 2 ? 1.5 : 0.8,
+              height: index % 5 < 2 ? 1.5 : 0.8,
+              left: `${(index * 137.5) % 100}%`,
+              top: `${(index * 97.3) % 100}%`,
+              opacity: index % 3 === 0 ? 0.5 : 0.15,
             }}
           />
         ))}
@@ -321,7 +464,6 @@ const WorldMap = ({
       <div
         ref={scrollRef}
         data-campaign-scroll
-        // overflow-x-hidden removed from below
         className="absolute inset-0 overflow-y-auto"
         style={{
           scrollbarWidth: 'none',
@@ -333,7 +475,7 @@ const WorldMap = ({
           className="relative mx-auto"
           style={{
             width: ZONE_W,
-            height: CANVAS_H,
+            height: canvasH,
             transform: `scale(${mapScale})`,
             transformOrigin: 'top center',
             willChange: 'transform',
@@ -342,22 +484,21 @@ const WorldMap = ({
         >
           <svg
             className="absolute inset-0 pointer-events-none"
-            style={{ width: ZONE_W, height: CANVAS_H, zIndex: 15, overflow: 'visible' }}
+            style={{ width: ZONE_W, height: canvasH, zIndex: 15, overflow: 'visible' }}
           >
-            {ZONE_CONFIGS.slice(0, -1).map((zone, zIdx) => {
-              const nextZone = ZONE_CONFIGS[zIdx + 1];
-              const zNodes = nodesByZone[zone.id] ?? [];
-
-              const zoneBoss = zNodes.find(n => n.nodeNum === 15);
+            {ZONE_CONFIGS.slice(0, -1).map((zone, zoneIndex) => {
+              const nextZone = ZONE_CONFIGS[zoneIndex + 1];
+              const zoneNodes = displayNodesByZone[zone.id] ?? [];
+              const zoneBoss = zoneNodes.find((node) => node.nodeNum === 15);
               const lit = zoneBoss ? completedSet.has(zoneBoss.nodeId) : false;
 
               return (
                 <InterZoneBridge
-                  key={`bridge-${zIdx}`}
-                  fromLocal={BRIDGE_FROM}
-                  toLocal={BRIDGE_TO}
-                  zoneTop={zoneTops[zIdx]}
-                  nextZoneTop={zoneTops[zIdx + 1]}
+                  key={`bridge-${zoneIndex}`}
+                  fromLocal={bridgeFrom}
+                  toLocal={bridgeTo}
+                  zoneTop={zoneTops[zoneIndex]}
+                  nextZoneTop={zoneTops[zoneIndex + 1]}
                   toColor={nextZone.path ?? '#22d3ee'}
                   lit={lit}
                 />
@@ -365,26 +506,9 @@ const WorldMap = ({
             })}
           </svg>
 
-          {ZONE_CONFIGS.map((zone, zIdx) => {
-            const zoneNodes = nodesByZone[zone.id] ?? [];
-            const zoneTop = zoneTops[zIdx];
-
-            const displayNodes = Array.from({ length: 15 }, (_, i) => {
-              const found = zoneNodes.find(n => n.nodeNum === i + 1 || n.localIndex === i);
-              return found ?? {
-                nodeId: `${zone.id}_${i + 1}_ph`,
-                nodeNum: i + 1,
-                localIndex: i,
-                nodeType: (i === MID_BOSS_IDX || i === MAIN_BOSS_IDX) ? 'boss' : 'standard',
-                bossType: i === MID_BOSS_IDX ? 'mid' : i === MAIN_BOSS_IDX ? 'main' : null,
-                region: zone.id,
-                zoneIndex: zIdx,
-                localPos: getLocalNodePos(i),
-                problem: { title: `Challenge ${i + 1}` },
-                problemId: { title: `Challenge ${i + 1}` },
-                isPlaceholder: true,
-              };
-            });
+          {ZONE_CONFIGS.map((zone, zoneIndex) => {
+            const zoneNodes = displayNodesByZone[zone.id] ?? [];
+            const zoneTop = zoneTops[zoneIndex];
 
             return (
               <div
@@ -392,54 +516,22 @@ const WorldMap = ({
                 className="absolute"
                 style={{ left: 0, top: zoneTop, width: ZONE_W, height: ZONE_H, zIndex: 10 }}
               >
-                <ZoneContainer config={zone} completedIds={completedSet}>
-                  {displayNodes.map(node => {
-                    const { x, y } = node.localPos ?? getLocalNodePos(node.localIndex ?? 0);
-                    const isSel = node.nodeId === selectedNodeId;
-                    const isBoss = node.nodeType === 'boss';
-
-                    const isFirstNodeFallback =
-                      mockIdMismatch &&
-                      zIdx === 0 &&
-                      node.nodeId === firstZoneFirstNodeId;
-
-                    const nodeState = node.isPlaceholder || node.hasProblemData === false
-                      ? { state: 'locked' }
-                      : getState(node, progress, isFirstNodeFallback);
-
-                    return (
-                      <div
-                        key={node.nodeId}
-                        className="absolute"
-                        style={{
-                          left: x,
-                          top: y,
-                          transform: 'translate(-50%,-50%)',
-                          zIndex: isSel ? 50 : isBoss ? 30 : 20,
-                        }}
-                      >
-                        {isBoss ? (
-                          <BossNode
-                            bossType={node.bossType}
-                            isLocked={nodeState.state === 'locked'}
-                            isDone={nodeState.state === 'completed'}
-                            stars={nodeState.starsAwarded ?? 0}
-                            isSelected={isSel}
-                            onClick={() => !node.isPlaceholder && node.hasProblemData !== false && onNodeClick?.(node)}
-                            title={getNodeTitle(node)}
-                          />
-                        ) : (
-                          <StandardNode
-                            node={node}
-                            state={nodeState}
-                            isSelected={isSel}
-                            accent={zone.accent ?? '#22d3ee'}
-                            onClick={node.isPlaceholder || node.hasProblemData === false ? undefined : onNodeClick}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+                <ZoneContainer
+                  config={zone}
+                  completedIds={completedSet}
+                  isMobile={isMobile}
+                  nodes={zoneNodes}
+                >
+                  {zoneNodes.map((node) => (
+                    <MapNodeSlot
+                      key={node.nodeId}
+                      node={node}
+                      nodeState={nodeStateById[node.nodeId]}
+                      accent={zone.accent ?? '#22d3ee'}
+                      onNodeClick={onNodeClick}
+                      isMobile={isMobile}
+                    />
+                  ))}
                 </ZoneContainer>
               </div>
             );
@@ -447,10 +539,56 @@ const WorldMap = ({
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-3 z-50 pointer-events-auto sm:bottom-5 sm:left-5">
+      <div className="absolute top-3 right-3 z-50 pointer-events-none w-[min(44vw,240px)] sm:w-auto">
+        <div className="bg-[#060810]/85 border border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60">
+          <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1.5">
+            Zones
+          </p>
+          {ZONE_CONFIGS.map((zone, index) => {
+            const zoneNodes = displayNodesByZone[zone.id] ?? [];
+            const done = zoneNodes.filter((node) => completedSet.has(node.nodeId)).length;
+            const total = zoneNodes.length || 15;
+
+            return (
+              <ZoneProgressButton
+                key={zone.id}
+                zone={{ ...zone, index }}
+                done={done}
+                total={total}
+                zoneTop={zoneTops[index]}
+                onJump={scrollToOffset}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="absolute bottom-3 left-3 z-50 flex flex-col items-start gap-3 sm:bottom-5 sm:left-5 sm:gap-4">
+        <div className="pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-2.5 py-2 backdrop-blur-md hidden md:block">
+          {[
+            { col: '#374151', label: 'Locked' },
+            { col: '#06b6d4', label: 'Available' },
+            { col: '#fbbf24', label: 'Complete' },
+            { col: '#a855f7', label: 'Mid Boss' },
+            { col: '#ef4444', label: 'Zone Boss' },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2 mb-1.5 last:mb-0">
+              <div
+                className="w-3 h-3 rounded-full border shrink-0"
+                style={{
+                  borderColor: item.col,
+                  background: `${item.col}25`,
+                  boxShadow: `0 0 6px ${item.col}50`,
+                }}
+              />
+              <span className="text-[9px] text-gray-500 font-medium">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
         <button
           onClick={jumpToProgress}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
           style={{
             background: 'rgba(34,211,238,0.12)',
             border: '1px solid rgba(34,211,238,0.30)',
@@ -458,79 +596,46 @@ const WorldMap = ({
             backdropFilter: 'blur(6px)',
           }}
         >
-          <span className="text-sm">🎯</span>
+          <span className="text-sm">Target</span>
           <span className="hidden sm:inline">Continue</span>
           <span className="sm:hidden">Go</span>
         </button>
       </div>
-
-      <div className="absolute top-3 right-3 z-50 pointer-events-none w-[min(44vw,240px)] sm:w-auto">
-        <div className="bg-[#060810]/85 border border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60">
-          <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1.5">
-            Zones
-          </p>
-          {ZONE_CONFIGS.map((z, i) => {
-            const zNodes = nodesByZone[z.id] ?? [];
-            const done = zNodes.filter(n => completedSet.has(n.nodeId)).length;
-            const total = zNodes.length || 15;
-            const pct = Math.round((done / total) * 100);
-            return (
-              <button
-                key={z.id}
-                className="flex items-center gap-2 w-full text-left hover:opacity-100 transition-opacity pointer-events-auto"
-                style={{ opacity: done === 0 && i > 0 ? 0.4 : 0.85 }}
-                onClick={() =>
-                  scrollRef.current?.scrollTo({
-                    top: Math.max(0, zoneTops[i] - 100),
-                    behavior: 'smooth',
-                  })
-                }
-              >
-                <span className="text-xs select-none">{z.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[9px] font-bold text-gray-400 truncate max-w-[100px]">
-                    {z.name}
-                  </div>
-                  <div className="h-1 rounded-full mt-0.5" style={{ background: '#1e293b' }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${pct}%`, background: z.accent }}
-                    />
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="absolute bottom-3 left-20 z-50 pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-2.5 py-2 backdrop-blur-md hidden md:block sm:bottom-5 sm:left-[58px]">
-        {[
-          { col: '#374151', label: 'Locked' },
-          { col: '#06b6d4', label: 'Available' },
-          { col: '#fbbf24', label: 'Complete' },
-          { col: '#a855f7', label: 'Mid Boss' },
-          { col: '#ef4444', label: 'Zone Boss' },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-2 mb-1.5 last:mb-0">
-            <div
-              className="w-3 h-3 rounded-full border shrink-0"
-              style={{
-                borderColor: item.col,
-                background: `${item.col}25`,
-                boxShadow: `0 0 6px ${item.col}50`,
-              }}
-            />
-            <span className="text-[9px] text-gray-500 font-medium">{item.label}</span>
-          </div>
-        ))}
-        <div className="border-t border-gray-800/60 mt-1.5 pt-1.5 text-[9px] text-gray-700">
-          Scroll to navigate
-        </div>
-      </div>
     </div>
+  );
+});
+
+const WorldMap = ({ nodes = [], progress, onStartChallenge, useMockData = true }) => {
+  const [selectedNode, setSelectedNode] = useState(null);
+
+  const handleNodeClick = useCallback((node) => {
+    setSelectedNode(node);
+  }, []);
+
+  const handleClosePanel = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
+
+  return (
+    <>
+      <WorldMapScene
+        nodes={nodes}
+        progress={progress}
+        onNodeClick={handleNodeClick}
+        useMockData={useMockData}
+      />
+
+      {selectedNode ? (
+        <NodeDetailPanel
+          key={selectedNode.nodeId}
+          node={selectedNode}
+          progress={progress}
+          onClose={handleClosePanel}
+          onStartChallenge={onStartChallenge}
+        />
+      ) : null}
+    </>
   );
 };
 
-export default WorldMap;
-// V 1.5
+export default React.memo(WorldMap);

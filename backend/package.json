@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "yjs": "node run-yjs.cjs",
     "seed": "node seeder.js",
+    "flush-local-db": "node flushLocalDb.js",
     "reset-password": "node resetUserPassword.js",
     "audit-auth-users": "node sanitizeAuthUsers.js audit"
   },

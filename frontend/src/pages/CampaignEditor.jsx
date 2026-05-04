@@ -41,6 +41,7 @@ const fmt = (s) =>
   `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
 const getStorageKey = (nodeId, lang) => `codearena_campaign_${nodeId}_${lang}`;
+const isValidNodeId = (value) => typeof value === 'string' && value.trim().length > 0;
 
 // --- Helpers ------------------------------------------------------------------
 
@@ -175,7 +176,7 @@ const ProblemPanel = ({ node, existingBest }) => {
             <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-2">Constraints</p>
             <ul className="space-y-1">
               {problem.constraints.map((c, i) => (
-                <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-gray-500"><span className="text-cyan-500 mt-0.5 shrink-0">›</span><span className="font-mono text-[12px]">{c}</span></li>
+                <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-gray-500"><span className="text-cyan-500 mt-0.5 shrink-0">â€º</span><span className="font-mono text-[12px]">{c}</span></li>
               ))}
             </ul>
           </div>
@@ -250,7 +251,7 @@ const EditorPane = ({
               <div className="flex items-center gap-2">
                 {allPassed ? <CheckCircle size={14} className="text-emerald-400" /> : <XCircle size={14} className="text-red-400" />}
                 <span className={`text-xs font-bold ${allPassed ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {execType === 'run' ? 'Run' : 'Submit'} · {passedCount}/{totalCount} passed
+                  {execType === 'run' ? 'Run' : 'Submit'} Â· {passedCount}/{totalCount} passed
                 </span>
               </div>
               <button onClick={() => setShowResults(false)} className="text-gray-600 hover:text-gray-300 text-xs px-1">?</button>
@@ -283,6 +284,7 @@ const CampaignEditor = () => {
   const [node,         setNode]         = useState(null);
   const [existingBest, setExistingBest] = useState(null);
   const [loading,      setLoading]      = useState(true);
+  const [loadError,    setLoadError]    = useState('');
 
   const [code,         setCode]         = useState('');
   const [language,     setLanguage]     = useState('javascript');
@@ -310,12 +312,21 @@ const CampaignEditor = () => {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      if (!isValidNodeId(nodeId)) {
+        if (!cancelled) {
+          setLoadError('Problem not found. Return to Campaign.');
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
+      setLoadError('');
       try {
         const { data } = await api.get(`/campaign/node/${nodeId}`);
         if (cancelled) return;
         
-        if (data?.node) {
+        if (data?.node?.problemId) {
           const n = data.node;
           setNode(n);
           setExistingBest(data.existingCompletion || null);
@@ -332,13 +343,16 @@ const CampaignEditor = () => {
           
           setCode(savedCode !== null ? savedCode : starter);
         } else {
-          toast.error('Node not found');
-          navigate('/campaign');
+          setLoadError('Problem not found. Return to Campaign.');
         }
       } catch (err) {
         console.log(err);
         if (cancelled) return;
-        navigate('/campaign');
+        setLoadError(
+          err?.response?.status === 404 || err?.response?.status === 403
+            ? 'Problem not found. Return to Campaign.'
+            : 'Failed to load challenge. Return to Campaign.'
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -470,7 +484,24 @@ const CampaignEditor = () => {
   if (loading) return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#06080e] flex items-center justify-center gap-4">
       <Loader2 size={32} className="animate-spin text-cyan-500" />
-      <p className="text-slate-500 dark:text-gray-500 font-bold text-sm">Loading challenge…</p>
+      <p className="text-slate-500 dark:text-gray-500 font-bold text-sm">Loading challengeâ€¦</p>
+    </div>
+  );
+
+  if (loadError || !problem) return (
+    <div className="h-[100dvh] bg-slate-50 dark:bg-[#06080e] flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-[#0a0d14] shadow-2xl p-6 text-center">
+        <h1 className="text-lg font-black text-slate-900 dark:text-white mb-2">Problem Not Found</h1>
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5">
+          {loadError || 'Problem not found. Return to Campaign.'}
+        </p>
+        <button
+          onClick={() => navigate('/campaign')}
+          className="w-full py-3 rounded-xl text-sm font-black bg-cyan-500 text-black"
+        >
+          Return to Campaign
+        </button>
+      </div>
     </div>
   );
 

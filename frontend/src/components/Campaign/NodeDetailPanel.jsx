@@ -1,4 +1,3 @@
-// perfect and with corrected responsive ui changes 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, Clock, Zap, Lock, Play, RotateCcw, Skull } from 'lucide-react';
@@ -17,7 +16,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
     (Array.isArray(node.prerequisites) && node.prerequisites.length === 0) ||
     node.nodeNum === 1;
   const isLocked = !isEntryNode && !progress?.unlockedNodes?.includes(node.nodeId);
-  const completion = progress?.completedNodes?.find(n => n.nodeId === node.nodeId);
+  const completion = progress?.completedNodes?.find((n) => n.nodeId === node.nodeId);
   const isCompleted = !!completion;
   const stars = completion?.starsAwarded ?? 0;
   const isBoss = node.nodeType === 'boss';
@@ -46,219 +45,211 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="sm:hidden fixed inset-0 bg-black/55 z-30"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 40 }}
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 20 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            className={`
-              absolute z-40
-              bottom-3 left-3 right-3 rounded-2xl
-              sm:bottom-auto sm:top-4 sm:right-4 sm:left-auto
-              sm:w-80 sm:max-w-[90vw] sm:rounded-2xl
-              bg-white dark:bg-[#0a0d14]
-              border border-slate-200 dark:border-gray-800/60
-              shadow-2xl
-              flex flex-col
-              max-h-[78dvh] sm:max-h-[calc(100dvh-2rem)]
-              overflow-hidden
-            `}
-            style={{
-              boxShadow: `0 0 40px ${accentColor}20`,
-              paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
+            className="fixed inset-0 z-[101] flex items-center justify-center p-4 sm:p-6"
+            onClick={onClose}
           >
             <div
-              className="h-0.5 rounded-t-2xl shrink-0"
-              style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
-            />
+              className="relative z-[101] w-full max-w-md md:max-w-lg bg-[#0F172A] border border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[min(84vh,720px)]"
+              onClick={(event) => event.stopPropagation()}
+              style={{ boxShadow: `0 30px 80px ${accentColor}22` }}
+            >
+              <div
+                className="h-0.5 shrink-0"
+                style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
+              />
 
-            <div className="flex items-start justify-between px-3.5 py-3 sm:px-4 sm:py-3.5 shrink-0">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {isBoss && (
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: `${accentColor}20`, border: `1.5px solid ${accentColor}60` }}
-                  >
-                    {isMidBoss ? <span>⚔️</span> : <Skull size={14} style={{ color: accentColor }} />}
-                  </div>
-                )}
+              <button
+                onClick={onClose}
+                className="absolute top-3 right-3 z-10 p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors touch-manipulation"
+              >
+                <X size={16} />
+              </button>
 
-                <div className="min-w-0">
-                  <h3 className="font-black text-slate-900 dark:text-white text-[14px] sm:text-[15px] leading-tight truncate">
-                    {title}
-                  </h3>
-                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    {isBoss && (
-                      <span
-                        className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
-                        style={{
-                          background: isMidBoss ? '#6b21a8' : '#991b1b',
-                          color: isMidBoss ? '#e9d5ff' : '#fecaca',
-                        }}
-                      >
-                        {isMidBoss ? 'Mid Boss' : 'Zone Boss'}
+              <div className="flex items-start justify-between px-5 py-5 md:px-6 shrink-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0 pr-10">
+                  {isBoss && (
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: `${accentColor}20`, border: `1.5px solid ${accentColor}60` }}
+                    >
+                      {isMidBoss ? <span>Boss</span> : <Skull size={15} style={{ color: accentColor }} />}
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <h3 className="font-black text-white text-lg md:text-xl leading-tight truncate">
+                      {title}
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {isBoss && (
+                        <span
+                          className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
+                          style={{
+                            background: isMidBoss ? '#6b21a8' : '#991b1b',
+                            color: isMidBoss ? '#e9d5ff' : '#fecaca',
+                          }}
+                        >
+                          {isMidBoss ? 'Mid Boss' : 'Zone Boss'}
+                        </span>
+                      )}
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFF_COLOR[difficulty] || DIFF_COLOR.Easy}`}>
+                        {difficulty}
                       </span>
-                    )}
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFF_COLOR[difficulty] || DIFF_COLOR.Easy}`}>
-                      {difficulty}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <button
-                onClick={onClose}
-                className="p-1.5 text-slate-400 dark:text-gray-600 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0 ml-2 touch-manipulation"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-3.5 pb-2 space-y-3 min-h-0 sm:px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {effectiveLocked ? (
-                <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800/50 rounded-xl">
-                  <Lock size={14} className="text-gray-400 dark:text-gray-600 shrink-0" />
-                  <p className="text-xs text-gray-500 dark:text-gray-600">
-                    {hasProblemData
-                      ? 'Complete the previous node to unlock this challenge.'
-                      : 'This challenge is not available in the current local dataset yet.'}
-                  </p>
-                </div>
-              ) : isCompleted ? (
-                <div className="flex items-center gap-3 px-3 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-xl">
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3].map(i => (
-                      <Star key={i} size={14} className={i <= stars ? 'text-amber-400 fill-amber-400' : 'text-gray-600'} />
-                    ))}
+              <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4 min-h-0 md:px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+                {effectiveLocked ? (
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-900/70 border border-slate-700/70 rounded-xl">
+                    <Lock size={14} className="text-slate-500 shrink-0" />
+                    <p className="text-sm text-slate-400">
+                      {hasProblemData
+                        ? 'Complete the previous node to unlock this challenge.'
+                        : 'This challenge is not available in the current local dataset yet.'}
+                    </p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400">Completed</p>
-                    {completion?.bestTimeMs && (
-                      <p className="text-[10px] text-amber-500/70 dark:text-amber-600 flex items-center gap-1">
-                        <Clock size={9} /> Best: {completion.bestTimeMs}ms avg
-                      </p>
-                    )}
+                ) : isCompleted ? (
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3].map((i) => (
+                        <Star key={i} size={14} className={i <= stars ? 'text-amber-400 fill-amber-400' : 'text-slate-600'} />
+                      ))}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-amber-300">Completed</p>
+                      {completion?.bestTimeMs && (
+                        <p className="text-[10px] text-amber-200/70 flex items-center gap-1">
+                          <Clock size={9} /> Best: {completion.bestTimeMs}ms avg
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold"
-                  style={{
-                    background: `${accentColor}10`,
-                    borderColor: `${accentColor}40`,
-                    color: accentColor,
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: accentColor }} />
-                  Ready to attempt
-                </div>
-              )}
+                ) : (
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold"
+                    style={{
+                      background: `${accentColor}10`,
+                      borderColor: `${accentColor}40`,
+                      color: accentColor,
+                    }}
+                  >
+                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: accentColor }} />
+                    Ready to attempt
+                  </div>
+                )}
 
-              {hasProblemData && node.rewards && (
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest mb-1.5">
-                    Rewards
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                    {[
-                      { s: 1, kp: node.rewards.oneStarKP },
-                      { s: 2, kp: node.rewards.twoStarKP },
-                      { s: 3, kp: node.rewards.threeStarKP },
-                    ].map(r => (
-                      <div
-                        key={r.s}
-                        className="flex flex-col items-center p-2 bg-slate-100 dark:bg-gray-900/50 rounded-lg border border-slate-200 dark:border-gray-800/50"
-                      >
-                        <div className="flex gap-0.5 mb-0.5">
-                          {[1, 2, 3].map(i => (
-                            <span key={i} style={{ fontSize: 9, color: i <= r.s ? '#fbbf24' : '#374151' }}>★</span>
-                          ))}
+                {hasProblemData && node.rewards && (
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                      Rewards
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { s: 1, kp: node.rewards.oneStarKP },
+                        { s: 2, kp: node.rewards.twoStarKP },
+                        { s: 3, kp: node.rewards.threeStarKP },
+                      ].map((r) => (
+                        <div
+                          key={r.s}
+                          className="flex flex-col items-center p-2 bg-slate-950/45 rounded-lg border border-slate-800/80"
+                        >
+                          <div className="flex gap-0.5 mb-0.5">
+                            {[1, 2, 3].map((i) => (
+                              <span key={i} style={{ fontSize: 9, color: i <= r.s ? '#fbbf24' : '#374151' }}>★</span>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            <Zap size={9} className="text-cyan-400" />
+                            <span className="text-[11px] font-black text-cyan-400">{r.kp}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-0.5">
-                          <Zap size={9} className="text-cyan-400" />
-                          <span className="text-[11px] font-black text-cyan-400">{r.kp}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {hasProblemData && node.starThresholds && (
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                      Star Thresholds
+                    </p>
+                    <div className="space-y-1.5">
+                      {[
+                        { s: 1, label: 'Pass all test cases' },
+                        { s: 2, label: `Avg time < ${node.starThresholds.twoStarTimeMs}ms` },
+                        { s: 3, label: `Avg time < ${node.starThresholds.threeStarTimeMs}ms` },
+                      ].map((r) => (
+                        <div key={r.s} className="flex items-center gap-2 text-[11px]">
+                          <div className="flex gap-0.5 shrink-0">
+                            {[1, 2, 3].map((i) => (
+                              <span key={i} style={{ fontSize: 9, color: i <= r.s ? '#fbbf24' : '#374151' }}>★</span>
+                            ))}
+                          </div>
+                          <span className="text-slate-400">{r.label}</span>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {hasProblemData && node.starThresholds && (
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest mb-1.5">
-                    Star Thresholds
-                  </p>
-                  <div className="space-y-1">
-                    {[
-                      { s: 1, label: 'Pass all test cases' },
-                      { s: 2, label: `Avg time < ${node.starThresholds.twoStarTimeMs}ms` },
-                      { s: 3, label: `Avg time < ${node.starThresholds.threeStarTimeMs}ms` },
-                    ].map(r => (
-                      <div key={r.s} className="flex items-center gap-2 text-[11px]">
-                        <div className="flex gap-0.5 shrink-0">
-                          {[1, 2, 3].map(i => (
-                            <span key={i} style={{ fontSize: 9, color: i <= r.s ? '#fbbf24' : '#374151' }}>★</span>
-                          ))}
+                {hasProblemData && isBoss && node.rewards?.lootPool?.length > 0 && (
+                  <div className="p-3 bg-purple-950/20 border border-purple-800/30 rounded-xl">
+                    <p className="text-[10px] font-bold text-purple-300 uppercase tracking-widest mb-1.5">
+                      Loot Pool
+                    </p>
+                    <div className="space-y-1">
+                      {node.rewards.lootPool.map((loot, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-300 capitalize">
+                            {loot.itemType}: {loot.itemId.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-purple-300 font-bold">
+                            {Math.round(loot.dropChance * 100)}%
+                          </span>
                         </div>
-                        <span className="text-slate-500 dark:text-gray-600">{r.label}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {hasProblemData && isBoss && node.rewards?.lootPool?.length > 0 && (
-                <div className="p-3 bg-purple-50 dark:bg-purple-950/15 border border-purple-200 dark:border-purple-800/30 rounded-xl">
-                  <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1.5">
-                    Loot Pool
-                  </p>
-                  <div className="space-y-1">
-                    {node.rewards.lootPool.map((loot, i) => (
-                      <div key={i} className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-600 dark:text-gray-400 capitalize">
-                          {loot.itemType}: {loot.itemId.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-purple-500 dark:text-purple-400 font-bold">
-                          {Math.round(loot.dropChance * 100)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="px-3.5 py-3 border-t border-slate-200 dark:border-gray-800/50 shrink-0 sm:px-4">
-              {effectiveLocked ? (
-                <button
-                  disabled
-                  className="w-full py-3 rounded-xl text-sm font-black bg-gray-100 dark:bg-gray-900/50 text-gray-400 dark:text-gray-600 cursor-not-allowed flex items-center justify-center gap-2 touch-manipulation"
-                >
-                  <Lock size={14} /> {hasProblemData ? 'Locked' : 'Coming Soon'}
-                </button>
-              ) : isCompleted ? (
-                <button
-                  onClick={() => onStartChallenge(node.nodeId)}
-                  className="w-full py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all text-black touch-manipulation"
-                  style={{ background: `linear-gradient(90deg, #fbbf24, #f59e0b)` }}
-                >
-                  <RotateCcw size={15} /> Replay & Improve
-                </button>
-              ) : (
-                <button
-                  onClick={() => onStartChallenge(node.nodeId)}
-                  className="w-full py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all text-black touch-manipulation"
-                  style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)` }}
-                >
-                  <Play size={15} /> Start Challenge
-                </button>
-              )}
+              <div className="px-5 py-4 border-t border-slate-800/80 shrink-0 md:px-6">
+                {effectiveLocked ? (
+                  <button
+                    disabled
+                    className="w-full py-3 rounded-xl text-sm font-black bg-slate-900/80 text-slate-500 cursor-not-allowed flex items-center justify-center gap-2 touch-manipulation"
+                  >
+                    <Lock size={14} /> {hasProblemData ? 'Locked' : 'Coming Soon'}
+                  </button>
+                ) : isCompleted ? (
+                  <button
+                    onClick={() => onStartChallenge(node)}
+                    className="w-full py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all text-black touch-manipulation"
+                    style={{ background: 'linear-gradient(90deg, #fbbf24, #f59e0b)' }}
+                  >
+                    <RotateCcw size={15} /> Replay & Improve
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onStartChallenge(node)}
+                    className="w-full py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all text-black touch-manipulation"
+                    style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)` }}
+                  >
+                    <Play size={15} /> Start Challenge
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </>
@@ -267,5 +258,4 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
   );
 };
 
-export default NodeDetailPanel;
-// V 1.5
+export default React.memo(NodeDetailPanel);

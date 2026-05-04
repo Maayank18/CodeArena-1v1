@@ -1,10 +1,8 @@
-// perfect with apt responsiveness 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, BookOpen } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import WorldMap from '../components/Campaign/WorldMap';
-import NodeDetailPanel from '../components/Campaign/NodeDetailPanel';
 import CampaignHUD from '../components/Campaign/CampaignHUD';
 import SkillTreeModal from '../components/Campaign/SkillTreeModal';
 import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
@@ -12,6 +10,7 @@ import api from '../api';
 import toast from 'react-hot-toast';
 
 const EMPTY_MAP = { nodes: [] };
+const DEMO_MODE_TOAST = 'Challenge not available in demo mode. Please run the local seeder.';
 
 const normalizeCampaignNodes = (rawMap) => {
   const sourceNodes = Array.isArray(rawMap?.nodes)
@@ -52,7 +51,6 @@ const Campaign = () => {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasLiveMapData, setHasLiveMapData] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(null);
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -64,6 +62,53 @@ const Campaign = () => {
     }
   });
 
+  const incomingProgress = location.state?.newProgress ?? null;
+  const nodes = useMemo(() => mapData?.nodes ?? [], [mapData]);
+
+  const fetchCampaignData = useCallback(
+    async (progressOverride = null, cancelledRef = { current: false }) => {
+      setLoading(true);
+
+      try {
+        if (progressOverride) {
+          setProgress(progressOverride);
+          const mapRes = await api.get('/campaign/map');
+
+          if (cancelledRef.current) return;
+
+          const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
+          setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
+          setHasLiveMapData(true);
+          window.history.replaceState({}, document.title);
+          return;
+        }
+
+        const [mapRes, progRes] = await Promise.all([
+          api.get('/campaign/map'),
+          api.get('/campaign/progress'),
+        ]);
+
+        if (cancelledRef.current) return;
+
+        const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
+        setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
+        setProgress(progRes.data?.progress ?? progRes.data);
+        setHasLiveMapData(true);
+      } catch (error) {
+        if (cancelledRef.current) return;
+
+        console.error('[CAMPAIGN LOAD]', error);
+        setHasLiveMapData(false);
+        toast.error('Failed to load Campaign world');
+      } finally {
+        if (!cancelledRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     if (!user || Object.keys(user).length === 0) {
       toast.error('Please log in to access the campaign');
@@ -71,71 +116,34 @@ const Campaign = () => {
       return;
     }
 
-    let cancelled = false;
+    const cancelledRef = { current: false };
 
-    const loadData = async () => {
-      setLoading(true);
+    fetchCampaignData(incomingProgress, cancelledRef);
 
-      if (location.state?.newProgress) {
-        setProgress(location.state.newProgress);
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, [fetchCampaignData, incomingProgress, navigate, user]);
 
-        try {
-          const mapRes = await api.get('/campaign/map');
-          if (!cancelled) {
-            const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
-            setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
-            setHasLiveMapData(true);
-          }
-        } catch (e) {
-          console.error('[MAP LOAD]', e);
-          if (!cancelled) setHasLiveMapData(false);
-        }
+  const handleStartChallenge = useCallback(
+    (node) => {
+      const targetNodeId = typeof node === 'string' ? node : node?.nodeId;
+      const hasProblemData = typeof node === 'string' ? true : node?.hasProblemData !== false;
+      const isValidNodeId = typeof targetNodeId === 'string' && targetNodeId.trim().length > 0;
 
-        window.history.replaceState({}, document.title);
-        if (!cancelled) setLoading(false);
+      if (!hasLiveMapData) {
+        toast.error(DEMO_MODE_TOAST);
         return;
       }
 
-      try {
-        const [mapRes, progRes] = await Promise.all([
-          api.get('/campaign/map'),
-          api.get('/campaign/progress'),
-        ]);
-
-        if (cancelled) return;
-
-        const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
-        setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
-        setProgress(progRes.data?.progress ?? progRes.data);
-        setHasLiveMapData(true);
-      } catch {
-        if (!cancelled) {
-          setHasLiveMapData(false);
-          toast.error('Failed to load Campaign world');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+      if (!hasProblemData || !isValidNodeId) {
+        toast.error('This challenge is not available yet.');
+        return;
       }
-    };
 
-    loadData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate, location.state, user]);
-
-  const handleNodeClick = useCallback((node) => {
-    setSelectedNode(node);
-  }, []);
-
-  const handleClosePanel = useCallback(() => {
-    setSelectedNode(null);
-  }, []);
-
-  const handleStartChallenge = useCallback(
-    (nodeId) => navigate(`/campaign/${nodeId}`),
-    [navigate]
+      navigate(`/campaign/${targetNodeId}`);
+    },
+    [hasLiveMapData, navigate]
   );
 
   const handleProgressUpdate = useCallback((updates) => {
@@ -163,8 +171,6 @@ const Campaign = () => {
       </div>
     );
   }
-
-  const nodes = mapData?.nodes ?? [];
 
   return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col overflow-hidden">
@@ -195,20 +201,9 @@ const Campaign = () => {
         <WorldMap
           nodes={nodes}
           progress={progress}
-          onNodeClick={handleNodeClick}
-          selectedNodeId={selectedNode?.nodeId}
+          onStartChallenge={handleStartChallenge}
           useMockData={!hasLiveMapData}
         />
-
-        {selectedNode && (
-          <NodeDetailPanel
-            key={selectedNode.nodeId}
-            node={selectedNode}
-            progress={progress}
-            onClose={handleClosePanel}
-            onStartChallenge={handleStartChallenge}
-          />
-        )}
 
         {!hasLiveMapData && !nodes.length && !progress?.unlockedNodes?.length && (
           <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-xs">

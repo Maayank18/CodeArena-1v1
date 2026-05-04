@@ -55,11 +55,9 @@ const BossNode = ({
   isSelected,
   onClick,
   title,
+  isMobile = false,
 }) => {
   const c = CFG[bossType] || CFG.mid;
-
-  const isMobile =
-    typeof window !== 'undefined' && window.innerWidth < 640;
 
   const sz = isMobile ? c.mobile : c.base;
 

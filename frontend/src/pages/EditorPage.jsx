@@ -102,6 +102,8 @@ const EditorPage = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
     const { theme } = useTheme();
+    const username = location.state?.username ?? '';
+    const isValidRoomId = typeof roomId === 'string' && roomId.trim().length >= 3;
     
     // UI State
     const [clients, setClients] = useState([]);
@@ -144,7 +146,7 @@ const EditorPage = () => {
 
     // ✅ SOCKET CONNECTION
     useEffect(() => {
-        if (!location.state?.username) {
+        if (!username || !isValidRoomId) {
             navigate('/login');
             return;
         }
@@ -179,11 +181,11 @@ const EditorPage = () => {
             hasConnectedOnce.current = true;
             
             if (mySide && location.state?.username) {
-                console.log('[SOCKET] 🔄 Reconnecting - rejoining room');
-                socket.emit('join_room', { 
-                    roomId, 
-                    username: location.state.username 
-                });
+                    console.log('[SOCKET] 🔄 Reconnecting - rejoining room');
+                    socket.emit('join_room', { 
+                        roomId, 
+                        username 
+                    });
             }
         });
 
@@ -338,7 +340,7 @@ const EditorPage = () => {
         // ✅ Join room
         socket.emit('join_room', { 
             roomId, 
-            username: location.state.username 
+            username 
         });
 
         return () => {
@@ -365,7 +367,7 @@ const EditorPage = () => {
                 providerRef.current = null;
             }
         };
-    }, [roomId, navigate, location.state, mySide]);
+    }, [roomId, navigate, username, isValidRoomId, mySide]);
 
     // ✅ ANTI-CHEAT
     useEffect(() => {

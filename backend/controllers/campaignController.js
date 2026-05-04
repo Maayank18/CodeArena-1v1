@@ -17,6 +17,88 @@ import {
 let mapCache = null;
 let mapCacheTime = 0;
 const MAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAP_POPULATE_SELECT = 'title slug difficulty timeLimit constraints';
+
+const toPlainObject = (value) =>
+    value && typeof value.toObject === 'function' ? value.toObject() : value;
+
+const buildGroupedNodes = (nodes) =>
+    nodes.reduce((acc, node) => {
+        if (!acc[node.region]) acc[node.region] = [];
+        acc[node.region].push(node);
+        return acc;
+    }, {});
+
+const sanitizeCampaignNode = (node) => {
+    const plainNode = toPlainObject(node) ?? {};
+    const hasProblemData = Boolean(plainNode.problemId);
+
+    return {
+        ...plainNode,
+        problemId: hasProblemData ? plainNode.problemId : null,
+        hasProblemData,
+        problemMissing: !hasProblemData,
+    };
+};
+
+const sanitizeMapData = (nodes) => {
+    const sanitizedNodes = (Array.isArray(nodes) ? nodes : []).map(sanitizeCampaignNode);
+    const orphanedNodeIds = sanitizedNodes
+        .filter((node) => node.problemMissing)
+        .map((node) => node.nodeId)
+        .filter(Boolean);
+
+    return {
+        nodes: sanitizedNodes,
+        grouped: buildGroupedNodes(sanitizedNodes),
+        meta: {
+            totalNodes: sanitizedNodes.length,
+            orphanedNodeCount: orphanedNodeIds.length,
+            orphanedNodeIds,
+        },
+    };
+};
+
+const sanitizeProgressData = (progressLike, validNodeIds, entryNodeIds) => {
+    const plainProgress = toPlainObject(progressLike) ?? {};
+    const validNodeIdSet = new Set((validNodeIds ?? []).filter(Boolean));
+    const canonicalEntryNodeIds = [...new Set((entryNodeIds ?? []).filter(Boolean))];
+
+    const completedNodes = (plainProgress.completedNodes ?? []).filter(
+        (entry) => entry?.nodeId && validNodeIdSet.has(entry.nodeId)
+    );
+    const unlockedNodes = (plainProgress.unlockedNodes ?? []).filter(
+        (nodeId) => validNodeIdSet.has(nodeId) || canonicalEntryNodeIds.includes(nodeId)
+    );
+    const sageUsage = (plainProgress.sageUsage ?? []).filter(
+        (entry) => !entry?.nodeId || validNodeIdSet.has(entry.nodeId)
+    );
+
+    const sanitizedProgress = {
+        ...plainProgress,
+        completedNodes,
+        unlockedNodes,
+        sageUsage,
+    };
+
+    const repaired = ensureEntryNodesUnlocked(sanitizedProgress, canonicalEntryNodeIds);
+    sanitizedProgress.unlockedNodes = repaired.unlockedNodes;
+
+    const changed =
+        JSON.stringify(plainProgress.completedNodes ?? []) !== JSON.stringify(completedNodes) ||
+        JSON.stringify(plainProgress.unlockedNodes ?? []) !== JSON.stringify(repaired.unlockedNodes) ||
+        JSON.stringify(plainProgress.sageUsage ?? []) !== JSON.stringify(sageUsage);
+
+    return {
+        progress: sanitizedProgress,
+        changed,
+        updateFields: {
+            completedNodes,
+            unlockedNodes: repaired.unlockedNodes,
+            sageUsage,
+        },
+    };
+};
 
 // ────────────────────────────────────────────────────────────────────────────
 // GET /api/campaign/map
@@ -26,28 +108,38 @@ export const getCampaignMap = async (req, res) => {
     try {
         const now = Date.now();
         if (mapCache && (now - mapCacheTime) < MAP_CACHE_TTL) {
-            return res.json({ success: true, map: mapCache, cached: true });
+            return res.status(200).json({
+                success: true,
+                data: mapCache,
+                map: mapCache,
+                cached: true,
+            });
         }
 
         const nodes = await CampaignMap.find({ isActive: true })
-            .populate('problemId', 'title difficulty timeLimit constraints')
+            .populate({
+                path: 'problemId',
+                select: MAP_POPULATE_SELECT,
+                strictPopulate: false,
+            })
             .sort({ regionOrder: 1, nodeOrder: 1 })
             .lean();
 
-        // Group by region for frontend convenience
-        const grouped = nodes.reduce((acc, node) => {
-            if (!acc[node.region]) acc[node.region] = [];
-            acc[node.region].push(node);
-            return acc;
-        }, {});
-
-        mapCache = { nodes, grouped };
+        mapCache = sanitizeMapData(nodes);
         mapCacheTime = now;
 
-        return res.json({ success: true, map: mapCache });
-    } catch (err) {
-        console.error('[CAMPAIGN MAP]', err);
-        return res.status(500).json({ success: false, message: 'Failed to load map' });
+        return res.status(200).json({
+            success: true,
+            data: mapCache,
+            map: mapCache,
+        });
+    } catch (error) {
+        console.error('[CAMPAIGN MAP] Failed to fetch campaign data:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch campaign data',
+            error: error.message,
+        });
     }
 };
 
@@ -58,33 +150,41 @@ export const getCampaignMap = async (req, res) => {
 export const getCampaignProgress = async (req, res) => {
     try {
         const userId = req.user._id;
+        const entryNodeIds = await getEntryNodeIds();
+        const activeNodes = await CampaignMap.find({ isActive: true }).select('nodeId').lean();
+        const activeNodeIds = activeNodes.map((node) => node.nodeId).filter(Boolean);
 
-        let progress = await CampaignProgress.findOne({ userId }).lean();
+        let progressDoc = req.campaignProgress || await CampaignProgress.findOne({ userId });
 
-        if (!progress) {
-            const entryNodeIds = await getEntryNodeIds();
-
-            progress = await CampaignProgress.create({
+        if (!progressDoc) {
+            progressDoc = await CampaignProgress.create({
                 userId,
                 unlockedNodes: entryNodeIds,
             });
-            progress = progress.toObject();
-        } else {
-            const entryNodeIds = await getEntryNodeIds();
-            const repaired = ensureEntryNodesUnlocked(progress, entryNodeIds);
-            if (repaired.changed) {
-                await CampaignProgress.updateOne(
-                    { userId },
-                    { $set: { unlockedNodes: repaired.unlockedNodes } }
-                );
-                progress.unlockedNodes = repaired.unlockedNodes;
-            }
         }
 
-        return res.json({ success: true, progress });
-    } catch (err) {
-        console.error('[CAMPAIGN PROGRESS]', err);
-        return res.status(500).json({ success: false, message: 'Failed to load progress' });
+        const { progress, changed, updateFields } = sanitizeProgressData(
+            progressDoc,
+            activeNodeIds,
+            entryNodeIds
+        );
+
+        if (changed) {
+            await CampaignProgress.updateOne({ userId }, { $set: updateFields });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: progress,
+            progress,
+        });
+    } catch (error) {
+        console.error('[CAMPAIGN PROGRESS] Failed to fetch campaign progress:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch campaign data',
+            error: error.message,
+        });
     }
 };
 
@@ -98,7 +198,14 @@ export const getNodeDetails = async (req, res) => {
         const userId = req.user._id;
 
         // Verify node is unlocked for this user
-        const progress = await CampaignProgress.findOne({ userId }).lean();
+        let progress = req.campaignProgress || await CampaignProgress.findOne({ userId }).lean();
+        if (!progress) {
+            progress = {
+                userId,
+                unlockedNodes: await getEntryNodeIds(),
+                completedNodes: [],
+            };
+        }
         const node = await CampaignMap.findOne({ nodeId, isActive: true })
             .populate({
                 path: 'problemId',
@@ -107,6 +214,13 @@ export const getNodeDetails = async (req, res) => {
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
+        }
+
+        if (!node.problemId) {
+            return res.status(409).json({
+                success: false,
+                message: 'Problem data missing for this campaign node',
+            });
         }
 
         const isUnlocked = Boolean(progress && (progress.unlockedNodes ?? []).includes(nodeId));
@@ -122,7 +236,7 @@ export const getNodeDetails = async (req, res) => {
         problem.testCases = (problem.testCases ?? []).filter(tc => tc.isPublic);
 
         // Check if user has already completed this node
-        const existingCompletion = progress.completedNodes?.find(n => n.nodeId === nodeId);
+        const existingCompletion = progress?.completedNodes?.find(n => n.nodeId === nodeId);
 
         return res.json({
             success: true,
@@ -156,17 +270,28 @@ export const submitCampaignSolution = async (req, res) => {
         }
 
         // 1. Verify this node is unlocked for the user
-        const progress = await CampaignProgress.findOne({ userId });
+        let progress = req.campaignProgress || await CampaignProgress.findOne({ userId });
         const entryNodeIds = await getEntryNodeIds();
-        if (progress) {
-            ensureEntryNodesUnlocked(progress, entryNodeIds);
+        if (!progress) {
+            progress = await CampaignProgress.create({
+                userId,
+                unlockedNodes: entryNodeIds,
+            });
         }
+        ensureEntryNodesUnlocked(progress, entryNodeIds);
 
         const node = await CampaignMap.findOne({ nodeId, isActive: true })
             .populate('problemId', 'testCases goldenSolution prerequisites nodeOrder isEntryNode');
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
+        }
+
+        if (!node.problemId) {
+            return res.status(409).json({
+                success: false,
+                message: 'Problem data missing for this campaign node',
+            });
         }
 
         const isUnlocked = Boolean(progress && (progress.unlockedNodes ?? []).includes(nodeId));
