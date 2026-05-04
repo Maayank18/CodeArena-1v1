@@ -45,12 +45,16 @@ const getNodeTitle = (node) =>
   node?.title ||
   'Unknown Challenge';
 
+const isGuaranteedEntryNode = (node) =>
+  Boolean(node?.isEntryNode) ||
+  (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
+  node?.nodeNum === 1 ||
+  node?.nodeOrder === 1 ||
+  node?.localIndex === 0;
+
 const getState = (node, progress, isFirstNodeFallback = false) => {
   const nodeId = node?.nodeId;
-  const isRootNode =
-    Boolean(node?.isEntryNode) ||
-    (Array.isArray(node?.prerequisites) && node.prerequisites.length === 0) ||
-    node?.nodeNum === 1;
+  const isRootNode = isGuaranteedEntryNode(node);
 
   if (!progress) {
     return isFirstNodeFallback || isRootNode ? { state: 'available' } : { state: 'locked' };
@@ -230,7 +234,17 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
 }) {
   const { x, y } = node.localPos ?? getLocalNodePos(node.localIndex ?? 0);
   const isBoss = node.nodeType === 'boss';
-  const isInteractive = !node.isPlaceholder && node.hasProblemData !== false && nodeState.state !== 'locked';
+  const effectiveNodeState = useMemo(() => {
+    if (isGuaranteedEntryNode(node) && nodeState.state === 'locked') {
+      return { ...nodeState, state: 'available' };
+    }
+
+    return nodeState;
+  }, [node, nodeState]);
+  const isInteractive =
+    !node.isPlaceholder &&
+    node.hasProblemData !== false &&
+    effectiveNodeState.state !== 'locked';
 
   const handleClick = useCallback(() => {
     if (isInteractive) {
@@ -251,9 +265,9 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
       {isBoss ? (
         <BossNode
           bossType={node.bossType}
-          isLocked={nodeState.state === 'locked'}
-          isDone={nodeState.state === 'completed'}
-          stars={nodeState.starsAwarded ?? 0}
+          isLocked={effectiveNodeState.state === 'locked'}
+          isDone={effectiveNodeState.state === 'completed'}
+          stars={effectiveNodeState.starsAwarded ?? 0}
           onClick={handleClick}
           title={getNodeTitle(node)}
           isMobile={isMobile}
@@ -261,7 +275,7 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
       ) : (
         <StandardNode
           node={node}
-          state={nodeState}
+          state={effectiveNodeState}
           accent={accent}
           onClick={handleClick}
         />

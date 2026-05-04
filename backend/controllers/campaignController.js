@@ -100,6 +100,19 @@ const sanitizeProgressData = (progressLike, validNodeIds, entryNodeIds) => {
     };
 };
 
+const ensureRootNodesUnlockedForNewUsers = (progress, entryNodeIds) => {
+    const safeProgress = progress ?? {};
+    const hasSolvedChallenges = Array.isArray(safeProgress.completedNodes) && safeProgress.completedNodes.length > 0;
+
+    if (!hasSolvedChallenges) {
+        const repaired = ensureEntryNodesUnlocked(safeProgress, entryNodeIds);
+        safeProgress.unlockedNodes = repaired.unlockedNodes;
+        return { changed: repaired.changed, progress: safeProgress };
+    }
+
+    return { changed: false, progress: safeProgress };
+};
+
 // ────────────────────────────────────────────────────────────────────────────
 // GET /api/campaign/map
 // Returns full static map. Heavily cached.
@@ -168,15 +181,24 @@ export const getCampaignProgress = async (req, res) => {
             activeNodeIds,
             entryNodeIds
         );
+        const rootUnlockState = ensureRootNodesUnlockedForNewUsers(progress, entryNodeIds);
+        const finalProgress = rootUnlockState.progress;
 
-        if (changed) {
-            await CampaignProgress.updateOne({ userId }, { $set: updateFields });
+        if (changed || rootUnlockState.changed) {
+            await CampaignProgress.updateOne({
+                userId,
+            }, {
+                $set: {
+                    ...updateFields,
+                    unlockedNodes: finalProgress.unlockedNodes,
+                },
+            });
         }
 
         return res.status(200).json({
             success: true,
-            data: progress,
-            progress,
+            data: finalProgress,
+            progress: finalProgress,
         });
     } catch (error) {
         console.error('[CAMPAIGN PROGRESS] Failed to fetch campaign progress:', error);

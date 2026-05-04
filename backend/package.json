@@ -9,6 +9,7 @@
     "yjs": "node run-yjs.cjs",
     "seed": "node seeder.js",
     "flush-local-db": "node flushLocalDb.js",
+    "migrate-campaign-entry-nodes": "node migrations/backfillCampaignEntryNodes.js",
     "reset-password": "node resetUserPassword.js",
     "audit-auth-users": "node sanitizeAuthUsers.js audit"
   },
