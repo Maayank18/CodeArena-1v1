@@ -98,7 +98,8 @@ const Campaign = () => {
 
           if (cancelledRef.current) return;
 
-          const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
+          const mapDataArray = Array.isArray(mapRes.data?.map) ? mapRes.data.map : mapRes.data;
+          const normalizedMap = normalizeCampaignNodes(mapDataArray);
           setMapData(normalizedMap);
           setHasLiveMapData(true);
           window.history.replaceState({}, document.title);
@@ -112,7 +113,8 @@ const Campaign = () => {
 
         if (cancelledRef.current) return;
 
-        const normalizedMap = normalizeCampaignNodes(mapRes.data);
+        const mapDataArray = Array.isArray(mapRes.data?.map) ? mapRes.data.map : mapRes.data;
+        const normalizedMap = normalizeCampaignNodes(mapDataArray);
         setMapData(normalizedMap);
         setProgress(progRes.data?.progress ?? progRes.data);
         setHasLiveMapData(true);
