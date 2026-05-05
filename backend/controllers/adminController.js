@@ -504,19 +504,32 @@ const buildProblemPayload = (raw = {}) => {
     const hasCampaignData = (campaignRegion !== undefined && !Number.isNaN(campaignRegion)) || 
                            (campaignNodeId !== undefined && campaignNodeId.trim().length > 0);
 
-    // 2. Determine Type
-    // If user explicitly sent a type, we validate/normalize it.
-    // If no type sent, but we have campaign data, we infer 'campaign'.
+    // 2. Determine Type - CRITICAL FIX
+    // Parse the raw type value: it could be undefined, empty string, 'campaign', 'battle', or malformed
     const rawType = typeof raw.type === 'string' ? raw.type.trim().toLowerCase() : '';
-    const hasExplicitType = rawType === 'battle' || rawType === 'campaign';
+    const isExplicitCampaign = rawType === 'campaign';
+    const isExplicitBattle = rawType === 'battle';
+    const hasExplicitType = isExplicitCampaign || isExplicitBattle;
 
-    const type = normalizeProblemType(
-        !hasExplicitType && hasCampaignData
-            ? 'campaign'
-            : raw.type
-    );
+    // Decision logic:
+    // 1. If type is explicitly 'campaign', honor it (and later validate campaign fields are present)
+    // 2. If type is explicitly 'battle', honor it (and clear campaign fields)
+    // 3. If type is not explicit but campaign fields exist, infer 'campaign'
+    // 4. Otherwise, default to 'battle'
+    let resolvedType;
+    if (isExplicitCampaign) {
+        resolvedType = 'campaign';
+    } else if (isExplicitBattle) {
+        resolvedType = 'battle';
+    } else if (hasCampaignData) {
+        resolvedType = 'campaign';
+    } else {
+        resolvedType = 'battle';
+    }
 
-    // 3. Type-Specific Validation
+    const type = resolvedType;
+
+    // 3. Type-Specific Validation - CRITICAL: Ensure consistency
     if (type === 'campaign') {
         if (campaignRegion === undefined || Number.isNaN(campaignRegion)) {
             throw new Error('Campaign problems require a valid region number');
@@ -524,7 +537,7 @@ const buildProblemPayload = (raw = {}) => {
         if (!campaignNodeId || campaignNodeId.trim().length === 0) {
             throw new Error('Campaign problems require a target node ID');
         }
-    } else if (hasCampaignData) {
+    } else if (hasCampaignData && type !== 'campaign') {
         // If it resolved to battle but has campaign data, it's a mismatch
         throw new Error('Problem type mismatch: campaign fields were provided but type resolved to battle');
     }
