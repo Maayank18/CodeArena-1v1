@@ -939,19 +939,21 @@ export const createProblem = async (req, res) => {
 
         await verifyAdmin(req.body.username);
 
-        const payload = buildProblemPayload(req.body);
-        console.log('[Admin] Resolved problem payload for creation:', {
-            title: payload.title,
-            type: payload.type,
-            campaignRegion: payload.campaignRegion,
-            campaignNodeId: payload.campaignNodeId
-        });
-
         const {
-            title, slug, description, difficulty, type, campaignRegion,
-            campaignNodeId, constraints, timeLimit, memoryLimit,
-            goldenSolution, starterCode, testCases
-        } = payload;
+            title, 
+            slug, 
+            description, 
+            difficulty = 'Easy', 
+            type = 'battle', 
+            campaignRegion,
+            campaignNodeId, 
+            constraints = [], 
+            timeLimit = 5000, 
+            memoryLimit = 512,
+            goldenSolution, 
+            starterCode = {}, 
+            testCases = []
+        } = req.body;
 
         // Required field validation
         if (!title || !slug || !description) {
@@ -1035,31 +1037,39 @@ export const updateProblem = async (req, res) => {
         const existing = await Problem.findById(problemId).lean();
         if (!existing) return res.status(404).json({ message: 'Problem not found' });
 
-        const mergedInput = { ...existing, ...updateData };
-        const normalizedUpdate = buildProblemPayload(mergedInput);
+        const {
+            title,
+            description,
+            difficulty,
+            type,
+            campaignRegion,
+            campaignNodeId,
+            constraints,
+            timeLimit,
+            memoryLimit,
+            goldenSolution,
+            starterCode,
+            testCases
+        } = req.body;
 
-        if (updateData.title !== undefined) updateData.title = normalizedUpdate.title;
-        if (updateData.description !== undefined) updateData.description = normalizedUpdate.description;
-        if (updateData.difficulty !== undefined || updateData.type !== undefined) {
-            updateData.difficulty = normalizedUpdate.difficulty;
-            updateData.type = normalizedUpdate.type;
-        }
-        if (updateData.constraints !== undefined) updateData.constraints = normalizedUpdate.constraints;
-        if (updateData.timeLimit !== undefined) updateData.timeLimit = normalizedUpdate.timeLimit;
-        if (updateData.memoryLimit !== undefined) updateData.memoryLimit = normalizedUpdate.memoryLimit;
-        if (updateData.goldenSolution !== undefined) updateData.goldenSolution = normalizedUpdate.goldenSolution;
-        if (updateData.starterCode !== undefined) updateData.starterCode = normalizedUpdate.starterCode;
-        if (updateData.testCases !== undefined) updateData.testCases = normalizedUpdate.testCases;
-        // Sync normalized fields back to updateData to ensure they are persisted
-        updateData.type           = normalizedUpdate.type;
-        updateData.campaignRegion = normalizedUpdate.campaignRegion;
-        updateData.campaignNodeId = normalizedUpdate.campaignNodeId;
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (difficulty !== undefined) updateData.difficulty = difficulty;
+        if (type !== undefined) updateData.type = type;
+        if (campaignRegion !== undefined) updateData.campaignRegion = type === 'campaign' ? Number(campaignRegion) : undefined;
+        if (campaignNodeId !== undefined) updateData.campaignNodeId = type === 'campaign' ? String(campaignNodeId).trim() : undefined;
+        if (constraints !== undefined) updateData.constraints = constraints;
+        if (timeLimit !== undefined) updateData.timeLimit = timeLimit;
+        if (memoryLimit !== undefined) updateData.memoryLimit = memoryLimit;
+        if (goldenSolution !== undefined) updateData.goldenSolution = goldenSolution;
+        if (starterCode !== undefined) updateData.starterCode = starterCode;
+        if (testCases !== undefined) updateData.testCases = testCases;
 
-        // Note: normalizedUpdate already has undefined for campaign fields if type !== campaign.
+        // Note: updateData already has undefined for campaign fields if type !== campaign.
         // Mongoose findByIdAndUpdate with $set will not remove existing fields if they are undefined in the object.
         // So we explicitly use $unset if needed.
         const updateOperation = { $set: updateData };
-        if (normalizedUpdate.type !== 'campaign') {
+        if (type !== 'campaign' && type !== undefined) {
             updateOperation.$unset = {
                 campaignRegion: 1,
                 campaignNodeId: 1,

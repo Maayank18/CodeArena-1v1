@@ -28,7 +28,7 @@ const problemSchema = new mongoose.Schema({
     type: {
         type: String,
         enum: ['battle', 'campaign'],
-        required: true
+        default: 'battle'
     },
     campaignRegion: {
         type: Number,
