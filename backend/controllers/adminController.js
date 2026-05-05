@@ -944,6 +944,9 @@ export const createProblem = async (req, res) => {
         if (!title || !slug || !description) {
             return res.status(400).json({ message: 'Title, slug, and description are required' });
         }
+        if (!type) {
+            return res.status(400).json({ message: 'Problem type is required' });
+        }
         if (!goldenSolution?.trim()) {
             return res.status(400).json({ message: 'Golden solution is required' });
         }

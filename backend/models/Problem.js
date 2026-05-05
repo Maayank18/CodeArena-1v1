@@ -1,6 +1,7 @@
 // FILE: backend/models/Problem.js
 // OPTIMIZED VERSION - BACKWARD COMPATIBLE
 import mongoose from 'mongoose';
+console.log('[Model] Problem.js loaded');
 
 const problemSchema = new mongoose.Schema({
     title: {
@@ -27,8 +28,7 @@ const problemSchema = new mongoose.Schema({
     type: {
         type: String,
         enum: ['battle', 'campaign'],
-        required: true,
-        default: 'battle'
+        required: true
     },
     campaignRegion: {
         type: Number,

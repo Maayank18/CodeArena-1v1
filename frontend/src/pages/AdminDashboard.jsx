@@ -1801,11 +1801,19 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
 
             const payload = {
                 username,
-                ...formData,
+                title: formData.title,
+                slug: formData.slug,
+                description: formData.description,
+                difficulty: formData.difficulty,
                 type: resolvedProblemType,
                 campaignRegion: resolvedProblemType === 'campaign' ? Number(formData.campaignRegion) : undefined,
                 campaignNodeId: resolvedProblemType === 'campaign' ? String(formData.campaignNodeId).trim() : undefined,
-                constraints: formData.constraints.filter(c=>c.trim()),
+                constraints: formData.constraints.filter(c => c && c.trim()),
+                timeLimit: formData.timeLimit,
+                memoryLimit: formData.memoryLimit,
+                goldenSolution: formData.goldenSolution,
+                starterCode: formData.starterCode,
+                testCases: formData.testCases
             };
             if (isEditing) {
                 await api.post(`/admin/problems/${problem._id}/update`, payload);
