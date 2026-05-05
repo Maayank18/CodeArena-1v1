@@ -1057,14 +1057,6 @@ export const updateProblem = async (req, res) => {
             if (validationError) return res.status(400).json({ message: validationError });
         }
 
-        const updateOperation = { $set: updateData };
-        if (normalizedUpdate.type !== 'campaign') {
-            updateOperation.$unset = {
-                campaignRegion: 1,
-                campaignNodeId: 1,
-            };
-        }
-
         const problem = await Problem.findByIdAndUpdate(
             problemId,
             updateOperation,
