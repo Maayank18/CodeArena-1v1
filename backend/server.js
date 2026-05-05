@@ -684,6 +684,56 @@ const roomTimers = new Map();
 const problemCache = new Map();
 const PROBLEM_CACHE_TTL = 5 * 60 * 1000;
 
+const loadBattleProblemIdsForRoom = async () => {
+  const cacheKey = 'random_problems_2';
+  const cached = problemCache.get(cacheKey);
+  let problemDocs = null;
+
+  if (cached && (Date.now() - cached.timestamp) < PROBLEM_CACHE_TTL) {
+    problemDocs = cached.problems;
+  } else {
+    problemDocs = await Problem.aggregate([
+      { $match: { type: 'battle' } },
+      { $sample: { size: 2 } },
+      { $project: { _id: 1 } }
+    ]);
+  }
+
+  const normalizedIds = (problemDocs ?? [])
+    .map((problem) => problem?._id?.toString?.())
+    .filter(Boolean);
+
+  const uniqueIds = [...new Set(normalizedIds)];
+
+  if (uniqueIds.length === 0) {
+    problemCache.delete(cacheKey);
+    return [];
+  }
+
+  const existingDocs = await Problem.find({
+    _id: { $in: uniqueIds },
+    type: 'battle'
+  })
+    .select('_id')
+    .lean();
+
+  const existingIds = existingDocs.map((problem) => problem._id.toString());
+
+  if (existingIds.length === 0) {
+    problemCache.delete(cacheKey);
+    return [];
+  }
+
+  problemCache.set(cacheKey, {
+    problems: existingIds.map((_id) => ({ _id })),
+    timestamp: Date.now()
+  });
+
+  return existingIds.length === 1
+    ? [existingIds[0], existingIds[0]]
+    : existingIds.slice(0, 2);
+};
+
 // ✅ SEASON POINTS CALCULATOR (unchanged)
 const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmitted) => {
     if (playerData.isCheater) return -20;
@@ -964,26 +1014,14 @@ io.on('connection', async (socket) => {
 
       // Create room if doesn't exist
       if (!rooms.has(roomId)) {
-        // ✅ Fetch problems with caching
-        let problemDocs;
-        const cacheKey = 'random_problems_2';
-        const cached = problemCache.get(cacheKey);
+        const problemIds = await loadBattleProblemIdsForRoom();
 
-        if (cached && (Date.now() - cached.timestamp) < PROBLEM_CACHE_TTL) {
-          problemDocs = cached.problems;
-        } else {
-          problemDocs = await Problem.aggregate([
-            { $sample: { size: 2 } },
-            { $project: { _id: 1 } }
-          ]);
-          
-          problemCache.set(cacheKey, {
-            problems: problemDocs,
-            timestamp: Date.now()
+        if (problemIds.length === 0) {
+          socket.emit('error', {
+            message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
           });
+          return;
         }
-
-        const problemIds = problemDocs.map(p => p._id.toString());
         
         rooms.set(roomId, { 
             players: [], 
@@ -1031,9 +1069,30 @@ io.on('connection', async (socket) => {
 
       // Fetch current problem
       const currentProblemId = room.problemIds[room.round - 1];
-      const problem = await Problem.findById(currentProblemId)
+      let problem = await Problem.findById(currentProblemId)
         .select('-goldenSolution')
         .lean();
+
+      if (!problem) {
+        const fallbackProblemIds = await loadBattleProblemIdsForRoom();
+
+        if (fallbackProblemIds.length === 0) {
+          socket.emit('error', {
+            message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
+          });
+          return;
+        }
+
+        room.problemIds = fallbackProblemIds;
+        problem = await Problem.findById(room.problemIds[room.round - 1])
+          .select('-goldenSolution')
+          .lean();
+      }
+
+      if (!problem) {
+        socket.emit('error', { message: 'Failed to load a valid Battle Arena problem.' });
+        return;
+      }
 
       socket.emit('room_joined', {
         roomId, side, username, 
@@ -1086,9 +1145,29 @@ io.on('connection', async (socket) => {
                   room.roundCompletions.clear();
                   
                   const nextProblemId = room.problemIds[room.round - 1];
-                  const nextProblem = await Problem.findById(nextProblemId)
+                  let nextProblem = await Problem.findById(nextProblemId)
                     .select('-goldenSolution')
                     .lean();
+
+                  if (!nextProblem) {
+                    const fallbackProblemIds = await loadBattleProblemIdsForRoom();
+                    if (fallbackProblemIds.length === 0) {
+                      io.to(roomId).emit('error', {
+                        message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
+                      });
+                      return;
+                    }
+
+                    room.problemIds = fallbackProblemIds;
+                    nextProblem = await Problem.findById(room.problemIds[room.round - 1])
+                      .select('-goldenSolution')
+                      .lean();
+                  }
+
+                  if (!nextProblem) {
+                    io.to(roomId).emit('error', { message: 'Failed to load the next Battle Arena problem.' });
+                    return;
+                  }
                   
                   io.to(roomId).emit('new_round', {
                       round: room.round, 

@@ -19,7 +19,7 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
     icon,
     weather,
     bgGrad,
-    groundColor,
+    ground,
     accent,
     path: pathColor,
     titleGrad,
@@ -99,19 +99,19 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
           }}
         />
 
-        <WeatherEffect type={weather} zoneId={id} primary={accent} />
+        <WeatherEffect type={weather} zoneId={id} accent={accent} />
 
         <div
           className="absolute bottom-0 left-0 right-0"
           style={{
             height: groundH,
-            background: groundColor,
+            background: ground,
             borderRadius: '0 0 20px 20px',
           }}
         >
           <div
             className="absolute top-0 left-0 right-0 h-12"
-            style={{ background: `linear-gradient(180deg, transparent, ${groundColor})` }}
+            style={{ background: `linear-gradient(180deg, transparent, ${ground})` }}
           />
           {(decorations || []).map((d, i) => (
             <span
@@ -232,4 +232,3 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
 };
 
 export default React.memo(ZoneContainer);
-// V 1.5

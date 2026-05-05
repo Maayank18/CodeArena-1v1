@@ -1,7 +1,7 @@
 // backend/controllers/campaignController.js
-
 import CampaignMap      from '../models/CampaignMap.js';
 import CampaignProgress from '../models/CampaignProgress.js';
+import Problem from '../models/Problem.js';
 import { executeForCampaign } from '../services/campaignExecutor.js';
 import { calculateStars, calculateKP, shouldUpdateNode } from '../services/starCalculator.js';
 import { outputsMatch } from '../utils/sanitizeOutput.js';
@@ -17,7 +17,63 @@ import {
 let mapCache = null;
 let mapCacheTime = 0;
 const MAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const MAP_POPULATE_SELECT = 'title slug difficulty timeLimit constraints';
+const NODE_ID_PATTERN = /node-(\d+)$/i;
+
+const parseCampaignNodeOrder = (campaignNodeId) => {
+    const match = String(campaignNodeId ?? '').match(NODE_ID_PATTERN);
+    return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+};
+
+const compareCampaignProblems = (a, b) => {
+    const regionDiff = (Number(a?.campaignRegion) || 0) - (Number(b?.campaignRegion) || 0);
+    if (regionDiff !== 0) return regionDiff;
+
+    const nodeDiff = parseCampaignNodeOrder(a?.campaignNodeId) - parseCampaignNodeOrder(b?.campaignNodeId);
+    if (nodeDiff !== 0) return nodeDiff;
+
+    return String(a?.campaignNodeId ?? '').localeCompare(String(b?.campaignNodeId ?? ''));
+};
+
+const buildCampaignProblemNodes = (problems) =>
+    (Array.isArray(problems) ? problems : []).map((problem, index) => {
+        const regionOrder = Number(problem.campaignRegion) || 1;
+        const nodeOrder = index + 1;
+        const column = index % 4;
+        const row = Math.floor(index / 4);
+
+        return {
+            _id: problem._id,
+            nodeId: problem.campaignNodeId,
+            region: `Region ${regionOrder}`,
+            regionOrder,
+            nodeOrder,
+            nodeType: 'standard',
+            prerequisites: [],
+            isEntryNode: index === 0,
+            mapPosition: {
+                x: 180 + (column * 220),
+                y: 180 + (row * 180),
+            },
+            rewards: {
+                oneStarKP: 10,
+                twoStarKP: 20,
+                threeStarKP: 35,
+                lootPool: [],
+            },
+            starThresholds: {
+                twoStarTimeMs: problem.timeLimit ?? 5000,
+                threeStarTimeMs: Math.max(1000, Math.floor((problem.timeLimit ?? 5000) * 0.7)),
+            },
+            problemId: {
+                _id: problem._id,
+                title: problem.title,
+                slug: problem.slug,
+                difficulty: problem.difficulty,
+                timeLimit: problem.timeLimit,
+                constraints: problem.constraints,
+            },
+        };
+    });
 
 const toPlainObject = (value) =>
     value && typeof value.toObject === 'function' ? value.toObject() : value;
@@ -126,38 +182,13 @@ const ensureRootNodesUnlockedForNewUsers = (progress, entryNodeIds) => {
 // ────────────────────────────────────────────────────────────────────────────
 export const getCampaignMap = async (req, res) => {
     try {
-        const now = Date.now();
-        if (mapCache && (now - mapCacheTime) < MAP_CACHE_TTL) {
-            return res.status(200).json({
-                success: true,
-                data: mapCache,
-                map: mapCache,
-                cached: true,
-            });
-        }
-
-        const nodes = await CampaignMap.find({ isActive: true })
-            .populate({
-                path: 'problemId',
-                select: MAP_POPULATE_SELECT,
-                strictPopulate: false,
-            })
-            .sort({ regionOrder: 1, nodeOrder: 1 })
-            .lean();
-
-        mapCache = sanitizeMapData(nodes);
-        mapCacheTime = now;
-
-        return res.status(200).json({
-            success: true,
-            data: mapCache,
-            map: mapCache,
-        });
+        const problems = await Problem.find({ type: 'campaign' });
+        return res.status(200).json(problems);
     } catch (error) {
-        console.error('[CAMPAIGN MAP] Failed to fetch campaign data:', error);
+        console.error('[CAMPAIGN MAP] Failed to fetch campaign problems:', error);
         return res.status(500).json({
             success: false,
-            message: 'Failed to fetch campaign data',
+            message: 'Failed to fetch campaign problems',
             error: error.message,
         });
     }
@@ -171,8 +202,10 @@ export const getCampaignProgress = async (req, res) => {
     try {
         const userId = req.user._id;
         const entryNodeIds = await getEntryNodeIds();
-        const activeNodes = await CampaignMap.find({ isActive: true }).select('nodeId').lean();
-        const activeNodeIds = activeNodes.map((node) => node.nodeId).filter(Boolean);
+        const activeProblems = await Problem.find({ type: 'campaign' })
+            .select('campaignNodeId')
+            .lean();
+        const activeNodeIds = activeProblems.map((problem) => problem.campaignNodeId).filter(Boolean);
 
         let progressDoc = req.campaignProgress || await CampaignProgress.findOne({ userId });
 
@@ -235,21 +268,11 @@ export const getNodeDetails = async (req, res) => {
                 completedNodes: [],
             };
         }
-        const node = await CampaignMap.findOne({ nodeId, isActive: true })
-            .populate({
-                path: 'problemId',
-                select: 'title description difficulty constraints testCases starterCode timeLimit memoryLimit'
-            });
+        const node = await Problem.findOne({ campaignNodeId: nodeId, type: 'campaign' })
+            .select('title description difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds');
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
-        }
-
-        if (!node.problemId) {
-            return res.status(409).json({
-                success: false,
-                message: 'Problem data missing for this campaign node',
-            });
         }
 
         const isUnlocked = Boolean(progress && (progress.unlockedNodes ?? []).includes(nodeId));
@@ -261,7 +284,7 @@ export const getNodeDetails = async (req, res) => {
         }
 
         // Only send PUBLIC test cases to frontend
-        const problem = node.problemId.toObject();
+        const problem = node.toObject();
         problem.testCases = (problem.testCases ?? []).filter(tc => tc.isPublic);
 
         // Check if user has already completed this node
@@ -270,7 +293,7 @@ export const getNodeDetails = async (req, res) => {
         return res.json({
             success: true,
             node: {
-                ...node.toObject(),
+                ...problem,
                 problemId: problem
             },
             existingCompletion: existingCompletion || null,
@@ -309,18 +332,11 @@ export const submitCampaignSolution = async (req, res) => {
         }
         ensureEntryNodesUnlocked(progress, entryNodeIds);
 
-        const node = await CampaignMap.findOne({ nodeId, isActive: true })
-            .populate('problemId', 'testCases goldenSolution prerequisites nodeOrder isEntryNode');
+        const node = await Problem.findOne({ campaignNodeId: nodeId, type: 'campaign' })
+            .select('title slug description difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds goldenSolution');
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
-        }
-
-        if (!node.problemId) {
-            return res.status(409).json({
-                success: false,
-                message: 'Problem data missing for this campaign node',
-            });
         }
 
         const isUnlocked = Boolean(progress && (progress.unlockedNodes ?? []).includes(nodeId));
@@ -331,7 +347,7 @@ export const submitCampaignSolution = async (req, res) => {
             });
         }
 
-        const allTestCases = node.problemId?.testCases ?? []; // both public + hidden
+        const allTestCases = node.testCases ?? [];
 
         // 3. Increment attempt count BEFORE execution
         progress.totalAttempts = (progress.totalAttempts ?? 0) + 1;
@@ -400,7 +416,7 @@ export const submitCampaignSolution = async (req, res) => {
             progress.totalStars      = (progress.totalStars || 0) + stars;
 
             // Boss node loot drop
-            if (node.nodeType === 'boss' && node.rewards?.lootPool?.length > 0) {
+            if (node.rewards?.lootPool?.length > 0) {
                 const rolled = Math.random();
                 let cumulative = 0;
                 for (const loot of node.rewards.lootPool) {
@@ -432,16 +448,20 @@ export const submitCampaignSolution = async (req, res) => {
 
         // ✅ FIX: DECOUPLED UNLOCK LOGIC 
         // We now check for new unlocks on EVERY successful pass (first-time OR improvement)
-        const allNodes  = await CampaignMap.find({ isActive: true }).lean();
-        newlyUnlockedNodes = allNodes
-            .filter(n => 
-                !progress.unlockedNodes.includes(n.nodeId) &&
-                (n.prerequisites ?? []).every(prereq => 
-                    progress.completedNodes.some(c => c.nodeId === prereq) ||
-                    nodeId === prereq // Count the current node as completed
-                )
-            )
-            .map(n => n.nodeId);
+        const allNodes = await Problem.find({ type: 'campaign' })
+            .select('campaignRegion campaignNodeId')
+            .lean();
+        const orderedNodes = allNodes
+            .filter((entry) => entry?.campaignNodeId)
+            .sort(compareCampaignProblems);
+        const currentNodeIndex = orderedNodes.findIndex((entry) => entry.campaignNodeId === nodeId);
+        const nextNodeId = currentNodeIndex >= 0
+            ? orderedNodes[currentNodeIndex + 1]?.campaignNodeId
+            : null;
+
+        newlyUnlockedNodes = nextNodeId && !progress.unlockedNodes.includes(nextNodeId)
+            ? [nextNodeId]
+            : [];
 
         if (newlyUnlockedNodes.length > 0) {
             progress.unlockedNodes.push(...newlyUnlockedNodes);

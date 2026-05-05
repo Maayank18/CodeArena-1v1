@@ -5,7 +5,6 @@ import ZoneContainer from './ZoneContainer';
 import BossNode from './BossNode';
 import NodeDetailPanel from './NodeDetailPanel';
 import {
-  ZONE_CONFIGS,
   ZONE_W,
   ZONE_H,
   ZONE_GAP,
@@ -15,8 +14,19 @@ import {
   getLocalNodePos,
   generateMockWorld,
 } from './campaignWorldData';
+import { CAMPAIGN_REGIONS } from '../../data/campaignConfig';
 
 const REGION_TO_ZONE_ID = {
+  1: 'array_archipelago',
+  2: 'string_shores',
+  3: 'loop_lagoon',
+  4: 'sliding_window_sanctum',
+  5: 'hashmap_highlands',
+  6: 'stack_queue_quarry',
+  7: 'tree_tundra',
+  8: 'linked_labyrinth',
+  9: 'winter_carnival',
+  10: 'desert_dunes',
   Array_Archipelago: 'array_archipelago',
   String_Shores: 'string_shores',
   Loop_Lagoon: 'loop_lagoon',
@@ -26,18 +36,44 @@ const REGION_TO_ZONE_ID = {
   Tree_Territory: 'tree_tundra',
   Graph_Gorge: 'graph_gorge',
   DP_Dungeon: 'dp_dungeon',
+  11: 'graph_gorge',
+  12: 'dp_dungeon',
+  13: 'recursion_ruins',
+  14: 'regex_rainforest',
+  15: 'algorithm_alps',
 };
 
 const STAR_INDICES = [1, 2, 3];
-const ROOT_NODE_ID = 'aa_01';
+const ROOT_NODE_ID = 'region-1-node-01';
+const NODE_ID_PATTERN = /node-(\d+)$/i;
 
 const resolveZoneId = (node) => {
-  const raw = node?.zoneId || node?.region || '';
-  if (ZONE_CONFIGS.some((z) => z.id === raw)) return raw;
+  const regionValue = node?.campaignRegion ?? node?.regionOrder ?? node?.region;
+  const normalizedNumericRegion = Number(regionValue);
+  if (Number.isFinite(normalizedNumericRegion) && REGION_TO_ZONE_ID[normalizedNumericRegion]) {
+    return REGION_TO_ZONE_ID[normalizedNumericRegion];
+  }
+
+  const raw = node?.zoneId || regionValue || '';
+  if (CAMPAIGN_REGIONS.some((z) => z.key === raw || z.id === raw)) return raw;
   if (REGION_TO_ZONE_ID[raw]) return REGION_TO_ZONE_ID[raw];
-  const lower = raw.toLowerCase().replace(/ /g, '_');
-  const found = ZONE_CONFIGS.find((z) => z.id === lower || z.id.includes(lower));
-  return found ? found.id : null;
+  const lower = String(raw).toLowerCase().replace(/ /g, '_');
+  const found = CAMPAIGN_REGIONS.find((z) => z.key === lower || z.key.includes(lower));
+  return found ? found.key : null;
+};
+
+const parseNodeOrder = (node) => {
+  const explicitOrder = Number(node?.nodeOrder ?? node?.nodeNum);
+  if (Number.isFinite(explicitOrder) && explicitOrder > 0) {
+    return explicitOrder;
+  }
+
+  const match = String(node?.campaignNodeId ?? node?.nodeId ?? '').match(NODE_ID_PATTERN);
+  if (match) {
+    return Number(match[1]);
+  }
+
+  return 1;
 };
 
 const getNodeTitle = (node) =>
@@ -290,7 +326,9 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
         transform: 'translate(-50%,-50%)',
         zIndex: isBoss ? 30 : 20,
         touchAction: 'manipulation',
+        cursor: isInteractive ? 'pointer' : 'not-allowed',
       }}
+      onClick={handleClick}
     >
       {isBoss ? (
         <BossNode
@@ -363,15 +401,15 @@ const WorldMapScene = React.memo(function WorldMapScene({
 
   const nodesByZone = useMemo(() => {
     const map = {};
-    ZONE_CONFIGS.forEach((zone) => {
-      map[zone.id] = [];
+    CAMPAIGN_REGIONS.forEach((zone) => {
+      map[zone.key] = [];
     });
 
     allNodes.forEach((node) => {
       const zoneId = resolveZoneId(node);
       if (!zoneId || !map[zoneId]) return;
 
-      const sequenceNum = node.nodeOrder ?? node.nodeNum ?? 1;
+      const sequenceNum = parseNodeOrder(node);
       const rawIndex = node.localIndex ?? Math.max(0, sequenceNum - 1);
       const safeIndex = Math.min(14, Math.max(0, rawIndex));
       const localPos = node.localPos || getLocalNodePos(safeIndex);
@@ -395,18 +433,34 @@ const WorldMapScene = React.memo(function WorldMapScene({
   const displayNodesByZone = useMemo(() => {
     const map = {};
 
-    ZONE_CONFIGS.forEach((zone, zoneIndex) => {
-      const zoneNodes = nodesByZone[zone.id] ?? [];
+    CAMPAIGN_REGIONS.forEach((zone, zoneIndex) => {
+      const zoneNodes = nodesByZone[zone.key] ?? [];
 
-      map[zone.id] = Array.from({ length: 15 }, (_, nodeIndex) => {
-        const found = zoneNodes.find((node) => node.nodeNum === nodeIndex + 1 || node.localIndex === nodeIndex);
+      map[zone.key] = Array.from({ length: 15 }, (_, nodeIndex) => {
+        const currentRegionId = zone.id;
+        const currentNodeId = `region-${currentRegionId}-node-${String(nodeIndex + 1).padStart(2, '0')}`;
+        const found = zoneNodes.find((node) => {
+          const candidateRegion = Number(node?.campaignRegion ?? node?.regionOrder);
+          const candidateNodeId = node?.campaignNodeId ?? node?.nodeId;
+
+          return (
+            (candidateRegion === currentRegionId && candidateNodeId === currentNodeId) ||
+            node?.nodeNum === nodeIndex + 1 ||
+            node?.localIndex === nodeIndex
+          );
+        });
+
         return found ?? {
-          nodeId: `${zone.id}_${nodeIndex + 1}_ph`,
+          nodeId: `${zone.key}_${nodeIndex + 1}_locked`,
+          campaignNodeId: currentNodeId,
           nodeNum: nodeIndex + 1,
+          nodeOrder: nodeIndex + 1,
           localIndex: nodeIndex,
           nodeType: nodeIndex === MID_BOSS_IDX || nodeIndex === MAIN_BOSS_IDX ? 'boss' : 'standard',
           bossType: nodeIndex === MID_BOSS_IDX ? 'mid' : nodeIndex === MAIN_BOSS_IDX ? 'main' : null,
-          region: zone.id,
+          region: zone.key,
+          campaignRegion: currentRegionId,
+          regionOrder: currentRegionId,
           zoneIndex,
           localPos: getLocalNodePos(nodeIndex),
           problem: { title: `Challenge ${nodeIndex + 1}` },
@@ -422,7 +476,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
 
   const nodeStateById = useMemo(() => {
     const stateMap = {};
-    const firstZoneFirstNodeId = displayNodesByZone[ZONE_CONFIGS[0]?.id]?.[0]?.nodeId ?? null;
+    const firstZoneFirstNodeId = displayNodesByZone[CAMPAIGN_REGIONS[0]?.key]?.[0]?.nodeId ?? null;
     const unlockedIds = progress?.unlockedNodes ?? [];
     const allIds = new Set(allNodes.map((node) => node.nodeId).filter(Boolean));
     const mockIdMismatch = unlockedIds.length > 0 && !unlockedIds.some((id) => allIds.has(id));
@@ -431,11 +485,11 @@ const WorldMapScene = React.memo(function WorldMapScene({
       (progress?.completedNodes ?? []).map((entry) => [entry.nodeId, entry.starsAwarded ?? 0])
     );
 
-    ZONE_CONFIGS.forEach((zone, zoneIndex) => {
-      const zoneNodes = displayNodesByZone[zone.id] ?? [];
-      const previousZone = zoneIndex > 0 ? ZONE_CONFIGS[zoneIndex - 1] : null;
+    CAMPAIGN_REGIONS.forEach((zone, zoneIndex) => {
+      const zoneNodes = displayNodesByZone[zone.key] ?? [];
+      const previousZone = zoneIndex > 0 ? CAMPAIGN_REGIONS[zoneIndex - 1] : null;
       const previousZoneBossNode = previousZone
-        ? (displayNodesByZone[previousZone.id] ?? []).find((node) => node.nodeNum === 15)
+        ? (displayNodesByZone[previousZone.key] ?? []).find((node) => node.nodeNum === 15)
         : null;
       const previousZoneBossCompleted = previousZoneBossNode
         ? completedSet.has(previousZoneBossNode.nodeId)
@@ -445,7 +499,8 @@ const WorldMapScene = React.memo(function WorldMapScene({
         const isFirstNodeFallback =
           mockIdMismatch &&
           zoneIndex === 0 &&
-          node.nodeId === firstZoneFirstNodeId;
+          node.nodeId === firstZoneFirstNodeId &&
+          node.hasProblemData !== false;
 
         stateMap[node.nodeId] = node.isPlaceholder || node.hasProblemData === false
           ? { state: 'locked', starsAwarded: 0 }
@@ -468,11 +523,11 @@ const WorldMapScene = React.memo(function WorldMapScene({
   );
 
   const zoneTops = useMemo(
-    () => ZONE_CONFIGS.map((_, index) => index * (ZONE_H + ZONE_GAP)),
+    () => CAMPAIGN_REGIONS.map((_, index) => index * (ZONE_H + ZONE_GAP)),
     []
   );
 
-  const canvasH = ZONE_CONFIGS.length * (ZONE_H + ZONE_GAP);
+  const canvasH = CAMPAIGN_REGIONS.length * (ZONE_H + ZONE_GAP);
 
   const mapScale = useMemo(() => {
     const safePadding = viewportWidth < 640 ? 24 : viewportWidth < 1024 ? 48 : 80;
@@ -493,8 +548,8 @@ const WorldMapScene = React.memo(function WorldMapScene({
   }, []);
 
   const jumpToProgress = useCallback(() => {
-    const firstAvailableZoneIndex = ZONE_CONFIGS.findIndex((zone) => {
-      const zoneNodes = displayNodesByZone[zone.id] ?? [];
+    const firstAvailableZoneIndex = CAMPAIGN_REGIONS.findIndex((zone) => {
+      const zoneNodes = displayNodesByZone[zone.key] ?? [];
       return zoneNodes.some((node) => nodeStateById[node.nodeId]?.state === 'available');
     });
 
@@ -552,9 +607,9 @@ const WorldMapScene = React.memo(function WorldMapScene({
             className="absolute inset-0 pointer-events-none"
             style={{ width: ZONE_W, height: canvasH, zIndex: 15, overflow: 'visible' }}
           >
-            {ZONE_CONFIGS.slice(0, -1).map((zone, zoneIndex) => {
-              const nextZone = ZONE_CONFIGS[zoneIndex + 1];
-              const zoneNodes = displayNodesByZone[zone.id] ?? [];
+            {CAMPAIGN_REGIONS.slice(0, -1).map((zone, zoneIndex) => {
+              const nextZone = CAMPAIGN_REGIONS[zoneIndex + 1];
+              const zoneNodes = displayNodesByZone[zone.key] ?? [];
               const zoneBoss = zoneNodes.find((node) => node.nodeNum === 15);
               const lit = zoneBoss ? completedSet.has(zoneBoss.nodeId) : false;
 
@@ -572,13 +627,13 @@ const WorldMapScene = React.memo(function WorldMapScene({
             })}
           </svg>
 
-          {ZONE_CONFIGS.map((zone, zoneIndex) => {
-            const zoneNodes = displayNodesByZone[zone.id] ?? [];
+          {CAMPAIGN_REGIONS.map((zone, zoneIndex) => {
+            const zoneNodes = displayNodesByZone[zone.key] ?? [];
             const zoneTop = zoneTops[zoneIndex];
 
             return (
               <div
-                key={zone.id}
+                key={zone.key}
                 className="absolute"
                 style={{
                   left: 0,
@@ -619,14 +674,14 @@ const WorldMapScene = React.memo(function WorldMapScene({
           <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1.5">
             Zones
           </p>
-          {ZONE_CONFIGS.map((zone, index) => {
-            const zoneNodes = displayNodesByZone[zone.id] ?? [];
+          {CAMPAIGN_REGIONS.map((zone, index) => {
+            const zoneNodes = displayNodesByZone[zone.key] ?? [];
             const done = zoneNodes.filter((node) => completedSet.has(node.nodeId)).length;
             const total = zoneNodes.length || 15;
 
             return (
               <ZoneProgressButton
-                key={zone.id}
+                key={zone.key}
                 zone={{ ...zone, index }}
                 done={done}
                 total={total}
@@ -638,7 +693,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
         </div>
       </div>
 
-      <div className="absolute bottom-3 left-3 z-50 flex flex-col items-start gap-3 sm:bottom-5 sm:left-5 sm:gap-4">
+      <div className="absolute bottom-3 left-3 z-50 flex flex-col items-start gap-3 pointer-events-none sm:bottom-5 sm:left-5 sm:gap-4">
         <div className="pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-2.5 py-2 backdrop-blur-md hidden md:block">
           {[
             { col: '#374151', label: 'Locked' },

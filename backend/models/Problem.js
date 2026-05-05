@@ -163,6 +163,33 @@ const problemSchema = new mongoose.Schema({
         enum: ['Easy', 'Medium', 'Hard'],
         default: 'Easy'
     },
+    type: {
+        type: String,
+        enum: ['battle', 'campaign'],
+        required: true,
+        default: 'battle'
+    },
+    campaignRegion: {
+        type: Number,
+        validate: {
+            validator(value) {
+                if (this.type !== 'campaign') return true;
+                return Number.isInteger(value) && value > 0;
+            },
+            message: 'campaignRegion is required for campaign problems'
+        }
+    },
+    campaignNodeId: {
+        type: String,
+        trim: true,
+        validate: {
+            validator(value) {
+                if (this.type !== 'campaign') return true;
+                return typeof value === 'string' && value.trim().length > 0;
+            },
+            message: 'campaignNodeId is required for campaign problems'
+        }
+    },
     constraints: [{
         type: String
     }],
@@ -258,6 +285,14 @@ public class Main {
 // ✅ EXISTING INDEXES (kept for backward compatibility)
 problemSchema.index({ difficulty: 1 });
 problemSchema.index({ createdAt: -1 });
+problemSchema.index({ type: 1, difficulty: 1, createdAt: -1 });
+problemSchema.index(
+    { type: 1, campaignRegion: 1, campaignNodeId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { type: 'campaign' }
+    }
+);
 
 // ✅ NEW: Compound index for faster random problem selection
 // Used in: server.js line ~203 - Problem.aggregate([{ $sample: { size: 2 }}])

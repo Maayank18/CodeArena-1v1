@@ -1325,32 +1325,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ========================================================================
-// FILE: frontend/src/pages/AdminDashboard.jsx
-// COMPLETE UPGRADED VERSION - Full Admin Control Center
-// ========================================================================
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -1362,11 +1336,12 @@ import {
     ArrowDown, Target, HardDrive,
     Wifi, AlertCircle, Info, Layers,
     UserCheck, BarChart2, PieChart, TrendingDown,
-    Server, Radio
+    Server, Radio, Save as SaveIcon
 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
 import LiveUsersTable from '../components/LiveUsersTable';
+import { CAMPAIGN_REGIONS } from '../data/campaignConfig';
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -1386,6 +1361,19 @@ const DIFF_COLORS = {
     Easy:   { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
     Medium: { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/30'  },
     Hard:   { bg: 'bg-red-500/15',     text: 'text-red-400',     border: 'border-red-500/30'    },
+};
+
+const PROBLEM_TYPE_META = {
+    battle: {
+        label: 'Battle Arena (1v1)',
+        shortLabel: 'Battle Arena',
+        description: 'Randomized competitive problems used in live 1v1 rooms.',
+    },
+    campaign: {
+        label: 'Campaign Mode',
+        shortLabel: 'Campaign',
+        description: 'Region-based progression nodes surfaced on the campaign map.',
+    },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1522,6 +1510,8 @@ const AdminDashboard = () => {
     const [matchSearch, setMatchSearch]         = useState('');
     const [filterDiff, setFilterDiff]           = useState('all');
     const [filterDate, setFilterDate]           = useState('all');
+    const [problemView, setProblemView]         = useState('battle');
+    const [regionFilter, setRegionFilter]       = useState('all');
     const [userSort, setUserSort]               = useState({ field:'createdAt', dir:'desc' });
     const [matchSort, setMatchSort]             = useState({ field:'createdAt', dir:'desc' });
 
@@ -1715,11 +1705,38 @@ const AdminDashboard = () => {
         return sortedMatches.slice(start, start + PER_PAGE);
     }, [sortedMatches, matchPage]);
 
-    const filteredProblems = useMemo(() => problems.filter(p => {
+    const battleProblems = useMemo(
+        () => problems.filter((problem) => (problem.type || 'battle') === 'battle'),
+        [problems]
+    );
+
+    const campaignProblems = useMemo(
+        () => problems.filter((problem) => problem.type === 'campaign'),
+        [problems]
+    );
+
+    const campaignRegionOptions = useMemo(
+        () => CAMPAIGN_REGIONS.map(r => ({ id: r.id, name: r.name })),
+        []
+    );
+
+    const filteredProblems = useMemo(() => {
         const q = search.toLowerCase();
-        return (p.title?.toLowerCase().includes(q) || p.slug?.toLowerCase().includes(q)) &&
-            (filterDiff === 'all' || p.difficulty === filterDiff);
-    }), [problems, search, filterDiff]);
+        const source = problemView === 'campaign' ? campaignProblems : battleProblems;
+
+        return source.filter((problem) => {
+            const matchesSearch =
+                problem.title?.toLowerCase().includes(q) ||
+                problem.slug?.toLowerCase().includes(q) ||
+                problem.campaignNodeId?.toLowerCase().includes(q);
+            const matchesDifficulty = filterDiff === 'all' || problem.difficulty === filterDiff;
+            const matchesRegion = problemView !== 'campaign' ||
+                regionFilter === 'all' ||
+                String(problem.campaignRegion) === regionFilter;
+
+            return matchesSearch && matchesDifficulty && matchesRegion;
+        });
+    }, [battleProblems, campaignProblems, filterDiff, problemView, regionFilter, search]);
 
     const toggleSort = useCallback((field, type) => {
         if (type === 'user') setUserSort(s => ({ field, dir: s.field === field && s.dir === 'asc' ? 'desc' : 'asc' }));
@@ -2076,33 +2093,176 @@ const AdminDashboard = () => {
                             </button>
                         </div>
 
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-xl shadow-[0_18px_45px_rgba(0,0,0,0.28)]">
+                            <div className="grid gap-2 md:grid-cols-2">
+                                {Object.entries(PROBLEM_TYPE_META).map(([key, meta]) => {
+                                    const isActive = problemView === key;
+
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => {
+                                                setProblemView(key);
+                                                setRegionFilter('all');
+                                            }}
+                                            className={`rounded-xl border px-4 py-4 text-left transition-all ${
+                                                isActive
+                                                    ? 'border-emerald-400/40 bg-emerald-400/12 shadow-[0_12px_35px_rgba(74,222,128,0.12)]'
+                                                    : 'border-white/8 bg-black/10 hover:border-white/15 hover:bg-white/[0.06]'
+                                            }`}
+                                        >
+                                            <div className="mb-2 flex items-center justify-between gap-3">
+                                                <span className={`text-sm font-black ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                                                    {meta.label}
+                                                </span>
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                    isActive ? 'bg-emerald-400/15 text-emerald-300' : 'bg-gray-800/80 text-gray-500'
+                                                }`}>
+                                                    {key === 'battle' ? battleProblems.length : campaignProblems.length}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs leading-relaxed text-gray-500">{meta.description}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         {/* Problem stats */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {['Easy','Medium','Hard'].map(d => {
                                 const dc = DIFF_COLORS[d] || DIFF_COLORS.Easy;
+                                const source = problemView === 'campaign' ? campaignProblems : battleProblems;
                                 return (
                                     <div key={d} className={`${dc.bg} border ${dc.border} rounded-xl p-3.5`}>
-                                        <div className={`text-xl font-black ${dc.text}`}>{problems.filter(p=>p.difficulty===d).length}</div>
+                                        <div className={`text-xl font-black ${dc.text}`}>{source.filter(p=>p.difficulty===d).length}</div>
                                         <div className="text-xs text-gray-500 mt-0.5">{d} Problems</div>
                                     </div>
                                 );
                             })}
                             <div className="bg-gray-900/40 border border-gray-800/60 rounded-xl p-3.5">
-                                <div className="text-xl font-black text-white">{problems.reduce((a,p)=>a+(p.totalTestCount||0),0)}</div>
-                                <div className="text-xs text-gray-500 mt-0.5">Total Test Cases</div>
+                                <div className="text-xl font-black text-white">{filteredProblems.reduce((a,p)=>a+(p.totalTestCount||0),0)}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                    {problemView === 'campaign' ? 'Filtered Campaign Tests' : 'Battle Arena Test Cases'}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            {filteredProblems.map(p => (
-                                <ProblemCard key={p._id} problem={p}
-                                    onEdit={() => setEditingProblem(p)}
-                                    onDelete={() => handleDeleteProblem(p._id, p.title)}/>
-                            ))}
-                            {filteredProblems.length === 0 && (
-                                <div className="bg-gray-900/30 border border-gray-800/60 rounded-xl">
-                                    <EmptyState icon={Code} title="No problems found" sub="Add your first problem"/>
+                        <div className="rounded-2xl border border-gray-800/60 bg-gray-900/30 overflow-hidden">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/60 px-5 py-4">
+                                <div>
+                                    <h3 className="text-base font-bold text-white">{PROBLEM_TYPE_META[problemView].label}</h3>
+                                    <p className="text-xs text-gray-500">
+                                        {problemView === 'campaign'
+                                            ? 'Campaign nodes are grouped by region and target node ID.'
+                                            : 'Battle Arena pulls only competitive 1v1 problems into live rooms.'}
+                                    </p>
                                 </div>
+                                {problemView === 'campaign' && (
+                                    <select
+                                        value={regionFilter}
+                                        onChange={(e) => setRegionFilter(e.target.value)}
+                                        className="rounded-xl border border-gray-800 bg-gray-900/70 px-4 py-2.5 text-sm focus:outline-none focus:border-accent/60"
+                                    >
+                                        <option value="all">All Regions</option>
+                                        {CAMPAIGN_REGIONS.map((region) => (
+                                            <option key={region.id} value={String(region.id)}>
+                                                Region {region.id}: {region.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+
+                            {filteredProblems.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-black/20">
+                                            <tr>
+                                                {[
+                                                    'Title',
+                                                    'Slug',
+                                                    'Difficulty',
+                                                    ...(problemView === 'campaign' ? ['Region', 'Node ID'] : []),
+                                                    'Tests',
+                                                    'Limits',
+                                                    '',
+                                                ].map((header) => (
+                                                    <th
+                                                        key={header}
+                                                        className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500"
+                                                    >
+                                                        {header}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-800/60">
+                                            {filteredProblems.map((problem) => {
+                                                const diffColor = DIFF_COLORS[problem.difficulty] || DIFF_COLORS.Easy;
+
+                                                return (
+                                                    <tr key={problem._id} className="hover:bg-white/[0.03] transition-colors">
+                                                        <td className="px-4 py-3">
+                                                            <div className="font-semibold text-white">{problem.title}</div>
+                                                            <div className="mt-1 text-xs text-gray-500 line-clamp-2">
+                                                                {problem.description}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 font-mono text-xs text-gray-500">/{problem.slug}</td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${diffColor.bg} ${diffColor.text} ${diffColor.border}`}>
+                                                                {problem.difficulty}
+                                                            </span>
+                                                        </td>
+                                                        {problemView === 'campaign' && (
+                                                            <>
+                                                                <td className="px-4 py-3 text-gray-300">
+                                                                    {problem.campaignRegion ? `Region ${problem.campaignRegion}` : '—'}
+                                                                </td>
+                                                                <td className="px-4 py-3 font-mono text-xs text-cyan-300">
+                                                                    {problem.campaignNodeId || '—'}
+                                                                </td>
+                                                            </>
+                                                        )}
+                                                        <td className="px-4 py-3 text-xs text-gray-400">
+                                                            <div>{problem.publicTestCount || 0} public</div>
+                                                            <div className="text-gray-600">{problem.totalTestCount || 0} total</div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-gray-400">
+                                                            <div>{problem.timeLimit}ms</div>
+                                                            <div className="text-gray-600">{problem.memoryLimit}MB</div>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    onClick={() => setEditingProblem(problem)}
+                                                                    className="rounded-lg bg-blue-500/15 p-2 text-blue-400 transition-all hover:bg-blue-500/30"
+                                                                >
+                                                                    <Edit size={15}/>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteProblem(problem._id, problem.title)}
+                                                                    className="rounded-lg bg-red-500/15 p-2 text-red-400 transition-all hover:bg-red-500/30"
+                                                                >
+                                                                    <Trash2 size={15}/>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <EmptyState
+                                    icon={problemView === 'campaign' ? Target : Code}
+                                    title={problemView === 'campaign' ? 'No campaign nodes yet' : 'No battle problems found'}
+                                    sub={problemView === 'campaign'
+                                        ? 'Create the first campaign problem and assign a region + node ID.'
+                                        : 'Add your first Battle Arena problem to power 1v1 matches.'}
+                                />
                             )}
                         </div>
                     </div>
@@ -2187,12 +2347,14 @@ const AdminDashboard = () => {
             {showAddProblem && (
                 <ProblemModal onClose={() => setShowAddProblem(false)}
                     onSuccess={() => { setShowAddProblem(false); fetchAll(adminUser.username); }}
-                    username={adminUser.username}/>
+                    username={adminUser.username}
+                    initialType={problemView}/>
             )}
             {editingProblem && (
                 <ProblemModal problem={editingProblem} onClose={() => setEditingProblem(null)}
                     onSuccess={() => { setEditingProblem(null); fetchAll(adminUser.username); }}
-                    username={adminUser.username}/>
+                    username={adminUser.username}
+                    initialType={problemView}/>
             )}
             {viewingUser && (
                 <UserDetailModal user={viewingUser} matches={matches} onClose={() => setViewingUser(null)}/>
@@ -2886,7 +3048,7 @@ const Modal = ({ title, onClose, children, size = 'md' }) => {
 // ═══════════════════════════════════════════════════════════════
 // PROBLEM MODAL (ADD / EDIT)
 // ═══════════════════════════════════════════════════════════════
-const ProblemModal = ({ problem, onClose, onSuccess, username }) => {
+const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'battle' }) => {
     const isEditing = !!problem;
 
     const [formData, setFormData] = useState({
@@ -2894,6 +3056,9 @@ const ProblemModal = ({ problem, onClose, onSuccess, username }) => {
         slug:            problem?.slug  || '',
         description:     problem?.description || '',
         difficulty:      problem?.difficulty  || 'Easy',
+        type:            problem?.type || initialType,
+        campaignRegion:  problem?.campaignRegion || '',
+        campaignNodeId:  problem?.campaignNodeId || '',
         constraints:     problem?.constraints || [''],
         timeLimit:       problem?.timeLimit   || 5000,
         memoryLimit:     problem?.memoryLimit || 512,
@@ -2917,12 +3082,24 @@ const ProblemModal = ({ problem, onClose, onSuccess, username }) => {
         if (!formData.title || !formData.slug || !formData.description) {
             toast.error('Title, slug, and description are required'); return;
         }
+        if (formData.type === 'campaign' && !formData.campaignRegion) {
+            toast.error('Campaign problems need a region number'); return;
+        }
+        if (formData.type === 'campaign' && !String(formData.campaignNodeId).trim()) {
+            toast.error('Campaign problems need a target node ID'); return;
+        }
         if (!formData.testCases[0]?.input) {
             toast.error('At least one test case with input is required'); return;
         }
         setSubmitting(true);
         try {
-            const payload = { username, ...formData, constraints: formData.constraints.filter(c=>c.trim()) };
+            const payload = {
+                username,
+                ...formData,
+                campaignRegion: formData.type === 'campaign' ? Number(formData.campaignRegion) : undefined,
+                campaignNodeId: formData.type === 'campaign' ? formData.campaignNodeId.trim() : undefined,
+                constraints: formData.constraints.filter(c=>c.trim()),
+            };
             if (isEditing) {
                 await api.post(`/admin/problems/${problem._id}/update`, payload);
                 toast.success('Problem updated!');
@@ -2950,6 +3127,44 @@ const ProblemModal = ({ problem, onClose, onSuccess, username }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[85vh] overflow-y-auto custom-scroll">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-black text-white">Problem Type</p>
+                                <p className="text-xs text-gray-500">Choose whether this problem feeds live 1v1 battles or the campaign map.</p>
+                            </div>
+                            <Badge color={formData.type === 'campaign' ? 'purple' : 'green'}>
+                                {PROBLEM_TYPE_META[formData.type]?.shortLabel || 'Battle Arena'}
+                            </Badge>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-2">
+                            {Object.entries(PROBLEM_TYPE_META).map(([key, meta]) => {
+                                const isActive = formData.type === key;
+
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setFormData((prev) => ({
+                                            ...prev,
+                                            type: key,
+                                            campaignRegion: key === 'campaign' ? prev.campaignRegion : '',
+                                            campaignNodeId: key === 'campaign' ? prev.campaignNodeId : '',
+                                        }))}
+                                        className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                                            isActive
+                                                ? 'border-accent/40 bg-accent/10'
+                                                : 'border-gray-800 bg-black/10 hover:border-gray-700 hover:bg-white/[0.03]'
+                                        }`}
+                                    >
+                                        <div className="text-sm font-bold text-white">{meta.shortLabel}</div>
+                                        <div className="mt-1 text-xs leading-relaxed text-gray-500">{meta.description}</div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* Basic info */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -2967,6 +3182,35 @@ const ProblemModal = ({ problem, onClose, onSuccess, username }) => {
                             {isEditing && <p className="text-xs text-gray-600 mt-1">Slug cannot be changed after creation</p>}
                         </div>
                     </div>
+
+                    {formData.type === 'campaign' && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5 text-gray-300">Region Number <span className="text-red-400">*</span></label>
+                                <select
+                                    value={formData.campaignRegion}
+                                    onChange={e => set('campaignRegion', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 transition-all cursor-pointer"
+                                    required
+                                >
+                                    <option value="">Select Region</option>
+                                    {CAMPAIGN_REGIONS.map(r => (
+                                        <option key={r.id} value={r.id}>Region {r.id}: {r.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5 text-gray-300">Target Node ID <span className="text-red-400">*</span></label>
+                                <input
+                                    value={formData.campaignNodeId}
+                                    onChange={e => set('campaignNodeId', e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 transition-all font-mono"
+                                    placeholder="region-1-node-01"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-sm font-semibold mb-1.5 text-gray-300">Description <span className="text-red-400">*</span></label>

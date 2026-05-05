@@ -101,6 +101,11 @@ export const getRandomProblem = async (req, res) => {
         //  OPTIMIZED: Exclude heavy fields from aggregation
         // Before: ~80ms | After: ~20ms
         const problems = await Problem.aggregate([
+            {
+                $match: {
+                    type: 'battle'
+                }
+            },
             { $sample: { size: 1 } }, 
             { 
                 $project: { 

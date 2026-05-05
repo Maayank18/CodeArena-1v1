@@ -5,7 +5,6 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer'; 
 import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { Logo } from '../components/Logo';
 import { Loader2, Trophy } from 'lucide-react'; 
@@ -116,18 +115,17 @@ const Dashboard = () => {
     setIsNavigating(true);
     setLoadingText('Initializing Battleground...');
     try {
-      let newRoomId;
-      try {
-        const response = await api.post('/rooms');
-        newRoomId = response.data.roomId;
-      } catch (err) {
-        console.warn("[ROOM] API failed, using local UUID:", err.message);
-        newRoomId = uuidv4().split('-'); 
+      const response = await api.post('/rooms');
+      const newRoomId = response?.data?.roomId;
+
+      if (!newRoomId || typeof newRoomId !== 'string') {
+        throw new Error('Room creation did not return a valid room ID');
       }
+
       navigate(`/editor/${newRoomId}`, { state: { username } });
     } catch (error) {
       console.error("[ROOM] Creation failed:", error);
-      toast.error("Failed to initialize room");
+      toast.error(error?.response?.data?.message || "Failed to initialize room");
       setIsNavigating(false);
     }
   }, [navigate, username]);

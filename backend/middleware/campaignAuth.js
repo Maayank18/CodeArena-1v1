@@ -6,6 +6,7 @@
 
 import CampaignMap      from '../models/CampaignMap.js';
 import CampaignProgress from '../models/CampaignProgress.js';
+import Problem from '../models/Problem.js';
 import {
     ensureEntryNodesUnlocked,
     getEntryNodeIds,
@@ -86,8 +87,8 @@ export const verifyNodeUnlocked = async (req, res, next) => {
         }
 
         if (!progress.unlockedNodes.includes(nodeId)) {
-            const node = await CampaignMap.findOne({ nodeId, isActive: true })
-                .select('nodeId prerequisites nodeOrder isEntryNode')
+            const node = await Problem.findOne({ campaignNodeId: nodeId, type: 'campaign' })
+                .select('campaignNodeId campaignRegion')
                 .lean();
 
             if (isEntryNode(node)) {

@@ -1,28 +1,31 @@
-import CampaignMap from '../models/CampaignMap.js';
+import Problem from '../models/Problem.js';
 
-export const DEFAULT_ENTRY_NODE_ID = 'aa_01';
+export const DEFAULT_ENTRY_NODE_ID = 'region-1-node-01';
 const DEFAULT_ROOT_FILTER = {
-    isActive: true,
+    type: 'campaign',
     $or: [
-        { nodeId: DEFAULT_ENTRY_NODE_ID },
-        { regionOrder: 1, nodeOrder: 1 },
+        { campaignNodeId: DEFAULT_ENTRY_NODE_ID },
+        { campaignRegion: 1, campaignNodeId: /^region-1-node-0?1$/i },
     ],
 };
 
 export const isAbsoluteCampaignRoot = (node) =>
     node?.nodeId === DEFAULT_ENTRY_NODE_ID ||
-    (node?.regionOrder === 1 && node?.nodeOrder === 1);
+    node?.campaignNodeId === DEFAULT_ENTRY_NODE_ID ||
+    ((node?.regionOrder === 1 || node?.campaignRegion === 1) &&
+        (node?.nodeOrder === 1 || node?.campaignNodeId === DEFAULT_ENTRY_NODE_ID));
 
 export const getEntryNodes = async () => {
-    return CampaignMap.find(DEFAULT_ROOT_FILTER)
-        .sort({ regionOrder: 1, nodeOrder: 1 })
+    return Problem.find(DEFAULT_ROOT_FILTER)
+        .select('campaignNodeId campaignRegion')
+        .sort({ campaignRegion: 1, campaignNodeId: 1 })
         .lean();
 };
 
 export const getEntryNodeIds = async () => {
     const entryNodes = await getEntryNodes();
     const entryIds = entryNodes
-        .map((node) => node?.nodeId)
+        .map((node) => node?.campaignNodeId ?? node?.nodeId)
         .filter(Boolean);
 
     return entryIds.length > 0 ? [...new Set(entryIds)] : [DEFAULT_ENTRY_NODE_ID];

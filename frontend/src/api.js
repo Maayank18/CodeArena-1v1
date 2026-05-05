@@ -197,15 +197,20 @@ api.interceptors.request.use(
             }
         }
 
-        // 3. ✅ PREVENT DUPLICATE REQUESTS
+        // 3. ✅ PREVENT DUPLICATE NON-GET REQUESTS
+        // React 18 Strict Mode intentionally double-invokes effects in development.
+        // Cancelling duplicate GETs can leave the "live" component instance with no
+        // successful response to hydrate from, so we only dedupe mutating requests here.
         const requestKey = `${config.method}:${config.url}`;
-        if (pendingRequests.has(requestKey)) {
+        const shouldDedupe = config.method && config.method !== 'get';
+
+        if (shouldDedupe && pendingRequests.has(requestKey)) {
             console.log(`[API] Duplicate request prevented: ${config.url}`);
             // Cancel duplicate request
             const source = axios.CancelToken.source();
             config.cancelToken = source.token;
             source.cancel('Duplicate request');
-        } else {
+        } else if (shouldDedupe) {
             pendingRequests.set(requestKey, true);
         }
 

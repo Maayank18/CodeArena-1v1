@@ -37,7 +37,11 @@ const mkMist  = (n, rng)      => Array.from({length:n},(_,i)=>({id:i, top:rng()*
 
 const WeatherEffect = ({ type, zoneId, accent }) => {
   injectCSS();
-  const seed = useMemo(() => zoneId.split('').reduce((a,c)=>a+c.charCodeAt(0),0), [zoneId]);
+  const safeZoneId = useMemo(() => String(zoneId ?? 'zone'), [zoneId]);
+  const seed = useMemo(
+    () => safeZoneId.split('').reduce((a, c) => a + c.charCodeAt(0), 0),
+    [safeZoneId]
+  );
   const p    = useMemo(() => {
     const rng = mkRng(seed);
     switch(type) {

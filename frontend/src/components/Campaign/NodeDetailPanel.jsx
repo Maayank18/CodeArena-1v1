@@ -8,7 +8,7 @@ const DIFF_COLOR = {
   Hard: 'text-red-400 bg-red-500/10 border-red-500/25',
 };
 
-const ROOT_NODE_ID = 'aa_01';
+const ROOT_NODE_ID = 'region-1-node-01';
 
 const isAbsoluteRootNode = (node) =>
   node?.nodeId === ROOT_NODE_ID ||

@@ -15,6 +15,27 @@ import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal } from 'luc
 import TestCaseResults from '../components/TestCaseResults';
 import { useTheme } from '../context/ThemeContext.jsx';
 
+const DEFAULT_BACKEND_URL = 'http://localhost:5000';
+const resolveBackendHttpUrl = () => {
+    const explicitBackend = import.meta.env.VITE_BACKEND_URL;
+    if (explicitBackend) return explicitBackend;
+
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl) return apiUrl.replace(/\/api\/?$/, '');
+
+    return DEFAULT_BACKEND_URL;
+};
+
+const resolveYjsUrl = () => {
+    if (import.meta.env.VITE_YJS_URL) return import.meta.env.VITE_YJS_URL;
+
+    const backendUrl = resolveBackendHttpUrl();
+    if (backendUrl.startsWith('https://')) return backendUrl.replace(/^https:\/\//, 'wss://');
+    if (backendUrl.startsWith('http://')) return backendUrl.replace(/^http:\/\//, 'ws://');
+
+    return 'ws://localhost:1234';
+};
+
 // ✅ FIXED TIMER: Receives initial time via props
 // room id removed becasue it was not being used anywhere 
 const Timer = React.memo(({ initialTime, socket }) => {
@@ -113,6 +134,8 @@ const EditorPage = () => {
     const [isRunning, setIsRunning] = useState(false);
     const [language, setLanguage] = useState('cpp'); 
     const [executionStatus, setExecutionStatus] = useState('idle');
+    const [arenaUnavailableMessage, setArenaUnavailableMessage] = useState('');
+    const [roomLoadError, setRoomLoadError] = useState('');
     
     // Game State
     const [round, setRound] = useState(1);
@@ -127,6 +150,7 @@ const EditorPage = () => {
     // const [isConnected, setIsConnected] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connecting');
     const hasConnectedOnce = useRef(false);
+    const roomHydratedRef = useRef(false);
 
     // Responsive State
     const [activeTab, setActiveTab] = useState('problem'); 
@@ -151,9 +175,13 @@ const EditorPage = () => {
             return;
         }
 
+        roomHydratedRef.current = false;
+        setRoomLoadError('');
+        setArenaUnavailableMessage('');
+
         // Initialize Yjs provider
         if (!providerRef.current && ydocRef.current) {
-            const yjsUrl = import.meta.env.VITE_YJS_URL || 'ws://localhost:1234';
+            const yjsUrl = resolveYjsUrl();
             providerRef.current = new WebsocketProvider(yjsUrl, roomId, ydocRef.current);
             
             providerRef.current.on('status', (event) => {
@@ -163,7 +191,7 @@ const EditorPage = () => {
 
         if (socketRef.current) return;
 
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = resolveBackendHttpUrl();
         socketRef.current = io(apiUrl, {
             transports: ['websocket', 'polling'],
             reconnection: true,
@@ -179,14 +207,12 @@ const EditorPage = () => {
             console.log('[SOCKET] ✅ Connected:', socket.id);
             setConnectionStatus('connected');
             hasConnectedOnce.current = true;
-            
-            if (mySide && location.state?.username) {
-                    console.log('[SOCKET] 🔄 Reconnecting - rejoining room');
-                    socket.emit('join_room', { 
-                        roomId, 
-                        username 
-                    });
-            }
+
+            console.log('[SOCKET] 🎯 Joining room');
+            socket.emit('join_room', {
+                roomId,
+                username
+            });
         });
 
         socket.on('disconnect', (reason) => {
@@ -216,8 +242,11 @@ const EditorPage = () => {
         // ✅ CRITICAL FIX: room_joined handler sets remainingTime
         const handleRoomJoined = (data) => {
             console.log('[SOCKET] 📥 room_joined:', data);
+            roomHydratedRef.current = true;
             setClients(data.players || []);
-            setProblem(data.problem);
+            setProblem(data?.problem ?? null);
+            setArenaUnavailableMessage(data?.problem ? '' : 'Matchmaking failed: Problem data did not load for this room.');
+            setRoomLoadError(data?.problem ? '' : 'Matchmaking failed: Problem data did not load for this room.');
             setRound(data.round || 1);
             setTotalRounds(data.totalRounds || 2);
             setScores(data.scores || {});
@@ -247,7 +276,10 @@ const EditorPage = () => {
         const handleNewRound = (data) => {
             console.log('[SOCKET] 🔄 new_round:', data.round);
             toast.success(`Round ${data.round} Started!`, { icon: '🎯' });
-            setProblem(data.problem);
+            roomHydratedRef.current = true;
+            setProblem(data?.problem ?? null);
+            setArenaUnavailableMessage(data?.problem ? '' : 'Matchmaking failed: Problem data did not load for this room.');
+            setRoomLoadError(data?.problem ? '' : 'Matchmaking failed: Problem data did not load for this room.');
             setRound(data.round);
             setScores(data.scores || {});
             setRunResults(null); 
@@ -316,7 +348,16 @@ const EditorPage = () => {
 
         const handleError = (data) => {
             console.error('[SOCKET] Error:', data.message);
-            toast.error(data.message);
+            const message = data?.message || 'Failed to load match data.';
+            if (
+                message.toLowerCase().includes('no battle problems available') ||
+                message.toLowerCase().includes('failed to load a valid battle arena problem') ||
+                message.toLowerCase().includes('failed to load the next battle arena problem')
+            ) {
+                setArenaUnavailableMessage(message);
+                setRoomLoadError(message);
+            }
+            toast.error(message);
         };
 
         const handleCheatWarning = ({ reason }) => {
@@ -336,12 +377,6 @@ const EditorPage = () => {
         socket.on('room_full', handleRoomFull);
         socket.on('error', handleError);
         socket.on('cheat_warning', handleCheatWarning);
-
-        // ✅ Join room
-        socket.emit('join_room', { 
-            roomId, 
-            username 
-        });
 
         return () => {
             console.log('[CLEANUP] Cleaning up socket and Yjs');
@@ -367,7 +402,7 @@ const EditorPage = () => {
                 providerRef.current = null;
             }
         };
-    }, [roomId, navigate, username, isValidRoomId, mySide]);
+    }, [roomId, navigate, username, isValidRoomId]);
 
     // ✅ ANTI-CHEAT
     useEffect(() => {
@@ -407,6 +442,18 @@ const EditorPage = () => {
             window.removeEventListener("paste", handlePaste);
         };
     }, [roomId, location.state, gameOverData]);
+
+    useEffect(() => {
+        if (problem || arenaUnavailableMessage || roomLoadError || gameOverData) return undefined;
+
+        const timeoutId = window.setTimeout(() => {
+            if (!roomHydratedRef.current) {
+                setRoomLoadError('Matchmaking failed: Room data never arrived from the realtime server. Please retry or restart the backend.');
+            }
+        }, 12000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [arenaUnavailableMessage, gameOverData, problem, roomLoadError]);
 
     // Helper functions
     const getPlayerName = useCallback((side) => {
@@ -567,6 +614,29 @@ const EditorPage = () => {
 
     if (!location.state) {
         return <Navigate to="/" replace />;
+    }
+
+    if (arenaUnavailableMessage || roomLoadError) {
+        const fallbackMessage = roomLoadError || arenaUnavailableMessage;
+        return (
+            <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center px-4">
+                <div className="w-full max-w-xl rounded-[28px] border border-[var(--border-color)] bg-[var(--surface-elevated)] p-8 text-center shadow-[0_24px_60px_-28px_var(--shadow-color)]">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                        <FileText size={28} />
+                    </div>
+                    <h1 className="mb-3 text-2xl font-black">Matchmaking Unavailable</h1>
+                    <p className="leading-relaxed text-[var(--text-secondary)]">
+                        {fallbackMessage}
+                    </p>
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="mt-6 rounded-xl bg-accent px-5 py-3 font-bold text-black transition-all hover:opacity-90"
+                    >
+                        Return to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -790,7 +860,7 @@ const EditorPage = () => {
                     {/* ✅ FIXED: Pass remainingTime as prop */}
                     <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
                         <span className="arena-pane-title font-bold truncate text-sm max-w-[200px] text-white">
-                            {problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}
+                            {problem ? `Q${round}/${totalRounds}: ${problem?.title || 'Untitled Problem'}` : "Loading..."}
                         </span>
                         <Timer 
                             initialTime={remainingTime} 
@@ -805,13 +875,13 @@ const EditorPage = () => {
                             <div className="space-y-6 pb-6">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                                        problem.difficulty === 'Easy' 
+                                        problem?.difficulty === 'Easy' 
                                             ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                                            : problem.difficulty === 'Medium'
+                                            : problem?.difficulty === 'Medium'
                                                 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                                                 : 'bg-red-500/20 text-red-400 border border-red-500/30'
                                     }`}>
-                                        {problem.difficulty}
+                                        {problem?.difficulty || 'Unknown'}
                                     </span>
                                 </div>
                                 
@@ -821,17 +891,17 @@ const EditorPage = () => {
                                     </h3>
                                     <div 
                                         className="arena-problem-text text-gray-300 prose prose-invert prose-sm max-w-none" 
-                                        dangerouslySetInnerHTML={{ __html: problem.description.replace(/\n/g, '<br/>') }} 
+                                        dangerouslySetInnerHTML={{ __html: String(problem?.description || '').replace(/\n/g, '<br/>') }} 
                                     />
                                 </div>
                                 
-                                {problem.constraints && problem.constraints.length > 0 && (
+                                {problem?.constraints?.length > 0 && (
                                     <div className="arena-problem-card bg-[#1e1e1e] p-4 rounded-lg border border-[#3e3e42]">
                                         <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">
                                             Constraints
                                         </h3>
                                         <ul className="arena-pane-muted list-disc list-inside text-gray-400 space-y-1">
-                                            {problem.constraints.map((c, i) => (
+                                            {problem?.constraints?.map((c, i) => (
                                                 <li key={i} className="font-mono text-xs">{c}</li>
                                             ))}
                                         </ul>
@@ -842,7 +912,7 @@ const EditorPage = () => {
                                     <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">
                                         Examples
                                     </h3>
-                                    {problem.testCases.filter(tc => tc.isPublic).map((tc, i) => (
+                                    {(problem?.testCases?.filter((tc) => tc?.isPublic) ?? []).map((tc, i) => (
                                         <div key={i} className="arena-problem-card mb-4 bg-[#1e1e1e] p-3 rounded border border-[#3e3e42]">
                                             <div className="mb-2">
                                                 <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">

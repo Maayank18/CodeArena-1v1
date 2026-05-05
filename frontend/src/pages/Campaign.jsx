@@ -10,33 +10,53 @@ import api from '../api';
 import toast from 'react-hot-toast';
 
 const EMPTY_MAP = { nodes: [] };
-const DEMO_MODE_TOAST = 'Challenge not available in demo mode. Please run the local seeder.';
-const ROOT_NODE_ID = 'aa_01';
+const ROOT_NODE_ID = 'region-1-node-01';
+const NODE_ID_PATTERN = /node-(\d+)$/i;
 
 const isAbsoluteRootNode = (node) =>
   node?.nodeId === ROOT_NODE_ID ||
   (node?.regionOrder === 1 && node?.nodeOrder === 1);
 
+const isDuplicateCancellation = (error) =>
+  error?.name === 'CanceledError' ||
+  error?.code === 'ERR_CANCELED' ||
+  String(error?.message ?? '').includes('Duplicate');
+
+const parseNodeOrder = (campaignNodeId, fallbackIndex = 0) => {
+  const match = String(campaignNodeId ?? '').match(NODE_ID_PATTERN);
+  if (match) {
+    return Number(match[1]);
+  }
+
+  return fallbackIndex + 1;
+};
+
 const normalizeCampaignNodes = (rawMap) => {
-  const sourceNodes = Array.isArray(rawMap?.nodes)
-    ? rawMap.nodes
-    : Array.isArray(rawMap)
-      ? rawMap
+  const sourceNodes = Array.isArray(rawMap)
+    ? rawMap
+    : Array.isArray(rawMap?.nodes)
+      ? rawMap.nodes
       : [];
 
   return {
-    ...(rawMap && typeof rawMap === 'object' && !Array.isArray(rawMap) ? rawMap : {}),
     nodes: sourceNodes.map((node, index) => {
-      const problemData = node?.problemId ?? node?.problem ?? null;
+      const problemData = node?.problemId ?? node?.problem ?? node;
       const fallbackTitle = node?.title || `Unknown Challenge ${index + 1}`;
+      const regionOrder = Number(node?.campaignRegion) || Number(node?.regionOrder) || 1;
+      const nodeId = node?.campaignNodeId || node?.nodeId || node?.id || `node_${index}`;
+      const nodeOrder = Number(node?.nodeOrder) || parseNodeOrder(nodeId, index);
 
       return {
         ...node,
+        nodeId,
+        campaignNodeId: node?.campaignNodeId ?? nodeId,
+        regionOrder,
+        nodeOrder,
         prerequisites: Array.isArray(node?.prerequisites) ? node.prerequisites : [],
-        isEntryNode: isAbsoluteRootNode(node),
+        isEntryNode: isAbsoluteRootNode({ nodeId, regionOrder, nodeOrder }),
         problem: problemData,
         problemId: problemData,
-        hasProblemData: Boolean(problemData),
+        hasProblemData: Boolean(problemData?.title),
         title: problemData?.title || fallbackTitle,
         difficulty: problemData?.difficulty || 'Easy',
         slug: problemData?.slug || null,
@@ -79,7 +99,7 @@ const Campaign = () => {
           if (cancelledRef.current) return;
 
           const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
-          setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
+          setMapData(normalizedMap);
           setHasLiveMapData(true);
           window.history.replaceState({}, document.title);
           return;
@@ -92,14 +112,19 @@ const Campaign = () => {
 
         if (cancelledRef.current) return;
 
-        const normalizedMap = normalizeCampaignNodes(mapRes.data?.map ?? mapRes.data);
-        setMapData(normalizedMap.nodes.length ? normalizedMap : EMPTY_MAP);
+        const normalizedMap = normalizeCampaignNodes(mapRes.data);
+        setMapData(normalizedMap);
         setProgress(progRes.data?.progress ?? progRes.data);
         setHasLiveMapData(true);
       } catch (error) {
         if (cancelledRef.current) return;
 
+        if (isDuplicateCancellation(error)) {
+          return;
+        }
+
         console.error('[CAMPAIGN LOAD]', error);
+        setMapData(EMPTY_MAP);
         setHasLiveMapData(false);
         toast.error('Failed to load Campaign world');
       } finally {
@@ -133,11 +158,6 @@ const Campaign = () => {
       const hasProblemData = typeof node === 'string' ? true : node?.hasProblemData !== false;
       const isValidNodeId = typeof targetNodeId === 'string' && targetNodeId.trim().length > 0;
 
-      if (!hasLiveMapData) {
-        toast.error(DEMO_MODE_TOAST);
-        return;
-      }
-
       if (!hasProblemData || !isValidNodeId) {
         toast.error('This challenge is not available yet.');
         return;
@@ -145,7 +165,7 @@ const Campaign = () => {
 
       navigate(`/campaign/${targetNodeId}`);
     },
-    [hasLiveMapData, navigate]
+    [navigate]
   );
 
   const handleProgressUpdate = useCallback((updates) => {
@@ -160,15 +180,12 @@ const Campaign = () => {
   if (loading) {
     return (
       <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col items-center justify-center gap-5">
-        <div
-          className="text-6xl select-none"
-          style={{ animation: 'bounce 1s infinite' }}
-        >
+        <div className="text-6xl select-none" style={{ animation: 'bounce 1s infinite' }}>
           🗺️
         </div>
         <div className="flex items-center gap-2.5 text-slate-500 dark:text-gray-500 font-bold text-sm">
           <Loader2 size={16} className="animate-spin text-cyan-500" />
-          Loading Campaign World…
+          Loading Campaign World...
         </div>
       </div>
     );
@@ -178,10 +195,7 @@ const Campaign = () => {
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col overflow-hidden">
       <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
 
-      <CampaignHUD
-        progress={progress}
-        onOpenSkillTree={() => setShowSkillTree(true)}
-      >
+      <CampaignHUD progress={progress} onOpenSkillTree={() => setShowSkillTree(true)}>
         <button
           onClick={() => setShowGuide(true)}
           className="
@@ -204,21 +218,8 @@ const Campaign = () => {
           nodes={nodes}
           progress={progress}
           onStartChallenge={handleStartChallenge}
-          useMockData={!hasLiveMapData}
+          useMockData={false}
         />
-
-        {!hasLiveMapData && !nodes.length && !progress?.unlockedNodes?.length && (
-          <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-xs">
-            <div className="bg-slate-900/90 border border-slate-700/60 rounded-xl px-4 py-3 text-center backdrop-blur-md shadow-lg">
-              <p className="text-slate-400 text-xs mb-2">
-                Showing demo map — run the seeder to enable progress saving
-              </p>
-              <code className="text-cyan-400 text-[11px] font-mono bg-black/40 px-2 py-1 rounded break-all">
-                node backend/seeder.js
-              </code>
-            </div>
-          </div>
-        )}
       </div>
 
       <SkillTreeModal
@@ -237,4 +238,3 @@ const Campaign = () => {
 };
 
 export default Campaign;
-// V 1.5

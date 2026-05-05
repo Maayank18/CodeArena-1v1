@@ -70,6 +70,7 @@
 // FILE: backend/controllers/roomController.js
 // HEAVILY OPTIMIZED VERSION
 import Room from '../models/Room.js';
+import Problem from '../models/Problem.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // ✅ PERFORMANCE: Pre-generate room IDs in batches
@@ -90,6 +91,14 @@ refillRoomIdPool();
 // @access  Public
 export const createRoom = async (req, res) => {
     try {
+        const battleProblemCount = await Problem.countDocuments({ type: 'battle' });
+        if (battleProblemCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
+            });
+        }
+
         let roomId;
         let isUnique = false;
         let attempts = 0;
