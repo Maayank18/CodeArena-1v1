@@ -478,9 +478,10 @@ const verifyAdmin = async (username) => {
     }
 };
 
-const normalizeProblemType = (value) => (
-    value === 'campaign' ? 'campaign' : 'battle'
-);
+const normalizeProblemType = (value) => {
+    const normalizedValue = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    return normalizedValue === 'campaign' ? 'campaign' : 'battle';
+};
 
 const normalizeCampaignRegion = (value) => {
     if (value === undefined || value === null || value === '') return undefined;
@@ -495,10 +496,17 @@ const normalizeCampaignNodeId = (value) => {
 };
 
 const buildProblemPayload = (raw = {}) => {
-    const type = normalizeProblemType(raw.type);
     const campaignRegion = normalizeCampaignRegion(raw.campaignRegion);
     const campaignNodeId = normalizeCampaignNodeId(raw.campaignNodeId);
     const hasCampaignHints = raw.campaignRegion !== undefined || raw.campaignNodeId !== undefined;
+    const hasCampaignData = campaignRegion !== undefined || campaignNodeId !== undefined;
+    const rawType = typeof raw.type === 'string' ? raw.type.trim().toLowerCase() : '';
+    const hasExplicitType = rawType === 'battle' || rawType === 'campaign';
+    const type = normalizeProblemType(
+        !hasExplicitType && hasCampaignData
+            ? 'campaign'
+            : raw.type
+    );
 
     if (type === 'campaign') {
         if (Number.isNaN(campaignRegion)) {
@@ -507,7 +515,7 @@ const buildProblemPayload = (raw = {}) => {
         if (!campaignNodeId) {
             throw new Error('Campaign problems require a target node ID');
         }
-    } else if (hasCampaignHints && (campaignRegion !== undefined || campaignNodeId !== undefined)) {
+    } else if (hasCampaignHints && hasCampaignData) {
         throw new Error('Problem type mismatch: campaign fields were provided but type resolved to battle');
     }
 
@@ -898,9 +906,23 @@ export const getAllProblems = async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 export const createProblem = async (req, res) => {
     try {
+        console.log('[Admin] Received createProblem request body:', {
+            title: req.body.title,
+            type: req.body.type,
+            campaignRegion: req.body.campaignRegion,
+            campaignNodeId: req.body.campaignNodeId
+        });
+
         await verifyAdmin(req.body.username);
 
         const payload = buildProblemPayload(req.body);
+        console.log('[Admin] Resolved problem payload:', {
+            title: payload.title,
+            type: payload.type,
+            campaignRegion: payload.campaignRegion,
+            campaignNodeId: payload.campaignNodeId
+        });
+
         const {
             title, slug, description, difficulty, type, campaignRegion,
             campaignNodeId, constraints, timeLimit, memoryLimit,
@@ -948,7 +970,10 @@ export const createProblem = async (req, res) => {
         if (error.code === 11000) {
             return res.status(400).json({ message: 'A problem with this slug already exists' });
         }
-        if (error.message?.startsWith('Campaign problems require')) {
+        if (
+            error.message?.startsWith('Campaign problems require') ||
+            error.message?.startsWith('Problem type mismatch')
+        ) {
             return res.status(400).json({ message: error.message });
         }
         const status = error.message.startsWith('Unauthorized') ? 403 : 500;
@@ -961,9 +986,15 @@ export const createProblem = async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 export const updateProblem = async (req, res) => {
     try {
-        await verifyAdmin(req.body.username);
-
         const { problemId } = req.params;
+        console.log(`[Admin] Received updateProblem request for ${problemId}:`, {
+            title: req.body.title,
+            type: req.body.type,
+            campaignRegion: req.body.campaignRegion,
+            campaignNodeId: req.body.campaignNodeId
+        });
+
+        await verifyAdmin(req.body.username);
         const updateData    = { ...req.body };
 
         // Never allow slug or username to be updated
