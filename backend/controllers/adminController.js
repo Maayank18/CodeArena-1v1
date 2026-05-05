@@ -496,29 +496,40 @@ const normalizeCampaignNodeId = (value) => {
 };
 
 const buildProblemPayload = (raw = {}) => {
+    // 1. Normalize basic fields
     const campaignRegion = normalizeCampaignRegion(raw.campaignRegion);
     const campaignNodeId = normalizeCampaignNodeId(raw.campaignNodeId);
-    const hasCampaignHints = raw.campaignRegion !== undefined || raw.campaignNodeId !== undefined;
-    const hasCampaignData = campaignRegion !== undefined || campaignNodeId !== undefined;
+
+    // Check if any campaign data is provided
+    const hasCampaignData = (campaignRegion !== undefined && !Number.isNaN(campaignRegion)) || 
+                           (campaignNodeId !== undefined && campaignNodeId.trim().length > 0);
+
+    // 2. Determine Type
+    // If user explicitly sent a type, we validate/normalize it.
+    // If no type sent, but we have campaign data, we infer 'campaign'.
     const rawType = typeof raw.type === 'string' ? raw.type.trim().toLowerCase() : '';
     const hasExplicitType = rawType === 'battle' || rawType === 'campaign';
+
     const type = normalizeProblemType(
         !hasExplicitType && hasCampaignData
             ? 'campaign'
             : raw.type
     );
 
+    // 3. Type-Specific Validation
     if (type === 'campaign') {
-        if (Number.isNaN(campaignRegion)) {
+        if (campaignRegion === undefined || Number.isNaN(campaignRegion)) {
             throw new Error('Campaign problems require a valid region number');
         }
-        if (!campaignNodeId) {
+        if (!campaignNodeId || campaignNodeId.trim().length === 0) {
             throw new Error('Campaign problems require a target node ID');
         }
-    } else if (hasCampaignHints && hasCampaignData) {
+    } else if (hasCampaignData) {
+        // If it resolved to battle but has campaign data, it's a mismatch
         throw new Error('Problem type mismatch: campaign fields were provided but type resolved to battle');
     }
 
+    // 4. Return normalized payload
     return {
         title: raw.title,
         slug: raw.slug,
@@ -916,7 +927,7 @@ export const createProblem = async (req, res) => {
         await verifyAdmin(req.body.username);
 
         const payload = buildProblemPayload(req.body);
-        console.log('[Admin] Resolved problem payload:', {
+        console.log('[Admin] Resolved problem payload for creation:', {
             title: payload.title,
             type: payload.type,
             campaignRegion: payload.campaignRegion,
@@ -1019,16 +1030,20 @@ export const updateProblem = async (req, res) => {
         if (updateData.goldenSolution !== undefined) updateData.goldenSolution = normalizedUpdate.goldenSolution;
         if (updateData.starterCode !== undefined) updateData.starterCode = normalizedUpdate.starterCode;
         if (updateData.testCases !== undefined) updateData.testCases = normalizedUpdate.testCases;
-        updateData.type = normalizedUpdate.type;
-        updateData.campaignRegion = normalizedUpdate.type === 'campaign'
-            ? normalizedUpdate.campaignRegion
-            : undefined;
-        updateData.campaignNodeId = normalizedUpdate.type === 'campaign'
-            ? normalizedUpdate.campaignNodeId
-            : undefined;
+        // Sync normalized fields back to updateData to ensure they are persisted
+        updateData.type           = normalizedUpdate.type;
+        updateData.campaignRegion = normalizedUpdate.campaignRegion;
+        updateData.campaignNodeId = normalizedUpdate.campaignNodeId;
+
+        // Note: normalizedUpdate already has undefined for campaign fields if type !== campaign.
+        // Mongoose findByIdAndUpdate with $set will not remove existing fields if they are undefined in the object.
+        // So we explicitly use $unset if needed.
+        const updateOperation = { $set: updateData };
         if (normalizedUpdate.type !== 'campaign') {
-            delete updateData.campaignRegion;
-            delete updateData.campaignNodeId;
+            updateOperation.$unset = {
+                campaignRegion: 1,
+                campaignNodeId: 1,
+            };
         }
 
         // If golden solution or test cases changed, re-validate
