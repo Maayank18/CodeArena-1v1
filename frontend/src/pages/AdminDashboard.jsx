@@ -379,7 +379,7 @@ const AdminDashboard = () => {
     }, [sortedMatches, matchPage]);
 
     const battleProblems = useMemo(
-        () => problems.filter((problem) => (problem.type || 'battle') === 'battle'),
+        () => problems.filter((problem) => problem.type !== 'campaign'),
         [problems]
     );
 

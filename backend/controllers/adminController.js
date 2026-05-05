@@ -961,12 +961,16 @@ export const createProblem = async (req, res) => {
         const validationError = validateGoldenSolution(goldenSolution, testCases);
         if (validationError) return res.status(400).json({ message: validationError });
 
+        console.log('[Admin] Final check before Problem.create:', { title, type, campaignRegion, campaignNodeId });
+
         const problem = await Problem.create({
-            title, slug, description,
+            title,
+            slug,
+            description,
             difficulty,
             type,
-            campaignRegion,
-            campaignNodeId,
+            campaignRegion: type === 'campaign' ? campaignRegion : undefined,
+            campaignNodeId: type === 'campaign' ? campaignNodeId : undefined,
             constraints,
             timeLimit,
             memoryLimit,
@@ -1056,6 +1060,14 @@ export const updateProblem = async (req, res) => {
             const validationError = validateGoldenSolution(sol, cases);
             if (validationError) return res.status(400).json({ message: validationError });
         }
+
+        console.log('[Admin] Final check before Problem.findByIdAndUpdate:', { 
+            id: problemId, 
+            type: updateOperation.$set.type, 
+            region: updateOperation.$set.campaignRegion,
+            node: updateOperation.$set.campaignNodeId,
+            unset: updateOperation.$unset
+        });
 
         const problem = await Problem.findByIdAndUpdate(
             problemId,
