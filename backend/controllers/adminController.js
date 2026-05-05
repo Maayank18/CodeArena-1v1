@@ -498,6 +498,7 @@ const buildProblemPayload = (raw = {}) => {
     const type = normalizeProblemType(raw.type);
     const campaignRegion = normalizeCampaignRegion(raw.campaignRegion);
     const campaignNodeId = normalizeCampaignNodeId(raw.campaignNodeId);
+    const hasCampaignHints = raw.campaignRegion !== undefined || raw.campaignNodeId !== undefined;
 
     if (type === 'campaign') {
         if (Number.isNaN(campaignRegion)) {
@@ -506,6 +507,8 @@ const buildProblemPayload = (raw = {}) => {
         if (!campaignNodeId) {
             throw new Error('Campaign problems require a target node ID');
         }
+    } else if (hasCampaignHints && (campaignRegion !== undefined || campaignNodeId !== undefined)) {
+        throw new Error('Problem type mismatch: campaign fields were provided but type resolved to battle');
     }
 
     return {

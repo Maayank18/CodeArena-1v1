@@ -1500,6 +1500,7 @@ const AdminDashboard = () => {
 
     // Modals
     const [showAddProblem, setShowAddProblem]   = useState(false);
+    const [createProblemType, setCreateProblemType] = useState('battle');
     const [editingProblem, setEditingProblem]   = useState(null);
     const [viewingUser, setViewingUser]         = useState(null);
     const [editingUser, setEditingUser]         = useState(null);
@@ -2087,7 +2088,10 @@ const AdminDashboard = () => {
                                 <option value="Medium">Medium</option>
                                 <option value="Hard">Hard</option>
                             </select>
-                            <button onClick={() => setShowAddProblem(true)}
+                            <button onClick={() => {
+                                setCreateProblemType(problemView);
+                                setShowAddProblem(true);
+                            }}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent/80 text-black rounded-xl text-sm font-bold transition-all shadow-lg shadow-accent/20 hover:shadow-accent/30">
                                 <Plus size={16}/> Add Problem
                             </button>
@@ -2348,7 +2352,8 @@ const AdminDashboard = () => {
                 <ProblemModal onClose={() => setShowAddProblem(false)}
                     onSuccess={() => { setShowAddProblem(false); fetchAll(adminUser.username); }}
                     username={adminUser.username}
-                    initialType={problemView}/>
+                    initialType={createProblemType}
+                    key={`new-problem-${createProblemType}`}/>
             )}
             {editingProblem && (
                 <ProblemModal problem={editingProblem} onClose={() => setEditingProblem(null)}
@@ -3076,6 +3081,17 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
     const [activeCodeTab, setActiveCodeTab] = useState('javascript');
 
     const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+    useEffect(() => {
+        if (problem) return;
+
+        setFormData((prev) => ({
+            ...prev,
+            type: initialType,
+            campaignRegion: initialType === 'campaign' ? prev.campaignRegion : '',
+            campaignNodeId: initialType === 'campaign' ? prev.campaignNodeId : '',
+        }));
+    }, [initialType, problem]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
