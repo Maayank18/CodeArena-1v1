@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
 import ZoneContainer from './ZoneContainer';
 import BossNode from './BossNode';
 import NodeDetailPanel from './NodeDetailPanel';
@@ -75,6 +76,10 @@ const parseNodeOrder = (node) => {
 
   return 1;
 };
+
+const matchesCampaignSlot = (node, currentRegionId, currentNodeId) =>
+  String(node?.campaignRegion ?? node?.regionOrder ?? '') === String(currentRegionId) &&
+  String(node?.campaignNodeId ?? node?.nodeId ?? '') === String(currentNodeId);
 
 const getNodeTitle = (node) =>
   node?.problemId?.title ||
@@ -310,12 +315,20 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
     !node.isPlaceholder &&
     node.hasProblemData !== false &&
     effectiveNodeState.state !== 'locked';
+  const canShowMissingDataToast =
+    !isInteractive &&
+    (effectiveNodeState.state === 'available' || effectiveNodeState.state === 'completed');
 
   const handleClick = useCallback(() => {
     if (isInteractive) {
       onNodeClick(node);
+      return;
     }
-  }, [isInteractive, node, onNodeClick]);
+
+    if (canShowMissingDataToast) {
+      toast.error('Challenge data not yet deployed to this region.');
+    }
+  }, [canShowMissingDataToast, isInteractive, node, onNodeClick]);
 
   return (
     <div
@@ -326,7 +339,7 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
         transform: 'translate(-50%,-50%)',
         zIndex: isBoss ? 30 : 20,
         touchAction: 'manipulation',
-        cursor: isInteractive ? 'pointer' : 'not-allowed',
+        cursor: isInteractive || canShowMissingDataToast ? 'pointer' : 'not-allowed',
       }}
       onClick={handleClick}
     >
@@ -439,16 +452,9 @@ const WorldMapScene = React.memo(function WorldMapScene({
       map[zone.key] = Array.from({ length: 15 }, (_, nodeIndex) => {
         const currentRegionId = zone.id;
         const currentNodeId = `region-${currentRegionId}-node-${String(nodeIndex + 1).padStart(2, '0')}`;
-        const found = zoneNodes.find((node) => {
-          const candidateRegion = Number(node?.campaignRegion ?? node?.regionOrder);
-          const candidateNodeId = node?.campaignNodeId ?? node?.nodeId;
-
-          return (
-            (candidateRegion === currentRegionId && candidateNodeId === currentNodeId) ||
-            node?.nodeNum === nodeIndex + 1 ||
-            node?.localIndex === nodeIndex
-          );
-        });
+        const found =
+          zoneNodes.find((node) => matchesCampaignSlot(node, currentRegionId, currentNodeId)) ??
+          zoneNodes.find((node) => node?.nodeNum === nodeIndex + 1 || node?.localIndex === nodeIndex);
 
         return found ?? {
           nodeId: `${zone.key}_${nodeIndex + 1}_locked`,
