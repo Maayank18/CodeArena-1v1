@@ -106,11 +106,15 @@ export const registerUser = async (req, res) => {
             bio: user.bio || '',
             preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
             isPro: user.isPro || false,
+            role: user.role || 'user',
             planId: user.planId || null,
+            subscriptionPlan: user.subscriptionPlan || 'free',
             proActivatedAt: user.proActivatedAt || null,
             rating: user.rating,
             seasonScore: user.seasonScore,
             stats: user.stats,
+            badges: user.badges || [],
+            customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
             token,
         });
     } catch (error) {
@@ -145,7 +149,7 @@ export const loginUser = async (req, res) => {
 
         const trimmedEmail = email.trim().toLowerCase();
         const user = await User.findOne({ email: trimmedEmail })
-            .select('+password username fullName email phone avatar bio preferences isPro planId proActivatedAt rating seasonScore stats usernameLower failedLoginAttempts lockUntil');
+            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil');
 
         if (!user) {
             console.log(`[AUTH] User not found: ${trimmedEmail}`);
@@ -227,11 +231,15 @@ export const loginUser = async (req, res) => {
             bio: user.bio || '',
             preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
             isPro: user.isPro || false,
+            role: user.role || 'user',
             planId: user.planId || null,
+            subscriptionPlan: user.subscriptionPlan || 'free',
             proActivatedAt: user.proActivatedAt || null,
             rating: user.rating,
             seasonScore: user.seasonScore,
             stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+            badges: user.badges || [],
+            customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
             token,
         });
     } catch (error) {

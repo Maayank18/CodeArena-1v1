@@ -59,6 +59,9 @@ const buildSettingsPayload = (user) => ({
     rating: user.rating,
     seasonScore: user.seasonScore,
     stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+    subscriptionPlan: user.subscriptionPlan || 'free',
+    badges: user.badges || [],
+    customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
     emailVerified: Boolean(user.email),
     phoneVerified: Boolean(user.phone),
 });
@@ -117,7 +120,7 @@ const buildRequestedChanges = ({ email, phone, password }) => {
 export const getSettingsProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .select('username fullName email phone avatar bio preferences rating seasonScore stats')
+            .select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization')
             .lean();
 
         if (!user) {
@@ -370,5 +373,120 @@ export const verifySettingsOtp = async (req, res) => {
         }
 
         return res.status(500).json({ success: false, message: 'Unable to verify your code right now.' });
+    }
+};
+
+// ── Pro Feature: Customization ────────────────────────────────
+
+const VALID_AVATAR_FRAMES = ['none', 'neon-cyan', 'gold-hexagon', 'pulse-ring', 'emerald-glow', 'crimson-edge'];
+const VALID_ENTRANCE_BANNERS = ['default-dark', 'aurora-borealis', 'cyber-grid', 'gradient-sunset', 'deep-ocean', 'neon-tokyo'];
+const VALID_STACK_LANGUAGES = [
+    'javascript', 'typescript', 'python', 'java', 'cpp', 'c', 'csharp',
+    'go', 'rust', 'ruby', 'swift', 'kotlin', 'php', 'scala', 'dart',
+];
+
+export const updateCustomization = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { avatarFrame, tagline, signatureStack, entranceBanner } = req.body;
+
+        const update = {};
+
+        if (avatarFrame !== undefined) {
+            if (!VALID_AVATAR_FRAMES.includes(avatarFrame)) {
+                return res.status(400).json({ success: false, message: 'Invalid avatar frame' });
+            }
+            update['customization.avatarFrame'] = avatarFrame;
+        }
+
+        if (tagline !== undefined) {
+            const sanitized = typeof tagline === 'string' ? tagline.trim().slice(0, 30) : '';
+            update['customization.tagline'] = sanitized || 'Novice';
+        }
+
+        if (signatureStack !== undefined) {
+            if (!Array.isArray(signatureStack) || signatureStack.length > 3) {
+                return res.status(400).json({ success: false, message: 'Signature stack must be an array of max 3 languages' });
+            }
+            const validatedStack = signatureStack.filter(lang => VALID_STACK_LANGUAGES.includes(lang));
+            update['customization.signatureStack'] = validatedStack;
+        }
+
+        if (entranceBanner !== undefined) {
+            if (!VALID_ENTRANCE_BANNERS.includes(entranceBanner)) {
+                return res.status(400).json({ success: false, message: 'Invalid entrance banner' });
+            }
+            update['customization.entranceBanner'] = entranceBanner;
+        }
+
+        if (Object.keys(update).length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid customization fields provided' });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $set: update },
+            { new: true, runValidators: true }
+        ).select('customization badges').lean();
+
+        if (!updatedUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Customization saved.',
+            customization: updatedUser.customization,
+        });
+    } catch (error) {
+        console.error('UPDATE CUSTOMIZATION ERROR:', error.message);
+        return res.status(500).json({ success: false, message: 'Unable to save customization.' });
+    }
+};
+
+export const getUserBadges = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id)
+            .select('badges stats')
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.json({
+            success: true,
+            badges: user.badges || [],
+            stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+        });
+    } catch (error) {
+        console.error('GET BADGES ERROR:', error.message);
+        return res.status(500).json({ success: false, message: 'Unable to fetch badges.' });
+    }
+};
+
+export const getUserCustomization = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id)
+            .select('customization badges')
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.json({
+            success: true,
+            customization: user.customization || {
+                avatarFrame: 'none',
+                tagline: 'Novice',
+                signatureStack: [],
+                entranceBanner: 'default-dark',
+            },
+            badges: user.badges || [],
+        });
+    } catch (error) {
+        console.error('GET CUSTOMIZATION ERROR:', error.message);
+        return res.status(500).json({ success: false, message: 'Unable to load customization.' });
     }
 };

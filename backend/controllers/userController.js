@@ -118,7 +118,7 @@ export const getUserProfile = async (req, res) => {
         const user = await User.findOne({ 
             usernameLower: username.toLowerCase() 
         })
-        .select('username rating seasonScore stats avatar email fullName phone bio preferences isPro planId proActivatedAt')
+        .select('username rating seasonScore stats avatar email fullName phone bio preferences isPro role planId subscriptionPlan proActivatedAt badges customization')
         .lean();
 
         if (!user) {
@@ -127,6 +127,10 @@ export const getUserProfile = async (req, res) => {
 
         // ✅ SAFETY: Ensure stats exists
         user.stats = user.stats || { matchesPlayed: 0, wins: 0, losses: 0 };
+        
+        // Ensure RBAC fields exist
+        user.role = user.role || 'user';
+        user.subscriptionPlan = user.subscriptionPlan || 'free';
 
         res.json(user);
     } catch (error) {
@@ -134,7 +138,6 @@ export const getUserProfile = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
-
 // ✅ NEW: Cache invalidation helper (call after match ends)
 export const clearLeaderboardCache = () => {
     leaderboardCache = null;

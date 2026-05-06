@@ -1,10 +1,12 @@
 // backend/routes/campaignRoutes.js
+// backend/routes/campaignRoutes.js
 // Drop-in replacement for the route file written in the previous session.
 // Now correctly applies campaignAuth middleware at the right granularity.
 
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import { ensureProgress, verifyNodeUnlocked } from '../middleware/campaignAuth.js';
+import { requirePlus } from '../middleware/subscriptionAuth.js';
 
 import {
     getCampaignMap,
@@ -50,7 +52,7 @@ router.post('/equip', ensureProgress, equipCosmetic);
 // ── AI Sage ──────────────────────────────────────────────────────────────────
 // POST /api/campaign/mentor  { nodeId, failedCode, errorMessage, language }
 // ensureProgress needed so sage can verify failCount server-side
-router.post('/mentor', ensureProgress, getSageHint);
+router.post('/mentor', requirePlus, ensureProgress, getSageHint);
 
 export default router;
 // V 1.5

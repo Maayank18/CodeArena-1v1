@@ -11,13 +11,18 @@
 
 // routes/statsRoutes.js
 import express from 'express';
-import { getStats } from '../controllers/statsController.js';
+import { getStats, getUserAnalytics } from '../controllers/statsController.js';
+import { verifyToken } from '../middleware/auth.js';
+import { requirePro } from '../middleware/subscriptionAuth.js';
 
 const router = express.Router();
 
 // This must be GET '/' so that when mounted at '/api/stats'
 // it responds to '/api/stats' (not '/api/stats/stats').
 router.get('/', getStats);
+
+// Pro Analytics Route
+router.get('/analytics', verifyToken, requirePro, getUserAnalytics);
 
 export default router;
 // V 1.5

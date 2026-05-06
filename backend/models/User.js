@@ -274,6 +274,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
     planId: {
         type: String,
         default: null,
@@ -282,9 +287,45 @@ const userSchema = new mongoose.Schema({
             message: 'Invalid plan selected for user',
         },
     },
+    subscriptionPlan: { 
+        type: String, 
+        enum: ['free', 'plus', 'pro', 'premium'], 
+        default: 'free' 
+    },
     proActivatedAt: {
         type: Date,
         default: null,
+    },
+
+    // ── Pro Feature: Badge System ──────────────────────────────────
+    badges: {
+        type: [String],
+        default: [],
+    },
+
+    // ── Pro Feature: Developer Identity Customization ──────────────
+    customization: {
+        avatarFrame: {
+            type: String,
+            default: 'none',
+        },
+        tagline: {
+            type: String,
+            default: 'Novice',
+            maxlength: 30,
+        },
+        signatureStack: {
+            type: [String],
+            default: [],
+            validate: {
+                validator: (v) => !v || v.length <= 3,
+                message: 'Signature stack cannot exceed 3 languages',
+            },
+        },
+        entranceBanner: {
+            type: String,
+            default: 'default-dark',
+        },
     },
 
     rating: { 

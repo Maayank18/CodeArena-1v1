@@ -17,7 +17,13 @@ import {
   BarChart3,
   Activity,
   Info,
+  Award,
+  Palette,
+  Users,
 } from 'lucide-react';
+import BadgesTab from './settings/BadgesTab.jsx';
+import CustomizationTab from './settings/CustomizationTab.jsx';
+import CommunityTab from './settings/CommunityTab.jsx';
 import {
   BarChart,
   Bar,
@@ -38,6 +44,9 @@ const tabs = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'security', label: 'Security', icon: Shield },
   { id: 'preferences', label: 'Preferences', icon: Bell },
+  { id: 'badges', label: 'Badges', icon: Award },
+  { id: 'customization', label: 'Customize', icon: Palette },
+  { id: 'community', label: 'Community', icon: Users },
 ];
 
 const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
@@ -690,6 +699,9 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   )}
 
                   {activeTab === 'analytics' && <AnalyticsTab />}
+                  {activeTab === 'badges' && <BadgesTab />}
+                  {activeTab === 'customization' && <CustomizationTab />}
+                  {activeTab === 'community' && <CommunityTab />}
                 </>
               )}
             </div>

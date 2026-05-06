@@ -71,10 +71,12 @@
 
 import express from 'express';
 import Match from '../models/Match.js';
+import { verifyToken } from '../middleware/auth.js';
+import { requirePlus } from '../middleware/subscriptionAuth.js';
 
 const router = express.Router();
 
-router.get('/user/:username', async (req, res) => {
+router.get('/user/:username', verifyToken, requirePlus, async (req, res) => {
   try {
     const { username } = req.params;
     

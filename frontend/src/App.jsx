@@ -11,6 +11,8 @@ import Visualizer from './pages/Visualizer';
 import Campaign from './pages/Campaign';
 import CampaignEditor from './pages/CampaignEditor';
 import Pricing from './pages/Pricing';
+import Learn from './pages/Learn';
+import Contest from './pages/Contest';
 import useTelemetry from './hooks/useTelemetry';
 
 function App() {
@@ -33,6 +35,8 @@ function App() {
         <Route path="/campaign" element={<Campaign />} />
         <Route path="/campaign/:nodeId" element={<CampaignEditor />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/learn" element={<Learn />} />
+        <Route path="/contest" element={<Contest />} />
         <Route path="/editor/:roomId" element={<EditorPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>

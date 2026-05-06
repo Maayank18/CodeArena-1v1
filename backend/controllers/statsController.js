@@ -119,4 +119,56 @@ export const clearStatsCache = () => {
   statsCache = null;
   statsCacheTimestamp = 0;
 };
+
+// @desc    Get user analytics for Pro users
+// @route   GET /api/stats/analytics
+export const getUserAnalytics = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Fetch the user to get real stats
+        const user = await User.findById(userId).select('stats').lean();
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const stats = user.stats || { wins: 0, losses: 0, matchesPlayed: 0 };
+        
+        // Placeholder values for data not yet tracked but needed for Pro Analytics UI
+        // Total solved = wins + some campaign progress (using placeholder logic for now)
+        const totalSolved = stats.wins * 2 + 15; // Placeholder
+        const totalAttempts = stats.matchesPlayed * 3 + 42; // Placeholder
+        
+        const accuracy = totalAttempts > 0 
+            ? Math.round((totalSolved / totalAttempts) * 100) 
+            : 0;
+
+        // Placeholder for time spent (minutes)
+        const timeSpent = stats.matchesPlayed * 15 + 120; // Assuming ~15m per match + base time
+
+        // Placeholder topic breakdown
+        const topicBreakdown = [
+            { topic: 'Arrays', solved: 12, total: 20 },
+            { topic: 'Strings', solved: 8, total: 15 },
+            { topic: 'Dynamic Programming', solved: 3, total: 10 },
+            { topic: 'Graphs', solved: 5, total: 12 },
+            { topic: 'Trees', solved: 7, total: 14 }
+        ];
+
+        res.json({
+            success: true,
+            data: {
+                timeSpent,
+                totalSolved,
+                totalAttempts,
+                accuracy,
+                topicBreakdown
+            }
+        });
+    } catch (error) {
+        console.error("Error in getUserAnalytics:", error);
+        res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+    }
+};
 // V 1.5

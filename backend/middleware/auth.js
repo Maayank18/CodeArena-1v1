@@ -33,7 +33,7 @@ export const verifyToken = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid token' });
         }
 
-        const user = await User.findById(decoded.id).select('_id passwordChangedAt').lean();
+        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role').lean();
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid token' });
         }
@@ -47,9 +47,50 @@ export const verifyToken = async (req, res, next) => {
             }
         }
 
-        req.user = { _id: decoded.id };
+        req.user = { 
+            _id: decoded.id,
+            subscriptionPlan: user.subscriptionPlan || 'free',
+            role: user.role || 'user'
+        };
         return next();
     } catch (err) {
         return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+};
+
+export const optionalAuth = async (req, res, next) => {
+    try {
+        const token = getTokenFromRequest(req);
+        if (!token) {
+            req.user = null;
+            return next();
+        }
+
+        if (!process.env.JWT_SECRET) {
+            req.user = null;
+            return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded?.id) {
+            req.user = null;
+            return next();
+        }
+
+        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role').lean();
+        if (!user) {
+            req.user = null;
+            return next();
+        }
+
+        req.user = { 
+            _id: decoded.id,
+            subscriptionPlan: user.subscriptionPlan || 'free',
+            role: user.role || 'user'
+        };
+        return next();
+    } catch (err) {
+        req.user = null;
+        return next();
     }
 };
