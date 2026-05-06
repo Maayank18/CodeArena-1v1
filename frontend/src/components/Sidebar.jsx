@@ -100,6 +100,19 @@ const Sidebar = () => {
         </div>
 
         <div className="mt-auto px-4 pb-10">
+          <div className="mb-2 px-2 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Your Role</span>
+            <span className="text-[10px] font-mono font-bold text-accent px-2 py-0.5 rounded-md bg-accent/10">
+              {(() => {
+                try {
+                  const u = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+                  return u.role || 'unknown';
+                } catch {
+                  return 'error';
+                }
+              })()}
+            </span>
+          </div>
           <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-2 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[var(--text-secondary)]">

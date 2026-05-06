@@ -96,6 +96,9 @@ export const registerUser = async (req, res) => {
         const token = generateToken(user._id);
         attachAccessCookie(res, token);
 
+        const safeRole = user.role || 'user';
+        const safePlan = user.subscriptionPlan || 'free';
+
         return res.status(201).json({
             _id: user._id,
             username: user.username,
@@ -106,9 +109,9 @@ export const registerUser = async (req, res) => {
             bio: user.bio || '',
             preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
             isPro: user.isPro || false,
-            role: user.role || 'user',
+            role: safeRole,
             planId: user.planId || null,
-            subscriptionPlan: user.subscriptionPlan || 'free',
+            subscriptionPlan: safePlan,
             proActivatedAt: user.proActivatedAt || null,
             rating: user.rating,
             seasonScore: user.seasonScore,
@@ -221,6 +224,9 @@ export const loginUser = async (req, res) => {
 
         console.log(`[AUTH] Login successful: ${user.username}`);
 
+        const safeRole = user.role || 'user';
+        const safePlan = user.subscriptionPlan || 'free';
+
         return res.json({
             _id: user._id,
             username: user.username,
@@ -231,9 +237,9 @@ export const loginUser = async (req, res) => {
             bio: user.bio || '',
             preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
             isPro: user.isPro || false,
-            role: user.role || 'user',
+            role: safeRole,
             planId: user.planId || null,
-            subscriptionPlan: user.subscriptionPlan || 'free',
+            subscriptionPlan: safePlan,
             proActivatedAt: user.proActivatedAt || null,
             rating: user.rating,
             seasonScore: user.seasonScore,

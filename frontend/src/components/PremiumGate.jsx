@@ -40,6 +40,14 @@ const PremiumGate = ({ requiredTier = 'pro', children }) => {
     const userRole = user?.role?.toLowerCase() || 'user';
     const userPlan = user?.subscriptionPlan?.toLowerCase() || 'free';
 
+    // DEBUG LOG
+    console.log("[PREMIUM_GATE_DEBUG]", { 
+        username: user?.username, 
+        role: userRole, 
+        plan: userPlan, 
+        requiredTier 
+    });
+
     const isAdmin = userRole === 'admin';
     const hasPro = userPlan === 'pro' || userPlan === 'premium';
     const hasPlus = userPlan === 'plus' || hasPro;
