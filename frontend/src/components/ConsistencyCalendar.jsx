@@ -33,14 +33,23 @@ const ConsistencyCalendar = ({ className = "" }) => {
   const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
   
   // Prepare week data from activity array (last 7 days)
-  const weekData = (data?.activity || []).map((day, idx) => {
+  // Fallback to empty week if data is missing
+  const weekData = (data?.activity || Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return {
+      label: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+      dateKey: date.toISOString().split('T')[0],
+      attempted: false
+    };
+  })).map((day, idx) => {
     // Determine if it's today
     const date = new Date(day.dateKey);
     const isToday = date.toDateString() === today.toDateString();
     
     return {
       label: day.label,
-      status: day.attempted ? 'completed' : (idx < 6 ? 'missed' : 'pending'), // Today is pending if not attempted yet
+      status: day.attempted ? 'completed' : (idx < 6 ? 'missed' : 'pending'),
       isToday
     };
   });

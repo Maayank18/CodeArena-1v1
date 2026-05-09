@@ -21,8 +21,8 @@ const router = express.Router();
 // it responds to '/api/stats' (not '/api/stats/stats').
 router.get('/', getStats);
 
-// Pro Analytics Route
-router.get('/analytics', verifyToken, requirePro, getUserAnalytics);
+// Analytics Route (Public for consistency tracking)
+router.get('/analytics', verifyToken, getUserAnalytics);
 
 export default router;
 // V 1.5
