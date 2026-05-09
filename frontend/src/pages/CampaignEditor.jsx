@@ -8,7 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Play, Send, Loader2, CheckCircle, XCircle,
   ChevronDown, ChevronUp, Sparkles, Clock, BookOpen, Code2,
+  Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 import api from '../api';
 import SuccessModal from '../components/Campaign/SuccessModal';
@@ -100,8 +102,10 @@ const ResultRow = ({ result, index }) => {
   const [open, setOpen] = useState(!result.passed);
   const isHidden = result.input === 'Hidden' || !result.input;
   return (
-    <div className={`border rounded-xl overflow-hidden ${
-      result.passed ? 'border-emerald-800/40 bg-emerald-950/10' : 'border-red-800/40 bg-red-950/[0.08]'
+    <div className={`border rounded-xl overflow-hidden transition-colors ${
+      result.passed 
+        ? 'border-emerald-500/30 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/10' 
+        : 'border-red-500/30 dark:border-red-800/40 bg-red-50 dark:bg-red-950/[0.08]'
     }`}>
       <button className="w-full flex items-center justify-between px-3.5 py-2.5 text-left" onClick={() => setOpen(o => !o)}>
         <div className="flex items-center gap-2.5 min-w-0">
@@ -110,7 +114,7 @@ const ResultRow = ({ result, index }) => {
             {isHidden ? `Hidden Test ${index + 1}` : `Test Case ${index + 1}`}
           </span>
           {!result.passed && (result.error || result.stderr) && (
-            <span className="text-[10px] text-red-500 bg-red-950/40 px-1.5 py-0.5 rounded font-bold border border-red-900/40 truncate max-w-[160px]">
+            <span className="text-[10px] text-red-600 dark:text-red-500 bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 rounded font-bold border border-red-200 dark:border-red-900/40 truncate max-w-[160px]">
               {result.error || result.stderr?.split('\n') || 'Wrong Answer'}
             </span>
           )}
@@ -118,7 +122,7 @@ const ResultRow = ({ result, index }) => {
         {!isHidden && (open ? <ChevronUp size={12} className="text-gray-700 shrink-0" /> : <ChevronDown size={12} className="text-gray-700 shrink-0" />)}
       </button>
       {open && !isHidden && (
-        <div className="px-3.5 pb-3 pt-2 space-y-2 border-t border-gray-800/40">
+        <div className="px-3.5 pb-3 pt-2 space-y-2 border-t border-gray-200 dark:border-gray-800/40">
           {[
             { label: 'Input', val: result.input },
             { label: 'Expected', val: result.expected },
@@ -134,7 +138,7 @@ const ResultRow = ({ result, index }) => {
           {result.stderr && (
             <div>
               <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-0.5">Compiler / Runtime Error</p>
-              <pre className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg bg-orange-950/20 text-orange-400 whitespace-pre-wrap break-all max-h-28 overflow-y-auto">{result.stderr}</pre>
+              <pre className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg bg-orange-100 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 whitespace-pre-wrap break-all max-h-28 overflow-y-auto">{result.stderr}</pre>
             </div>
           )}
         </div>
@@ -148,7 +152,7 @@ const ProblemPanel = ({ node, existingBest }) => {
   if (!problem) return null;
   const publicCases = (problem.testCases || []).filter(tc => tc.isPublic);
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-white dark:bg-[#07090e] transition-colors">
       <div className="px-4 sm:px-5 py-5 space-y-5 text-[13px]">
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -216,13 +220,14 @@ const EditorPane = ({
   showResults, setShowResults, runResults, execType,
   passedCount, totalCount, allPassed,
   sageShouldShow, showSage, setShowSage,
-  lastFailedCode, lastError,
+  lastFailedCode, lastError, isDark
 }) => (
-  <div className="h-full flex flex-col bg-[#07090e] relative overflow-hidden">
+  <div className={`h-full flex flex-col transition-colors relative overflow-hidden ${isDark ? 'bg-[#07090e]' : 'bg-white'}`}>
     <div className="flex-1 min-h-0">
       <Editor
         height="100%"
         language={MONACO_LANG[language] || 'javascript'}
+        theme={isDark ? 'ca-dark' : 'ca-light'}
         value={code}
         onChange={(v) => {
           const newCode = v || '';
@@ -245,9 +250,9 @@ const EditorPane = ({
 
     <AnimatePresence>
       {showResults && runResults && (
-        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} transition={{ duration: 0.2 }} className="border-t border-gray-800/50 bg-[#07090f] overflow-hidden shrink-0">
+        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} transition={{ duration: 0.2 }} className="border-t border-gray-200 dark:border-gray-800/50 bg-gray-50 dark:bg-[#07090f] overflow-hidden shrink-0">
           <div className="max-h-60 overflow-y-auto">
-            <div className="sticky top-0 flex items-center justify-between px-4 py-2 bg-[#07090f] border-b border-gray-800/40 z-10">
+            <div className="sticky top-0 flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-[#07090f] border-b border-gray-200 dark:border-gray-800/40 z-10">
               <div className="flex items-center gap-2">
                 {allPassed ? <CheckCircle size={14} className="text-emerald-400" /> : <XCircle size={14} className="text-red-400" />}
                 <span className={`text-xs font-bold ${allPassed ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -261,7 +266,7 @@ const EditorPane = ({
             </div>
             {sageShouldShow && !showSage && (
               <div className="px-3 pb-3">
-                <button onClick={() => setShowSage(true)} className="w-full flex items-center justify-center gap-2 py-2 bg-purple-950/30 hover:bg-purple-950/50 border border-purple-700/35 text-purple-300 text-xs font-bold rounded-xl transition-all">
+                <button onClick={() => setShowSage(true)} className="w-full flex items-center justify-center gap-2 py-2 bg-purple-100 dark:bg-purple-950/30 hover:bg-purple-200 dark:hover:bg-purple-950/50 border border-purple-200 dark:border-purple-700/35 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-xl transition-all">
                   <Sparkles size={13} /> Consult The Sage
                 </button>
               </div>
@@ -280,6 +285,7 @@ const EditorPane = ({
 const CampaignEditor = () => {
   const { nodeId } = useParams();
   const navigate   = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
 
   const [node,         setNode]         = useState(null);
   const [existingBest, setExistingBest] = useState(null);
@@ -370,7 +376,13 @@ const CampaignEditor = () => {
         'editor.lineHighlightBackground': '#0e1420',
       },
     });
-    monaco.editor.setTheme('ca-dark');
+    monaco.editor.defineTheme('ca-light', {
+      base: 'vs', inherit: true, rules: [],
+      colors: {
+        'editor.background': '#ffffff',
+        'editor.lineHighlightBackground': '#f3f4f6',
+      },
+    });
   }, []);
 
   // -- Language switch (PERSISTENCE FIX) ----------------------------------
@@ -520,6 +532,15 @@ const CampaignEditor = () => {
         <div className="flex items-center gap-1 text-slate-500 dark:text-gray-600 shrink-0">
           <Clock size={12} /> <TimerDisplay startTime={startTime} isStopped={showSuccess} />
         </div>
+
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-gray-500 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all ml-1"
+          title={isDark ? 'Switch to Bright Mode' : 'Switch to Dark Mode'}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+
         <div className="hidden sm:flex items-center gap-2 shrink-0">
           <button onClick={handleRun} disabled={isBusy || !code.trim()} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-gray-800 text-xs font-bold rounded-lg transition-all">
             {isRunning ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Run
@@ -538,12 +559,12 @@ const CampaignEditor = () => {
         ) : null}
         
         <div className={`${mobileTab === 'editor' ? 'flex-1' : 'hidden sm:block sm:flex-1'} h-full`}>
-           <EditorPane 
+            <EditorPane 
               code={code} setCode={setCode} language={language} handleEditorMount={handleEditorMount} nodeId={nodeId} 
               showResults={showResults} setShowResults={setShowResults} runResults={runResults} execType={execType} 
               passedCount={passedCount} totalCount={totalCount} allPassed={allPassed} 
               sageShouldShow={sageShouldShow} showSage={showSage} setShowSage={setShowSage} 
-              lastFailedCode={lastFailedCode} lastError={lastError} 
+              lastFailedCode={lastFailedCode} lastError={lastError} isDark={isDark}
             />
         </div>
       </div>

@@ -5,7 +5,10 @@ import { X, Sparkles, Loader2 } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
 
+import { useTheme } from '../../context/ThemeContext';
+
 const SagePanel = ({ nodeId, failedCode, errorMessage, language, isVisible, onClose }) => {
+    const { isDark } = useTheme();
     const [hint, setHint]       = useState('');
     const [loading, setLoading] = useState(false);
     const [fetched, setFetched] = useState(false);
@@ -51,7 +54,7 @@ const SagePanel = ({ nodeId, failedCode, errorMessage, language, isVisible, onCl
                     animate={{ y: 0,      opacity: 1 }}
                     exit={{    y: '100%', opacity: 0 }}
                     transition={{ type: 'spring', damping: 26, stiffness: 210 }}
-                    className="absolute bottom-0 left-0 right-0 bg-[#0a0510] border-t border-purple-900/35 z-30 shadow-2xl"
+                    className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#0a0510] border-t border-purple-200 dark:border-purple-900/35 z-30 shadow-2xl transition-colors"
                 >
                     {/* Purple glow top border */}
                     <div className="h-px w-full bg-gradient-to-r from-transparent via-purple-500/60 to-transparent" />
@@ -60,39 +63,39 @@ const SagePanel = ({ nodeId, failedCode, errorMessage, language, isVisible, onCl
                         {/* Header */}
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-full bg-purple-950/60 border border-purple-500/35 flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.3)]">
-                                    <Sparkles size={16} className="text-purple-400" />
+                                <div className="w-9 h-9 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-500/35 flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.15)] dark:shadow-[0_0_12px_rgba(168,85,247,0.3)]">
+                                    <Sparkles size={16} className="text-purple-600 dark:text-purple-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-black text-purple-200 leading-none">The Sage</p>
-                                    <p className="text-[10px] text-gray-600 mt-0.5">Ancient Algorithm Mentor</p>
+                                    <p className="text-sm font-black text-purple-700 dark:text-purple-200 leading-none">The Sage</p>
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-600 mt-0.5 uppercase tracking-wider font-bold">Ancient Algorithm Mentor</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-1.5 text-gray-600 hover:text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
+                                className="p-1.5 text-gray-400 dark:text-gray-600 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                             >
                                 <X size={16} />
                             </button>
                         </div>
 
                         {/* Hint box */}
-                        <div className="relative bg-purple-950/18 border border-purple-900/30 rounded-xl p-4 min-h-[60px] flex items-center">
+                        <div className="relative bg-purple-50/50 dark:bg-purple-950/18 border border-purple-100 dark:border-purple-900/30 rounded-xl p-4 min-h-[60px] flex items-center">
                             {loading ? (
-                                <div className="flex items-center gap-2.5 text-purple-400/70">
+                                <div className="flex items-center gap-2.5 text-purple-500/70 dark:text-purple-400/70">
                                     <Loader2 size={16} className="animate-spin" />
                                     <span className="text-sm italic">The Sage contemplates your code...</span>
                                 </div>
                             ) : hint ? (
-                                <p className="text-[13px] text-purple-200 leading-relaxed italic">
+                                <p className="text-[13px] text-purple-800 dark:text-purple-200 leading-relaxed italic">
                                     &ldquo;{hint}&rdquo;
                                 </p>
                             ) : (
-                                <p className="text-sm text-gray-700 italic">Waiting for wisdom...</p>
+                                <p className="text-sm text-gray-400 italic">Waiting for wisdom...</p>
                             )}
                         </div>
 
-                        <p className="text-[10px] text-gray-700 text-center mt-2">
+                        <p className="text-[10px] text-gray-400 dark:text-gray-700 text-center mt-2 font-medium">
                             The Sage guides but does not solve. The insight must be yours.
                         </p>
                     </div>

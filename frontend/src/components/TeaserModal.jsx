@@ -2,9 +2,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, X, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
 const TeaserModal = ({ isOpen, onClose, title, message }) => {
     const navigate = useNavigate();
+    const { isDark } = useTheme();
 
     if (!isOpen) return null;
 
@@ -12,12 +14,12 @@ const TeaserModal = ({ isOpen, onClose, title, message }) => {
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
                 {/* Backdrop */}
-                <motion.div 
+                 <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm"
                 />
 
                 {/* Modal Container */}
@@ -25,7 +27,7 @@ const TeaserModal = ({ isOpen, onClose, title, message }) => {
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0b] shadow-2xl"
+                    className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#0a0a0b] shadow-2xl transition-colors"
                 >
                     {/* Background Accents */}
                     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-500/10 blur-[80px]" />
@@ -41,16 +43,16 @@ const TeaserModal = ({ isOpen, onClose, title, message }) => {
                         </button>
 
                         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-[0_0_40px_rgba(245,158,11,0.3)]">
-                            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#0a0a0b]">
+                            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white dark:bg-[#0a0a0b]">
                                 <Crown className="h-10 w-10 text-amber-400" />
                             </div>
                         </div>
 
-                        <h2 className="mb-3 text-3xl font-black tracking-tight text-white">
+                        <h2 className="mb-3 text-3xl font-black tracking-tight text-gray-800 dark:text-white">
                             {title || "Unlock Premium"}
                         </h2>
                         
-                        <p className="mb-10 text-lg leading-relaxed text-gray-400">
+                        <p className="mb-10 text-lg leading-relaxed text-gray-500 dark:text-gray-400">
                             {message || "Upgrade your plan to access this exclusive feature and take your coding skills to the next level."}
                         </p>
 
@@ -66,9 +68,9 @@ const TeaserModal = ({ isOpen, onClose, title, message }) => {
                                 <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                             </button>
                             
-                            <button
+                             <button
                                 onClick={onClose}
-                                className="rounded-2xl border border-white/5 bg-white/5 py-4 text-sm font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-white"
+                                className="rounded-2xl border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 transition-all hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-800 dark:hover:text-white"
                             >
                                 Maybe Later
                             </button>

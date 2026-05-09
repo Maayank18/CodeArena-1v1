@@ -10,6 +10,7 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Zap, Check, Lock, ChevronRight } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 import api   from '../../api';
 import toast from 'react-hot-toast';
 
@@ -32,9 +33,9 @@ const CATALOGUE = [
 ];
 
 const TYPE_COLORS = {
-  theme:  { badge:'bg-blue-950/40 text-blue-400 border-blue-800/50',   accent:'#60a5fa' },
-  border: { badge:'bg-amber-950/40 text-amber-400 border-amber-800/50', accent:'#fbbf24' },
-  title:  { badge:'bg-purple-950/40 text-purple-400 border-purple-800/50', accent:'#c084fc' },
+  theme:  { badge:'bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50',   accent:'#60a5fa' },
+  border: { badge:'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50', accent:'#fbbf24' },
+  title:  { badge:'bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/50', accent:'#c084fc' },
 };
 
 // ── Item card ─────────────────────────────────────────────────────────────────
@@ -77,10 +78,10 @@ const ItemCard = ({ item, currentKP, ownedIds, equippedMap, completedBosses, onB
   return (
     <div className={`p-3.5 rounded-xl border transition-colors ${
       owned
-        ? 'bg-emerald-950/10 border-emerald-800/30'
+        ? 'bg-emerald-50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-800/30'
         : bossLocked
-          ? 'bg-gray-900/20 border-gray-800/30 opacity-60'
-          : 'bg-slate-100 dark:bg-gray-900/40 border-slate-200 dark:border-gray-800/40 hover:border-gray-700/60'
+          ? 'bg-gray-100 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800/30 opacity-60'
+          : 'bg-slate-50 dark:bg-gray-900/40 border-slate-100 dark:border-gray-800/40 hover:border-gray-200 dark:hover:border-gray-700/60'
     }`}>
       <div className="flex items-start gap-3">
         <span className="text-2xl select-none shrink-0">{item.emoji}</span>
@@ -98,8 +99,8 @@ const ItemCard = ({ item, currentKP, ownedIds, equippedMap, completedBosses, onB
           )}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1">
-              <Zap size={11} className={canAfford && !owned && !bossLocked ? 'text-accent' : 'text-gray-700'}/>
-              <span className={`text-[12px] font-black ${canAfford && !owned && !bossLocked ? 'text-accent' : 'text-gray-600'}`}>
+              <Zap size={11} className={canAfford && !owned && !bossLocked ? 'text-accent' : 'text-gray-400 dark:text-gray-700'}/>
+              <span className={`text-[12px] font-black ${canAfford && !owned && !bossLocked ? 'text-accent' : 'text-gray-400 dark:text-gray-600'}`}>
                 {item.cost} KP
               </span>
             </div>
@@ -113,6 +114,7 @@ const ItemCard = ({ item, currentKP, ownedIds, equippedMap, completedBosses, onB
 
 // ── Main modal ────────────────────────────────────────────────────────────────
 const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
+  const { isDark } = useTheme();
   const [activeType, setActiveType] = useState('theme');
   const [isBuying,   setIsBuying]   = useState(null); // itemId currently being purchased
 
@@ -175,7 +177,7 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
-          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(14px)' }}
+          style={{ background: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(0,0,0,0.6)', backdropFilter: 'blur(14px)' }}
           onClick={e => e.target === e.currentTarget && onClose()}
         >
           <motion.div
@@ -230,8 +232,8 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
                     onClick={() => setActiveType(type)}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex-shrink-0 ${
                       activeType === type
-                        ? 'bg-purple-950/30 text-purple-300 border-purple-700/40'
-                        : 'bg-slate-100 dark:bg-gray-900/40 text-slate-500 dark:text-gray-500 border-slate-200 dark:border-gray-800/40 hover:border-gray-700/60'
+                        ? 'bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700/40 shadow-sm'
+                        : 'bg-white dark:bg-gray-900/40 text-slate-500 dark:text-gray-500 border-slate-100 dark:border-gray-800/40 hover:border-gray-200 dark:hover:border-gray-700/60'
                     }`}
                   >
                     <span>{icons[type]}</span>

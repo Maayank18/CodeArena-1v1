@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useMemo, useEffect, useState } from 'react'
 import { motion } from 'framer-motion';
 import { Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
 import ZoneContainer from './ZoneContainer';
 import BossNode from './BossNode';
 import NodeDetailPanel from './NodeDetailPanel';
@@ -247,12 +248,12 @@ const StandardNode = React.memo(function StandardNode({ node, state, accent, onC
       </motion.div>
 
       <div
-        className="px-2 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[76px] truncate text-center"
+        className="px-2 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[76px] truncate text-center transition-colors"
         style={{
-          background: 'rgba(0,0,0,.7)',
+          background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)',
-          color: isLocked ? '#374151' : isDone ? '#fbbf24' : accent,
-          border: `1px solid ${isLocked ? '#1f2937' : isDone ? '#92400e40' : `${accent}30`}`,
+          color: isLocked ? '#6b7280' : isDone ? '#fbbf24' : accent,
+          border: `1px solid ${isLocked ? 'rgba(255,255,255,0.05)' : isDone ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.1)'}`,
         }}
       >
         {title.split(' ').slice(0, 3).join(' ')}
@@ -403,6 +404,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
   onNodeClick,
   useMockData,
 }) {
+  const { isDark } = useTheme();
   const scrollRef = useRef(null);
   const { width: viewportWidth, height: viewportHeight } = useRafViewport();
 
@@ -566,18 +568,18 @@ const WorldMapScene = React.memo(function WorldMapScene({
   const bridgeTo = useMemo(() => getLocalNodePos(0), []);
 
   return (
-    <div className="relative w-full h-full overflow-hidden" style={{ background: '#020408' }}>
+    <div className="relative w-full h-full overflow-hidden transition-colors duration-500" style={{ background: isDark ? '#020408' : '#f0f4f8' }}>
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {Array.from({ length: 80 }, (_, index) => (
           <div
             key={index}
-            className="absolute rounded-full bg-white"
+            className={`absolute rounded-full ${isDark ? 'bg-white' : 'bg-cyan-600'}`}
             style={{
               width: index % 5 < 2 ? 1.5 : 0.8,
               height: index % 5 < 2 ? 1.5 : 0.8,
               left: `${(index * 137.5) % 100}%`,
               top: `${(index * 97.3) % 100}%`,
-              opacity: index % 3 === 0 ? 0.5 : 0.15,
+              opacity: isDark ? (index % 3 === 0 ? 0.5 : 0.15) : (index % 3 === 0 ? 0.2 : 0.08),
             }}
           />
         ))}
@@ -676,8 +678,8 @@ const WorldMapScene = React.memo(function WorldMapScene({
       </div>
 
       <div className="absolute top-3 right-3 z-50 pointer-events-none w-[min(44vw,240px)] sm:w-auto">
-        <div className="bg-[#060810]/85 border border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60">
-          <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest mb-1.5">
+        <div className="bg-white/90 dark:bg-[#060810]/85 border border-gray-200 dark:border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60 transition-all shadow-lg dark:shadow-none">
+          <p className="text-[9px] text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest mb-1.5">
             Zones
           </p>
           {CAMPAIGN_REGIONS.map((zone, index) => {
@@ -700,7 +702,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
       </div>
 
       <div className="absolute bottom-3 left-3 z-50 flex flex-col items-start gap-3 pointer-events-none sm:bottom-5 sm:left-5 sm:gap-4">
-        <div className="pointer-events-none bg-[#060810]/85 border border-gray-800/50 rounded-xl px-2.5 py-2 backdrop-blur-md hidden md:block">
+        <div className="pointer-events-none bg-white/90 dark:bg-[#060810]/85 border border-gray-200 dark:border-gray-800/50 rounded-xl px-2.5 py-2 backdrop-blur-md hidden md:block shadow-lg dark:shadow-none transition-all">
           {[
             { col: '#374151', label: 'Locked' },
             { col: '#06b6d4', label: 'Available' },
@@ -724,11 +726,11 @@ const WorldMapScene = React.memo(function WorldMapScene({
 
         <button
           onClick={jumpToProgress}
-          className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg dark:shadow-none"
           style={{
-            background: 'rgba(34,211,238,0.12)',
-            border: '1px solid rgba(34,211,238,0.30)',
-            color: '#22d3ee',
+            background: isDark ? 'rgba(34,211,238,0.12)' : 'rgba(34,211,238,0.9)',
+            border: `1px solid ${isDark ? 'rgba(34,211,238,0.30)' : 'rgba(34,211,238,1)'}`,
+            color: isDark ? '#22d3ee' : '#fff',
             backdropFilter: 'blur(6px)',
           }}
         >

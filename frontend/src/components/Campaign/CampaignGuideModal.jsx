@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Map, Zap, Skull, ShoppingBag, Lock, Star, ChevronRight, Trophy } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const TABS = [
   { id: 'journey',   label: 'The Journey',   icon: Map        },
@@ -15,12 +16,11 @@ const TABS = [
   { id: 'economy',   label: 'Economy & KP',  icon: Zap        },
 ];
 
-// ── Icon legend items ─────────────────────────────────────────────────────────
-const ICON_LEGEND = [
+const ICON_LEGEND = (isDark) => [
   {
     visual: (
-      <div className="w-8 h-8 rounded-full border-2 border-gray-700 bg-gray-900 opacity-50 flex items-center justify-center">
-        <Lock size={12} className="text-gray-600"/>
+      <div className={`w-8 h-8 rounded-full border-2 ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} opacity-50 flex items-center justify-center`}>
+        <Lock size={12} className={isDark ? 'text-gray-600' : 'text-gray-400'}/>
       </div>
     ),
     name: 'Locked Node',
@@ -30,8 +30,8 @@ const ICON_LEGEND = [
   {
     visual: (
       <div className="relative flex items-center justify-center">
-        <div className="absolute w-12 h-12 rounded-full border-2 border-cyan-500/40 animate-ping" style={{animationDuration:'2s'}}/>
-        <div className="w-8 h-8 rounded-full border-2 border-cyan-400 bg-cyan-950/40 flex items-center justify-center" style={{boxShadow:'0 0 14px #22d3ee55'}}>
+        <div className={`absolute w-12 h-12 rounded-full border-2 ${isDark ? 'border-cyan-500/40' : 'border-cyan-500/20'} animate-ping`} style={{animationDuration:'2s'}}/>
+        <div className={`w-8 h-8 rounded-full border-2 border-cyan-400 ${isDark ? 'bg-cyan-950/40' : 'bg-cyan-50'} flex items-center justify-center`} style={{boxShadow: isDark ? '0 0 14px #22d3ee55' : '0 0 10px rgba(34,211,238,0.3)'}}>
           <div className="w-2.5 h-2.5 rounded-full bg-cyan-400"/>
         </div>
       </div>
@@ -42,7 +42,7 @@ const ICON_LEGEND = [
   },
   {
     visual: (
-      <div className="w-8 h-8 rounded-full border-2 border-amber-400 bg-amber-950/40 flex items-center justify-center" style={{boxShadow:'0 0 14px #fbbf2460'}}>
+      <div className={`w-8 h-8 rounded-full border-2 border-amber-400 ${isDark ? 'bg-amber-950/40' : 'bg-amber-50'} flex items-center justify-center`} style={{boxShadow: isDark ? '0 0 14px #fbbf2460' : '0 0 10px rgba(251,191,36,0.2)'}}>
         <span className="text-[9px] text-amber-400 font-black">★★★</span>
       </div>
     ),
@@ -53,8 +53,8 @@ const ICON_LEGEND = [
   {
     visual: (
       <div className="flex flex-col items-center gap-0.5">
-        <div className="text-[7px] font-black text-purple-300 bg-purple-900 px-1.5 rounded uppercase">MID BOSS</div>
-        <div className="w-9 h-9 rounded-full border-2 border-purple-500 bg-purple-950/40 flex items-center justify-center" style={{boxShadow:'0 0 18px #a855f770'}}>
+        <div className={`text-[7px] font-black text-purple-300 ${isDark ? 'bg-purple-900' : 'bg-purple-600'} px-1.5 rounded uppercase`}>MID BOSS</div>
+        <div className={`w-9 h-9 rounded-full border-2 border-purple-500 ${isDark ? 'bg-purple-950/40' : 'bg-purple-50'} flex items-center justify-center`} style={{boxShadow: isDark ? '0 0 18px #a855f770' : '0 0 12px rgba(168,85,247,0.3)'}}>
           <span>⚔️</span>
         </div>
       </div>
@@ -66,8 +66,8 @@ const ICON_LEGEND = [
   {
     visual: (
       <div className="flex flex-col items-center gap-0.5">
-        <div className="text-[7px] font-black text-red-300 bg-red-900 px-1.5 rounded uppercase">ZONE BOSS</div>
-        <div className="w-10 h-10 rounded-full border-2 border-red-500 bg-red-950/40 flex items-center justify-center" style={{boxShadow:'0 0 22px #ef444470'}}>
+        <div className={`text-[7px] font-black text-red-300 ${isDark ? 'bg-red-900' : 'bg-red-600'} px-1.5 rounded uppercase`}>ZONE BOSS</div>
+        <div className={`w-10 h-10 rounded-full border-2 border-red-500 ${isDark ? 'bg-red-950/40' : 'bg-red-50'} flex items-center justify-center`} style={{boxShadow: isDark ? '0 0 22px #ef444470' : '0 0 14px rgba(239,68,68,0.3)'}}>
           <span className="text-xl">💀</span>
         </div>
       </div>
@@ -102,103 +102,116 @@ const JourneyTab = () => (
   </div>
 );
 
-const IconLegendTab = () => (
-  <div className="space-y-3">
-    <p className="text-[12px] text-slate-500 dark:text-gray-500 leading-relaxed pb-1">
-      Use this as your map key. Each node you see on the snake path has a distinct visual state.
-    </p>
-    {ICON_LEGEND.map((item, i) => (
-      <motion.div key={i}
-        initial={{ opacity:0, x:-14 }} animate={{ opacity:1, x:0 }} transition={{ delay: i*0.06 }}
-        className="flex items-center gap-4 p-3.5 rounded-xl bg-slate-100 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-800/50"
-      >
-        <div className="w-16 flex items-center justify-center shrink-0">{item.visual}</div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-[13px] text-slate-800 dark:text-white mb-0.5">{item.name}</p>
-          <p className="text-[11px] text-slate-500 dark:text-gray-500 leading-relaxed">{item.desc}</p>
-        </div>
-      </motion.div>
-    ))}
-    <div className="p-3 rounded-xl border border-purple-800/30 bg-purple-950/10 text-[11px] text-slate-500 dark:text-gray-500 leading-relaxed">
-      💡 <strong className="text-slate-700 dark:text-gray-300">Tip:</strong> Drag the map canvas freely to explore all nodes. Use the +/− buttons or pinch to zoom. Your current progress auto-saves after every submission.
-    </div>
-  </div>
-);
-
-const BossesTab = () => (
-  <div className="space-y-3">
-    {[
-      { emoji:'⚔️', t:'Mid-Boss (Node 8)', col:'border-purple-800/40 bg-purple-950/10', tc:'text-purple-300',
-        desc:'A Medium-difficulty challenge with stricter time limits. Defeating it awards 30–80 KP and unlocks the second half of the zone.' },
-      { emoji:'💀', t:'Zone Boss (Node 15)', col:'border-red-800/40 bg-red-950/10', tc:'text-red-300',
-        desc:'Hard difficulty. Requires an optimal solution to pass hidden test cases. Defeating it unlocks the next Zone and has a loot drop chance for exclusive cosmetics.' },
-    ].map((item, i) => (
-      <div key={i} className={`p-4 rounded-xl border ${item.col}`}>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl">{item.emoji}</span>
-          <p className={`font-black text-[14px] ${item.tc}`}>{item.t}</p>
-        </div>
-        <p className="text-[12px] text-slate-500 dark:text-gray-500 leading-relaxed">{item.desc}</p>
-      </div>
-    ))}
-    <div className="p-4 rounded-xl border border-purple-800/30 bg-purple-950/15">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">✨</span>
-        <p className="font-black text-purple-200 text-[13px]">The Sage Appears After 3 Failures</p>
-      </div>
-      <p className="text-[12px] text-slate-500 dark:text-gray-500 leading-relaxed">
-        After 3 consecutive failed attempts on any node, the AI Sage mentor unlocks. It provides a Socratic hint — pointing out your logical flaw without ever writing the code for you.
+const IconLegendTab = () => {
+  const { isDark } = useTheme();
+  return (
+    <div className="space-y-3">
+      <p className="text-[12px] text-slate-500 dark:text-gray-500 leading-relaxed pb-1">
+        Use this as your map key. Each node you see on the snake path has a distinct visual state.
       </p>
-    </div>
-  </div>
-);
-
-const EconomyTab = () => (
-  <div className="space-y-4">
-    <p className="text-[12px] text-slate-500 dark:text-gray-400 leading-relaxed">
-      <strong className="text-slate-800 dark:text-white">Knowledge Points (KP)</strong> are the campaign currency. Earn them by solving challenges, spend them on cosmetics and perks in the Skill Tree.
-    </p>
-
-    {/* KP flow */}
-    <div className="flex items-center gap-1.5 p-3 bg-slate-100 dark:bg-gray-900/50 rounded-xl border border-slate-200 dark:border-gray-800/40 text-[11px] text-slate-500 dark:text-gray-500 overflow-x-auto">
-      {['Solve Nodes', 'Earn KP ⚡', 'Skill Tree', 'Buy Perks 🎨'].map((step, i) => (
-        <React.Fragment key={i}>
-          <span className={i % 2 === 1 ? 'text-amber-400 font-bold shrink-0' : 'shrink-0'}>{step}</span>
-          {i < 3 && <ChevronRight size={12} className="text-gray-700 shrink-0"/>}
-        </React.Fragment>
-      ))}
-    </div>
-
-    {/* Earning rates */}
-    <div>
-      <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-2">How to Earn KP</p>
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { stars:1, range:'10–50 KP',  label:'1 Star: Pass all cases' },
-          { stars:2, range:'20–80 KP',  label:'2 Stars: Beat 2★ time' },
-          { stars:3, range:'35–120 KP', label:'3 Stars: Optimal speed' },
-        ].map(r => (
-          <div key={r.stars} className="p-3 text-center bg-slate-100 dark:bg-gray-900/60 border border-slate-200 dark:border-gray-800/50 rounded-xl">
-            <div className="flex justify-center gap-0.5 mb-1">
-              {[1,2,3].map(i => <span key={i} style={{fontSize:10,color:i<=r.stars?'#fbbf24':'#374151'}}>★</span>)}
-            </div>
-            <div className="font-black text-sm text-accent">{r.range}</div>
-            <div className="text-[9px] text-slate-500 dark:text-gray-600 mt-0.5 leading-snug">{r.label}</div>
+      {ICON_LEGEND(isDark).map((item, i) => (
+        <motion.div key={i}
+          initial={{ opacity:0, x:-14 }} animate={{ opacity:1, x:0 }} transition={{ delay: i*0.06 }}
+          className="flex items-center gap-4 p-3.5 rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-slate-100 dark:border-gray-800/50 transition-colors"
+        >
+          <div className="w-16 flex items-center justify-center shrink-0">{item.visual}</div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-[13px] text-slate-800 dark:text-white mb-0.5">{item.name}</p>
+            <p className="text-[11px] text-slate-500 dark:text-gray-500 leading-relaxed">{item.desc}</p>
           </div>
+        </motion.div>
+      ))}
+      <div className={`p-3 rounded-xl border ${isDark ? 'border-purple-800/30 bg-purple-950/10' : 'border-purple-100 bg-purple-50'} text-[11px] text-slate-500 dark:text-gray-500 leading-relaxed transition-colors`}>
+        💡 <strong className="text-slate-700 dark:text-gray-300">Tip:</strong> Drag the map canvas freely to explore all nodes. Use the +/− buttons or pinch to zoom. Your current progress auto-saves after every submission.
+      </div>
+    </div>
+  );
+};
+
+const BossesTab = () => {
+  const { isDark } = useTheme();
+  return (
+    <div className="space-y-3">
+      {[
+        { emoji:'⚔️', t:'Mid-Boss (Node 8)', 
+          col: isDark ? 'border-purple-800/40 bg-purple-950/10' : 'border-purple-100 bg-purple-50', 
+          tc: isDark ? 'text-purple-300' : 'text-purple-600',
+          desc:'A Medium-difficulty challenge with stricter time limits. Defeating it awards 30–80 KP and unlocks the second half of the zone.' },
+        { emoji:'💀', t:'Zone Boss (Node 15)', 
+          col: isDark ? 'border-red-800/40 bg-red-950/10' : 'border-red-100 bg-red-50', 
+          tc: isDark ? 'text-red-300' : 'text-red-600',
+          desc:'Hard difficulty. Requires an optimal solution to pass hidden test cases. Defeating it unlocks the entire next zone and has a loot drop chance for exclusive cosmetics.' },
+      ].map((item, i) => (
+        <div key={i} className={`p-4 rounded-xl border ${item.col} transition-colors`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">{item.emoji}</span>
+            <p className={`font-black text-[14px] ${item.tc}`}>{item.t}</p>
+          </div>
+          <p className="text-[12px] text-slate-500 dark:text-gray-500 leading-relaxed">{item.desc}</p>
+        </div>
+      ))}
+      <div className={`p-4 rounded-xl border transition-colors ${isDark ? 'border-purple-800/30 bg-purple-950/15' : 'border-purple-200 bg-purple-50'}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg">✨</span>
+          <p className={`font-black text-[13px] ${isDark ? 'text-purple-200' : 'text-purple-700'}`}>The Sage Appears After 3 Failures</p>
+        </div>
+        <p className="text-[12px] text-slate-500 dark:text-gray-500 leading-relaxed">
+          After 3 consecutive failed attempts on any node, the AI Sage mentor unlocks. It provides a Socratic hint — pointing out your logical flaw without ever writing the code for you.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const EconomyTab = () => {
+  const { isDark } = useTheme();
+  return (
+    <div className="space-y-4">
+      <p className="text-[12px] text-slate-500 dark:text-gray-400 leading-relaxed">
+        <strong className="text-slate-800 dark:text-white">Knowledge Points (KP)</strong> are the campaign currency. Earn them by solving challenges, spend them on cosmetics and perks in the Skill Tree.
+      </p>
+
+      {/* KP flow */}
+      <div className="flex items-center gap-1.5 p-3 bg-slate-100 dark:bg-gray-900/50 rounded-xl border border-slate-200 dark:border-gray-800/40 text-[11px] text-slate-500 dark:text-gray-500 overflow-x-auto">
+        {['Solve Nodes', 'Earn KP ⚡', 'Skill Tree', 'Buy Perks 🎨'].map((step, i) => (
+          <React.Fragment key={i}>
+            <span className={i % 2 === 1 ? 'text-amber-500 dark:text-amber-400 font-bold shrink-0' : 'shrink-0'}>{step}</span>
+            {i < 3 && <ChevronRight size={12} className="text-gray-300 dark:text-gray-700 shrink-0"/>}
+          </React.Fragment>
         ))}
       </div>
-    </div>
 
-    {/* Boss multiplier */}
-    <div className="p-3.5 rounded-xl bg-amber-950/15 border border-amber-800/30">
-      <div className="flex items-center gap-2 mb-1.5">
-        <Trophy size={14} className="text-amber-400"/>
-        <span className="font-bold text-amber-300 text-[13px]">Boss Multipliers</span>
+      {/* Earning rates */}
+      <div>
+        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">How to Earn KP</p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { stars:1, range:'10–50 KP',  label:'1 Star: Pass all cases' },
+            { stars:2, range:'20–80 KP',  label:'2 Stars: Beat 2★ time' },
+            { stars:3, range:'35–120 KP', label:'3 Stars: Optimal speed' },
+          ].map(r => (
+            <div key={r.stars} className="p-3 text-center bg-slate-50 dark:bg-gray-900/60 border border-slate-100 dark:border-gray-800/50 rounded-xl">
+              <div className="flex justify-center gap-0.5 mb-1">
+                {[1,2,3].map(i => <span key={i} style={{fontSize:10,color:i<=r.stars?'#fbbf24': isDark ? '#374151' : '#e2e8f0'}}>★</span>)}
+              </div>
+              <div className="font-black text-sm text-accent">{r.range}</div>
+              <div className="text-[9px] text-slate-500 dark:text-gray-600 mt-0.5 leading-snug">{r.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
-      <p className="text-[11px] text-slate-500 dark:text-gray-500">Mid-Bosses reward up to <span className="text-amber-400 font-bold">80 KP</span>. Zone Bosses reward up to <span className="text-amber-400 font-bold">120 KP</span> + a random loot drop from the zone's pool.</p>
+
+      {/* Boss multiplier */}
+      <div className={`p-3.5 rounded-xl border transition-colors ${isDark ? 'bg-amber-950/15 border-amber-800/30' : 'bg-amber-50 border-amber-100'}`}>
+        <div className="flex items-center gap-2 mb-1.5">
+          <Trophy size={14} className="text-amber-500"/>
+          <span className={`font-bold text-[13px] ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>Boss Multipliers</span>
+        </div>
+        <p className="text-[11px] text-slate-500 dark:text-gray-500">Mid-Bosses reward up to <span className="text-amber-500 font-bold">80 KP</span>. Zone Bosses reward up to <span className="text-amber-500 font-bold">120 KP</span> + a random loot drop from the zone's pool.</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TAB_CONTENT = { journey: JourneyTab, icons: IconLegendTab, bosses: BossesTab, economy: EconomyTab };
 
@@ -305,4 +318,3 @@ const CampaignGuideModal = ({ isOpen, onClose }) => {
 };
 
 export default CampaignGuideModal;
-// V 1.5

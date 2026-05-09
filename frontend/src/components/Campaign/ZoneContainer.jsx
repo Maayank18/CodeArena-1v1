@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 import WeatherEffect from './WeatherEffect';
 import {
   ZONE_W,
@@ -12,6 +13,7 @@ const GROUND_H_DESKTOP = 90;
 const GROUND_H_MOBILE = 72;
 
 const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = false, nodes = [] }) => {
+  const { isDark } = useTheme();
   const {
     id,
     name,
@@ -89,7 +91,10 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
         style={{
           background: `linear-gradient(175deg, ${bgGrad?.[0]} 0%, ${bgGrad?.[1]} 55%, ${bgGrad?.[2]} 100%)`,
           borderRadius: 20,
-          boxShadow: `inset 0 0 80px ${glow}, 0 0 0 1.5px ${border}40`,
+          boxShadow: isDark 
+            ? `inset 0 0 80px ${glow}, 0 0 0 1.5px ${border}40`
+            : `inset 0 0 80px ${glow}, 0 0 0 1px rgba(0,0,0,0.05)`,
+          filter: isDark ? 'none' : 'brightness(1.1) saturate(0.9)',
         }}
       >
         <div
@@ -138,8 +143,8 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
         <div
           className="inline-flex items-center gap-2 px-3 py-1 rounded-xl mb-1.5"
           style={{
-            background: `${accent}18`,
-            border: `1px solid ${border}35`,
+            background: isDark ? `${accent}18` : `${accent}25`,
+            border: `1px solid ${isDark ? border + '35' : border + '20'}`,
             maxWidth: '100%',
           }}
         >
@@ -160,8 +165,8 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
             background: `linear-gradient(135deg, ${titleGrad?.[0]}, ${titleGrad?.[1]})`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: 'none',
-            filter: `drop-shadow(0 0 20px ${accent}40)`,
+            textShadow: isDark ? 'none' : '0 1px 2px rgba(0,0,0,0.1)',
+            filter: isDark ? `drop-shadow(0 0 20px ${accent}40)` : `drop-shadow(0 1px 3px rgba(0,0,0,0.1))`,
             maxWidth: isMobile ? 'min(72vw, 320px)' : 'none',
           }}
         >
@@ -201,7 +206,7 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
               <path
                 d={d}
                 fill="none"
-                stroke={lit ? pathColor : '#1e293b'}
+                stroke={lit ? pathColor : isDark ? '#1e293b' : '#cbd5e1'}
                 strokeWidth={lit ? 3 : 2.2}
                 strokeOpacity={lit ? 0.85 : 0.55}
                 strokeLinecap="round"

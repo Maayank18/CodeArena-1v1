@@ -29,15 +29,15 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
     const solved = progress?.completedNodes?.length ?? 0;
 
     return (
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2 bg-[#07090f]/95 border-b border-gray-800/40 backdrop-blur-md shrink-0 z-20">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-2 bg-white/80 dark:bg-[#07090f]/95 border-b border-gray-200 dark:border-gray-800/40 backdrop-blur-md shrink-0 z-20 transition-colors duration-300">
             {/* Brand */}
             <div className="flex items-center gap-2">
                 <span className="text-xl select-none">🗺️</span>
                 <div>
-                    <h1 className="font-black text-xs text-white tracking-tight leading-none uppercase">Campaign</h1>
-                    <p className="text-[9px] text-gray-700 font-bold uppercase tracking-widest leading-none mt-0.5">Story Mode</p>
+                    <h1 className="font-black text-xs text-gray-800 dark:text-white tracking-tight leading-none uppercase">Campaign</h1>
+                    <p className="text-[9px] text-gray-500 dark:text-gray-700 font-bold uppercase tracking-widest leading-none mt-0.5">Story Mode</p>
                 </div>
-                <span className="ml-1 text-[8px] font-bold bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded-full border border-cyan-500/20 uppercase tracking-wider hidden sm:block">Beta</span>
+                <span className="ml-1 text-[8px] font-bold bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 px-1.5 py-0.5 rounded-full border border-cyan-500/20 uppercase tracking-wider hidden sm:block">Beta</span>
             </div>
 
             {/* Stats */}

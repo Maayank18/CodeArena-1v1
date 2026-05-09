@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../api.js';
 import toast from 'react-hot-toast';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MAX_FREE_MESSAGES = 7;
@@ -27,7 +28,7 @@ const FAQ_ITEMS = [
 const TypingIndicator = () => (
     <div className="flex items-start gap-2.5">
         <BotAvatar />
-        <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
+        <div className="bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
             <div className="flex gap-1.5 items-center h-4">
                 {[0, 150, 300].map((delay) => (
                     <span
@@ -58,7 +59,7 @@ const MessageBubble = ({ msg }) => {
                         ? 'bg-accent text-black font-medium rounded-tr-sm max-w-[240px]'
                         : msg.isError
                             ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-tl-sm max-w-[270px]'
-                            : 'bg-[#1a1a1a] border border-gray-800 text-gray-200 rounded-tl-sm max-w-[270px]'
+                            : 'bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-sm max-w-[270px]'
                 }`}
             >
                 {msg.isError && (
@@ -72,6 +73,7 @@ const MessageBubble = ({ msg }) => {
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 const ChatWidget = ({ user }) => {
+    const { isDark } = useTheme();
     const [isOpen, setIsOpen]             = useState(false);
     const [messages, setMessages]         = useState([]);
     const [inputValue, setInputValue]     = useState('');
@@ -251,7 +253,7 @@ const ChatWidget = ({ user }) => {
                     fixed bottom-[175px] right-4 md:bottom-40 md:right-6 z-50
                     w-[calc(100vw-32px)] md:w-[380px]
                     flex flex-col rounded-2xl overflow-hidden
-                    border border-gray-800 bg-[#111]
+                    border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111]
                     transition-all duration-200 origin-bottom-right
                     ${isOpen
                         ? 'opacity-100 scale-100 pointer-events-auto translate-y-0'
@@ -264,13 +266,13 @@ const ChatWidget = ({ user }) => {
                 }}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-[#0d0d0d] border-b border-gray-800 shrink-0">
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50/80 dark:bg-[#0d0d0d] border-b border-gray-100 dark:border-gray-800 shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center">
                             <Bot size={18} className="text-accent" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-white leading-none">Arena AI</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-white leading-none">Arena AI</p>
                             <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
                                 CodeArena Assistant
@@ -281,20 +283,20 @@ const ChatWidget = ({ user }) => {
                     <div className="flex items-center gap-1">
                         {/* Remaining messages pill */}
                         {!isLimitReached && messageCount > 0 && (
-                            <span className="text-[10px] font-mono text-gray-600 bg-gray-900 px-2 py-0.5 rounded-full border border-gray-800 mr-1">
+                            <span className="text-[10px] font-mono text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-800 mr-1">
                                 {remaining} / {MAX_FREE_MESSAGES}
                             </span>
                         )}
                         <button
                             onClick={handleClearChat}
                             title="Clear conversation"
-                            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-400 hover:bg-gray-800 transition-all"
+                            className="p-1.5 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                         >
                             <RotateCcw size={14} />
                         </button>
                         <button
                             onClick={handleClose}
-                            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-400 hover:bg-gray-800 transition-all"
+                            className="p-1.5 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
                         >
                             <X size={16} />
                         </button>
@@ -311,15 +313,15 @@ const ChatWidget = ({ user }) => {
                         <div className="space-y-4">
                             <div className="flex items-start gap-2.5">
                                 <BotAvatar />
-                                <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[270px]">
-                                    <p className="text-sm text-gray-200 leading-relaxed">
+                                <div className="bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[270px]">
+                                    <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
                                         Hey{user?.username ? <span className="text-accent font-semibold"> {user.username}</span> : ''}! 👋 I'm <span className="text-accent font-semibold">Arena AI</span>. Ask me anything about CodeArena 1v1.
                                     </p>
                                 </div>
                             </div>
 
                             <div className="pl-9 space-y-2">
-                                <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold">
+                                <p className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-widest font-semibold">
                                     Quick questions
                                 </p>
                                 <div className="flex flex-wrap gap-1.5">
@@ -328,7 +330,7 @@ const ChatWidget = ({ user }) => {
                                             key={item.question}
                                             onClick={() => sendMessage(item.question)}
                                             disabled={isLimitReached}
-                                            className="text-xs px-3 py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-accent/50 text-gray-400 hover:text-accent rounded-full transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                            className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-accent/50 text-gray-600 dark:text-gray-400 hover:text-accent rounded-full transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
                                             {item.label}
                                             <ChevronRight size={10} />
@@ -372,7 +374,7 @@ const ChatWidget = ({ user }) => {
                 {!isLimitReached && (
                     <form
                         onSubmit={handleSubmit}
-                        className="px-3 pb-3 pt-2 border-t border-gray-800 shrink-0 flex gap-2 items-end"
+                        className="px-3 pb-3 pt-2 border-t border-gray-100 dark:border-gray-800 shrink-0 flex gap-2 items-end"
                     >
                         <div className="flex-1 relative">
                             <textarea
@@ -383,7 +385,7 @@ const ChatWidget = ({ user }) => {
                                 placeholder="Ask about CodeArena…"
                                 rows={1}
                                 disabled={isTyping}
-                                className="w-full px-3 py-2.5 bg-gray-900/80 border border-gray-800 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent/50 transition-all resize-none disabled:opacity-50 leading-relaxed"
+                                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-accent/50 transition-all resize-none disabled:opacity-50 leading-relaxed"
                                 style={{ minHeight: '42px', maxHeight: '96px' }}
                             />
                             {/* Character counter — only show when close to limit */}
@@ -419,8 +421,8 @@ const ChatWidget = ({ user }) => {
             <style>{`
                 .chat-scroll::-webkit-scrollbar { width: 4px; }
                 .chat-scroll::-webkit-scrollbar-track { background: transparent; }
-                .chat-scroll::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
-                .chat-scroll::-webkit-scrollbar-thumb:hover { background: #333; }
+                .chat-scroll::-webkit-scrollbar-thumb { background: ${isDark ? '#262626' : '#e5e5e5'}; border-radius: 2px; }
+                .chat-scroll::-webkit-scrollbar-thumb:hover { background: ${isDark ? '#333' : '#d4d4d4'}; }
             `}</style>
         </>
     );

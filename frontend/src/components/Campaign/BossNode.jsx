@@ -183,17 +183,17 @@ const BossNode = ({
 
       {/* Title */}
       <div
-        className="px-2 py-[2px] rounded-full text-[8px] sm:text-[9px] font-bold text-center truncate max-w-[80px] sm:max-w-[110px]"
+        className="px-2 py-[2px] rounded-full text-[8px] sm:text-[9px] font-bold text-center truncate max-w-[80px] sm:max-w-[110px] transition-colors"
         style={{
-          background: 'rgba(0,0,0,.75)',
+          background: 'rgba(0,0,0,0.65)',
           backdropFilter: 'blur(6px)',
           color: isLocked
-            ? '#4b5563'
+            ? '#9ca3af'
             : isDone
             ? '#fbbf24'
             : c.badgeCol,
           border: `1px solid ${
-            isLocked ? '#1f2937' : c.border + '40'
+            isLocked ? 'rgba(255,255,255,0.05)' : c.border + '40'
           }`,
         }}
       >

@@ -208,10 +208,10 @@ const Campaign = () => {
           onClick={() => setShowGuide(true)}
           className="
             flex items-center gap-1.5 px-3 py-1.5
-            text-slate-500 hover:text-slate-800 hover:bg-slate-200
+            text-gray-600 hover:text-gray-900 hover:bg-gray-100
             dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-800/60
-            rounded-lg transition-colors text-xs font-bold
-            border border-transparent dark:hover:border-gray-700/40
+            rounded-lg transition-all text-xs font-bold
+            border border-gray-200 dark:border-transparent dark:hover:border-gray-700/40
             shrink-0
           "
           title="How to Play"
