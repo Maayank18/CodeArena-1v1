@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Lock } from 'lucide-react';
+import { Crown, Lock, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PremiumGate = ({ requiredTier = 'pro', compact = false, message, children }) => {
