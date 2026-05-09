@@ -741,12 +741,34 @@ const WorldMapScene = React.memo(function WorldMapScene({
   );
 });
 
-const WorldMap = ({ nodes = [], progress, onStartChallenge, useMockData = true }) => {
+const WorldMap = ({ nodes = [], progress, onStartChallenge, onTeaserTrigger, useMockData = true }) => {
   const [selectedNode, setSelectedNode] = useState(null);
 
   const handleNodeClick = useCallback((node) => {
+    // 🛡️ ACTION-BASED TEASER LOGIC
+    const user = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('codearena_user') || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const userRole = user?.role?.toLowerCase() || 'user';
+    const userPlan = user?.subscriptionPlan?.toLowerCase() || 'free';
+    const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+    
+    const isAdmin = userRole === 'admin';
+    const isPremium = tiers[userPlan] >= 3;
+    const isRootNode = node?.nodeId === 'region-1-node-01' || node?.campaignNodeId === 'region-1-node-01';
+
+    if (!isAdmin && !isPremium && !isRootNode) {
+      if (onTeaserTrigger) onTeaserTrigger();
+      return;
+    }
+
     setSelectedNode(node);
-  }, []);
+  }, [onTeaserTrigger]);
 
   const handleClosePanel = useCallback(() => {
     setSelectedNode(null);

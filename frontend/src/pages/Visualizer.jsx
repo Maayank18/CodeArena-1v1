@@ -15,6 +15,7 @@ import VizCanvas from '../components/Visualizer/VizCanvas';
 import ControlBar from '../components/Visualizer/ControlBar';
 import api from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import TeaserModal from '../components/TeaserModal';
 
 // ─── ALGORITHM EXAMPLES ──────────────────────────────────────────────────────
 const EXAMPLES = {
@@ -198,6 +199,7 @@ const Visualizer = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying]     = useState(false);
     const [speedIndex, setSpeedIndex]   = useState(DEFAULT_SPEED_INDEX);
+    const [showTeaserModal, setShowTeaserModal] = useState(false);
 
     const timerRef = useRef(null);
 
@@ -270,6 +272,10 @@ const Visualizer = () => {
         } catch (error) {
             console.error('[VISUALIZER]', error);
             const msg = error.response?.data?.message || 'Execution failed';
+            if (error.response?.status === 403 && error.response?.data?.code === 'TRIAL_EXPIRED') {
+                setShowTeaserModal(true);
+                return;
+            }
             setTrace([{ line: 0, error: msg, type: 'error', variables: {} }]);
             toast.error(msg);
         } finally {
@@ -333,6 +339,12 @@ const Visualizer = () => {
             className="viz-root h-screen flex flex-col overflow-hidden font-sans transition-colors duration-300"
             data-theme={theme}
         >
+            <TeaserModal 
+                isOpen={showTeaserModal}
+                onClose={() => setShowTeaserModal(false)}
+                title="Trial Expired"
+                message="You've used your free visualization! Upgrade to Premium to visualize endless algorithms and data structures."
+            />
             {/* Inject scoped CSS variables for both themes */}
             <style>{`
                 .viz-root[data-theme="dark"] {

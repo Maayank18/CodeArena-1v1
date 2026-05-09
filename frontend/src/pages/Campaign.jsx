@@ -4,6 +4,7 @@ import { Loader2, BookOpen } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import WorldMap from '../components/Campaign/WorldMap';
 import CampaignHUD from '../components/Campaign/CampaignHUD';
+import TeaserModal from '../components/TeaserModal';
 import SkillTreeModal from '../components/Campaign/SkillTreeModal';
 import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
 import api from '../api';
@@ -72,6 +73,7 @@ const Campaign = () => {
   const [mapData, setMapData] = useState(null);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showTeaserModal, setShowTeaserModal] = useState(false);
   const [hasLiveMapData, setHasLiveMapData] = useState(false);
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -170,6 +172,10 @@ const Campaign = () => {
     [navigate]
   );
 
+  const handleTeaserTrigger = useCallback(() => {
+    setShowTeaserModal(true);
+  }, []);
+
   const handleProgressUpdate = useCallback((updates) => {
     setProgress((p) => ({ ...p, ...updates }));
   }, []);
@@ -220,9 +226,17 @@ const Campaign = () => {
           nodes={nodes}
           progress={progress}
           onStartChallenge={handleStartChallenge}
+          onTeaserTrigger={handleTeaserTrigger}
           useMockData={false}
         />
       </div>
+
+      <TeaserModal 
+        isOpen={showTeaserModal}
+        onClose={() => setShowTeaserModal(false)}
+        title="Premium Trial Conquered!"
+        message="You've mastered the first challenge! Upgrade to Premium to unlock the full 150+ node campaign and dominate the leaderboards."
+      />
 
       <SkillTreeModal
         isOpen={showSkillTree}

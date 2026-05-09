@@ -33,7 +33,7 @@ export const verifyToken = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid token' });
         }
 
-        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role').lean();
+        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role hasUsedVisualizerTrial').lean();
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid token' });
         }
@@ -50,7 +50,8 @@ export const verifyToken = async (req, res, next) => {
         req.user = { 
             _id: decoded.id,
             subscriptionPlan: user.subscriptionPlan || 'free',
-            role: user.role || 'user'
+            role: user.role || 'user',
+            hasUsedVisualizerTrial: !!user.hasUsedVisualizerTrial
         };
         return next();
     } catch (err) {
@@ -77,7 +78,7 @@ export const optionalAuth = async (req, res, next) => {
             return next();
         }
 
-        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role').lean();
+        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role hasUsedVisualizerTrial').lean();
         if (!user) {
             req.user = null;
             return next();
@@ -86,7 +87,8 @@ export const optionalAuth = async (req, res, next) => {
         req.user = { 
             _id: decoded.id,
             subscriptionPlan: user.subscriptionPlan || 'free',
-            role: user.role || 'user'
+            role: user.role || 'user',
+            hasUsedVisualizerTrial: !!user.hasUsedVisualizerTrial
         };
         return next();
     } catch (err) {

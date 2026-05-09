@@ -1,10 +1,34 @@
 import { traceJavaScript } from '../utils/tracers/jsTracer.js';
+import User from '../models/User.js';
 
 export const executeVisualization = async (req, res) => {
     const { code, language } = req.body;
 
     if (!code) {
         return res.status(400).json({ success: false, message: "Code cannot be empty" });
+    }
+
+    const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+    const userPlan = req.user?.subscriptionPlan || 'free';
+    const isPremium = tiers[userPlan] >= 3;
+    const isAdmin = req.user?.role === 'admin';
+
+    // Trial enforcement for non-premium
+    if (!isPremium && !isAdmin) {
+        if (req.user.hasUsedVisualizerTrial) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Trial Expired: You've used your free visualization. Upgrade to Premium to unlock unlimited visualizations!",
+                code: 'TRIAL_EXPIRED'
+            });
+        }
+        
+        // First time use -> flag it
+        try {
+            await User.findByIdAndUpdate(req.user._id, { hasUsedVisualizerTrial: true });
+        } catch (err) {
+            console.error("[VISUALIZER] Failed to update trial flag:", err);
+        }
     }
 
     try {

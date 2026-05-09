@@ -292,6 +292,10 @@ const userSchema = new mongoose.Schema({
         enum: ['free', 'plus', 'pro', 'premium'], 
         default: 'free' 
     },
+    hasUsedVisualizerTrial: {
+        type: Boolean,
+        default: false
+    },
     proActivatedAt: {
         type: Date,
         default: null,
