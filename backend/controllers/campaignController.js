@@ -12,6 +12,7 @@ import {
     getEntryNodeIds,
     isEntryNode,
 } from '../utils/campaignProgressBootstrap.js';
+import { recordActivity } from '../utils/activityTracker.js';
 
 // replace: actual === expected
 // with:    outputsMatch(actual, expected)
@@ -315,6 +316,7 @@ export const submitCampaignSolution = async (req, res) => {
     try {
         const { nodeId, code, language } = req.body;
         const userId = req.user._id;
+        recordActivity(userId);
 
         if (!nodeId || !code || !language) {
             return res.status(400).json({ 

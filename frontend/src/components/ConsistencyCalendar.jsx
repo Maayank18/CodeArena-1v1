@@ -1,56 +1,78 @@
-import React from 'react';
-import { Flame, Trophy } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Flame, Trophy, X } from 'lucide-react';
+import api from '../api';
 
 /**
  * ConsistencyCalendar Component
  * 
  * A premium glassmorphism component that visualizes user streak
- * and activity over a rolling 7-day period.
+ * and activity over a rolling 7-day period using real backend data.
  */
 const ConsistencyCalendar = ({ className = "" }) => {
-  // Dynamic 7-day logic based on actual system date
-  const today = new Date();
-  const todayIndex = today.getDay(); // 0 (Sun) to 6 (Sat)
-  
-  // Define the week layout starting from Monday (1) to Sunday (0)
-  const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const dayIndices = [1, 2, 3, 4, 5, 6, 0];
-  
-  const weekData = dayIndices.map((idx, i) => {
-    // Determine status based on mock history vs today
-    let status = 'pending';
-    if (idx === todayIndex) {
-      status = 'pending'; // Today starts as pending
-    } else if (idx < todayIndex || (todayIndex === 0 && idx !== 0)) {
-      // It's a past day (logic handles Sunday as index 0 correctly for a Mon-Sun view)
-      status = Math.random() > 0.3 ? 'completed' : 'missed';
-    }
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        const res = await api.get('/stats/analytics');
+        if (res.data.success) {
+          setData(res.data.data);
+        }
+      } catch (err) {
+        console.error('[CALENDAR] Fetch failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchActivity();
+  }, []);
+
+  // Use today's date for labels and nodes
+  const today = new Date();
+  const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+  
+  // Prepare week data from activity array (last 7 days)
+  const weekData = (data?.activity || []).map((day, idx) => {
+    // Determine if it's today
+    const date = new Date(day.dateKey);
+    const isToday = date.toDateString() === today.toDateString();
+    
     return {
-      label: labels[i],
-      status,
-      isToday: idx === todayIndex
+      label: day.label,
+      status: day.attempted ? 'completed' : (idx < 6 ? 'missed' : 'pending'), // Today is pending if not attempted yet
+      isToday
     };
   });
 
-  const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
-  const streakCount = 5;
+  // If no data yet, show loading or empty states
+  if (loading) {
+    return (
+      <div className={`bg-[#1a1a1a] border border-white/5 rounded-3xl p-4 animate-pulse h-[180px] ${className}`} />
+    );
+  }
+
+  const streakCount = data?.summary?.currentStreak || 0;
 
   return (
     <div className={`bg-[#1a1a1a] border border-white/5 rounded-3xl p-4 shadow-2xl transition-all hover:border-white/10 ${className}`}>
-      {/* Header - Image Style */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-5 px-1">
         <div>
           <h4 className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-500">Consistency</h4>
           <p className="text-sm font-bold text-gray-200 mt-0.5">{currentMonth}</p>
         </div>
-        <div className="flex items-center gap-1.5 bg-orange-500/10 px-3 py-1.5 rounded-xl border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
-          <Flame size={14} className="text-orange-500 fill-current" />
-          <span className="text-xs font-black text-orange-400">{streakCount}d</span>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-[0_0_15px_rgba(249,115,22,0.1)] transition-all ${
+          streakCount > 0 
+            ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' 
+            : 'bg-white/5 border-white/10 text-gray-500 opacity-50'
+        }`}>
+          <Flame size={14} className={streakCount > 0 ? "text-orange-500 fill-current" : ""} />
+          <span className="text-xs font-black">{streakCount}d</span>
         </div>
       </div>
 
-      {/* 7-Day Labels Grid - Synchronized with Nodes */}
+      {/* 7-Day Labels */}
       <div className="grid grid-cols-7 w-full gap-1 mb-2 px-1">
         {weekData.map((day, idx) => (
           <span key={idx} className={`text-[10px] font-black text-center ${day.isToday ? 'text-accent/80' : 'text-gray-500'}`}>
@@ -59,7 +81,7 @@ const ConsistencyCalendar = ({ className = "" }) => {
         ))}
       </div>
 
-      {/* 7-Day Nodes Grid - Fluid & Aspect-Square */}
+      {/* 7-Day Nodes */}
       <div className="grid grid-cols-7 w-full gap-1 mb-6 px-1">
         {weekData.map((day, idx) => (
           <div 
@@ -69,14 +91,16 @@ const ConsistencyCalendar = ({ className = "" }) => {
               ${day.status === 'completed' 
                 ? 'bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.4)]' 
                 : day.status === 'missed'
-                  ? 'bg-red-500/10 border border-red-500/20'
+                  ? 'bg-red-500/5 border border-red-500/10'
                   : 'bg-white/5 border border-white/10'
               }
-              ${day.isToday ? 'ring-1 ring-inset ring-accent/50 bg-accent/10' : ''}
+              ${day.isToday && day.status !== 'completed' ? 'ring-1 ring-inset ring-accent/50 bg-accent/5' : ''}
             `}
           >
             {day.status === 'completed' ? (
-              <Trophy size={14} className="text-black fill-current" />
+              <Trophy size={14} className="text-black fill-current animate-bounce-subtle" />
+            ) : day.status === 'missed' ? (
+              <X size={10} className="text-red-500/30" />
             ) : null}
           </div>
         ))}
@@ -91,7 +115,9 @@ const ConsistencyCalendar = ({ className = "" }) => {
           <div className="flex-1">
             <p className="text-[11px] font-bold text-gray-100">Daily Target</p>
             <p className="text-[10px] text-gray-500 leading-tight mt-0.5 font-medium">
-              Win 1 Battle today to keep your streak alive!
+              {weekData[6]?.status === 'completed' 
+                ? "Target achieved! Come back tomorrow." 
+                : "Attempt any question today to keep your streak alive!"}
             </p>
           </div>
         </div>

@@ -351,6 +351,18 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    activityLog: {
+        type: [String], // Array of 'YYYY-MM-DD'
+        default: [],
+    },
+    currentStreak: {
+        type: Number,
+        default: 0,
+    },
+    lastActiveDate: {
+        type: Date,
+        default: null,
+    },
 
     rating: { 
         type: Number, 

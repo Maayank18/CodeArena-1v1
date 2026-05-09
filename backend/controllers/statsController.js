@@ -203,42 +203,22 @@ export const getUserAnalytics = async (req, res) => {
         );
 
         const activityMap = new Map();
+        const today = new Date();
         for (let offset = 6; offset >= 0; offset--) {
-            const date = new Date();
-            date.setHours(0, 0, 0, 0);
+            const date = new Date(today);
             date.setDate(date.getDate() - offset);
-            const key = date.toISOString().slice(0, 10);
+            date.setHours(0, 0, 0, 0);
+            const key = date.toISOString().split('T')[0];
+            
             activityMap.set(key, {
                 dateKey: key,
-                label: date.toLocaleDateString('en-US', { weekday: 'short' }),
-                solved: 0,
+                label: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+                attempted: (user.activityLog || []).includes(key),
             });
         }
 
-        for (const match of matches) {
-            const me = match.players?.find(
-                (player) => String(player.userId) === String(userId)
-            );
-            if (!me?.isWinner) continue;
-
-            const key = new Date(match.createdAt).toISOString().slice(0, 10);
-            const bucket = activityMap.get(key);
-            if (bucket) {
-                bucket.solved += match.problemIds?.length || 0;
-            }
-        }
-
-        for (const node of completedNodes) {
-            if (!node?.completedAt) continue;
-            const key = new Date(node.completedAt).toISOString().slice(0, 10);
-            const bucket = activityMap.get(key);
-            if (bucket) {
-                bucket.solved += 1;
-            }
-        }
-
         const activity = [...activityMap.values()];
-        const currentStreak = campaignProgress?.currentStreak || 0;
+        const currentStreak = user.currentStreak || 0;
 
         return res.json({
             success: true,

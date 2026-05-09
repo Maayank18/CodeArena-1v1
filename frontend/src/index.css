@@ -311,6 +311,14 @@ input[type="range"]::-moz-range-thumb {
   animation: bounceSlow 3s infinite;
 }
 
+@keyframes bounceSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.animate-bounce-subtle {
+  animation: bounceSubtle 2s ease-in-out infinite;
+}
+
 /* ====================================
    SELECTION & TEXT UTILITIES
    ==================================== */

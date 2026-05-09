@@ -202,6 +202,7 @@
 import { executeCode } from '../utils/judge0Client.js';
 import Problem from '../models/Problem.js';
 import mongoose from 'mongoose';
+import { recordActivity } from '../utils/activityTracker.js';
 
 // Cache
 const problemCache = new Map();
@@ -229,6 +230,9 @@ export const runCode = async (req, res) => {
     }
 
     try {
+        // Record activity on run as well (it's an attempt)
+        if (req.user?._id) recordActivity(req.user._id);
+
         const result = await executeCode(language, code, stdin);
 
         if (!result || !result.run) {
