@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Crown, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const PremiumGate = ({ requiredTier = 'pro', compact = false, children }) => {
+const PremiumGate = ({ requiredTier = 'pro', compact = false, message, children }) => {
     const navigate = useNavigate();
     
     const [user, setUser] = useState(() => {
@@ -19,7 +19,6 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, children }) => {
         };
         window.addEventListener('codearena:user-updated', handleUserUpdate);
         
-        // Also check if localStorage changed in another tab
         const handleStorage = (e) => {
             if (e.key === 'codearena_user') {
                 try {
@@ -42,14 +41,6 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, children }) => {
 
     const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
 
-    // DEBUG LOG
-    console.log("[PREMIUM_GATE_DEBUG]", { 
-        username: user?.username, 
-        role: userRole, 
-        plan: userPlan, 
-        requiredTier 
-    });
-
     const isAdmin = userRole === 'admin';
     const hasAccess = isAdmin || (tiers[userPlan] >= (tiers[requiredTier] || 0));
 
@@ -59,23 +50,31 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, children }) => {
 
     if (compact) {
         return (
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-center">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300">
-                    <Lock size={18} className="text-[#060810]" />
+            <button
+                onClick={() => navigate('/pricing?source=settings')}
+                className="w-full mt-3 group relative flex items-center justify-between gap-4 rounded-xl border border-yellow-500/10 bg-yellow-500/[0.02] p-3.5 transition-all hover:bg-yellow-500/[0.05] hover:border-yellow-500/30 overflow-hidden"
+            >
+                {/* Subtle shine effect on hover */}
+                <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-yellow-500/5 to-transparent pointer-events-none" />
+                
+                <div className="flex items-center gap-3 relative z-10">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500/10 text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.1)] group-hover:scale-110 transition-transform">
+                        <Lock size={14} />
+                    </div>
+                    <div className="text-left">
+                        <p className="text-[10px] font-black text-yellow-500/80 leading-none uppercase tracking-[0.15em] mb-1.5">
+                            {requiredTier} Required
+                        </p>
+                        <p className="text-[11px] font-bold text-[var(--text-secondary)] leading-none group-hover:text-[var(--text-primary)] transition-colors">
+                            {message || `Upgrade to ${requiredTier} to unlock`}
+                        </p>
+                    </div>
                 </div>
-                <p className="text-sm font-bold text-white">
-                    {requiredTier === 'pro' ? 'Pro required' : 'Plus required'}
-                </p>
-                <p className="mt-1 text-xs text-gray-400">
-                    Upgrade to unlock this feature.
-                </p>
-                <button
-                    onClick={() => navigate('/pricing?source=settings')}
-                    className="mt-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2 text-sm font-bold text-[#060810] transition-all hover:scale-105"
-                >
-                    Upgrade Now
-                </button>
-            </div>
+
+                <div className="flex items-center gap-1.5 bg-yellow-500 text-black px-3 py-1.5 rounded-lg text-[10px] font-black shadow-[0_4px_12px_rgba(234,179,8,0.2)] group-hover:shadow-[0_4px_20px_rgba(234,179,8,0.4)] group-hover:scale-105 transition-all relative z-10">
+                    UPGRADE <Zap size={10} className="fill-current" />
+                </div>
+            </button>
         );
     }
 
