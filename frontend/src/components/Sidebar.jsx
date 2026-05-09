@@ -99,30 +99,21 @@ const Sidebar = () => {
           <ConsistencyCalendar className="mx-3 hidden lg:block" />
         </div>
 
-        <div className="mt-auto px-4 pb-10">
-          <div className="mb-2 px-2 flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Your Role</span>
-            <span className="text-[10px] font-mono font-bold text-accent px-2 py-0.5 rounded-md bg-accent/10">
-              {(() => {
-                try {
-                  const u = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-                  return u.role || 'unknown';
-                } catch {
-                  return 'error';
-                }
-              })()}
-            </span>
-          </div>
-          <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-2 px-4">
+        <div className="mt-auto px-4 pb-8">
+          <div className="group rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 px-4 transition-all hover:bg-[var(--bg-tertiary)]/80">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                <div className="relative flex h-1.5 w-1.5">
+              <div className="flex items-center gap-2.5 text-[var(--text-secondary)]">
+                <div className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider">Online Now</span>
               </div>
-              <span className="text-xs font-mono font-bold text-accent">{stats.live}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-mono font-bold text-accent">{stats.live}</span>
+                <div className="h-1 w-1 rounded-full bg-[var(--text-secondary)] opacity-30" />
+                <span className="text-[9px] font-medium text-[var(--text-secondary)] uppercase">Live</span>
+              </div>
             </div>
           </div>
         </div>
