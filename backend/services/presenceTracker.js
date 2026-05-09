@@ -33,13 +33,14 @@ function attachPresenceTracking(io) {
     io.on('connection', (socket) => {
 
         // — User announces presence ————————————————————————
-        socket.on('user_connected', ({ userId, username, avatar, activity }) => {
+        socket.on('user_connected', ({ userId, username, avatar, activity, customization }) => {
             activeUsers.set(socket.id, {
                 socketId: socket.id,
                 userId:   userId   || null,
                 username: username || 'Anonymous',
                 avatar:   avatar   || '',
                 activity: activity || 'IDLE_LOBBY',
+                customization: customization || {},
                 connectedAt: Date.now(),
             });
         });

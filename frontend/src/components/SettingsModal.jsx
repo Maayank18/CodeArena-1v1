@@ -20,10 +20,12 @@ import {
   Award,
   Palette,
   Users,
+  Loader2,
 } from 'lucide-react';
 import BadgesTab from './settings/BadgesTab.jsx';
 import CustomizationTab from './settings/CustomizationTab.jsx';
 import CommunityTab from './settings/CommunityTab.jsx';
+import PremiumGate from './PremiumGate.jsx';
 import {
   BarChart,
   Bar,
@@ -100,126 +102,164 @@ const ToggleCard = ({ title, description, checked, onChange }) => (
 );
 
 const AnalyticsTab = () => {
-  const analyticsData = {
-    stats: [
-      { label: 'Total Problems Solved', value: '248', color: 'text-emerald-400' },
-      { label: 'Overall Accuracy (%)', value: '78.5%', color: 'text-blue-400' },
-      { label: 'Total Time Spent (hrs)', value: '142', color: 'text-yellow-400' },
-      { label: 'Current Streak (days)', value: '12', color: 'text-orange-400' },
-    ],
-    activity: [
-      { name: 'Mon', solved: 4 },
-      { name: 'Tue', solved: 7 },
-      { name: 'Wed', solved: 5 },
-      { name: 'Thu', solved: 9 },
-      { name: 'Fri', solved: 12 },
-      { name: 'Sat', solved: 8 },
-      { name: 'Sun', solved: 10 },
-    ],
-    topics: [
-      { name: 'Arrays', value: 40 },
-      { name: 'DP', value: 20 },
-      { name: 'Graphs', value: 25 },
-      { name: 'Math', value: 15 },
-    ],
-  };
+  const [analyticsData, setAnalyticsData] = useState({
+    summary: {
+      timeSpentMinutes: 0,
+      totalSolved: 0,
+      totalAttempts: 0,
+      accuracyPercent: 0,
+      currentStreak: 0,
+    },
+    activity: [],
+    topicBreakdown: [],
+  });
+  const [loading, setLoading] = useState(true);
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchAnalytics = async () => {
+      try {
+        const { data } = await api.get('/stats/analytics');
+        if (!cancelled && data?.success) {
+          setAnalyticsData(data.data || analyticsData);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAnalyticsData({
+            summary: {
+              timeSpentMinutes: 0,
+              totalSolved: 0,
+              totalAttempts: 0,
+              accuracyPercent: 0,
+              currentStreak: 0,
+            },
+            activity: [],
+            topicBreakdown: [],
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchAnalytics();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const summary = analyticsData.summary || {};
+  const activity = analyticsData.activity || [];
+  const topics = analyticsData.topicBreakdown || [];
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Row 1: KPI Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {analyticsData.stats.map((stat, idx) => (
-          <div key={idx} className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-4 shadow-sm transition-colors hover:border-gray-700">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stat.label}</p>
-            <p className={`mt-2 text-2xl font-black ${stat.color}`}>{stat.value}</p>
+    <PremiumGate requiredTier="pro">
+      <div className="space-y-8 animate-fade-in">
+        {loading ? (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="animate-spin text-accent" size={32} />
           </div>
-        ))}
-      </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {[
+                { label: 'Total Problems Solved', value: summary.totalSolved || 0, color: 'text-emerald-400' },
+                { label: 'Overall Accuracy (%)', value: `${summary.accuracyPercent || 0}%`, color: 'text-blue-400' },
+                { label: 'Total Time Spent (mins)', value: summary.timeSpentMinutes || 0, color: 'text-yellow-400' },
+                { label: 'Current Streak (days)', value: summary.currentStreak || 0, color: 'text-orange-400' },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-4 shadow-sm transition-colors hover:border-gray-700">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stat.label}</p>
+                  <p className={`mt-2 text-2xl font-black ${stat.color}`}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
 
-      {/* Row 2: Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Activity Bar Chart */}
-        <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <Activity size={16} className="text-emerald-400" />
-              Activity Over Time
-            </h4>
-            <span className="text-[10px] font-medium text-gray-500">Last 7 Days</span>
-          </div>
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.activity}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#737373', fontSize: 10 }}
-                />
-                <YAxis 
-                  hide={true}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px' }}
-                  itemStyle={{ color: '#fff', fontSize: '12px' }}
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                />
-                <Bar dataKey="solved" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-white">
+                    <Activity size={16} className="text-emerald-400" />
+                    Activity Over Time
+                  </h4>
+                  <span className="text-[10px] font-medium text-gray-500">Last 7 Days</span>
+                </div>
+                <div className="h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={activity}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#737373', fontSize: 10 }}
+                      />
+                      <YAxis hide />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px' }}
+                        itemStyle={{ color: '#fff', fontSize: '12px' }}
+                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      />
+                      <Bar dataKey="solved" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-        {/* Topics Pie Chart */}
-        <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <BarChart3 size={16} className="text-blue-400" />
-              Topic Distribution
-            </h4>
-          </div>
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={analyticsData.topics}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {analyticsData.topics.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
-                  ))}
-                </Pie>
-                <Tooltip 
-                   contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px' }}
-                   itemStyle={{ color: '#fff', fontSize: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+              <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-white">
+                    <BarChart3 size={16} className="text-blue-400" />
+                    Topic Distribution
+                  </h4>
+                </div>
+                <div className="h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={topics.map((topic) => ({ name: topic.topic, value: topic.solved }))}
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {topics.map((entry, index) => (
+                          <Cell key={`${entry.topic}-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px' }}
+                        itemStyle={{ color: '#fff', fontSize: '12px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
 
-      {/* Row 3: Insights */}
-      <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-5">
-        <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
-            <Info size={20} />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-white">Performance Analysis</h4>
-            <p className="mt-2 text-xs leading-relaxed text-gray-300">
-              You have a high accuracy in <span className="font-bold text-emerald-400">Data Structures</span>, but your speed drops during <span className="font-bold text-blue-400">Dynamic Programming</span> challenges. Consider practicing more DP fundamentals to balance your competitive edge. Your activity peaked on Friday, showing high engagement during weekend starts.
-            </p>
-          </div>
-        </div>
+            <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-5">
+              <div className="flex items-start gap-4">
+                <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
+                  <Info size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">Performance Analysis</h4>
+                  <p className="mt-2 text-xs leading-relaxed text-gray-300">
+                    {summary.totalAttempts > 0
+                      ? `You've completed ${summary.totalSolved || 0} problems across ${summary.totalAttempts || 0} tracked attempts with ${summary.accuracyPercent || 0}% accuracy. Keep pushing your strongest topics while lifting the lower-volume areas in the chart.`
+                      : 'Your analytics will appear here after your first tracked battles or campaign clears. For now, the charts stay intentionally empty and stable.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </PremiumGate>
   );
 };
 

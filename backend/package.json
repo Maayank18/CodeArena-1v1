@@ -10,6 +10,7 @@
     "seed": "node seeder.js",
     "flush-local-db": "node flushLocalDb.js",
     "migrate-campaign-entry-nodes": "node migrations/backfillCampaignEntryNodes.js",
+    "migrate-rbac-analytics": "node migrations/backfillRbacAnalyticsAndTopics.js",
     "reset-password": "node resetUserPassword.js",
     "audit-auth-users": "node sanitizeAuthUsers.js audit"
   },

@@ -1466,6 +1466,13 @@ const ProblemCard = ({ problem, onEdit, onDelete }) => {
                         <span className="flex items-center gap-1"><Clock size={12} className="text-amber-400"/> {problem.timeLimit}ms</span>
                         <span className="flex items-center gap-1"><HardDrive size={12} className="text-purple-400"/> {problem.memoryLimit}MB</span>
                     </div>
+                    {problem.topics?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {problem.topics.map((t, i) => (
+                                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-bold border border-accent/20">{t}</span>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <button onClick={() => setExpanded(!expanded)}
@@ -1746,6 +1753,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
             java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
         },
         testCases: problem?.testCases || [{ input:'', output:'', isPublic:true }],
+        topics: problem?.topics || [],
     });
 
     const [submitting, setSubmitting] = useState(false);
@@ -1813,7 +1821,8 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 memoryLimit: formData.memoryLimit,
                 goldenSolution: formData.goldenSolution,
                 starterCode: formData.starterCode,
-                testCases: formData.testCases
+                testCases: formData.testCases,
+                topics: formData.topics,
             };
             if (isEditing) {
                 await api.post(`/admin/problems/${problem._id}/update`, payload);
@@ -1949,6 +1958,29 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                                 )}
                             </div>
                         ))}
+                    </div>
+
+                    {/* Topics */}
+                    <div>
+                        <label className="block text-sm font-semibold mb-1.5 text-gray-300">Topics</label>
+                        <p className="text-xs text-gray-600 mb-2">Tag this problem with data structure/algorithm topics for analytics and custom matchmaking.</p>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                            {['arrays', 'strings', 'trees', 'graphs', 'dynamic programming', 'sorting', 'binary search', 'linked lists', 'stacks', 'queues', 'hash tables', 'recursion'].map(t => (
+                                <button key={t} type="button" onClick={() => {
+                                    const current = formData.topics || [];
+                                    if (current.includes(t)) set('topics', current.filter(x => x !== t));
+                                    else set('topics', [...current, t]);
+                                }}
+                                className={`text-xs px-2.5 py-1 rounded-lg font-bold transition-all ${
+                                    formData.topics?.includes(t)
+                                        ? 'bg-accent text-black'
+                                        : 'bg-gray-800 text-gray-500 hover:text-gray-300 hover:bg-gray-700'
+                                }`}>{t}</button>
+                            ))}
+                        </div>
+                        {formData.topics?.length > 0 && (
+                            <p className="text-xs text-accent">Selected: {formData.topics.join(', ')}</p>
+                        )}
                     </div>
 
                     {/* Golden solution */}

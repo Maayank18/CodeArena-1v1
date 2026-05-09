@@ -80,7 +80,7 @@ export const getLeaderboard = async (req, res) => {
     // ✅ OPTIMIZED: Uses new compound index { seasonScore: -1, rating: -1 }
     // Before: ~800ms for 1000 users | After: ~50ms
     const players = await User.find()
-      .select('username avatar rating seasonScore stats createdAt') 
+      .select('username avatar rating seasonScore stats createdAt customization') 
       .sort({ seasonScore: -1, rating: -1 }) 
       .limit(100) 
       .lean(); // ✅ Read-only optimization

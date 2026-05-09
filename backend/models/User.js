@@ -328,6 +328,26 @@ const userSchema = new mongoose.Schema({
         },
     },
 
+    // ── Custom Matchmaking Quotas ──────────────────────────────────
+    customMatchesPlayedToday: {
+        type: Number,
+        default: 0,
+    },
+    lastCustomMatchDate: {
+        type: Date,
+        default: null,
+    },
+
+    // ── Analytics Tracking ────────────────────────────────────────
+    totalTimeSpent: {
+        type: Number,
+        default: 0, // in minutes
+    },
+    totalSolved: {
+        type: Number,
+        default: 0,
+    },
+
     rating: { 
         type: Number, 
         default: 1000, 

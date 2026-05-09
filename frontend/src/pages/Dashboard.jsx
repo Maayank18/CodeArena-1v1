@@ -7,14 +7,17 @@ import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Logo } from '../components/Logo';
-import { Loader2, Trophy } from 'lucide-react'; 
+import { Loader2, Trophy, Swords } from 'lucide-react'; 
 import api from '../api.js'; 
 import { getLevelInfo } from '../utils/levelSystem';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
+import CustomMatchModal from '../components/CustomMatchModal';
+import PremiumGate from '../components/PremiumGate.jsx';
 
 const CACHE_KEY = 'dashboard_profile_cache';
 const CACHE_DURATION = 60000; // 60 seconds
+const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -22,6 +25,7 @@ const Dashboard = () => {
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
   const [loadingText, setLoadingText] = useState('');
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   // ✅ OPTIMIZED: Memoize rank calculation
   const rankInfo = useMemo(() => {
@@ -105,10 +109,45 @@ const Dashboard = () => {
       toast.error('Please enter a Room ID');
       return;
     }
+    const trimmedRoomId = roomIdInput.trim().toUpperCase();
+    const goToRoom = (roomId, state = {}) => {
+      setIsNavigating(true);
+      setLoadingText('Entering the Arena...');
+      navigate(`/editor/${roomId}`, { state: { username, ...state } });
+    };
+
+    if (!trimmedRoomId.startsWith('C-')) {
+      goToRoom(trimmedRoomId);
+      return;
+    }
+
     setIsNavigating(true);
-    setLoadingText('Entering the Arena...');
-    // We use the 'username' variable here which is stable 
-    navigate(`/editor/${roomIdInput}`, { state: { username } });
+    setLoadingText('Authorizing Custom Arena...');
+
+    api.post(`/rooms/custom/${trimmedRoomId}/join`)
+      .then(({ data }) => {
+        if (!data?.success || !data?.joinToken) {
+          throw new Error(data?.message || 'Failed to authorize custom room');
+        }
+
+        localStorage.setItem(
+          buildCustomRoomAuthKey(trimmedRoomId),
+          JSON.stringify({ joinToken: data.joinToken, savedAt: Date.now() })
+        );
+
+        navigate(`/editor/${trimmedRoomId}`, {
+          state: {
+            username,
+            joinToken: data.joinToken,
+            customSettings: data.customSettings || null,
+            isCustomRoom: true,
+          }
+        });
+      })
+      .catch((error) => {
+        toast.error(error?.response?.data?.message || error.message || 'Failed to join custom room');
+        setIsNavigating(false);
+      });
   }, [roomIdInput, navigate, username]);
 
   const createRoom = useCallback(async () => {
@@ -202,6 +241,18 @@ const Dashboard = () => {
                   >
                     Create New Battle Room
                   </button>
+
+                  <PremiumGate requiredTier="plus" compact>
+                    <button
+                      onClick={() => setShowCustomModal(true)}
+                      disabled={isNavigating}
+                      className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-accent/30 text-accent font-bold text-sm hover:bg-accent/10 hover:border-accent/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      aria-label="Create Custom Battle Room"
+                    >
+                      <Swords size={16} />
+                      Create custom battle room
+                    </button>
+                  </PremiumGate>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -288,6 +339,29 @@ const Dashboard = () => {
         </div>
       )}
       <ChatWidget user={user} />
+      <CustomMatchModal 
+        isOpen={showCustomModal}
+        onClose={() => setShowCustomModal(false)}
+        onRoomCreated={(roomData) => {
+          setShowCustomModal(false);
+          setIsNavigating(true);
+          setLoadingText('Entering Custom Arena...');
+          if (roomData?.roomId && roomData?.joinToken) {
+            localStorage.setItem(
+              buildCustomRoomAuthKey(roomData.roomId),
+              JSON.stringify({ joinToken: roomData.joinToken, savedAt: Date.now() })
+            );
+          }
+          navigate(`/editor/${roomData.roomId}`, {
+            state: {
+              username,
+              joinToken: roomData?.joinToken,
+              customSettings: roomData?.customSettings || null,
+              isCustomRoom: true,
+            }
+          });
+        }}
+      />
     </div>
   );
 };

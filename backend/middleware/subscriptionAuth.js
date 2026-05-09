@@ -1,17 +1,15 @@
 // backend/middleware/subscriptionAuth.js
 
+const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+
 export const requirePlus = (req, res, next) => {
-    // If there's no user, we can't check
+    if (req.user?.role === 'admin') return next();
     if (!req.user) {
         return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    if (req.user.role === 'admin') return next();
-
     const plan = req.user.subscriptionPlan || 'free';
-    
-    // Plus includes 'plus', 'pro', 'premium'
-    if (['plus', 'pro', 'premium'].includes(plan)) {
+    if (tiers[plan] >= tiers.plus) {
         return next();
     }
 
@@ -22,17 +20,13 @@ export const requirePlus = (req, res, next) => {
 };
 
 export const requirePro = (req, res, next) => {
-    // If there's no user, we can't check
+    if (req.user?.role === 'admin') return next();
     if (!req.user) {
         return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    if (req.user.role === 'admin') return next();
-
     const plan = req.user.subscriptionPlan || 'free';
-    
-    // Pro includes 'pro', 'premium'
-    if (['pro', 'premium'].includes(plan)) {
+    if (tiers[plan] >= tiers.pro) {
         return next();
     }
 
@@ -42,7 +36,26 @@ export const requirePro = (req, res, next) => {
     });
 };
 
+export const requirePremium = (req, res, next) => {
+    if (req.user?.role === 'admin') return next();
+    if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const plan = req.user.subscriptionPlan || 'free';
+    if (tiers[plan] >= tiers.premium) {
+        return next();
+    }
+
+    return res.status(403).json({ 
+        success: false, 
+        message: 'Upgrade required. This feature requires at least the Premium plan.' 
+    });
+};
+
 export const requireFullLanguageAccess = (req, res, next) => {
+    if (req.user?.role === 'admin') return next();
+    
     const { language } = req.body;
     
     // Free users only get javascript
@@ -54,10 +67,8 @@ export const requireFullLanguageAccess = (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Authentication required for full language access' });
     }
 
-    if (req.user.role === 'admin') return next();
-
     const plan = req.user.subscriptionPlan || 'free';
-    if (['plus', 'pro', 'premium'].includes(plan)) {
+    if (tiers[plan] >= tiers.plus) {
         return next();
     }
 

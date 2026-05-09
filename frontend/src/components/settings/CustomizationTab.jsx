@@ -89,10 +89,17 @@ const CustomizationTab = () => {
             });
             if (res.data?.success) {
                 toast.success('Customization saved!');
-                // Update localStorage
-                const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-                storedUser.customization = res.data.customization;
-                localStorage.setItem('codearena_user', JSON.stringify(storedUser));
+                // Update localStorage with the newly returned full user document
+                if (res.data.user) {
+                    localStorage.setItem('codearena_user', JSON.stringify(res.data.user));
+                    window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: res.data.user }));
+                } else {
+                    // Fallback
+                    const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+                    storedUser.customization = res.data.customization;
+                    localStorage.setItem('codearena_user', JSON.stringify(storedUser));
+                    window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: storedUser }));
+                }
             }
         } catch (err) {
             const msg = err?.response?.data?.message || 'Failed to save customization';

@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { BADGE_DEFINITIONS } from '../services/badgeEngine.js';
 import { sendSettingsOtpEmail } from '../services/authEmailService.js';
 import {
     AUTH_LIMITS,
@@ -427,7 +428,7 @@ export const updateCustomization = async (req, res) => {
             userId,
             { $set: update },
             { new: true, runValidators: true }
-        ).select('customization badges').lean();
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization').lean();
 
         if (!updatedUser) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -437,6 +438,7 @@ export const updateCustomization = async (req, res) => {
             success: true,
             message: 'Customization saved.',
             customization: updatedUser.customization,
+            user: buildSettingsPayload(updatedUser),
         });
     } catch (error) {
         console.error('UPDATE CUSTOMIZATION ERROR:', error.message);
@@ -454,10 +456,31 @@ export const getUserBadges = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
+        const earnedBadges = user.badges || [];
+        const byCategory = BADGE_DEFINITIONS.reduce((acc, badge) => {
+            if (!acc[badge.category]) {
+                acc[badge.category] = { earned: 0, total: 0 };
+            }
+
+            acc[badge.category].total += 1;
+            if (earnedBadges.includes(badge.id)) {
+                acc[badge.category].earned += 1;
+            }
+
+            return acc;
+        }, {});
+
         return res.json({
             success: true,
-            badges: user.badges || [],
+            catalog: BADGE_DEFINITIONS,
+            earned: earnedBadges,
+            badges: earnedBadges,
             stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+            progress: {
+                earnedCount: earnedBadges.length,
+                totalCount: BADGE_DEFINITIONS.length,
+                byCategory,
+            },
         });
     } catch (error) {
         console.error('GET BADGES ERROR:', error.message);

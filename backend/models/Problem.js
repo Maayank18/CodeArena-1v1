@@ -25,6 +25,12 @@ const problemSchema = new mongoose.Schema({
         enum: ['Easy', 'Medium', 'Hard'],
         default: 'Easy'
     },
+    // ── Data Structure Topics (for analytics & custom matchmaking) ──
+    topics: [{
+        type: String,
+        trim: true,
+        lowercase: true
+    }],
     type: {
         type: String,
         enum: ['battle', 'campaign'],
@@ -159,6 +165,10 @@ problemSchema.index(
 // Used in: server.js line ~203 - Problem.aggregate([{ $sample: { size: 2 }}])
 // Impact: 3x faster problem fetching during room creation
 problemSchema.index({ difficulty: 1, createdAt: -1 });
+
+// ✅ NEW: Topic-based queries for analytics and custom matchmaking
+problemSchema.index({ topics: 1 });
+problemSchema.index({ type: 1, topics: 1 });
 
 export default mongoose.model('Problem', problemSchema);
 // V 1.5

@@ -507,6 +507,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import connectDB from './config/db.js';
 import cron from 'node-cron';
 import axios from 'axios';
@@ -531,6 +532,7 @@ import { verifySmtpConnection } from './services/authEmailService.js';
 import Problem from './models/Problem.js';
 import User from './models/User.js';
 import Match from './models/Match.js';
+import Room from './models/Room.js';
 import { ensurePaymentTransactionIndexes } from './models/PaymentTransaction.js';
 
 // ✅ UTILS
@@ -542,6 +544,10 @@ import { clearStatsCache } from './controllers/statsController.js';
 
 // ✅ PRESENCE TRACKING (Real-time admin telemetry)
 import { attachPresenceTracking } from './services/presenceTracker.js';
+
+// ✅ BADGE ENGINE (Event-driven achievement system)
+import { evaluateBadges } from './services/badgeEngine.js';
+import { verifyCustomRoomJoinToken } from './utils/customRoomAuth.js';
 
 dotenv.config();
 
@@ -670,6 +676,63 @@ const io = new Server(server, {
   allowEIO3: true
 });
 
+const resolveSocketToken = (socket) => {
+  const handshakeAuthToken = socket.handshake?.auth?.token;
+  if (typeof handshakeAuthToken === 'string' && handshakeAuthToken.trim()) {
+    return handshakeAuthToken.trim();
+  }
+
+  const authHeader = socket.handshake?.headers?.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7).trim();
+  }
+
+  return null;
+};
+
+io.use(async (socket, next) => {
+  try {
+    const token = resolveSocketToken(socket);
+    if (!token || !process.env.JWT_SECRET) {
+      return next(new Error('Unauthorized'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded?.id) {
+      return next(new Error('Unauthorized'));
+    }
+
+    const user = await User.findById(decoded.id)
+      .select('_id username subscriptionPlan role customization passwordChangedAt')
+      .lean();
+
+    if (!user) {
+      return next(new Error('Unauthorized'));
+    }
+
+    if (user.passwordChangedAt && decoded.iat && (decoded.iat * 1000) < new Date(user.passwordChangedAt).getTime() - 1000) {
+      return next(new Error('Unauthorized'));
+    }
+
+    socket.data.user = {
+      _id: String(user._id),
+      username: user.username,
+      subscriptionPlan: user.subscriptionPlan || 'free',
+      role: user.role || 'user',
+      customization: user.customization || {
+        entranceBanner: 'default-dark',
+        tagline: 'Novice',
+        avatarFrame: 'none',
+        signatureStack: []
+      }
+    };
+
+    return next();
+  } catch (error) {
+    return next(new Error('Unauthorized'));
+  }
+});
+
 // Make io accessible in routes
 app.locals.io = io;
 
@@ -684,17 +747,28 @@ const roomTimers = new Map();
 const problemCache = new Map();
 const PROBLEM_CACHE_TTL = 5 * 60 * 1000;
 
-const loadBattleProblemIdsForRoom = async () => {
-  const cacheKey = 'random_problems_2';
+const loadBattleProblemIdsForRoom = async ({ count = 2, topics = [] } = {}) => {
+  const normalizedTopics = [...new Set(
+    (Array.isArray(topics) ? topics : [])
+      .filter((topic) => typeof topic === 'string')
+      .map((topic) => topic.trim().toLowerCase())
+      .filter(Boolean)
+  )];
+  const cacheKey = `battle_problems_${count}_${normalizedTopics.join('|')}`;
   const cached = problemCache.get(cacheKey);
   let problemDocs = null;
 
   if (cached && (Date.now() - cached.timestamp) < PROBLEM_CACHE_TTL) {
     problemDocs = cached.problems;
   } else {
+    const matchStage = { type: 'battle' };
+    if (normalizedTopics.length > 0) {
+      matchStage.topics = { $in: normalizedTopics };
+    }
+
     problemDocs = await Problem.aggregate([
-      { $match: { type: 'battle' } },
-      { $sample: { size: 2 } },
+      { $match: matchStage },
+      { $sample: { size: count } },
       { $project: { _id: 1 } }
     ]);
   }
@@ -729,9 +803,78 @@ const loadBattleProblemIdsForRoom = async () => {
     timestamp: Date.now()
   });
 
-  return existingIds.length === 1
-    ? [existingIds[0], existingIds[0]]
-    : existingIds.slice(0, 2);
+  if (existingIds.length === 1 && count > 1) {
+    return Array(count).fill(existingIds[0]);
+  }
+
+  return existingIds.slice(0, count);
+};
+
+const persistCustomRoomPlayers = async (roomId, players, extraSet = {}) => {
+  try {
+    await Room.findOneAndUpdate(
+      { roomId, isCustom: true },
+      {
+        $set: {
+          players: players.map((player) => ({
+            userId: player.userId || null,
+            username: player.username,
+            socketId: player.id,
+            side: player.side,
+            currentScore: 0,
+          })),
+          ...extraSet,
+        }
+      }
+    );
+  } catch (error) {
+    console.error('[CUSTOM ROOM] Failed to persist players:', error.message);
+  }
+};
+
+const activateCustomRoomInDb = async (roomId, room) => {
+  const now = new Date();
+  const participantIds = room.players
+    .map((player) => player.userId)
+    .filter(Boolean);
+
+  const activatedRoom = await Room.findOneAndUpdate(
+    { roomId, isCustom: true, quotaChargedAt: null },
+    {
+      $set: {
+        status: 'active',
+        activatedAt: now,
+        quotaChargedAt: now,
+        problems: room.problemIds,
+        players: room.players.map((player) => ({
+          userId: player.userId || null,
+          username: player.username,
+          socketId: player.id,
+          side: player.side,
+          currentScore: 0,
+        })),
+      }
+    },
+    { new: true }
+  ).lean();
+
+  if (activatedRoom && participantIds.length > 0) {
+    await User.updateMany(
+      { _id: { $in: participantIds } },
+      {
+        $inc: { customMatchesPlayedToday: 1 },
+        $set: { lastCustomMatchDate: now }
+      }
+    );
+    return true;
+  }
+
+  await persistCustomRoomPlayers(roomId, room.players, {
+    status: 'active',
+    problems: room.problemIds,
+    activatedAt: now,
+  });
+  return false;
 };
 
 // ✅ SEASON POINTS CALCULATOR (unchanged)
@@ -848,6 +991,14 @@ const handleGameEnd = async (roomId, room) => {
                 winner: officialWinner, 
                 isDisqualified: room.cheaters.size > 0,
                 disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
+                problemIds: room.problemIds || [],
+                isCustom: Boolean(room.isCustom),
+                matchDurationSeconds: Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000)),
+                timeLimitSeconds: room.durationSeconds || (30 * 60),
+                totalRoundsConfigured: room.totalRounds || 0,
+                fastestSolveMsByUser: room.fastestSolveMsByUser || {},
+                firstRoundFirstSolverUsername: room.firstRoundFirstSolverUsername || null,
+                firstRoundOpponentSubmissionCounts: room.firstRoundOpponentSubmissionCounts || {},
                 players: [
                     { 
                         userId: user1Doc?._id || null, 
@@ -901,6 +1052,73 @@ const handleGameEnd = async (roomId, room) => {
         winnerName = officialWinner;
 
         console.log(`[GAME END] ✅ Room ${roomId} | Winner: ${winnerName}`);
+
+        // ✅ Increment analytics tracking fields
+        const matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+        const matchDurationMinutes = Number((matchDurationSeconds / 60).toFixed(2));
+        const remainingTimeSeconds = Math.max(
+            0,
+            (room.durationSeconds || (30 * 60)) - matchDurationSeconds
+        );
+
+        const analyticsOps = [];
+        if (user1Doc) {
+            analyticsOps.push(User.findByIdAndUpdate(user1Doc._id, {
+                $inc: {
+                    totalTimeSpent: matchDurationMinutes,
+                    totalSolved: outcome.p1.status.includes('Winner') ? (room.totalRounds || room.round || 0) : 0
+                }
+            }));
+        }
+        if (user2Doc) {
+            analyticsOps.push(User.findByIdAndUpdate(user2Doc._id, {
+                $inc: {
+                    totalTimeSpent: matchDurationMinutes,
+                    totalSolved: outcome.p2.status.includes('Winner') ? (room.totalRounds || room.round || 0) : 0
+                }
+            }));
+        }
+        await Promise.all(analyticsOps);
+
+        // ✅ BADGE ENGINE: Evaluate achievements asynchronously (fire-and-forget)
+        try {
+            const badgeContext = {
+                matchDurationMinutes,
+                remainingTimeSeconds,
+                totalRounds: room.totalRounds,
+            };
+
+            if (user1Doc?._id) {
+                evaluateBadges(user1Doc._id, {
+                    ...badgeContext,
+                    isWinner: outcome.p1.status.includes('Winner'),
+                    score: p1Data.score,
+                    opponentScore: p2Data.score,
+                    userRating: p1Data.rating,
+                    opponentRating: p2Data.rating,
+                    roundsWon: Math.floor(p1Data.score / 10),
+                    fastestSolveMs: room.fastestSolveMsByUser?.[p1Data.username],
+                    instantKill: room.firstRoundFirstSolverUsername === p1Data.username &&
+                        ((room.firstRoundOpponentSubmissionCounts?.[p1Data.username] || 0) === 0),
+                }).catch(e => console.error('[BADGES] P1 eval error:', e.message));
+            }
+            if (user2Doc?._id) {
+                evaluateBadges(user2Doc._id, {
+                    ...badgeContext,
+                    isWinner: outcome.p2.status.includes('Winner'),
+                    score: p2Data.score,
+                    opponentScore: p1Data.score,
+                    userRating: p2Data.rating,
+                    opponentRating: p1Data.rating,
+                    roundsWon: Math.floor(p2Data.score / 10),
+                    fastestSolveMs: room.fastestSolveMsByUser?.[p2Data.username],
+                    instantKill: room.firstRoundFirstSolverUsername === p2Data.username &&
+                        ((room.firstRoundOpponentSubmissionCounts?.[p2Data.username] || 0) === 0),
+                }).catch(e => console.error('[BADGES] P2 eval error:', e.message));
+            }
+        } catch (badgeErr) {
+            console.error('[BADGES] Non-critical badge error:', badgeErr.message);
+        }
 
     } catch (err) {
         console.error("❌ CRITICAL DB ERROR in handleGameEnd:", err);
@@ -998,11 +1216,14 @@ io.on('connection', async (socket) => {
   // ✅ JOIN ROOM EVENT
   socket.on('join_room', async (data) => {
     try {
-      const { roomId, username } = data;
+      const authUser = socket.data.user;
+      const roomId = typeof data?.roomId === 'string' ? data.roomId.trim() : '';
+      const joinToken = typeof data?.joinToken === 'string' ? data.joinToken.trim() : '';
+      const username = authUser?.username;
       
       // Validation
       if (!roomId || !username) {
-        socket.emit('error', { message: 'Missing roomId or username' });
+        socket.emit('error', { message: 'Authentication and room ID are required' });
         return;
       }
 
@@ -1012,9 +1233,62 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      // Create room if doesn't exist
+      let persistentCustomRoom = null;
       if (!rooms.has(roomId)) {
-        const problemIds = await loadBattleProblemIdsForRoom();
+        persistentCustomRoom = await Room.findOne({ roomId, isCustom: true })
+          .select('roomId status players customSettings quotaChargedAt')
+          .lean();
+
+        if (persistentCustomRoom) {
+          if (!joinToken) {
+            socket.emit('error', { message: 'Custom room authorization is required.' });
+            return;
+          }
+
+          const tokenPayload = verifyCustomRoomJoinToken(joinToken);
+          if (tokenPayload.roomId !== roomId || tokenPayload.userId !== String(authUser._id)) {
+            socket.emit('error', { message: 'Invalid custom room authorization.' });
+            return;
+          }
+
+          const reservedParticipant = (persistentCustomRoom.players || []).find(
+            (player) => String(player.userId) === String(authUser._id)
+          );
+          if (!reservedParticipant) {
+            socket.emit('error', { message: 'You are not authorized for this custom room.' });
+            return;
+          }
+
+          rooms.set(roomId, {
+            players: [],
+            round: 1,
+            totalRounds: persistentCustomRoom.customSettings?.numQuestions || 3,
+            problemIds: [],
+            scores: {},
+            roundCompletions: new Set(),
+            isGameActive: false,
+            startTime: null,
+            roundStartAt: null,
+            cheaters: new Set(),
+            submissionAttempts: new Set(),
+            submissionCountByUser: {},
+            fastestSolveMsByUser: {},
+            firstRoundFirstSolverUsername: null,
+            firstRoundOpponentSubmissionCounts: {},
+            isCustom: true,
+            durationSeconds: persistentCustomRoom.customSettings?.timeLimit || (30 * 60),
+            customSettings: persistentCustomRoom.customSettings || {},
+            roomDocId: String(persistentCustomRoom._id),
+            quotaCharged: Boolean(persistentCustomRoom.quotaChargedAt),
+          });
+        } else {
+          const problemIds = await loadBattleProblemIdsForRoom();
+          if (problemIds.length === 0) {
+            socket.emit('error', {
+              message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
+            });
+            return;
+          }
 
         if (problemIds.length === 0) {
           socket.emit('error', {
@@ -1023,33 +1297,55 @@ io.on('connection', async (socket) => {
           return;
         }
         
-        rooms.set(roomId, { 
-            players: [], 
-            round: 1, 
-            totalRounds: 2, 
-            problemIds, 
-            scores: {}, 
-            roundCompletions: new Set(), 
-            isGameActive: true, 
-            startTime: Date.now(), 
-            cheaters: new Set(), 
-            submissionAttempts: new Set()
+        rooms.set(roomId, {
+            players: [],
+            round: 1,
+            totalRounds: problemIds.length,
+            problemIds,
+            scores: {},
+            roundCompletions: new Set(),
+            isGameActive: true,
+            startTime: Date.now(),
+            roundStartAt: Date.now(),
+            cheaters: new Set(),
+            submissionAttempts: new Set(),
+            submissionCountByUser: {},
+            fastestSolveMsByUser: {},
+            firstRoundFirstSolverUsername: null,
+            firstRoundOpponentSubmissionCounts: {},
+            isCustom: false,
+            durationSeconds: 30 * 60
         });
         
         startRoomTimer(roomId, 30 * 60);
+        }
         console.log(`[ROOM] ✨ Created: ${roomId}`);
       }
 
       const room = rooms.get(roomId);
-      const remainingTime = Math.max(0, (30 * 60) - Math.floor((Date.now() - room.startTime) / 1000));
+      const remainingTime = room.startTime
+        ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
+        : (room.durationSeconds || (30 * 60));
 
-      let playerIndex = room.players.findIndex((p) => p.username === username);
+      // ✅ Fetch user customization with case-insensitive lookup and robust defaults
+      let reservedSide = null;
+      if (room.isCustom) {
+        const sourceRoom = persistentCustomRoom || await Room.findOne({ roomId, isCustom: true })
+          .select('players')
+          .lean();
+        reservedSide = sourceRoom?.players?.find(
+          (player) => String(player.userId) === String(authUser._id)
+        )?.side || null;
+      }
+
+      let playerIndex = room.players.findIndex((p) => p.username.toLowerCase() === username.toLowerCase());
       let side; 
       let isReconnect = false;
 
       if (playerIndex !== -1) {
         // Reconnecting player
         room.players[playerIndex].id = socket.id;
+        room.players[playerIndex].customization = authUser.customization;
         side = room.players[playerIndex].side;
         isReconnect = true;
         console.log(`[ROOM] 🔄 ${username} reconnected to ${roomId}`);
@@ -1059,22 +1355,63 @@ io.on('connection', async (socket) => {
             socket.emit('room_full'); 
             return; 
         }
-        side = room.players.length === 0 ? 'left' : 'right';
-        room.players.push({ id: socket.id, username, side });
-        room.scores[username] = 0;
+        side = reservedSide || (room.players.length === 0 ? 'left' : 'right');
+        room.players.push({ id: socket.id, username, side, customization: authUser.customization, userId: authUser._id });
+        room.scores[username] = room.scores[username] || 0;
+        room.submissionCountByUser[username] = room.submissionCountByUser[username] || 0;
         console.log(`[ROOM] ➕ ${username} joined ${roomId} as ${side}`);
       }
 
       socket.join(roomId);
+      if (room.isCustom) {
+        await persistCustomRoomPlayers(roomId, room.players, { status: room.isGameActive ? 'active' : 'waiting' });
+      }
 
-      // Fetch current problem
+      if (room.isCustom && !room.isGameActive && room.players.length < 2) {
+        socket.emit('room_joined', {
+          roomId, side, username,
+          players: room.players,
+          problem: null,
+          round: room.round,
+          totalRounds: room.totalRounds,
+          scores: room.scores,
+          remainingTime,
+          waitingForOpponent: true,
+          customSettings: room.customSettings
+        });
+        return;
+      }
+
+      if (room.isCustom && !room.isGameActive && room.players.length === 2) {
+        const problemIds = await loadBattleProblemIdsForRoom({
+          count: room.customSettings?.numQuestions || 3,
+          topics: room.customSettings?.topics || []
+        });
+
+        if (problemIds.length === 0) {
+          socket.emit('error', { message: 'No custom battle problems are available right now.' });
+          return;
+        }
+
+        room.problemIds = problemIds;
+        room.totalRounds = problemIds.length;
+        room.round = 1;
+        room.isGameActive = true;
+        room.startTime = Date.now();
+        room.roundStartAt = Date.now();
+        room.quotaCharged = room.quotaCharged || await activateCustomRoomInDb(roomId, room);
+        startRoomTimer(roomId, room.durationSeconds || (30 * 60));
+      }
+
       const currentProblemId = room.problemIds[room.round - 1];
-      let problem = await Problem.findById(currentProblemId)
-        .select('-goldenSolution')
-        .lean();
+      let problem = currentProblemId
+        ? await Problem.findById(currentProblemId)
+            .select('-goldenSolution')
+            .lean()
+        : null;
 
-      if (!problem) {
-        const fallbackProblemIds = await loadBattleProblemIdsForRoom();
+      if (!problem && !room.isCustom) {
+        const fallbackProblemIds = await loadBattleProblemIdsForRoom({ count: room.totalRounds || 2 });
 
         if (fallbackProblemIds.length === 0) {
           socket.emit('error', {
@@ -1084,55 +1421,84 @@ io.on('connection', async (socket) => {
         }
 
         room.problemIds = fallbackProblemIds;
+        room.totalRounds = fallbackProblemIds.length;
         problem = await Problem.findById(room.problemIds[room.round - 1])
           .select('-goldenSolution')
           .lean();
       }
 
-      if (!problem) {
+      if (room.isGameActive && !problem) {
         socket.emit('error', { message: 'Failed to load a valid Battle Arena problem.' });
         return;
       }
 
       socket.emit('room_joined', {
-        roomId, side, username, 
-        players: room.players, 
-        problem, 
-        round: room.round, 
-        totalRounds: room.totalRounds, 
-        scores: room.scores, 
-        remainingTime 
+        roomId, side, username,
+        players: room.players,
+        problem,
+        round: room.round,
+        totalRounds: room.totalRounds,
+        scores: room.scores,
+        remainingTime: room.startTime
+          ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
+          : (room.durationSeconds || (30 * 60)),
+        customSettings: room.isCustom ? room.customSettings : undefined
       });
 
       if (!isReconnect) {
-        socket.to(roomId).emit('player_joined', { 
-            username, side, 
-            players: room.players, 
-            scores: room.scores 
+        socket.to(roomId).emit('player_joined', {
+            username, side,
+            players: room.players,
+            scores: room.scores
         });
+
+        if (room.isGameActive && room.players.length === 2) {
+          socket.to(roomId).emit('new_round', {
+            problem,
+            round: room.round,
+            totalRounds: room.totalRounds,
+            scores: room.scores,
+            remainingTime: room.durationSeconds || (30 * 60)
+          });
+        }
       }
 
     } catch (err) { 
         console.error('[SOCKET] Join Error:', err);
-        socket.emit('error', { message: 'Failed to join room' });
+        socket.emit('error', { message: err.message || 'Failed to join room' });
     }
   });
 
   // ✅ LEVEL COMPLETED EVENT
   socket.on('level_completed', async ({ roomId, username }) => {
       try {
+          const resolvedUsername = socket.data.user?.username || username;
           const room = rooms.get(roomId);
           if (!room || !room.isGameActive) return;
-          if(room.roundCompletions.has(username)) return;
+          if(room.roundCompletions.has(resolvedUsername)) return;
 
           // Rate limiting
           if (!checkRateLimit(socket.id, 'level_completed')) {
             return;
           }
 
-          room.submissionAttempts.add(username);
-          room.scores[username] = (room.scores[username] || 0) + 10;
-          room.roundCompletions.add(username);
+          const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;
+          room.submissionAttempts.add(resolvedUsername);
+          room.scores[resolvedUsername] = (room.scores[resolvedUsername] || 0) + 10;
+          room.roundCompletions.add(resolvedUsername);
+          if (solveTimeMs !== null) {
+            const currentFastest = room.fastestSolveMsByUser?.[resolvedUsername];
+            if (!currentFastest || solveTimeMs < currentFastest) {
+              room.fastestSolveMsByUser[resolvedUsername] = solveTimeMs;
+            }
+          }
+          if (room.round === 1 && !room.firstRoundFirstSolverUsername) {
+            room.firstRoundFirstSolverUsername = resolvedUsername;
+            const opponentName = room.players.find((player) => player.username !== resolvedUsername)?.username;
+            room.firstRoundOpponentSubmissionCounts[resolvedUsername] = opponentName
+              ? (room.submissionCountByUser?.[opponentName] || 0)
+              : 0;
+          }
           
           io.to(roomId).emit('score_update', room.scores);
           console.log(`[GAME] 🎯 ${username} completed round ${room.round} in ${roomId}`);
@@ -1143,6 +1509,7 @@ io.on('connection', async (socket) => {
                   // Advance to next round
                   room.round++;
                   room.roundCompletions.clear();
+                  room.roundStartAt = Date.now();
                   
                   const nextProblemId = room.problemIds[room.round - 1];
                   let nextProblem = await Problem.findById(nextProblemId)
@@ -1150,7 +1517,10 @@ io.on('connection', async (socket) => {
                     .lean();
 
                   if (!nextProblem) {
-                    const fallbackProblemIds = await loadBattleProblemIdsForRoom();
+                    const fallbackProblemIds = await loadBattleProblemIdsForRoom({
+                      count: room.totalRounds || 2,
+                      topics: room.customSettings?.topics || []
+                    });
                     if (fallbackProblemIds.length === 0) {
                       io.to(roomId).emit('error', {
                         message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
@@ -1173,6 +1543,10 @@ io.on('connection', async (socket) => {
                       round: room.round, 
                       problem: nextProblem, 
                       scores: room.scores,
+                      totalRounds: room.totalRounds,
+                      remainingTime: room.startTime
+                        ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
+                        : (room.durationSeconds || (30 * 60)),
                   });
                   
                   console.log(`[GAME] ⏭️ Room ${roomId} → Round ${room.round}`);
@@ -1189,10 +1563,11 @@ io.on('connection', async (socket) => {
   // ✅ CHEATING DETECTED EVENT
   socket.on('cheating_detected', async ({ roomId, username, reason }) => {
     try {
+      const resolvedUsername = socket.data.user?.username || username;
       const room = rooms.get(roomId);
       if (!room || !room.isGameActive) return;
       
-      room.cheaters.add(username);
+      room.cheaters.add(resolvedUsername);
       socket.emit('cheat_warning', { reason });
       
       console.log(`[ANTI-CHEAT] 🚨 ${username} in ${roomId}: ${reason}`);
@@ -1204,9 +1579,11 @@ io.on('connection', async (socket) => {
   // ✅ CODE SUBMITTED EVENT
   socket.on('code_submitted', ({ roomId, username }) => {
     try {
+        const resolvedUsername = socket.data.user?.username || username;
         const room = rooms.get(roomId);
         if (!room || !room.isGameActive) return;
-        room.submissionAttempts.add(username);
+        room.submissionAttempts.add(resolvedUsername);
+        room.submissionCountByUser[resolvedUsername] = (room.submissionCountByUser[resolvedUsername] || 0) + 1;
         console.log(`[GAME] 📝 ${username} submitted code in ${roomId}`);
     } catch (err) { 
       console.error("[SOCKET] Code submission error:", err); 

@@ -109,6 +109,30 @@ const roomSchema = new mongoose.Schema({
         default: null 
     },
 
+    // ── Custom Battle Room Fields ─────────────────────────────────
+    isCustom: {
+        type: Boolean,
+        default: false
+    },
+    customSettings: {
+        timeLimit: { type: Number, default: 1800 },      // seconds
+        numQuestions: { type: Number, default: 3 },
+        topics: [{
+            type: String,
+            trim: true,
+            lowercase: true
+        }],
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    },
+    activatedAt: {
+        type: Date,
+        default: null
+    },
+    quotaChargedAt: {
+        type: Date,
+        default: null
+    },
+
     createdAt: {
         type: Date,
         default: Date.now
@@ -133,6 +157,9 @@ roomSchema.index({ status: 1 });
 // Used in: Admin dashboard filtering active/waiting rooms
 // Impact: Single index scan instead of multiple lookups
 roomSchema.index({ status: 1, createdAt: -1 });
+
+// ✅ NEW: Custom room queries
+roomSchema.index({ isCustom: 1, status: 1 });
 
 export default mongoose.model('Room', roomSchema);
 // V 1.5

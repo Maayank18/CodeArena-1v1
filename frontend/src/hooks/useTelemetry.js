@@ -86,6 +86,7 @@ export default function useTelemetry() {
                 userId:   storedUser._id   || storedUser.id || null,
                 username: storedUser.username,
                 avatar:   storedUser.avatar || '',
+                customization: storedUser.customization || {},
                 activity: resolveActivity(window.location.pathname),
             });
         });

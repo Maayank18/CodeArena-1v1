@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Crown, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const PremiumGate = ({ requiredTier = 'pro', children }) => {
+const PremiumGate = ({ requiredTier = 'pro', compact = false, children }) => {
     const navigate = useNavigate();
     
     const [user, setUser] = useState(() => {
@@ -40,6 +40,8 @@ const PremiumGate = ({ requiredTier = 'pro', children }) => {
     const userRole = user?.role?.toLowerCase() || 'user';
     const userPlan = user?.subscriptionPlan?.toLowerCase() || 'free';
 
+    const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+
     // DEBUG LOG
     console.log("[PREMIUM_GATE_DEBUG]", { 
         username: user?.username, 
@@ -49,13 +51,32 @@ const PremiumGate = ({ requiredTier = 'pro', children }) => {
     });
 
     const isAdmin = userRole === 'admin';
-    const hasPro = userPlan === 'pro' || userPlan === 'premium';
-    const hasPlus = userPlan === 'plus' || hasPro;
-
-    const hasAccess = isAdmin || (requiredTier === 'pro' && hasPro) || (requiredTier === 'plus' && hasPlus) || (requiredTier === 'free');
+    const hasAccess = isAdmin || (tiers[userPlan] >= (tiers[requiredTier] || 0));
 
     if (hasAccess) {
         return <>{children}</>;
+    }
+
+    if (compact) {
+        return (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300">
+                    <Lock size={18} className="text-[#060810]" />
+                </div>
+                <p className="text-sm font-bold text-white">
+                    {requiredTier === 'pro' ? 'Pro required' : 'Plus required'}
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                    Upgrade to unlock this feature.
+                </p>
+                <button
+                    onClick={() => navigate('/pricing?source=settings')}
+                    className="mt-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-2 text-sm font-bold text-[#060810] transition-all hover:scale-105"
+                >
+                    Upgrade Now
+                </button>
+            </div>
+        );
     }
 
     return (

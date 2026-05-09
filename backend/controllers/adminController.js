@@ -467,6 +467,7 @@
 import User from '../models/User.js';
 import Match from '../models/Match.js';
 import Problem from '../models/Problem.js';
+import { clearProblemCache } from './problemController.js';
 
 // ═══════════════════════════════════════════════════════════════
 // MIDDLEWARE HELPER — validate admin identity
@@ -483,6 +484,19 @@ const normalizeProblemType = (value) => {
     return normalizedValue === 'campaign' ? 'campaign' : 'battle';
 };
 
+const sanitizeProblemTopics = (topics) => {
+    if (!Array.isArray(topics)) {
+        return [];
+    }
+
+    return [...new Set(
+        topics
+            .filter((topic) => typeof topic === 'string')
+            .map((topic) => topic.trim().toLowerCase())
+            .filter(Boolean)
+    )];
+};
+
 const normalizeCampaignRegion = (value) => {
     if (value === undefined || value === null || value === '') return undefined;
     const parsed = Number(value);
@@ -495,10 +509,12 @@ const normalizeCampaignNodeId = (value) => {
     return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const buildProblemPayload = (raw = {}) => {
+const buildProblemPayload = (raw = {}, existingProblem = null) => {
+    const merged = existingProblem ? { ...existingProblem, ...raw } : { ...raw };
+
     // 1. Normalize basic fields
-    const campaignRegion = normalizeCampaignRegion(raw.campaignRegion);
-    const campaignNodeId = normalizeCampaignNodeId(raw.campaignNodeId);
+    const campaignRegion = normalizeCampaignRegion(merged.campaignRegion);
+    const campaignNodeId = normalizeCampaignNodeId(merged.campaignNodeId);
 
     // Check if any campaign data is provided
     const hasCampaignData = (campaignRegion !== undefined && !Number.isNaN(campaignRegion)) || 
@@ -506,7 +522,7 @@ const buildProblemPayload = (raw = {}) => {
 
     // 2. Determine Type - CRITICAL FIX
     // Parse the raw type value: it could be undefined, empty string, 'campaign', 'battle', or malformed
-    const rawType = typeof raw.type === 'string' ? raw.type.trim().toLowerCase() : '';
+    const rawType = typeof merged.type === 'string' ? merged.type.trim().toLowerCase() : '';
     const isExplicitCampaign = rawType === 'campaign';
     const isExplicitBattle = rawType === 'battle';
     const hasExplicitType = isExplicitCampaign || isExplicitBattle;
@@ -544,19 +560,20 @@ const buildProblemPayload = (raw = {}) => {
 
     // 4. Return normalized payload
     return {
-        title: raw.title,
-        slug: raw.slug,
-        description: raw.description,
-        difficulty: raw.difficulty || 'Easy',
+        title: typeof merged.title === 'string' ? merged.title.trim() : merged.title,
+        slug: typeof merged.slug === 'string' ? merged.slug.trim().toLowerCase() : merged.slug,
+        description: merged.description,
+        difficulty: merged.difficulty || 'Easy',
+        topics: sanitizeProblemTopics(merged.topics),
         type,
         campaignRegion: type === 'campaign' ? campaignRegion : undefined,
         campaignNodeId: type === 'campaign' ? campaignNodeId : undefined,
-        constraints: Array.isArray(raw.constraints) ? raw.constraints : [],
-        timeLimit: raw.timeLimit || 5000,
-        memoryLimit: raw.memoryLimit || 512,
-        goldenSolution: raw.goldenSolution,
-        starterCode: raw.starterCode || {},
-        testCases: Array.isArray(raw.testCases) ? raw.testCases : [],
+        constraints: Array.isArray(merged.constraints) ? merged.constraints : [],
+        timeLimit: Number(merged.timeLimit) > 0 ? Number(merged.timeLimit) : 5000,
+        memoryLimit: Number(merged.memoryLimit) > 0 ? Number(merged.memoryLimit) : 512,
+        goldenSolution: merged.goldenSolution,
+        starterCode: merged.starterCode && typeof merged.starterCode === 'object' ? merged.starterCode : {},
+        testCases: Array.isArray(merged.testCases) ? merged.testCases : [],
     };
 };
 
@@ -907,7 +924,7 @@ export const getAllProblems = async (req, res) => {
         }
 
         const problems = await Problem.find(filter)
-            .select('title slug difficulty type campaignRegion campaignNodeId constraints testCases goldenSolution timeLimit memoryLimit starterCode createdAt')
+            .select('title slug difficulty type topics campaignRegion campaignNodeId constraints testCases goldenSolution timeLimit memoryLimit starterCode createdAt')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -930,72 +947,32 @@ export const getAllProblems = async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 export const createProblem = async (req, res) => {
     try {
-        console.log('[Admin] Received createProblem request body:', {
-            title: req.body.title,
-            type: req.body.type,
-            campaignRegion: req.body.campaignRegion,
-            campaignNodeId: req.body.campaignNodeId
-        });
-
         await verifyAdmin(req.body.username);
-
-        const {
-            title, 
-            slug, 
-            description, 
-            difficulty = 'Easy', 
-            type = 'battle', 
-            campaignRegion,
-            campaignNodeId, 
-            constraints = [], 
-            timeLimit = 5000, 
-            memoryLimit = 512,
-            goldenSolution, 
-            starterCode = {}, 
-            testCases = []
-        } = req.body;
+        const payload = buildProblemPayload(req.body);
 
         // Required field validation
-        if (!title || !slug || !description) {
+        if (!payload.title || !payload.slug || !payload.description) {
             return res.status(400).json({ message: 'Title, slug, and description are required' });
         }
-        if (!type) {
-            return res.status(400).json({ message: 'Problem type is required' });
-        }
-        if (!goldenSolution?.trim()) {
+        if (!payload.goldenSolution?.trim()) {
             return res.status(400).json({ message: 'Golden solution is required' });
         }
-        if (!testCases?.length || !testCases[0]?.input) {
+        if (!payload.testCases?.length || !payload.testCases[0]?.input) {
             return res.status(400).json({ message: 'At least one test case is required' });
         }
 
         // Slug uniqueness check
-        const exists = await Problem.findOne({ slug }).lean();
+        const exists = await Problem.findOne({ slug: payload.slug }).lean();
         if (exists) {
-            return res.status(400).json({ message: `Slug "${slug}" is already taken` });
+            return res.status(400).json({ message: `Slug "${payload.slug}" is already taken` });
         }
 
         // Validate golden solution against test cases
-        const validationError = validateGoldenSolution(goldenSolution, testCases);
+        const validationError = validateGoldenSolution(payload.goldenSolution, payload.testCases);
         if (validationError) return res.status(400).json({ message: validationError });
 
-        console.log('[Admin] Final check before Problem.create:', { title, type, campaignRegion, campaignNodeId });
-
-        const problem = await Problem.create({
-            title,
-            slug,
-            description,
-            difficulty,
-            type,
-            campaignRegion: type === 'campaign' ? campaignRegion : undefined,
-            campaignNodeId: type === 'campaign' ? campaignNodeId : undefined,
-            constraints,
-            timeLimit,
-            memoryLimit,
-            goldenSolution,
-            starterCode,
-            testCases,
-        });
+        const problem = await Problem.create(payload);
+        clearProblemCache();
 
         res.status(201).json({ message: 'Problem created successfully', problem });
     } catch (error) {
@@ -1020,80 +997,46 @@ export const createProblem = async (req, res) => {
 export const updateProblem = async (req, res) => {
     try {
         const { problemId } = req.params;
-        console.log(`[Admin] Received updateProblem request for ${problemId}:`, {
-            title: req.body.title,
-            type: req.body.type,
-            campaignRegion: req.body.campaignRegion,
-            campaignNodeId: req.body.campaignNodeId
-        });
-
         await verifyAdmin(req.body.username);
-        const updateData    = { ...req.body };
-
-        // Never allow slug or username to be updated
-        delete updateData.slug;
-        delete updateData.username;
-
         const existing = await Problem.findById(problemId).lean();
         if (!existing) return res.status(404).json({ message: 'Problem not found' });
 
-        const {
-            title,
-            description,
-            difficulty,
-            type,
-            campaignRegion,
-            campaignNodeId,
-            constraints,
-            timeLimit,
-            memoryLimit,
-            goldenSolution,
-            starterCode,
-            testCases
-        } = req.body;
+        const normalizedPayload = buildProblemPayload(req.body, existing);
+        const updateOperation = {
+            $set: {
+                title: normalizedPayload.title,
+                description: normalizedPayload.description,
+                difficulty: normalizedPayload.difficulty,
+                topics: normalizedPayload.topics,
+                type: normalizedPayload.type,
+                constraints: normalizedPayload.constraints,
+                timeLimit: normalizedPayload.timeLimit,
+                memoryLimit: normalizedPayload.memoryLimit,
+                goldenSolution: normalizedPayload.goldenSolution,
+                starterCode: normalizedPayload.starterCode,
+                testCases: normalizedPayload.testCases,
+            }
+        };
 
-        if (title !== undefined) updateData.title = title;
-        if (description !== undefined) updateData.description = description;
-        if (difficulty !== undefined) updateData.difficulty = difficulty;
-        if (type !== undefined) updateData.type = type;
-        if (campaignRegion !== undefined) updateData.campaignRegion = type === 'campaign' ? Number(campaignRegion) : undefined;
-        if (campaignNodeId !== undefined) updateData.campaignNodeId = type === 'campaign' ? String(campaignNodeId).trim() : undefined;
-        if (constraints !== undefined) updateData.constraints = constraints;
-        if (timeLimit !== undefined) updateData.timeLimit = timeLimit;
-        if (memoryLimit !== undefined) updateData.memoryLimit = memoryLimit;
-        if (goldenSolution !== undefined) updateData.goldenSolution = goldenSolution;
-        if (starterCode !== undefined) updateData.starterCode = starterCode;
-        if (testCases !== undefined) updateData.testCases = testCases;
-
-        // Note: updateData already has undefined for campaign fields if type !== campaign.
-        // Mongoose findByIdAndUpdate with $set will not remove existing fields if they are undefined in the object.
-        // So we explicitly use $unset if needed.
-        const updateOperation = { $set: updateData };
-        if (type !== 'campaign' && type !== undefined) {
+        if (normalizedPayload.type === 'campaign') {
+            updateOperation.$set.campaignRegion = normalizedPayload.campaignRegion;
+            updateOperation.$set.campaignNodeId = normalizedPayload.campaignNodeId;
+        } else {
             updateOperation.$unset = {
                 campaignRegion: 1,
                 campaignNodeId: 1,
             };
         }
 
-        // If golden solution or test cases changed, re-validate
-        if (updateData.goldenSolution || updateData.testCases) {
-            const sol   = updateData.goldenSolution || existing.goldenSolution;
-            const cases = updateData.testCases      || existing.testCases;
-
-            if (!sol) return res.status(400).json({ message: 'Golden solution is required' });
-
-            const validationError = validateGoldenSolution(sol, cases);
-            if (validationError) return res.status(400).json({ message: validationError });
+        if (!normalizedPayload.goldenSolution?.trim()) {
+            return res.status(400).json({ message: 'Golden solution is required' });
         }
 
-        console.log('[Admin] Final check before Problem.findByIdAndUpdate:', { 
-            id: problemId, 
-            type: updateOperation.$set.type, 
-            region: updateOperation.$set.campaignRegion,
-            node: updateOperation.$set.campaignNodeId,
-            unset: updateOperation.$unset
-        });
+        const validationError = validateGoldenSolution(
+            normalizedPayload.goldenSolution,
+            normalizedPayload.testCases
+        );
+        if (validationError) return res.status(400).json({ message: validationError });
 
         const problem = await Problem.findByIdAndUpdate(
             problemId,
@@ -1102,6 +1045,7 @@ export const updateProblem = async (req, res) => {
         ).lean();
 
         if (!problem) return res.status(404).json({ message: 'Problem not found' });
+        clearProblemCache();
 
         res.json({ message: 'Problem updated successfully', problem });
     } catch (error) {
@@ -1124,6 +1068,7 @@ export const deleteProblem = async (req, res) => {
         const { problemId } = req.params;
         const problem = await Problem.findByIdAndDelete(problemId);
         if (!problem) return res.status(404).json({ message: 'Problem not found' });
+        clearProblemCache();
 
         res.json({ message: `Problem "${problem.title}" deleted` });
     } catch (error) {

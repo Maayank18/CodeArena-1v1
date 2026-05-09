@@ -111,6 +111,42 @@ const matchSchema = new mongoose.Schema({
   language: { 
     type: String, 
     default: 'cpp' 
+  },
+
+  // ── Analytics & Custom Match Tracking ─────────────────────────
+  problemIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Problem'
+  }],
+  isCustom: {
+    type: Boolean,
+    default: false
+  },
+  matchDurationSeconds: {
+    type: Number,
+    default: 0
+  },
+  timeLimitSeconds: {
+    type: Number,
+    default: 1800
+  },
+  totalRoundsConfigured: {
+    type: Number,
+    default: 0
+  },
+  fastestSolveMsByUser: {
+    type: Map,
+    of: Number,
+    default: undefined
+  },
+  firstRoundFirstSolverUsername: {
+    type: String,
+    default: null
+  },
+  firstRoundOpponentSubmissionCounts: {
+    type: Map,
+    of: Number,
+    default: undefined
   }
 }, { 
   timestamps: true 

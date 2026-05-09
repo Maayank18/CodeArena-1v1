@@ -2,8 +2,10 @@
 import CampaignMap      from '../models/CampaignMap.js';
 import CampaignProgress from '../models/CampaignProgress.js';
 import Problem from '../models/Problem.js';
+import User from '../models/User.js';
 import { executeForCampaign } from '../services/campaignExecutor.js';
 import { calculateStars, calculateKP, shouldUpdateNode } from '../services/starCalculator.js';
+import { evaluateBadges } from '../services/badgeEngine.js';
 import { outputsMatch } from '../utils/sanitizeOutput.js';
 import {
     ensureEntryNodesUnlocked,
@@ -333,7 +335,7 @@ export const submitCampaignSolution = async (req, res) => {
         ensureEntryNodesUnlocked(progress, entryNodeIds);
 
         const node = await Problem.findOne({ campaignNodeId: nodeId, type: 'campaign' })
-            .select('title slug description difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds goldenSolution');
+            .select('title slug description difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds goldenSolution topics');
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
@@ -489,6 +491,23 @@ export const submitCampaignSolution = async (req, res) => {
         progress.markModified('sageUsage');
 
         await progress.save();
+
+        const solvedIncrement = existingNode ? 0 : 1;
+        const minutesSpent = Number(((executionResult.avgTimeMs || 0) / 60000).toFixed(2));
+        await User.findByIdAndUpdate(userId, {
+            $inc: {
+                totalTimeSpent: minutesSpent,
+                totalSolved: solvedIncrement,
+            }
+        });
+
+        evaluateBadges(userId, {
+            isWinner: true,
+            fastestSolveMs: executionResult.avgTimeMs,
+            problemTopics: node.topics || [],
+        }).catch((badgeError) => {
+            console.error('[CAMPAIGN BADGES] Non-critical badge error:', badgeError.message);
+        });
 
         return res.json({
             success: true,

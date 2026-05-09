@@ -1,174 +1,261 @@
-// import User from '../models/User.js';
-// import Room from '../models/Room.js';
-
-// // @desc    Get site-wide statistics
-// export const getStats = async (req, res) => {
-//   try {
-//     // 1. Live Users (Socket Connections)
-//     const io = req.app.get('io') || req.app.locals.io;
-//     const liveUsers = io ? io.engine.clientsCount : 0;
-
-//     // 2. Total Registered Users
-//     const totalUsers = await User.countDocuments();
-
-//     // 3. Active Battles
-//     const activeBattles = await Room.countDocuments({ status: 'active' });
-
-//     // 4. Total Matches Played 
-//     // ✅ FIX: Added $match to ensure we only sum users who actually have stats
-//     const matchStats = await User.aggregate([
-//       { $match: { "stats.matchesPlayed": { $exists: true } } },
-//       { $group: { _id: null, total: { $sum: "$stats.matchesPlayed" } } }
-//     ]);
-
-//     // Since every match has 2 players, total matches = sum of all played / 2
-//     const totalMatches = matchStats.length > 0 ? Math.floor(matchStats[0].total / 2) : 0;
-
-//     return res.json({ 
-//         live: liveUsers, 
-//         total: totalUsers,
-//         activeBattles,
-//         totalMatches
-//     });
-
-//   } catch (err) {
-//     console.error("Error in getStats:", err);
-//     return res.status(500).json({ message: 'Failed to read stats' });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
 // FILE: backend/controllers/statsController.js
 // HEAVILY OPTIMIZED VERSION
 import User from '../models/User.js';
 import Room from '../models/Room.js';
+import Match from '../models/Match.js';
+import Problem from '../models/Problem.js';
+import CampaignProgress from '../models/CampaignProgress.js';
 
-// ✅ PERFORMANCE: Cache stats for 30 seconds (high-traffic endpoint)
+// PERFORMANCE: Cache stats for 30 seconds (high-traffic endpoint)
 let statsCache = null;
 let statsCacheTimestamp = 0;
 const STATS_CACHE_DURATION = 30 * 1000; // 30 seconds
 
+const CHART_TOPIC_FALLBACK = [
+    'arrays',
+    'strings',
+    'dynamic programming',
+    'graphs',
+    'trees',
+];
+
+const titleCaseTopic = (value) => (
+    String(value || '')
+        .split(' ')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+);
+
 // @desc    Get site-wide statistics (Cached)
 export const getStats = async (req, res) => {
-  try {
-    const now = Date.now();
+    try {
+        const now = Date.now();
 
-    // 1. Live Users (always fresh - from Socket.IO)
-    const io = req.app.get('io') || req.app.locals.io;
-    const liveUsers = io ? io.engine.clientsCount : 0;
+        // 1. Live Users (always fresh - from Socket.IO)
+        const io = req.app.get('io') || req.app.locals.io;
+        const liveUsers = io ? io.engine.clientsCount : 0;
 
-    // 2. ✅ CACHE: Return cached stats if valid
-    if (statsCache && (now - statsCacheTimestamp) < STATS_CACHE_DURATION) {
-      return res.json({ 
-        live: liveUsers,
-        ...statsCache 
-      });
+        // 2. CACHE: Return cached stats if valid
+        if (statsCache && (now - statsCacheTimestamp) < STATS_CACHE_DURATION) {
+            return res.json({
+                live: liveUsers,
+                ...statsCache
+            });
+        }
+
+        // 3. OPTIMIZED: Parallel queries with Promise.all
+        const [totalUsers, activeBattles, matchStats] = await Promise.all([
+            User.countDocuments(),
+            Room.countDocuments({ status: 'active' }),
+            User.aggregate([
+                { $match: { 'stats.matchesPlayed': { $exists: true, $gt: 0 } } },
+                { $group: { _id: null, total: { $sum: '$stats.matchesPlayed' } } }
+            ])
+        ]);
+
+        const totalMatches = matchStats.length > 0 ? Math.floor(matchStats[0].total / 2) : 0;
+
+        statsCache = {
+            total: totalUsers,
+            activeBattles,
+            totalMatches
+        };
+        statsCacheTimestamp = now;
+
+        return res.json({
+            live: liveUsers,
+            total: totalUsers,
+            activeBattles,
+            totalMatches
+        });
+    } catch (err) {
+        console.error('Error in getStats:', err);
+        return res.status(500).json({ message: 'Failed to read stats' });
     }
-
-    // 3. ✅ OPTIMIZED: Parallel queries with Promise.all (3x faster)
-    // Before: ~200ms | After: ~70ms
-    const [totalUsers, activeBattles, matchStats] = await Promise.all([
-      // Query 1: Total users (uses existing index)
-      User.countDocuments(),
-      
-      // Query 2: Active battles (uses new status index)
-      Room.countDocuments({ status: 'active' }),
-      
-      // Query 3: Total matches (optimized aggregation)
-      User.aggregate([
-        { $match: { "stats.matchesPlayed": { $exists: true, $gt: 0 } } },
-        { $group: { _id: null, total: { $sum: "$stats.matchesPlayed" } } }
-      ])
-    ]);
-
-    // Since every match has 2 players, total matches = sum / 2
-    const totalMatches = matchStats.length > 0 ? Math.floor(matchStats[0].total / 2) : 0;
-
-    // ✅ Update cache (excluding live users)
-    statsCache = { 
-      total: totalUsers,
-      activeBattles,
-      totalMatches
-    };
-    statsCacheTimestamp = now;
-
-    return res.json({ 
-      live: liveUsers, 
-      total: totalUsers,
-      activeBattles,
-      totalMatches
-    });
-
-  } catch (err) {
-    console.error("Error in getStats:", err);
-    return res.status(500).json({ message: 'Failed to read stats' });
-  }
 };
 
-// ✅ NEW: Manual cache invalidation (call after significant events)
+// NEW: Manual cache invalidation (call after significant events)
 export const clearStatsCache = () => {
-  statsCache = null;
-  statsCacheTimestamp = 0;
+    statsCache = null;
+    statsCacheTimestamp = 0;
 };
 
-// @desc    Get user analytics for Pro users
+// @desc    Get user analytics for Pro users (REAL DATA)
 // @route   GET /api/stats/analytics
 export const getUserAnalytics = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        // Fetch the user to get real stats
-        const user = await User.findById(userId).select('stats').lean();
-        
+        const [user, matches, campaignProgress] = await Promise.all([
+            User.findById(userId)
+                .select('stats totalTimeSpent totalSolved')
+                .lean(),
+            Match.find({ 'players.userId': userId })
+                .select('createdAt problemIds players matchDurationSeconds')
+                .lean(),
+            CampaignProgress.findOne({ userId })
+                .select('totalAttempts currentStreak completedNodes')
+                .lean(),
+        ]);
+
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const stats = user.stats || { wins: 0, losses: 0, matchesPlayed: 0 };
-        
-        // Placeholder values for data not yet tracked but needed for Pro Analytics UI
-        // Total solved = wins + some campaign progress (using placeholder logic for now)
-        const totalSolved = stats.wins * 2 + 15; // Placeholder
-        const totalAttempts = stats.matchesPlayed * 3 + 42; // Placeholder
-        
-        const accuracy = totalAttempts > 0 
-            ? Math.round((totalSolved / totalAttempts) * 100) 
+        const completedNodes = campaignProgress?.completedNodes || [];
+        const battleAttempts = matches.length;
+        const campaignAttempts = campaignProgress?.totalAttempts || 0;
+        const totalAttempts = battleAttempts + campaignAttempts;
+
+        const battleSolvedProblemIds = matches.flatMap((match) => {
+            const me = match.players?.find(
+                (player) => String(player.userId) === String(userId)
+            );
+            return me?.isWinner ? (match.problemIds || []) : [];
+        });
+
+        const uniqueBattleProblemIds = [...new Set(
+            battleSolvedProblemIds
+                .map((problemId) => String(problemId))
+                .filter(Boolean)
+        )];
+
+        const completedNodeIds = [...new Set(
+            completedNodes
+                .map((node) => node?.nodeId)
+                .filter(Boolean)
+        )];
+
+        const [battleProblems, campaignProblems, totalTopicAgg] = await Promise.all([
+            uniqueBattleProblemIds.length > 0
+                ? Problem.find({ _id: { $in: uniqueBattleProblemIds } })
+                    .select('topics')
+                    .lean()
+                : [],
+            completedNodeIds.length > 0
+                ? Problem.find({ type: 'campaign', campaignNodeId: { $in: completedNodeIds } })
+                    .select('topics campaignNodeId')
+                    .lean()
+                : [],
+            Problem.aggregate([
+                { $unwind: { path: '$topics', preserveNullAndEmptyArrays: false } },
+                { $group: { _id: '$topics', total: { $sum: 1 } } }
+            ])
+        ]);
+
+        const solvedTopicCounts = {};
+        for (const problem of [...battleProblems, ...campaignProblems]) {
+            for (const topic of (problem.topics || [])) {
+                const normalizedTopic = String(topic).trim().toLowerCase();
+                if (!normalizedTopic) continue;
+                solvedTopicCounts[normalizedTopic] = (solvedTopicCounts[normalizedTopic] || 0) + 1;
+            }
+        }
+
+        const totalTopicCounts = totalTopicAgg.reduce((acc, item) => {
+            acc[item._id] = item.total;
+            return acc;
+        }, {});
+
+        let topicBreakdown = Object.entries(solvedTopicCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([topic, solved]) => ({
+                topic: titleCaseTopic(topic),
+                solved,
+                total: totalTopicCounts[topic] || solved
+            }));
+
+        if (topicBreakdown.length === 0) {
+            topicBreakdown = CHART_TOPIC_FALLBACK.map((topic) => ({
+                topic: titleCaseTopic(topic),
+                solved: 0,
+                total: totalTopicCounts[topic] || 0
+            }));
+        }
+
+        const battleSolvedCount = battleSolvedProblemIds.length;
+        const campaignSolvedCount = completedNodes.length;
+        const totalSolved = Math.max(
+            user.totalSolved || 0,
+            battleSolvedCount + campaignSolvedCount
+        );
+
+        const successfulAttempts = battleSolvedCount + campaignSolvedCount;
+        const accuracyPercent = totalAttempts > 0
+            ? Math.round((successfulAttempts / totalAttempts) * 100)
             : 0;
 
-        // Placeholder for time spent (minutes)
-        const timeSpent = stats.matchesPlayed * 15 + 120; // Assuming ~15m per match + base time
+        const aggregatedBattleTimeMinutes = matches.reduce(
+            (sum, match) => sum + ((match.matchDurationSeconds || 0) / 60),
+            0
+        );
+        const aggregatedCampaignTimeMinutes = completedNodes.reduce(
+            (sum, node) => sum + ((node.bestTimeMs || 0) / 60000),
+            0
+        );
+        const timeSpentMinutes = Number(
+            Math.max(
+                user.totalTimeSpent || 0,
+                aggregatedBattleTimeMinutes + aggregatedCampaignTimeMinutes
+            ).toFixed(2)
+        );
 
-        // Placeholder topic breakdown
-        const topicBreakdown = [
-            { topic: 'Arrays', solved: 12, total: 20 },
-            { topic: 'Strings', solved: 8, total: 15 },
-            { topic: 'Dynamic Programming', solved: 3, total: 10 },
-            { topic: 'Graphs', solved: 5, total: 12 },
-            { topic: 'Trees', solved: 7, total: 14 }
-        ];
+        const activityMap = new Map();
+        for (let offset = 6; offset >= 0; offset--) {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() - offset);
+            const key = date.toISOString().slice(0, 10);
+            activityMap.set(key, {
+                dateKey: key,
+                label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                solved: 0,
+            });
+        }
 
-        res.json({
+        for (const match of matches) {
+            const me = match.players?.find(
+                (player) => String(player.userId) === String(userId)
+            );
+            if (!me?.isWinner) continue;
+
+            const key = new Date(match.createdAt).toISOString().slice(0, 10);
+            const bucket = activityMap.get(key);
+            if (bucket) {
+                bucket.solved += match.problemIds?.length || 0;
+            }
+        }
+
+        for (const node of completedNodes) {
+            if (!node?.completedAt) continue;
+            const key = new Date(node.completedAt).toISOString().slice(0, 10);
+            const bucket = activityMap.get(key);
+            if (bucket) {
+                bucket.solved += 1;
+            }
+        }
+
+        const activity = [...activityMap.values()];
+        const currentStreak = campaignProgress?.currentStreak || 0;
+
+        return res.json({
             success: true,
             data: {
-                timeSpent,
-                totalSolved,
-                totalAttempts,
-                accuracy,
-                topicBreakdown
+                summary: {
+                    timeSpentMinutes,
+                    totalSolved,
+                    totalAttempts,
+                    accuracyPercent,
+                    currentStreak,
+                },
+                activity,
+                topicBreakdown,
             }
         });
     } catch (error) {
-        console.error("Error in getUserAnalytics:", error);
-        res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+        console.error('Error in getUserAnalytics:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
     }
 };
-// V 1.5
