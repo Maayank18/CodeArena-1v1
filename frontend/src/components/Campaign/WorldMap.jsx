@@ -49,6 +49,34 @@ const STAR_INDICES = [1, 2, 3];
 const ROOT_NODE_ID = 'region-1-node-01';
 const NODE_ID_PATTERN = /node-(\d+)$/i;
 
+const hexToRgb = (value) => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.replace('#', '').trim();
+  if (normalized.length !== 6) return null;
+  const parsed = Number.parseInt(normalized, 16);
+  if (Number.isNaN(parsed)) return null;
+  return {
+    r: (parsed >> 16) & 255,
+    g: (parsed >> 8) & 255,
+    b: parsed & 255,
+  };
+};
+
+const withAlpha = (value, alpha) => {
+  const rgb = hexToRgb(value);
+  if (!rgb) return value;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+};
+
+const mixColors = (from, to, weight = 0.5) => {
+  const start = hexToRgb(from);
+  const end = hexToRgb(to);
+  if (!start || !end) return from;
+  const clampWeight = Math.max(0, Math.min(1, weight));
+  const mix = (a, b) => Math.round(a + (b - a) * clampWeight);
+  return `rgb(${mix(start.r, end.r)}, ${mix(start.g, end.g)}, ${mix(start.b, end.b)})`;
+};
+
 const resolveZoneId = (node) => {
   const regionValue = node?.campaignRegion ?? node?.regionOrder ?? node?.region;
   const normalizedNumericRegion = Number(regionValue);
@@ -126,15 +154,19 @@ const getState = (node, completedSet, completedStarsById, previousZoneBossComple
       starsAwarded: completedStarsById.get(nodeId) ?? 0,
     };
   }
+
   if (isFirstNodeFallback || isRootNode) return { state: 'available' };
+
   if (prerequisites.length > 0) {
     return prerequisites.every((prereq) => completedSet.has(prereq))
       ? { state: 'available' }
       : { state: 'locked' };
   }
+
   if (isZoneStartNode(node)) {
     return previousZoneBossCompleted ? { state: 'available' } : { state: 'locked' };
   }
+
   return { state: 'locked' };
 };
 
@@ -182,32 +214,50 @@ const useRafViewport = () => {
 };
 
 const StandardNode = React.memo(function StandardNode({ node, state, accent, onClick }) {
+  const { isDark } = useTheme();
   const isLocked = state.state === 'locked';
   const isAvail = state.state === 'available';
   const isDone = state.state === 'completed';
   const stars = state.starsAwarded || 0;
   const sz = NODE_RADIUS * 2;
+  const brightAccent = mixColors(accent, '#0f172a', 0.24);
+  const brightAccentSoft = withAlpha(brightAccent, 0.16);
+  const brightAccentRing = withAlpha(brightAccent, 0.28);
 
-  const border = isLocked ? '#374151' : isDone ? '#fbbf24' : accent;
-  const bg = isLocked
-    ? 'radial-gradient(circle,#0e1117,#070a0f)'
-    : isDone
-      ? `radial-gradient(circle at 35% 35%, ${['#2d1800', '#2d2200', '#1f1600'][Math.min(stars, 3) - 1] ?? '#2d1800'}, #080600)`
-      : `radial-gradient(circle at 35% 35%, ${accent}28, ${accent}08)`;
+  const border = isLocked ? (isDark ? '#374151' : '#94a3b8') : isDone ? '#f59e0b' : isDark ? accent : brightAccent;
+  const bg = isDark
+    ? (isLocked
+      ? 'radial-gradient(circle,#0e1117,#070a0f)'
+      : isDone
+        ? `radial-gradient(circle at 35% 35%, ${['#2d1800', '#2d2200', '#1f1600'][Math.min(stars, 3) - 1] ?? '#2d1800'}, #080600)`
+        : `radial-gradient(circle at 35% 35%, ${accent}28, ${accent}08)`)
+    : (isLocked
+      ? 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(226,232,240,0.98))'
+      : isDone
+        ? 'linear-gradient(180deg, rgba(255,251,235,0.99), rgba(253,230,138,0.88))'
+        : `linear-gradient(180deg, rgba(255,255,255,0.99), ${withAlpha(accent, 0.18)})`);
   const glow = isLocked
     ? 'none'
     : isDone
-      ? '0 0 16px #fbbf2470'
-      : `0 0 18px ${accent}65, 0 0 36px ${accent}25`;
+      ? (isDark ? '0 0 16px #fbbf2470' : '0 14px 32px rgba(245, 158, 11, 0.22), 0 0 0 1px rgba(245, 158, 11, 0.14)')
+      : (
+        isDark
+          ? `0 0 18px ${accent}65, 0 0 36px ${accent}25`
+          : `0 16px 34px rgba(15, 23, 42, 0.12), 0 0 0 1px ${brightAccentSoft}, 0 0 0 7px rgba(255,255,255,0.82)`
+      );
 
   const title = getNodeTitle(node) || `Node ${node.nodeNum ?? '?'}`;
 
   return (
-    <div className="relative flex flex-col items-center gap-1" style={{ opacity: isLocked ? 0.4 : 1 }}>
+    <div className="relative flex flex-col items-center gap-1" style={{ opacity: isLocked ? (isDark ? 0.45 : 0.72) : 1 }}>
       {isAvail && (
         <motion.div
           className="absolute rounded-full border-2 pointer-events-none"
-          style={{ width: sz + 18, height: sz + 18, borderColor: `${accent}60` }}
+          style={{
+            width: sz + 18,
+            height: sz + 18,
+            borderColor: isDark ? `${accent}60` : brightAccentRing,
+          }}
           animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -228,11 +278,11 @@ const StandardNode = React.memo(function StandardNode({ node, state, accent, onC
         onClick={() => !isLocked && onClick(node)}
       >
         {isLocked ? (
-          <Lock size={14} className="text-gray-700" />
+          <Lock size={14} className={isDark ? 'text-gray-700' : 'text-slate-400'} />
         ) : isDone ? (
           <div className="flex gap-0.5">
             {STAR_INDICES.map((i) => (
-              <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : '#374151' }}>
+              <span key={i} style={{ fontSize: 9, color: i <= stars ? '#fbbf24' : isDark ? '#374151' : '#cbd5e1' }}>
                 ★
               </span>
             ))}
@@ -240,7 +290,14 @@ const StandardNode = React.memo(function StandardNode({ node, state, accent, onC
         ) : (
           <motion.div
             className="rounded-full"
-            style={{ width: 10, height: 10, background: accent, boxShadow: `0 0 10px ${accent}` }}
+            style={{
+              width: 12,
+              height: 12,
+              background: isDark ? accent : brightAccent,
+              boxShadow: isDark
+                ? `0 0 10px ${accent}`
+                : `0 0 0 5px ${withAlpha(brightAccent, 0.18)}, 0 0 16px ${withAlpha(brightAccent, 0.2)}`,
+            }}
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.8, repeat: Infinity }}
           />
@@ -250,10 +307,17 @@ const StandardNode = React.memo(function StandardNode({ node, state, accent, onC
       <div
         className="px-2 py-0.5 rounded-full text-[8px] font-bold font-mono max-w-[76px] truncate text-center transition-colors"
         style={{
-          background: 'rgba(0,0,0,0.6)',
+          background: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.93)',
           backdropFilter: 'blur(4px)',
-          color: isLocked ? '#6b7280' : isDone ? '#fbbf24' : accent,
-          border: `1px solid ${isLocked ? 'rgba(255,255,255,0.05)' : isDone ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.1)'}`,
+          color: isLocked ? (isDark ? '#6b7280' : '#64748b') : isDone ? '#b45309' : isDark ? accent : brightAccent,
+          border: `1px solid ${
+            isLocked
+              ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100,116,139,0.22)')
+              : isDone
+                ? 'rgba(245,158,11,0.34)'
+                : withAlpha(isDark ? accent : brightAccent, isDark ? 0.1 : 0.22)
+          }`,
+          boxShadow: isDark ? 'none' : '0 10px 22px rgba(15, 23, 42, 0.1)',
         }}
       >
         {title.split(' ').slice(0, 3).join(' ')}
@@ -269,6 +333,7 @@ const InterZoneBridge = React.memo(function InterZoneBridge({
   nextZoneTop,
   toColor,
   lit,
+  isDark,
 }) {
   const fx = fromLocal.x;
   const fy = zoneTop + fromLocal.y;
@@ -278,12 +343,21 @@ const InterZoneBridge = React.memo(function InterZoneBridge({
 
   return (
     <g>
+      {lit && !isDark ? (
+        <path
+          d={d}
+          fill="none"
+          stroke={withAlpha(toColor, 0.22)}
+          strokeWidth={8}
+          strokeLinecap="round"
+        />
+      ) : null}
       <path
         d={d}
         fill="none"
-        stroke={lit ? toColor : '#1e293b'}
-        strokeWidth={lit ? 2.5 : 1.8}
-        strokeOpacity={lit ? 0.7 : 0.4}
+        stroke={lit ? toColor : isDark ? '#1e293b' : '#94a3b8'}
+        strokeWidth={lit ? 2.7 : 2}
+        strokeOpacity={lit ? (isDark ? 0.7 : 0.88) : (isDark ? 0.4 : 0.9)}
         strokeDasharray={lit ? undefined : '6 8'}
         strokeLinecap="round"
       />
@@ -373,7 +447,7 @@ const MapNodeSlot = React.memo(function MapNodeSlot({
   prev.nodeState.starsAwarded === next.nodeState.starsAwarded
 ));
 
-const ZoneProgressButton = React.memo(function ZoneProgressButton({ zone, done, total, zoneTop, onJump }) {
+const ZoneProgressButton = React.memo(function ZoneProgressButton({ zone, done, total, zoneTop, onJump, isDark }) {
   const pct = Math.round((done / total) * 100);
 
   return (
@@ -384,10 +458,10 @@ const ZoneProgressButton = React.memo(function ZoneProgressButton({ zone, done, 
     >
       <span className="text-xs select-none">{zone.icon}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-[9px] font-bold text-gray-400 truncate max-w-[100px]">
+        <div className={`text-[9px] font-bold truncate max-w-[100px] ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
           {zone.name}
         </div>
-        <div className="h-1 rounded-full mt-0.5" style={{ background: '#1e293b' }}>
+        <div className="h-1 rounded-full mt-0.5" style={{ background: isDark ? '#1e293b' : '#e2e8f0' }}>
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${pct}%`, background: zone.accent }}
@@ -568,7 +642,10 @@ const WorldMapScene = React.memo(function WorldMapScene({
   const bridgeTo = useMemo(() => getLocalNodePos(0), []);
 
   return (
-    <div className="relative w-full h-full overflow-hidden transition-colors duration-500" style={{ background: isDark ? '#020408' : '#f0f4f8' }}>
+    <div
+      className="relative w-full h-full overflow-hidden transition-colors duration-500"
+      style={{ background: isDark ? '#020408' : 'linear-gradient(180deg, #f8fbff 0%, #eef6fb 48%, #f8fafc 100%)' }}
+    >
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {Array.from({ length: 80 }, (_, index) => (
           <div
@@ -583,6 +660,13 @@ const WorldMapScene = React.memo(function WorldMapScene({
             }}
           />
         ))}
+        {!isDark ? (
+          <>
+            <div className="absolute inset-x-20 top-6 h-24 rounded-full blur-3xl bg-white/80" />
+            <div className="absolute left-10 top-14 h-20 w-20 rounded-full bg-emerald-100/55 blur-3xl" />
+            <div className="absolute right-10 top-28 h-24 w-24 rounded-full bg-sky-100/50 blur-3xl" />
+          </>
+        ) : null}
       </div>
 
       <div
@@ -630,6 +714,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
                   nextZoneTop={zoneTops[zoneIndex + 1]}
                   toColor={nextZone.path ?? '#22d3ee'}
                   lit={lit}
+                  isDark={isDark}
                 />
               );
             })}
@@ -679,7 +764,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
 
       <div className="absolute top-3 right-3 z-50 pointer-events-none w-[min(44vw,240px)] sm:w-auto">
         <div className="bg-white/90 dark:bg-[#060810]/85 border border-gray-200 dark:border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60 transition-all shadow-lg dark:shadow-none">
-          <p className="text-[9px] text-gray-400 dark:text-gray-600 font-bold uppercase tracking-widest mb-1.5">
+          <p className="text-[9px] text-slate-400 dark:text-gray-600 font-bold uppercase tracking-widest mb-1.5">
             Zones
           </p>
           {CAMPAIGN_REGIONS.map((zone, index) => {
@@ -695,6 +780,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
                 total={total}
                 zoneTop={zoneTops[index]}
                 onJump={scrollToOffset}
+                isDark={isDark}
               />
             );
           })}
@@ -715,11 +801,11 @@ const WorldMapScene = React.memo(function WorldMapScene({
                 className="w-3 h-3 rounded-full border shrink-0"
                 style={{
                   borderColor: item.col,
-                  background: `${item.col}25`,
-                  boxShadow: `0 0 6px ${item.col}50`,
+                  background: withAlpha(item.col, 0.15),
+                  boxShadow: isDark ? `0 0 6px ${withAlpha(item.col, 0.32)}` : '0 8px 14px rgba(15, 23, 42, 0.06)',
                 }}
               />
-              <span className="text-[9px] text-gray-500 font-medium">{item.label}</span>
+              <span className={`text-[9px] font-medium ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>{item.label}</span>
             </div>
           ))}
         </div>
@@ -728,9 +814,9 @@ const WorldMapScene = React.memo(function WorldMapScene({
           onClick={jumpToProgress}
           className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg dark:shadow-none"
           style={{
-            background: isDark ? 'rgba(34,211,238,0.12)' : 'rgba(34,211,238,0.9)',
-            border: `1px solid ${isDark ? 'rgba(34,211,238,0.30)' : 'rgba(34,211,238,1)'}`,
-            color: isDark ? '#22d3ee' : '#fff',
+            background: isDark ? 'rgba(34,211,238,0.12)' : 'rgba(255,255,255,0.92)',
+            border: `1px solid ${isDark ? 'rgba(34,211,238,0.30)' : 'rgba(103, 165, 213, 0.28)'}`,
+            color: isDark ? '#22d3ee' : '#2563eb',
             backdropFilter: 'blur(6px)',
           }}
         >
@@ -747,7 +833,6 @@ const WorldMap = ({ nodes = [], progress, onStartChallenge, onTeaserTrigger, use
   const [selectedNode, setSelectedNode] = useState(null);
 
   const handleNodeClick = useCallback((node) => {
-    // 🛡️ ACTION-BASED TEASER LOGIC
     const user = (() => {
       try {
         return JSON.parse(localStorage.getItem('codearena_user') || '{}');
@@ -759,7 +844,7 @@ const WorldMap = ({ nodes = [], progress, onStartChallenge, onTeaserTrigger, use
     const userRole = user?.role?.toLowerCase() || 'user';
     const userPlan = user?.subscriptionPlan?.toLowerCase() || 'free';
     const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
-    
+
     const isAdmin = userRole === 'admin';
     const isPremium = tiers[userPlan] >= 3;
     const isRootNode = node?.nodeId === 'region-1-node-01' || node?.campaignNodeId === 'region-1-node-01';
