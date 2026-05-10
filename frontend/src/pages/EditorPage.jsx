@@ -11,7 +11,7 @@ import { io } from 'socket.io-client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js';
-import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap } from 'lucide-react';
+import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap, Sun, Moon } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -118,7 +118,7 @@ const EditorPage = () => {
     const location = useLocation();
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const { theme } = useTheme();
+    const { theme, toggleTheme } = useTheme();
     const storedUser = (() => {
         try {
             return JSON.parse(localStorage.getItem('codearena_user') || '{}');
@@ -139,6 +139,7 @@ const EditorPage = () => {
     const userRole = storedUser?.role?.toLowerCase() || 'user';
     const userPlan = storedUser?.subscriptionPlan?.toLowerCase() || 'free';
     const hasCustomizationAccess = userRole === 'admin' || CUSTOMIZATION_ACCESS_TIERS.has(userPlan);
+    const isDark = theme === 'dark';
 
     // UI State
     const [clients, setClients] = useState([]);
@@ -523,21 +524,29 @@ const EditorPage = () => {
     const PaneHeader = ({ side }) => {
         const p = clients.find(c => c.side === side);
         return (
-            <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-16">
+            <div className={`arena-pane-header p-3 flex justify-between items-center border-b shrink-0 h-16 ${
+                isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
+            }`}>
                 <div className="flex items-center gap-3 overflow-hidden">
                     <Avatar username={p?.username} avatarFrame={p?.customization?.avatarFrame} className="h-8 w-8 flex-shrink-0" />
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
-                            <span className="arena-pane-title font-bold text-sm truncate text-white max-w-[100px]">{p?.username || 'Waiting...'}</span>
-                            <span className="arena-score-pill bg-black/50 px-2 py-0.5 rounded text-green-400 text-[10px] font-mono shrink-0">{scores[p?.username] || 0} pts</span>
+                            <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>
+                            <span className={`arena-score-pill px-2 py-0.5 rounded text-[10px] font-mono shrink-0 ${
+                                isDark ? 'bg-black/50 text-green-400' : 'bg-white text-emerald-600 border border-emerald-200'
+                            }`}>{scores[p?.username] || 0} pts</span>
                         </div>
-                        <span className="text-[9px] text-gray-500 truncate italic">{p?.customization?.tagline || 'Coding...'}</span>
+                        <span className={`text-[9px] truncate italic ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>{p?.customization?.tagline || 'Coding...'}</span>
                     </div>
                     {mySide === side && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
                 </div>
                 {mySide === side && (
                     <select 
-                        className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer" 
+                        className={`arena-lang-select text-xs p-1 rounded border outline-none cursor-pointer ${
+                            isDark
+                                ? 'bg-[#3e3e42] text-white border-[#555]'
+                                : 'bg-white text-slate-800 border-stone-300'
+                        }`} 
                         value={language} 
                         onChange={(e) => setLanguage(e.target.value)}
                     >
@@ -632,43 +641,67 @@ const EditorPage = () => {
             )}
 
             <div className="flex-1 flex flex-col md:grid md:grid-cols-3 min-h-0">
-                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-col border-r border-[#3e3e42] h-full order-2 md:order-1`}>
+                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-col h-full order-2 md:order-1 ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'}`}>
                     <PaneHeader side="left" />
                     <div className="flex-1 relative min-h-0">
                         {ydocRef.current && providerRef.current && <CodeEditor side="left" isReadOnly={mySide !== 'left'} ydoc={ydocRef.current} provider={providerRef.current} language={mySide === 'left' ? language : 'cpp'} />}
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'problem' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden border-r border-[#3e3e42] bg-[#252526] order-1 md:order-2`}>
-                    <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
-                        <span className="font-bold truncate text-sm text-white">{problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}</span>
-                        <Timer initialTime={remainingTime} socket={socketRef.current} />
+                <div className={`${activeTab === 'problem' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden order-1 md:order-2 ${
+                    isDark ? 'border-r border-[#3e3e42] bg-[#252526]' : 'border-r border-stone-300 bg-stone-50'
+                }`}>
+                    <div className={`arena-pane-header p-3 flex justify-between items-center border-b shrink-0 h-14 ${
+                        isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
+                    }`}>
+                        <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}</span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={toggleTheme}
+                                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                                    isDark
+                                        ? 'border-[#4a4a4f] bg-[#252526] text-amber-300 hover:bg-[#333438]'
+                                        : 'border-stone-300 bg-white text-slate-700 hover:bg-stone-100'
+                                }`}
+                                aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+                                title={isDark ? 'Switch to bright mode' : 'Switch to dark mode'}
+                            >
+                                {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                            </button>
+                            <Timer initialTime={remainingTime} socket={socketRef.current} />
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
                         {problem && (
                             <div className="space-y-6 pb-6">
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">{problem.difficulty}</span>
-                                <div><h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Description</h3><div className="text-gray-300 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: problem.description.replace(/\n/g, '<br/>') }} /></div>
+                                <div><h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Description</h3><div className={`${isDark ? 'text-gray-300 prose prose-invert' : 'text-slate-700 prose'} prose-sm max-w-none`} dangerouslySetInnerHTML={{ __html: problem.description.replace(/\n/g, '<br/>') }} /></div>
                                 {problem.testCases?.filter(tc => tc.isPublic).map((tc, i) => (
-                                    <div key={i} className="bg-[#1e1e1e] p-3 rounded border border-[#3e3e42]">
-                                        <div className="mb-2"><span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Input</span><code className="block bg-[#2d2d2d] p-2 rounded text-gray-300 font-mono text-xs whitespace-pre-wrap">{tc.input}</code></div>
-                                        <div><span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Output</span><code className="block bg-[#2d2d2d] p-2 rounded text-green-400 font-mono text-xs whitespace-pre-wrap">{tc.output}</code></div>
+                                    <div key={i} className={`p-3 rounded border ${isDark ? 'bg-[#1e1e1e] border-[#3e3e42]' : 'bg-white border-stone-300'}`}>
+                                        <div className="mb-2"><span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Input</span><code className={`block p-2 rounded font-mono text-xs whitespace-pre-wrap ${isDark ? 'bg-[#2d2d2d] text-gray-300' : 'bg-stone-100 text-slate-700'}`}>{tc.input}</code></div>
+                                        <div><span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Output</span><code className={`block p-2 rounded font-mono text-xs whitespace-pre-wrap ${isDark ? 'bg-[#2d2d2d] text-green-400' : 'bg-stone-100 text-emerald-600'}`}>{tc.output}</code></div>
                                     </div>
                                 ))}
-                                {runResults && <div className="mt-6 border-t border-[#3e3e42] pt-4"><TestCaseResults results={runResults} /></div>}
+                                {runResults && <div className={`mt-6 pt-4 border-t ${isDark ? 'border-[#3e3e42]' : 'border-stone-300'}`}><TestCaseResults results={runResults} /></div>}
                             </div>
                         )}
                     </div>
-                    <div className="arena-problem-footer bg-[#1e1e1e] flex-shrink-0 border-t border-white/10 p-4 space-y-4">
-                        <div className="flex items-center justify-between bg-[#252526] p-2 rounded border border-[#3e3e42]"><span className="text-[10px] text-gray-500 font-bold">ROOM: {roomId}</span><button onClick={copyRoomId} className="text-gray-400 hover:text-white"><Copy size={16} /></button></div>
+                    <div className={`arena-problem-footer flex-shrink-0 p-4 space-y-4 border-t ${
+                        isDark ? 'bg-[#1e1e1e] border-white/10' : 'bg-stone-100 border-stone-300'
+                    }`}>
+                        <div className={`flex items-center justify-between p-2 rounded border ${
+                            isDark ? 'bg-[#252526] border-[#3e3e42]' : 'bg-white border-stone-300'
+                        }`}><span className={`text-[10px] font-bold ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>ROOM: {roomId}</span><button onClick={copyRoomId} className={isDark ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}><Copy size={16} /></button></div>
                         <div className="flex gap-3">
-                            <button onClick={runCode} disabled={isRunning} className="flex-1 py-3 rounded bg-white text-black font-bold hover:bg-gray-200 text-sm flex items-center justify-center gap-2 disabled:opacity-50"><Play size={16}/> Run</button>
+                            <button onClick={runCode} disabled={isRunning} className={`flex-1 py-3 rounded font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 ${
+                                isDark ? 'bg-white text-black hover:bg-gray-200' : 'bg-slate-900 text-white hover:bg-slate-800'
+                            }`}><Play size={16}/> Run</button>
                             <button onClick={submitCode} disabled={isRunning} className="flex-1 py-3 rounded bg-accent text-black font-bold hover:bg-emerald-400 text-sm disabled:opacity-50">Submit</button>
                         </div>
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-col border-l border-[#3e3e42] h-full order-3`}>
+                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-col h-full order-3 ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'}`}>
                     <PaneHeader side="right" />
                     <div className="flex-1 relative min-h-0">
                         {ydocRef.current && providerRef.current && <CodeEditor side="right" isReadOnly={mySide !== 'right'} ydoc={ydocRef.current} provider={providerRef.current} language={mySide === 'right' ? language : 'cpp'} />}
@@ -676,10 +709,10 @@ const EditorPage = () => {
                 </div>
             </div>
 
-            <div className="md:hidden flex border-t border-[#3e3e42] bg-[#1e1e1e] h-14">
-                <button onClick={() => setActiveTab('left')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'left' ? 'text-accent bg-[#2d2d2d]' : 'text-gray-500'}`}><Code2 size={18} /><span className="text-[10px] font-bold">Left</span></button>
-                <button onClick={() => setActiveTab('problem')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'problem' ? 'text-accent bg-[#2d2d2d]' : 'text-gray-500'}`}><FileText size={18} /><span className="text-[10px] font-bold">Problem</span></button>
-                <button onClick={() => setActiveTab('right')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'right' ? 'text-accent bg-[#2d2d2d]' : 'text-gray-500'}`}><Terminal size={18} /><span className="text-[10px] font-bold">Right</span></button>
+            <div className={`md:hidden flex h-14 border-t ${isDark ? 'border-[#3e3e42] bg-[#1e1e1e]' : 'border-stone-300 bg-stone-100'}`}>
+                <button onClick={() => setActiveTab('left')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'left' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Code2 size={18} /><span className="text-[10px] font-bold">Left</span></button>
+                <button onClick={() => setActiveTab('problem')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'problem' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><FileText size={18} /><span className="text-[10px] font-bold">Problem</span></button>
+                <button onClick={() => setActiveTab('right')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'right' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Terminal size={18} /><span className="text-[10px] font-bold">Right</span></button>
             </div>
         </div>
     );
