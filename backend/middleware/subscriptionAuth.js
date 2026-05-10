@@ -54,26 +54,8 @@ export const requirePremium = (req, res, next) => {
 };
 
 export const requireFullLanguageAccess = (req, res, next) => {
-    if (req.user?.role === 'admin') return next();
-    
-    const { language, isArena } = req.body;
-    
-    // Free users only get javascript, UNLESS they are in the Battle Arena
-    if (isArena || !language || language === 'javascript') {
-        return next();
-    }
-
-    if (!req.user) {
-        return res.status(401).json({ success: false, message: 'Authentication required for full language access' });
-    }
-
-    const plan = req.user.subscriptionPlan || 'free';
-    if (tiers[plan] >= tiers.plus) {
-        return next();
-    }
-
-    return res.status(403).json({ 
-        success: false, 
-        message: 'Upgrade to Plus to unlock Full Language Access (Python, C++, Java, etc).' 
-    });
+    // Product policy: all supported languages are available to every user.
+    // Keep this middleware in the route chain as a no-op so existing route
+    // wiring stays stable while the monetization model shifts to other features.
+    return next();
 };
