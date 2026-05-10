@@ -198,6 +198,480 @@ const makeGlyph = (glyph, left, bottom, size, delay = 0, rotate = 0, opacity = 0
   opacity,
 });
 
+const makeDot = (left, top, size, color, delay = 0, opacity = 0.8, blur = 0) => ({
+  left,
+  top,
+  size,
+  color,
+  delay,
+  opacity,
+  blur,
+});
+
+const makePeak = (left, bottom, width, height, from, to, opacity = 0.88, blur = 0) => ({
+  left,
+  bottom,
+  width,
+  height,
+  from,
+  to,
+  opacity,
+  blur,
+});
+
+const makeColumn = (left, bottom, width, height, color, rotate = 0, opacity = 0.72, radius = '999px 999px 0 0') => ({
+  left,
+  bottom,
+  width,
+  height,
+  color,
+  rotate,
+  opacity,
+  radius,
+});
+
+const makeMotif = (type, left, bottom, width, height, options = {}) => ({
+  type,
+  left,
+  bottom,
+  width,
+  height,
+  ...options,
+});
+
+const getDarkScene = (key, accent, bgGrad = [], border, ground) => {
+  const skyTop = bgGrad[0] || '#030712';
+  const skyMid = bgGrad[1] || '#0f172a';
+  const skyBase = bgGrad[2] || '#111827';
+  const accentGlow = withAlpha(accent, 0.18);
+  const accentSoft = withAlpha(accent, 0.1);
+  const borderSoft = withAlpha(border || accent, 0.28);
+  const moonGlow = withAlpha('#ffffff', 0.08);
+  const deepGround = mixColors(ground || skyBase, '#020617', 0.42);
+  const softGround = mixColors(ground || skyMid, accent, 0.08);
+  const forestDark = mixColors('#14532d', skyBase, 0.48);
+  const seaDark = mixColors('#0f766e', skyBase, 0.62);
+  const amberDark = mixColors('#f59e0b', skyBase, 0.72);
+  const violetDark = mixColors('#7c3aed', skyBase, 0.62);
+  const frostDark = mixColors('#93c5fd', skyBase, 0.68);
+
+  switch (key) {
+    case 'array_archipelago':
+      return {
+        weatherOpacity: 0.9,
+        cardBackground: `linear-gradient(180deg, ${skyTop} 0%, ${mixColors(skyMid, '#083344', 0.28)} 54%, ${mixColors(skyBase, '#020617', 0.22)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 78% 44% at 50% 20%, ${withAlpha('#34d399', 0.12)}, transparent 68%), radial-gradient(circle at 80% 18%, ${withAlpha('#67e8f9', 0.12)}, transparent 24%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#14532d', accent, 0.14)} 0%, ${forestDark} 100%)`,
+        moon: { right: '13%', top: '10%', size: 22, color: 'rgba(245, 253, 255, 0.92)', ring: moonGlow },
+        stars: [
+          makeDot('10%', '12%', 2, '#d1fae5', 0, 0.8, 0),
+          makeDot('22%', '18%', 1.5, '#a7f3d0', 0.8, 0.6, 0),
+          makeDot('34%', '9%', 2.4, '#67e8f9', 1.2, 0.85, 2),
+          makeDot('72%', '16%', 1.8, '#e0f2fe', 0.3, 0.7, 0),
+          makeDot('84%', '24%', 2.2, '#bbf7d0', 1.1, 0.82, 2),
+        ],
+        bands: [
+          makeStroke('58%', '73%', 150, 12, withAlpha('#67e8f9', 0.2), -1, 0.8, 6),
+          makeStroke('60%', '76%', 132, 6, withAlpha('#ffffff', 0.3), -1, 0.7, 1),
+        ],
+        hills: [
+          makeHill('-3%', '36%', 126, 82, mixColors('#166534', accent, 0.1), deepGround, -9, 0.92),
+          makeHill('72%', '33%', 144, 90, mixColors('#34d399', skyBase, 0.76), deepGround, 8, 0.88),
+          makeHill('64%', '70%', 142, 64, mixColors(seaDark, '#0f172a', 0.12), deepGround, -2, 0.88),
+        ],
+        columns: [
+          makeColumn('6%', 95, 8, 56, mixColors('#166534', '#020617', 0.32), -8, 0.7),
+          makeColumn('84%', 112, 9, 60, mixColors('#166534', '#020617', 0.28), 6, 0.66),
+        ],
+        motifs: [
+          makeMotif('palm', '2%', 88, 66, 120, { trunk: '#3f2a1d', leaves: '#166534', glow: withAlpha('#34d399', 0.08), opacity: 0.76 }),
+          makeMotif('waterfall', '75%', 86, 110, 150, { cliff: mixColors('#334155', '#020617', 0.5), water: '#38bdf8', foam: '#e0f2fe', foliage: '#14532d', opacity: 0.84 }),
+        ],
+      };
+    case 'string_shores':
+      return {
+        weatherOpacity: 0.88,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#1e1b4b', 0.18)} 0%, ${mixColors(skyMid, '#1d4ed8', 0.14)} 56%, ${mixColors(skyBase, '#020617', 0.28)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 52% 20%, ${withAlpha('#60a5fa', 0.1)}, transparent 66%), radial-gradient(circle at 76% 18%, ${withAlpha('#fef3c7', 0.12)}, transparent 22%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#1e3a8a', '#0f172a', 0.68)} 0%, ${mixColors('#1e293b', '#020617', 0.38)} 100%)`,
+        moon: { right: '14%', top: '11%', size: 20, color: 'rgba(248, 250, 252, 0.9)', ring: moonGlow },
+        stars: [
+          makeDot('12%', '14%', 1.8, '#dbeafe', 0.1, 0.72, 0),
+          makeDot('28%', '10%', 2.2, '#93c5fd', 1.2, 0.8, 1),
+          makeDot('68%', '21%', 1.7, '#e0f2fe', 0.7, 0.74, 0),
+          makeDot('81%', '26%', 2.1, '#fef3c7', 0.3, 0.82, 2),
+        ],
+        bands: [
+          makeStroke('58%', '72%', 152, 12, withAlpha('#38bdf8', 0.16), 0, 0.74, 7),
+          makeStroke('16%', '65%', 118, 10, withAlpha('#f59e0b', 0.1), 4, 0.5, 4),
+        ],
+        hills: [
+          makeHill('-3%', '37%', 108, 88, mixColors('#1d4ed8', '#020617', 0.8), deepGround, -6, 0.86),
+          makeHill('77%', '34%', 120, 96, mixColors('#0ea5e9', '#020617', 0.82), deepGround, 9, 0.84),
+        ],
+        columns: [
+          makeColumn('8%', 100, 6, 48, mixColors('#1f2937', '#020617', 0.12), -5, 0.66),
+          makeColumn('86%', 108, 6, 54, mixColors('#1f2937', '#020617', 0.12), 6, 0.66),
+        ],
+        motifs: [
+          makeMotif('palm', '3%', 92, 56, 108, { trunk: '#3f2a1d', leaves: '#14532d', glow: withAlpha('#60a5fa', 0.06), opacity: 0.7 }),
+          makeMotif('wave', '76%', 90, 112, 92, { water: '#1d4ed8', foam: '#dbeafe', opacity: 0.72 }),
+        ],
+      };
+    case 'loop_lagoon':
+      return {
+        weatherOpacity: 0.86,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#052e16', 0.36)} 0%, ${mixColors(skyMid, '#064e3b', 0.18)} 54%, ${mixColors(skyBase, '#020617', 0.22)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 40% at 50% 18%, ${withAlpha('#4ade80', 0.1)}, transparent 66%), radial-gradient(circle at 18% 22%, ${withAlpha('#22d3ee', 0.12)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#14532d', '#020617', 0.38)} 0%, ${mixColors('#052e16', '#020617', 0.16)} 100%)`,
+        moon: { right: '11%', top: '12%', size: 18, color: 'rgba(236, 253, 245, 0.88)', ring: moonGlow },
+        stars: [
+          makeDot('14%', '16%', 2.4, '#4ade80', 0, 0.78, 2),
+          makeDot('22%', '22%', 1.8, '#bbf7d0', 0.6, 0.66, 0),
+          makeDot('74%', '18%', 2, '#22d3ee', 1.1, 0.74, 2),
+          makeDot('86%', '24%', 1.6, '#d1fae5', 0.2, 0.64, 0),
+        ],
+        bands: [
+          makeStroke('28%', '72%', 112, 14, withAlpha('#22d3ee', 0.14), -4, 0.76, 8),
+          makeStroke('8%', '48%', 74, 8, withAlpha('#4ade80', 0.1), 12, 0.52, 6),
+        ],
+        hills: [
+          makeHill('-5%', '35%', 118, 90, mixColors('#166534', '#020617', 0.38), deepGround, -8, 0.9),
+          makeHill('72%', '33%', 138, 96, mixColors('#14532d', '#020617', 0.28), deepGround, 8, 0.9),
+          makeHill('32%', '70%', 94, 46, mixColors('#0f766e', '#020617', 0.42), deepGround, -2, 0.9),
+        ],
+        columns: [
+          makeColumn('6%', 102, 7, 50, mixColors('#166534', '#020617', 0.22), -8, 0.68),
+          makeColumn('12%', 92, 4, 28, mixColors('#14532d', '#020617', 0.1), 8, 0.56),
+        ],
+        motifs: [
+          makeMotif('canopy', '-4%', 0, 180, 144, { leaves: '#14532d', leavesAlt: '#166534', opacity: 0.72, side: 'left' }),
+          makeMotif('canopy', '74%', 0, 178, 140, { leaves: '#166534', leavesAlt: '#14532d', opacity: 0.66, side: 'right' }),
+        ],
+      };
+    case 'sliding_window_sanctum':
+      return {
+        weatherOpacity: 0.82,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#0f172a', 0.12)} 0%, ${mixColors(skyMid, '#312e81', 0.2)} 52%, ${mixColors(skyBase, '#020617', 0.18)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 76% 42% at 50% 18%, ${withAlpha('#818cf8', 0.12)}, transparent 66%), radial-gradient(circle at 76% 18%, ${withAlpha('#bfdbfe', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#1e293b', '#0f172a', 0.18)} 0%, ${deepGround} 100%)`,
+        moon: { right: '13%', top: '12%', size: 18, color: 'rgba(224, 231, 255, 0.88)', ring: moonGlow },
+        stars: [
+          makeDot('16%', '15%', 1.7, '#c7d2fe', 0.1, 0.72, 0),
+          makeDot('32%', '10%', 2, '#93c5fd', 0.9, 0.82, 2),
+          makeDot('72%', '17%', 1.8, '#e0e7ff', 1.3, 0.78, 0),
+        ],
+        bands: [
+          makeStroke('20%', '42%', 34, 110, withAlpha('#bfdbfe', 0.12), 16, 0.72, 8),
+          makeStroke('76%', '38%', 38, 120, withAlpha('#818cf8', 0.12), -12, 0.72, 8),
+        ],
+        peaks: [
+          makePeak('8%', 92, 84, 96, mixColors('#60a5fa', '#020617', 0.78), deepGround, 0.84, 2),
+          makePeak('66%', 92, 110, 126, mixColors('#818cf8', '#020617', 0.82), deepGround, 0.88, 2),
+        ],
+      };
+    case 'hashmap_highlands':
+      return {
+        weatherOpacity: 0.82,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#431407', 0.28)} 0%, ${mixColors(skyMid, '#78350f', 0.22)} 54%, ${mixColors(skyBase, '#020617', 0.2)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 78% 42% at 52% 18%, ${withAlpha('#fb923c', 0.1)}, transparent 66%), radial-gradient(circle at 78% 20%, ${withAlpha('#fef3c7', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#78350f', '#111827', 0.76)} 0%, ${amberDark} 100%)`,
+        moon: { right: '14%', top: '12%', size: 19, color: 'rgba(255, 237, 213, 0.86)', ring: moonGlow },
+        stars: [
+          makeDot('16%', '14%', 1.8, '#fed7aa', 0.1, 0.68, 0),
+          makeDot('34%', '11%', 2.1, '#fb923c', 0.9, 0.76, 2),
+          makeDot('78%', '22%', 1.8, '#fde68a', 0.5, 0.74, 1),
+        ],
+        bands: [
+          makeStroke('18%', '64%', 154, 10, withAlpha('#f59e0b', 0.12), 1, 0.6, 5),
+        ],
+        peaks: [
+          makePeak('2%', 90, 88, 92, mixColors('#92400e', '#020617', 0.7), deepGround, 0.88, 1),
+          makePeak('72%', 88, 96, 106, mixColors('#b45309', '#020617', 0.74), deepGround, 0.9, 1),
+        ],
+        motifs: [
+          makeMotif('rock-spire', '10%', 92, 54, 92, { rock: mixColors('#92400e', '#020617', 0.62), edge: '#fdba74', opacity: 0.72 }),
+          makeMotif('rock-spire', '80%', 96, 44, 76, { rock: mixColors('#b45309', '#020617', 0.7), edge: '#fed7aa', opacity: 0.7 }),
+        ],
+      };
+    case 'stack_queue_quarry':
+      return {
+        weatherOpacity: 0.92,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#3f1d0d', 0.24)} 0%, ${mixColors(skyMid, '#7c2d12', 0.22)} 52%, ${mixColors(skyBase, '#020617', 0.2)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 76% 42% at 50% 18%, ${withAlpha('#fbbf24', 0.12)}, transparent 68%), radial-gradient(circle at 28% 24%, ${withAlpha('#fb923c', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#92400e', '#020617', 0.72)} 0%, ${mixColors('#451a03', '#020617', 0.24)} 100%)`,
+        moon: { right: '13%', top: '12%', size: 18, color: 'rgba(255, 247, 237, 0.82)', ring: moonGlow },
+        stars: [
+          makeDot('15%', '14%', 1.8, '#fde68a', 0, 0.68, 0),
+          makeDot('26%', '10%', 2.2, '#fb923c', 0.7, 0.82, 2),
+          makeDot('78%', '21%', 1.8, '#fbbf24', 1.2, 0.76, 2),
+        ],
+        bands: [
+          makeStroke('54%', '56%', 62, 62, withAlpha('#f59e0b', 0.14), 45, 0.7, 12),
+          makeStroke('12%', '68%', 148, 10, withAlpha('#f8fafc', 0.12), 0, 0.46, 4),
+        ],
+        peaks: [
+          makePeak('4%', 92, 84, 86, mixColors('#78350f', '#020617', 0.66), deepGround, 0.88, 0),
+          makePeak('72%', 90, 102, 96, mixColors('#92400e', '#020617', 0.7), deepGround, 0.88, 0),
+        ],
+      };
+    case 'tree_tundra':
+      return {
+        weatherOpacity: 0.92,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#0f172a', 0.08)} 0%, ${mixColors(skyMid, '#1d4ed8', 0.1)} 50%, ${mixColors(skyBase, '#020617', 0.12)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 78% 44% at 50% 18%, ${withAlpha('#93c5fd', 0.1)}, transparent 68%), radial-gradient(circle at 75% 20%, ${withAlpha('#ffffff', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#1e3a8a', '#111827', 0.84)} 0%, ${frostDark} 100%)`,
+        moon: { right: '13%', top: '10%', size: 20, color: 'rgba(248, 250, 252, 0.92)', ring: moonGlow },
+        stars: [
+          makeDot('14%', '13%', 1.8, '#e0f2fe', 0.1, 0.78, 0),
+          makeDot('28%', '9%', 2.2, '#ffffff', 0.9, 0.84, 1),
+          makeDot('74%', '16%', 1.9, '#bae6fd', 0.3, 0.74, 1),
+          makeDot('84%', '22%', 1.5, '#dbeafe', 1.1, 0.66, 0),
+        ],
+        bands: [
+          makeStroke('16%', '69%', 156, 10, withAlpha('#e0f2fe', 0.16), -1, 0.58, 5),
+        ],
+        peaks: [
+          makePeak('4%', 92, 92, 104, mixColors('#60a5fa', '#020617', 0.78), deepGround, 0.88, 1),
+          makePeak('30%', 88, 122, 134, mixColors('#bfdbfe', '#020617', 0.8), deepGround, 0.92, 2),
+          makePeak('72%', 90, 96, 118, mixColors('#93c5fd', '#020617', 0.82), deepGround, 0.88, 1),
+        ],
+        motifs: [
+          makeMotif('pine', '6%', 94, 36, 88, { foliage: '#0f172a', foliageAlt: '#1e3a8a', trunk: '#334155', opacity: 0.74 }),
+          makeMotif('pine', '84%', 92, 34, 82, { foliage: '#0f172a', foliageAlt: '#1d4ed8', trunk: '#334155', opacity: 0.72 }),
+        ],
+      };
+    case 'linked_labyrinth':
+      return {
+        weatherOpacity: 0.86,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#052e16', 0.28)} 0%, ${mixColors(skyMid, '#14532d', 0.18)} 52%, ${mixColors(skyBase, '#020617', 0.18)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 78% 42% at 50% 18%, ${withAlpha('#84cc16', 0.12)}, transparent 68%), radial-gradient(circle at 80% 22%, ${withAlpha('#dcfce7', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#14532d', '#020617', 0.82)} 0%, ${forestDark} 100%)`,
+        moon: { right: '12%', top: '12%', size: 18, color: 'rgba(236, 253, 245, 0.82)', ring: moonGlow },
+        stars: [
+          makeDot('18%', '16%', 2.4, '#84cc16', 0, 0.8, 3),
+          makeDot('26%', '10%', 1.8, '#d9f99d', 0.8, 0.72, 0),
+          makeDot('74%', '18%', 2, '#bef264', 1.1, 0.8, 3),
+        ],
+        bands: [
+          makeStroke('52%', '46%', 96, 54, withAlpha('#84cc16', 0.12), 0, 0.78, 10),
+          makeStroke('16%', '69%', 150, 10, withAlpha('#f8fafc', 0.1), 0, 0.4, 4),
+        ],
+        hills: [
+          makeHill('-4%', '34%', 118, 102, mixColors('#166534', '#020617', 0.38), deepGround, -8, 0.94),
+          makeHill('72%', '30%', 142, 112, mixColors('#14532d', '#020617', 0.28), deepGround, 8, 0.92),
+        ],
+      };
+    case 'winter_carnival':
+      return {
+        weatherOpacity: 0.94,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#312e81', 0.22)} 0%, ${mixColors(skyMid, '#6d28d9', 0.14)} 48%, ${mixColors(skyBase, '#020617', 0.14)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 78% 42% at 50% 18%, ${withAlpha('#c084fc', 0.1)}, transparent 68%), radial-gradient(circle at 20% 18%, ${withAlpha('#f472b6', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#4c1d95', '#111827', 0.84)} 0%, ${violetDark} 100%)`,
+        moon: { right: '13%', top: '11%', size: 20, color: 'rgba(248, 250, 252, 0.9)', ring: moonGlow },
+        stars: [
+          makeDot('16%', '15%', 1.8, '#f5d0fe', 0.1, 0.72, 0),
+          makeDot('28%', '9%', 2, '#c084fc', 1, 0.82, 2),
+          makeDot('78%', '18%', 2.1, '#93c5fd', 0.5, 0.76, 2),
+        ],
+        bands: [
+          makeStroke('18%', '22%', 180, 30, withAlpha('#a855f7', 0.12), -8, 0.78, 16),
+          makeStroke('18%', '24%', 170, 14, withAlpha('#60a5fa', 0.1), -8, 0.7, 12),
+        ],
+        hills: [
+          makeHill('-4%', '40%', 118, 82, mixColors('#7c3aed', '#020617', 0.8), deepGround, -8, 0.9),
+          makeHill('70%', '35%', 144, 90, mixColors('#6d28d9', '#020617', 0.82), deepGround, 8, 0.9),
+          makeHill('26%', '70%', 140, 48, mixColors('#e0e7ff', '#312e81', 0.82), deepGround, 0, 0.78),
+        ],
+        motifs: [
+          makeMotif('pine', '8%', 94, 34, 80, { foliage: '#312e81', foliageAlt: '#4338ca', trunk: '#334155', opacity: 0.68 }),
+          makeMotif('pine', '84%', 94, 34, 80, { foliage: '#312e81', foliageAlt: '#60a5fa', trunk: '#334155', opacity: 0.68 }),
+        ],
+      };
+    case 'desert_dunes':
+      return {
+        weatherOpacity: 0.92,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#3f1d0d', 0.32)} 0%, ${mixColors(skyMid, '#7c2d12', 0.16)} 50%, ${mixColors(skyBase, '#020617', 0.16)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 50% 18%, ${withAlpha('#fb923c', 0.1)}, transparent 68%), radial-gradient(circle at 78% 16%, ${withAlpha('#fde68a', 0.1)}, transparent 22%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#92400e', '#111827', 0.84)} 0%, ${amberDark} 100%)`,
+        moon: { right: '14%', top: '11%', size: 21, color: 'rgba(255, 251, 235, 0.9)', ring: moonGlow },
+        stars: [
+          makeDot('14%', '15%', 1.7, '#fde68a', 0, 0.68, 0),
+          makeDot('26%', '11%', 2.1, '#fb923c', 0.8, 0.8, 2),
+          makeDot('76%', '20%', 1.8, '#fcd34d', 0.4, 0.72, 1),
+        ],
+        bands: [
+          makeStroke('12%', '65%', 176, 10, withAlpha('#f59e0b', 0.14), 2, 0.62, 4),
+          makeStroke('16%', '70%', 164, 8, withAlpha('#fff7ed', 0.12), -1, 0.48, 2),
+        ],
+        hills: [
+          makeHill('-6%', '39%', 132, 78, mixColors('#d97706', '#020617', 0.82), deepGround, -4, 0.94),
+          makeHill('28%', '70%', 160, 46, mixColors('#b45309', '#020617', 0.76), deepGround, 0, 0.92),
+          makeHill('66%', '34%', 142, 96, mixColors('#c2410c', '#020617', 0.82), deepGround, 8, 0.9),
+        ],
+        columns: [
+          makeColumn('79%', 98, 10, 58, mixColors('#365314', '#020617', 0.18), 0, 0.72, '10px 10px 0 0'),
+          makeColumn('83%', 112, 4, 26, mixColors('#365314', '#020617', 0.14), 20, 0.64, '999px'),
+          makeColumn('76%', 116, 4, 24, mixColors('#365314', '#020617', 0.14), -20, 0.64, '999px'),
+        ],
+        motifs: [
+          makeMotif('cactus', '8%', 94, 34, 84, { body: '#3f6212', edge: '#84cc16', opacity: 0.76 }),
+          makeMotif('cactus', '78%', 92, 42, 96, { body: '#365314', edge: '#a3e635', opacity: 0.8 }),
+        ],
+      };
+    case 'graph_gorge':
+      return {
+        weatherOpacity: 0.8,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#292524', 0.24)} 0%, ${mixColors(skyMid, '#334155', 0.12)} 52%, ${mixColors(skyBase, '#020617', 0.16)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 50% 18%, ${withAlpha('#d6d3d1', 0.08)}, transparent 68%), radial-gradient(circle at 76% 18%, ${withAlpha('#e2e8f0', 0.08)}, transparent 16%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#475569', '#111827', 0.84)} 0%, ${mixColors('#1f2937', '#020617', 0.26)} 100%)`,
+        moon: { right: '13%', top: '11%', size: 19, color: 'rgba(248, 250, 252, 0.84)', ring: moonGlow },
+        stars: [
+          makeDot('16%', '14%', 1.8, '#e7e5e4', 0, 0.66, 0),
+          makeDot('28%', '10%', 2.1, '#cbd5e1', 0.9, 0.78, 2),
+          makeDot('76%', '18%', 1.7, '#d6d3d1', 0.3, 0.68, 0),
+        ],
+        bands: [
+          makeStroke('24%', '56%', 58, 5, withAlpha('#64748b', 0.26), 12, 0.72, 0),
+          makeStroke('60%', '56%', 64, 5, withAlpha('#64748b', 0.26), -12, 0.72, 0),
+        ],
+        peaks: [
+          makePeak('6%', 92, 90, 96, mixColors('#475569', '#020617', 0.82), deepGround, 0.88, 0),
+          makePeak('72%', 90, 100, 114, mixColors('#64748b', '#020617', 0.84), deepGround, 0.9, 0),
+        ],
+        motifs: [
+          makeMotif('rock-spire', '10%', 94, 42, 86, { rock: mixColors('#475569', '#020617', 0.78), edge: '#cbd5e1', opacity: 0.74 }),
+          makeMotif('rock-spire', '84%', 96, 38, 74, { rock: mixColors('#64748b', '#020617', 0.82), edge: '#e2e8f0', opacity: 0.7 }),
+        ],
+      };
+    case 'dp_dungeon':
+      return {
+        weatherOpacity: 0.82,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#1e1b4b', 0.18)} 0%, ${mixColors(skyMid, '#4c1d95', 0.16)} 52%, ${mixColors(skyBase, '#020617', 0.14)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 50% 18%, ${withAlpha('#a78bfa', 0.12)}, transparent 68%), radial-gradient(circle at 76% 18%, ${withAlpha('#ddd6fe', 0.08)}, transparent 16%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#4c1d95', '#111827', 0.86)} 0%, ${violetDark} 100%)`,
+        moon: { right: '13%', top: '11%', size: 18, color: 'rgba(237, 233, 254, 0.88)', ring: moonGlow },
+        stars: [
+          makeDot('12%', '14%', 1.8, '#ddd6fe', 0, 0.7, 0),
+          makeDot('22%', '10%', 2.4, '#c4b5fd', 0.9, 0.84, 2),
+          makeDot('74%', '18%', 1.8, '#a78bfa', 0.4, 0.72, 2),
+          makeDot('84%', '26%', 2.2, '#f5d0fe', 1.2, 0.78, 3),
+        ],
+        bands: [
+          makeStroke('34%', '26%', 82, 86, withAlpha('#8b5cf6', 0.12), 0, 0.74, 14),
+          makeStroke('16%', '68%', 150, 10, withAlpha('#c4b5fd', 0.12), 0, 0.5, 4),
+        ],
+        columns: [
+          makeColumn('34%', 94, 22, 78, mixColors('#7c3aed', '#020617', 0.82), 0, 0.56, '12px 12px 0 0'),
+          makeColumn('42%', 94, 12, 92, mixColors('#8b5cf6', '#020617', 0.84), 0, 0.62, '12px 12px 0 0'),
+        ],
+        motifs: [
+          makeMotif('planet', '74%', 74, 104, 104, { planet: '#6d28d9', ring: '#c4b5fd', glow: withAlpha('#8b5cf6', 0.16), moon: '#ddd6fe', opacity: 0.78 }),
+          makeMotif('planet', '8%', 112, 42, 42, { planet: '#4338ca', ring: '#93c5fd', glow: withAlpha('#60a5fa', 0.12), opacity: 0.72 }),
+        ],
+      };
+    case 'recursion_ruins':
+      return {
+        weatherOpacity: 0.84,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#422006', 0.22)} 0%, ${mixColors(skyMid, '#713f12', 0.14)} 52%, ${mixColors(skyBase, '#020617', 0.14)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 50% 18%, ${withAlpha('#facc15', 0.1)}, transparent 68%), radial-gradient(circle at 74% 18%, ${withAlpha('#fef3c7', 0.08)}, transparent 16%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#713f12', '#111827', 0.84)} 0%, ${amberDark} 100%)`,
+        moon: { right: '13%', top: '11%', size: 20, color: 'rgba(254, 249, 195, 0.86)', ring: moonGlow },
+        stars: [
+          makeDot('14%', '14%', 1.8, '#fde68a', 0, 0.68, 0),
+          makeDot('26%', '10%', 2.1, '#facc15', 0.9, 0.8, 2),
+          makeDot('78%', '22%', 1.8, '#fef3c7', 0.3, 0.7, 0),
+        ],
+        bands: [
+          makeStroke('24%', '48%', 20, 72, withAlpha('#f8fafc', 0.12), 0, 0.56, 4),
+          makeStroke('70%', '48%', 20, 64, withAlpha('#f8fafc', 0.1), 0, 0.48, 4),
+        ],
+        columns: [
+          makeColumn('20%', 94, 14, 70, mixColors('#92400e', '#020617', 0.82), 0, 0.62, '8px 8px 0 0'),
+          makeColumn('28%', 94, 18, 86, mixColors('#a16207', '#020617', 0.84), 0, 0.66, '8px 8px 0 0'),
+          makeColumn('68%', 96, 16, 74, mixColors('#92400e', '#020617', 0.84), 0, 0.58, '8px 8px 0 0'),
+        ],
+        motifs: [
+          makeMotif('ruin', '14%', 92, 74, 92, { stone: '#78350f', edge: '#fcd34d', opacity: 0.74 }),
+          makeMotif('ruin', '70%', 96, 64, 84, { stone: '#92400e', edge: '#fde68a', opacity: 0.68 }),
+        ],
+      };
+    case 'regex_rainforest':
+      return {
+        weatherOpacity: 0.96,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#164e63', 0.18)} 0%, ${mixColors(skyMid, '#0f766e', 0.12)} 52%, ${mixColors(skyBase, '#020617', 0.14)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 50% 18%, ${withAlpha('#38bdf8', 0.08)}, transparent 68%), radial-gradient(circle at 76% 18%, ${withAlpha('#67e8f9', 0.08)}, transparent 18%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#0f766e', '#111827', 0.88)} 0%, ${mixColors('#14532d', '#020617', 0.26)} 100%)`,
+        moon: { right: '13%', top: '12%', size: 18, color: 'rgba(224, 242, 254, 0.82)', ring: moonGlow },
+        stars: [
+          makeDot('12%', '15%', 1.7, '#7dd3fc', 0, 0.66, 0),
+          makeDot('24%', '11%', 2.2, '#38bdf8', 0.9, 0.82, 2),
+          makeDot('76%', '18%', 1.7, '#bae6fd', 0.4, 0.68, 0),
+        ],
+        bands: [
+          makeStroke('8%', '26%', 6, 144, withAlpha('#38bdf8', 0.16), -8, 0.72, 5),
+          makeStroke('89%', '24%', 6, 152, withAlpha('#38bdf8', 0.14), -10, 0.68, 5),
+          makeStroke('18%', '68%', 146, 10, withAlpha('#f8fafc', 0.08), 0, 0.34, 4),
+        ],
+        hills: [
+          makeHill('-4%', '34%', 114, 104, mixColors('#14532d', '#020617', 0.34), deepGround, -8, 0.94),
+          makeHill('72%', '30%', 140, 114, mixColors('#0f766e', '#020617', 0.42), deepGround, 8, 0.9),
+        ],
+        motifs: [
+          makeMotif('canopy', '-6%', 0, 188, 150, { leaves: '#312e81', leavesAlt: '#4c1d95', opacity: 0.72, side: 'left' }),
+          makeMotif('canopy', '72%', 0, 188, 150, { leaves: '#4c1d95', leavesAlt: '#312e81', opacity: 0.68, side: 'right' }),
+        ],
+      };
+    case 'algorithm_alps':
+      return {
+        weatherOpacity: 0.96,
+        cardBackground: `linear-gradient(180deg, ${mixColors(skyTop, '#020617', 0.08)} 0%, ${mixColors(skyMid, '#0f172a', 0.12)} 50%, ${mixColors(skyBase, '#020617', 0.08)} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 42% at 50% 18%, ${withAlpha('#93c5fd', 0.08)}, transparent 68%), radial-gradient(circle at 24% 18%, ${withAlpha('#34d399', 0.08)}, transparent 20%), radial-gradient(circle at 76% 18%, ${withAlpha('#60a5fa', 0.08)}, transparent 20%)`,
+        ground: `linear-gradient(180deg, ${mixColors('#1e3a8a', '#111827', 0.88)} 0%, ${frostDark} 100%)`,
+        moon: { right: '13%', top: '10%', size: 20, color: 'rgba(248, 250, 252, 0.92)', ring: moonGlow },
+        stars: [
+          makeDot('12%', '14%', 1.8, '#e0f2fe', 0, 0.72, 0),
+          makeDot('26%', '9%', 2.2, '#34d399', 0.9, 0.66, 3),
+          makeDot('74%', '16%', 1.9, '#60a5fa', 0.4, 0.7, 3),
+          makeDot('84%', '22%', 1.5, '#ffffff', 1.2, 0.74, 0),
+        ],
+        bands: [
+          makeStroke('18%', '16%', 188, 28, withAlpha('#34d399', 0.12), -10, 0.82, 18),
+          makeStroke('18%', '18%', 180, 16, withAlpha('#60a5fa', 0.1), -10, 0.72, 14),
+        ],
+        peaks: [
+          makePeak('8%', 92, 90, 104, mixColors('#60a5fa', '#020617', 0.84), deepGround, 0.88, 1),
+          makePeak('30%', 86, 126, 144, mixColors('#f8fafc', '#1e3a8a', 0.72), deepGround, 0.94, 2),
+          makePeak('72%', 92, 96, 118, mixColors('#94a3b8', '#020617', 0.84), deepGround, 0.9, 1),
+        ],
+        motifs: [
+          makeMotif('pine', '6%', 96, 32, 76, { foliage: '#0f172a', foliageAlt: '#1e3a8a', trunk: '#475569', opacity: 0.72 }),
+          makeMotif('pine', '88%', 96, 32, 76, { foliage: '#0f172a', foliageAlt: '#1e3a8a', trunk: '#475569', opacity: 0.72 }),
+        ],
+      };
+    default:
+      return {
+        weatherOpacity: 0.88,
+        cardBackground: `linear-gradient(180deg, ${skyTop} 0%, ${skyMid} 55%, ${skyBase} 100%)`,
+        bodyOverlay: `radial-gradient(ellipse 80% 45% at 50% 20%, ${accentSoft}, transparent 65%)`,
+        ground: `linear-gradient(180deg, ${softGround} 0%, ${deepGround} 100%)`,
+        moon: { right: '13%', top: '11%', size: 18, color: 'rgba(248, 250, 252, 0.86)', ring: moonGlow },
+        stars: [
+          makeDot('16%', '14%', 1.8, '#e2e8f0', 0, 0.72, 0),
+          makeDot('26%', '10%', 2, '#cbd5e1', 0.9, 0.8, 2),
+          makeDot('76%', '20%', 1.8, '#f8fafc', 0.4, 0.74, 0),
+        ],
+        bands: [
+          makeStroke('18%', '68%', 140, 10, borderSoft, 0, 0.5, 6),
+        ],
+        hills: [
+          makeHill('-4%', '36%', 114, 90, mixColors(accent, '#020617', 0.82), deepGround, -8, 0.9),
+          makeHill('74%', '32%', 136, 96, mixColors(border || accent, '#020617', 0.84), deepGround, 8, 0.9),
+        ],
+      };
+  }
+};
+
 const getBrightScene = (key, facade, accent) => {
   const accentSoft = withAlpha(accent, 0.16);
   const accentGlow = withAlpha(accent, 0.2);
@@ -581,37 +1055,39 @@ const getZoneVisualTokens = (config, isDark) => {
   } = config;
 
   if (isDark) {
+    const darkScene = getDarkScene(key, accent, bgGrad, border, ground);
     return {
-      cardBackground: `linear-gradient(175deg, ${bgGrad?.[0]} 0%, ${bgGrad?.[1]} 55%, ${bgGrad?.[2]} 100%)`,
-      cardBoxShadow: `inset 0 0 80px ${glow}, 0 0 0 1.5px ${border}40`,
-      edgeLine: `linear-gradient(90deg,transparent,${accent}60,transparent)`,
+      cardBackground: darkScene.cardBackground,
+      cardBoxShadow: `inset 0 0 96px ${glow}, 0 30px 60px rgba(2, 6, 23, 0.42), 0 0 0 1.5px ${border}40`,
+      edgeLine: `linear-gradient(90deg,transparent,${accent}75,transparent)`,
       titleBackground: `linear-gradient(135deg, ${titleGrad?.[0]}, ${titleGrad?.[1]})`,
       titleTextFill: 'transparent',
       titleTextColor: null,
       titleShadow: 'none',
-      titleFilter: `drop-shadow(0 0 20px ${accent}40)`,
-      captionColor: accent,
-      chipBackground: `${accent}18`,
-      chipBorder: `${border}35`,
+      titleFilter: `drop-shadow(0 0 20px ${accent}45)`,
+      captionColor: mixColors(accent, '#f8fafc', 0.16),
+      chipBackground: withAlpha(accent, 0.12),
+      chipBorder: withAlpha(border, 0.32),
       chipText: accent,
-      bodyOverlay: `radial-gradient(ellipse 80% 45% at 50% 20%, ${accent}14, transparent 65%)`,
-      ground,
+      bodyOverlay: darkScene.bodyOverlay,
+      ground: darkScene.ground,
       groundDeck: 'transparent',
       groundDeckBorder: 'transparent',
       pathGlow: path,
-      pathGlowOpacity: 0.15,
+      pathGlowOpacity: 0.18,
       idlePath: '#1e293b',
-      idlePathOpacity: 0.55,
+      idlePathOpacity: 0.6,
       idlePathWidth: 2.2,
       litPath: path,
       litPathWidth: 3,
-      litPathOpacity: 0.85,
+      litPathOpacity: 0.88,
       dash: '5 7',
       deckText: accent,
       facadeLabel: subtitle,
       brightMode: false,
       cardBorder: `1.5px solid ${border}30`,
-      weatherOpacity: 1,
+      weatherOpacity: darkScene.weatherOpacity ?? 0.9,
+      darkScene,
     };
   }
 
@@ -747,6 +1223,395 @@ const BrightSkyDetails = ({ scene, facade, accent, isMobile }) => {
   );
 };
 
+const DarkSceneDetails = ({ scene, accent, isMobile }) => {
+  if (!scene) return null;
+
+  return (
+    <>
+      <div
+        className="absolute inset-x-10 top-6 h-28 rounded-full blur-3xl"
+        style={{ background: withAlpha(accent, 0.08) }}
+      />
+
+      {scene.moon ? (
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            right: scene.moon.right,
+            top: scene.moon.top,
+            width: isMobile ? scene.moon.size * 0.8 : scene.moon.size,
+            height: isMobile ? scene.moon.size * 0.8 : scene.moon.size,
+            background: scene.moon.color,
+            boxShadow: `0 0 0 12px ${scene.moon.ring || withAlpha('#ffffff', 0.06)}`,
+          }}
+          animate={{ opacity: [0.88, 1, 0.88] }}
+          transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ) : null}
+
+      {(scene.stars || []).map((star, index) => (
+        <motion.div
+          key={`star-${index}`}
+          className="absolute rounded-full"
+          style={{
+            left: star.left,
+            top: star.top,
+            width: isMobile ? star.size * 0.9 : star.size,
+            height: isMobile ? star.size * 0.9 : star.size,
+            background: star.color,
+            opacity: star.opacity,
+            filter: star.blur ? `blur(${star.blur}px)` : undefined,
+          }}
+          animate={{ opacity: [star.opacity * 0.45, star.opacity, star.opacity * 0.45], scale: [1, 1.15, 1] }}
+          transition={{ duration: 3.4, delay: star.delay, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ))}
+
+      {(scene.bands || []).map((band, index) => (
+        <motion.div
+          key={`band-${index}`}
+          className="absolute rounded-full"
+          style={{
+            left: band.left,
+            top: band.top,
+            width: isMobile ? band.width * 0.78 : band.width,
+            height: isMobile ? band.height * 0.78 : band.height,
+            background: band.color,
+            opacity: band.opacity,
+            transform: `rotate(${band.rotate}deg)`,
+            filter: `blur(${band.blur || 8}px)`,
+          }}
+          animate={{ x: [0, 6, 0], opacity: [band.opacity * 0.75, band.opacity, band.opacity * 0.75] }}
+          transition={{ duration: 5.8, delay: index * 0.4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ))}
+
+      {(scene.hills || []).map((hill, index) => (
+        <div
+          key={`dark-hill-${index}`}
+          className="absolute rounded-[999px_999px_0_0]"
+          style={{
+            left: hill.left,
+            top: hill.top,
+            width: isMobile ? hill.width * 0.76 : hill.width,
+            height: isMobile ? hill.height * 0.76 : hill.height,
+            background: `linear-gradient(180deg, ${hill.from}, ${hill.to})`,
+            transform: `rotate(${hill.rotate}deg)`,
+            opacity: hill.opacity,
+          }}
+        />
+      ))}
+
+      {(scene.peaks || []).map((peak, index) => (
+        <div
+          key={`peak-${index}`}
+          className="absolute"
+          style={{
+            left: peak.left,
+            bottom: peak.bottom,
+            width: isMobile ? peak.width * 0.76 : peak.width,
+            height: isMobile ? peak.height * 0.76 : peak.height,
+            background: `linear-gradient(180deg, ${peak.from}, ${peak.to})`,
+            clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+            opacity: peak.opacity,
+            filter: peak.blur ? `blur(${peak.blur}px)` : undefined,
+          }}
+        />
+      ))}
+
+      {(scene.columns || []).map((column, index) => (
+        <div
+          key={`column-${index}`}
+          className="absolute"
+          style={{
+            left: column.left,
+            bottom: column.bottom,
+            width: isMobile ? column.width * 0.78 : column.width,
+            height: isMobile ? column.height * 0.78 : column.height,
+            background: column.color,
+            opacity: column.opacity,
+            borderRadius: column.radius,
+            transform: `rotate(${column.rotate}deg)`,
+            boxShadow: `0 0 18px ${withAlpha(accent, 0.04)}`,
+          }}
+        />
+      ))}
+
+      {(scene.motifs || []).map((motif, index) => {
+        const width = isMobile ? motif.width * 0.78 : motif.width;
+        const height = isMobile ? motif.height * 0.78 : motif.height;
+
+        const commonStyle = {
+          left: motif.left,
+          bottom: motif.bottom,
+          width,
+          height,
+          opacity: motif.opacity ?? 0.78,
+          transform: motif.rotate ? `rotate(${motif.rotate}deg)` : undefined,
+        };
+
+        if (motif.type === 'palm') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
+                style={{
+                  width: Math.max(5, width * 0.08),
+                  height: height * 0.58,
+                  background: `linear-gradient(180deg, ${motif.trunk}, ${mixColors(motif.trunk, '#020617', 0.4)})`,
+                }}
+              />
+              {[[-32, 8], [-12, -6], [12, 6], [30, -8]].map(([rotation, offset], frondIndex) => (
+                <div
+                  key={frondIndex}
+                  className="absolute rounded-full"
+                  style={{
+                    left: `calc(50% + ${offset}px)`,
+                    top: height * 0.1,
+                    width: width * 0.42,
+                    height: height * 0.16,
+                    background: `linear-gradient(90deg, ${motif.leaves}, ${mixColors(motif.leaves, '#bbf7d0', 0.14)})`,
+                    transform: `translateX(-50%) rotate(${rotation}deg)`,
+                    filter: `drop-shadow(0 0 10px ${motif.glow || withAlpha(motif.leaves, 0.08)})`,
+                  }}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        if (motif.type === 'waterfall') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div
+                className="absolute inset-y-0 right-0 rounded-[28px_28px_12px_12px]"
+                style={{
+                  width: width * 0.55,
+                  background: `linear-gradient(180deg, ${motif.cliff}, ${mixColors(motif.cliff, '#020617', 0.34)})`,
+                }}
+              />
+              <div
+                className="absolute rounded-full"
+                style={{
+                  left: width * 0.56,
+                  top: height * 0.1,
+                  width: width * 0.14,
+                  height: height * 0.8,
+                  background: `linear-gradient(180deg, rgba(255,255,255,0.82), ${motif.water}, rgba(255,255,255,0.24))`,
+                  boxShadow: `0 0 18px ${withAlpha(motif.water, 0.34)}`,
+                }}
+              />
+              <div
+                className="absolute rounded-full blur-md"
+                style={{
+                  left: width * 0.44,
+                  bottom: height * 0.04,
+                  width: width * 0.38,
+                  height: height * 0.16,
+                  background: `radial-gradient(circle, ${withAlpha(motif.foam, 0.86)}, ${withAlpha(motif.water, 0.18)})`,
+                }}
+              />
+              <div
+                className="absolute rounded-full"
+                style={{
+                  right: width * 0.02,
+                  top: height * 0.04,
+                  width: width * 0.22,
+                  height: height * 0.18,
+                  background: `radial-gradient(circle, ${motif.foliage}, transparent 72%)`,
+                  filter: 'blur(1px)',
+                }}
+              />
+            </div>
+          );
+        }
+
+        if (motif.type === 'wave') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none overflow-hidden rounded-[999px_999px_0_0]" style={commonStyle}>
+              <div
+                className="absolute inset-0"
+                style={{ background: `linear-gradient(180deg, ${withAlpha(motif.water, 0.14)}, ${withAlpha(motif.water, 0.42)})` }}
+              />
+              <motion.div
+                className="absolute left-[12%] right-[12%] top-[28%] h-[10%] rounded-full"
+                style={{ background: withAlpha(motif.foam, 0.6), filter: 'blur(2px)' }}
+                animate={{ x: [0, -10, 0] }}
+                transition={{ duration: 4.4, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <motion.div
+                className="absolute left-[8%] right-[8%] top-[52%] h-[8%] rounded-full"
+                style={{ background: withAlpha(motif.foam, 0.34), filter: 'blur(2px)' }}
+                animate={{ x: [0, 10, 0] }}
+                transition={{ duration: 5.2, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </div>
+          );
+        }
+
+        if (motif.type === 'cactus') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div
+                className="absolute bottom-0 left-[42%] rounded-[16px_16px_10px_10px]"
+                style={{
+                  width: width * 0.2,
+                  height: height * 0.72,
+                  background: `linear-gradient(180deg, ${motif.body}, ${mixColors(motif.body, '#020617', 0.34)})`,
+                  boxShadow: `0 0 0 1px ${withAlpha(motif.edge, 0.12)}`,
+                }}
+              />
+              <div
+                className="absolute bottom-[28%] left-[18%] rounded-full"
+                style={{
+                  width: width * 0.16,
+                  height: height * 0.28,
+                  background: motif.body,
+                }}
+              />
+              <div
+                className="absolute bottom-[44%] left-[28%] rounded-full"
+                style={{
+                  width: width * 0.2,
+                  height: height * 0.1,
+                  background: motif.body,
+                }}
+              />
+              <div
+                className="absolute bottom-[40%] right-[16%] rounded-full"
+                style={{
+                  width: width * 0.16,
+                  height: height * 0.22,
+                  background: motif.body,
+                }}
+              />
+              <div
+                className="absolute bottom-[52%] right-[26%] rounded-full"
+                style={{
+                  width: width * 0.18,
+                  height: height * 0.1,
+                  background: motif.body,
+                }}
+              />
+            </div>
+          );
+        }
+
+        if (motif.type === 'pine') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div
+                className="absolute bottom-0 left-[43%]"
+                style={{ width: width * 0.12, height: height * 0.2, background: motif.trunk }}
+              />
+              {[0, 1, 2].map((tier) => (
+                <div
+                  key={tier}
+                  className="absolute left-1/2 -translate-x-1/2"
+                  style={{
+                    bottom: height * (0.16 + tier * 0.16),
+                    width: width * (0.7 - tier * 0.12),
+                    height: height * 0.24,
+                    background: `linear-gradient(180deg, ${tier % 2 === 0 ? motif.foliageAlt : motif.foliage}, ${motif.foliage})`,
+                    clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+                  }}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        if (motif.type === 'planet') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div
+                className="absolute inset-[12%] rounded-full"
+                style={{
+                  background: `radial-gradient(circle at 35% 30%, ${withAlpha('#ffffff', 0.16)}, ${motif.planet} 48%, ${mixColors(motif.planet, '#020617', 0.3)} 100%)`,
+                  boxShadow: `0 0 30px ${motif.glow}`,
+                }}
+              />
+              <div
+                className="absolute left-[4%] right-[4%] top-[44%] h-[10%] rounded-full"
+                style={{
+                  border: `2px solid ${withAlpha(motif.ring, 0.72)}`,
+                  transform: 'rotate(-14deg)',
+                }}
+              />
+              {motif.moon ? (
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    right: width * 0.02,
+                    top: height * 0.08,
+                    width: width * 0.18,
+                    height: width * 0.18,
+                    background: motif.moon,
+                    boxShadow: `0 0 18px ${withAlpha(motif.moon, 0.3)}`,
+                  }}
+                />
+              ) : null}
+            </div>
+          );
+        }
+
+        if (motif.type === 'ruin') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div className="absolute bottom-0 left-[8%] right-[8%] h-[18%] rounded-md" style={{ background: motif.stone }} />
+              <div className="absolute bottom-[18%] left-[18%] w-[16%] h-[54%] rounded-t-md" style={{ background: motif.stone }} />
+              <div className="absolute bottom-[18%] left-[42%] w-[16%] h-[62%] rounded-t-md" style={{ background: motif.stone }} />
+              <div className="absolute bottom-[18%] right-[18%] w-[16%] h-[50%] rounded-t-md" style={{ background: motif.stone }} />
+              <div
+                className="absolute left-[12%] right-[12%] bottom-[64%] h-[12%] rounded-md"
+                style={{ background: `linear-gradient(180deg, ${motif.edge}, ${motif.stone})`, opacity: 0.78 }}
+              />
+            </div>
+          );
+        }
+
+        if (motif.type === 'rock-spire') {
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none" style={commonStyle}>
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(180deg, ${motif.edge}, ${motif.rock} 24%, ${mixColors(motif.rock, '#020617', 0.28)} 100%)`,
+                  clipPath: 'polygon(50% 0%, 72% 22%, 100% 100%, 0% 100%, 26% 20%)',
+                }}
+              />
+            </div>
+          );
+        }
+
+        if (motif.type === 'canopy') {
+          const isLeft = motif.side !== 'right';
+          return (
+            <div key={`motif-${index}`} className="absolute pointer-events-none overflow-hidden" style={commonStyle}>
+              {[0, 1, 2, 3].map((blobIndex) => (
+                <div
+                  key={blobIndex}
+                  className="absolute rounded-full"
+                  style={{
+                    width: width * (0.42 + blobIndex * 0.08),
+                    height: height * (0.34 + blobIndex * 0.05),
+                    [isLeft ? 'left' : 'right']: `${blobIndex * 10}%`,
+                    top: `${blobIndex * 8}%`,
+                    background: `radial-gradient(circle, ${blobIndex % 2 === 0 ? motif.leaves : motif.leavesAlt}, transparent 72%)`,
+                    filter: 'blur(1px)',
+                  }}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </>
+  );
+};
+
 const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = false, nodes = [] }) => {
   const { isDark } = useTheme();
   const {
@@ -832,7 +1697,13 @@ const ZoneContainer = ({ config, completedIds = new Set(), children, isMobile = 
             accent={accent}
             isMobile={isMobile}
           />
-        ) : null}
+        ) : (
+          <DarkSceneDetails
+            scene={tokens.darkScene}
+            accent={accent}
+            isMobile={isMobile}
+          />
+        )}
 
         <div style={{ opacity: tokens.weatherOpacity }}>
           <WeatherEffect type={weather} zoneId={key || id} accent={accent} />
