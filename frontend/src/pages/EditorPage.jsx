@@ -136,11 +136,6 @@ const EditorPage = () => {
     const joinToken = location.state?.joinToken ?? storedCustomJoin?.joinToken ?? '';
     const isValidRoomId = typeof roomId === 'string' && roomId.trim().length >= 3;
 
-    // RBAC Logic
-    const isAdmin = storedUser?.role === 'admin';
-    const isPremiumTier = ['plus', 'pro', 'premium'].includes(storedUser?.subscriptionPlan?.toLowerCase());
-    const hasFullLanguageAccess = isAdmin || isPremiumTier;
-    
     // UI State
     const [clients, setClients] = useState([]);
     const [problem, setProblem] = useState(null);
@@ -529,14 +524,14 @@ const EditorPage = () => {
                 </div>
                 {mySide === side && (
                     <select 
-                        className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                        className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer" 
                         value={language} 
                         onChange={(e) => setLanguage(e.target.value)}
                     >
                         <option value="javascript">JavaScript</option>
-                        <option value="cpp" disabled={!hasFullLanguageAccess}>C++ {!hasFullLanguageAccess && '(Pro)'}</option>
-                        <option value="java" disabled={!hasFullLanguageAccess}>Java {!hasFullLanguageAccess && '(Pro)'}</option>
-                        <option value="python" disabled={!hasFullLanguageAccess}>Python {!hasFullLanguageAccess && '(Pro)'}</option>
+                        <option value="cpp">C++</option>
+                        <option value="java">Java</option>
+                        <option value="python">Python</option>
                     </select>
                 )}
             </div>
@@ -631,12 +626,12 @@ const EditorPage = () => {
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'problem' ? 'flex' : 'hidden'} md:flex flex-col border-r border-[#3e3e42] bg-[#252526] h-full order-1 md:order-2`}>
+                <div className={`${activeTab === 'problem' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden border-r border-[#3e3e42] bg-[#252526] order-1 md:order-2`}>
                     <div className="arena-pane-header bg-[#2d2d2d] p-3 flex justify-between items-center border-b border-[#3e3e42] shrink-0 h-14">
                         <span className="font-bold truncate text-sm text-white">{problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}</span>
                         <Timer initialTime={remainingTime} socket={socketRef.current} />
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 text-sm leading-relaxed min-h-0">
+                    <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
                         {problem && (
                             <div className="space-y-6 pb-6">
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">{problem.difficulty}</span>
@@ -651,7 +646,7 @@ const EditorPage = () => {
                             </div>
                         )}
                     </div>
-                    <div className="arena-problem-footer bg-[#1e1e1e] border-t border-[#3e3e42] p-4 space-y-4 shrink-0">
+                    <div className="arena-problem-footer bg-[#1e1e1e] flex-shrink-0 border-t border-white/10 p-4 space-y-4">
                         <div className="flex items-center justify-between bg-[#252526] p-2 rounded border border-[#3e3e42]"><span className="text-[10px] text-gray-500 font-bold">ROOM: {roomId}</span><button onClick={copyRoomId} className="text-gray-400 hover:text-white"><Copy size={16} /></button></div>
                         <div className="flex gap-3">
                             <button onClick={runCode} disabled={isRunning} className="flex-1 py-3 rounded bg-white text-black font-bold hover:bg-gray-200 text-sm flex items-center justify-center gap-2 disabled:opacity-50"><Play size={16}/> Run</button>
