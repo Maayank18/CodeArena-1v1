@@ -4,18 +4,21 @@ import { Loader2, BookOpen } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import WorldMap from '../components/Campaign/WorldMap';
 import CampaignHUD from '../components/Campaign/CampaignHUD';
-import TeaserModal from '../components/TeaserModal';
+import CampaignTeaserModal from '../components/Campaign/CampaignTeaserModal';
 import SkillTreeModal from '../components/Campaign/SkillTreeModal';
 import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
 import api from '../api';
 import toast from 'react-hot-toast';
+import {
+  ROOT_CAMPAIGN_NODE_ID,
+  shouldLockCampaignAfterTrial,
+} from '../utils/campaignAccess';
 
 const EMPTY_MAP = { nodes: [] };
-const ROOT_NODE_ID = 'region-1-node-01';
 const NODE_ID_PATTERN = /node-(\d+)$/i;
 
 const isAbsoluteRootNode = (node) =>
-  node?.nodeId === ROOT_NODE_ID ||
+  node?.nodeId === ROOT_CAMPAIGN_NODE_ID ||
   (node?.regionOrder === 1 && node?.nodeOrder === 1);
 
 const isDuplicateCancellation = (error) =>
@@ -156,6 +159,19 @@ const Campaign = () => {
     };
   }, [fetchCampaignData, incomingProgress, navigate, user]);
 
+  useEffect(() => {
+    if (!shouldLockCampaignAfterTrial(user, progress)) {
+      setShowTeaserModal(false);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowTeaserModal(true);
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [progress, user]);
+
   const handleStartChallenge = useCallback(
     (node) => {
       const targetNodeId = typeof node === 'string' ? node : node?.nodeId;
@@ -231,12 +247,7 @@ const Campaign = () => {
         />
       </div>
 
-      <TeaserModal 
-        isOpen={showTeaserModal}
-        onClose={() => setShowTeaserModal(false)}
-        title="Premium Trial Conquered!"
-        message="You've mastered the first challenge! Upgrade to Premium to unlock the full 150+ node campaign and dominate the leaderboards."
-      />
+      <CampaignTeaserModal isOpen={showTeaserModal} />
 
       <SkillTreeModal
         isOpen={showSkillTree}

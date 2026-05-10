@@ -198,7 +198,7 @@ const SuccessModal = ({ isOpen, result, onViewMap, onContinue }) => {
                                 onClick={onViewMap}
                                 className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700/60 text-gray-700 dark:text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm"
                             >
-                                <Map size={16} /> View Map
+                                <Map size={16} /> View World
                             </button>
                             <button
                                 onClick={onContinue}

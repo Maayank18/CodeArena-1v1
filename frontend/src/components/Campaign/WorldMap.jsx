@@ -17,6 +17,12 @@ import {
   generateMockWorld,
 } from './campaignWorldData';
 import { CAMPAIGN_REGIONS } from '../../data/campaignConfig';
+import {
+  getStoredCampaignUser,
+  hasCompletedRootCampaignNode,
+  hasPremiumCampaignAccess,
+  isRootCampaignNodeId,
+} from '../../utils/campaignAccess';
 
 const REGION_TO_ZONE_ID = {
   1: 'array_archipelago',
@@ -833,29 +839,22 @@ const WorldMap = ({ nodes = [], progress, onStartChallenge, onTeaserTrigger, use
   const [selectedNode, setSelectedNode] = useState(null);
 
   const handleNodeClick = useCallback((node) => {
-    const user = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('codearena_user') || '{}');
-      } catch {
-        return {};
-      }
-    })();
+    const user = getStoredCampaignUser();
+    const isRootNode = isRootCampaignNodeId(node?.nodeId) || isRootCampaignNodeId(node?.campaignNodeId);
+    const hasTrialLock = !hasPremiumCampaignAccess(user) && hasCompletedRootCampaignNode(progress);
 
-    const userRole = user?.role?.toLowerCase() || 'user';
-    const userPlan = user?.subscriptionPlan?.toLowerCase() || 'free';
-    const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+    if (hasTrialLock) {
+      if (onTeaserTrigger) onTeaserTrigger();
+      return;
+    }
 
-    const isAdmin = userRole === 'admin';
-    const isPremium = tiers[userPlan] >= 3;
-    const isRootNode = node?.nodeId === 'region-1-node-01' || node?.campaignNodeId === 'region-1-node-01';
-
-    if (!isAdmin && !isPremium && !isRootNode) {
+    if (!hasPremiumCampaignAccess(user) && !isRootNode) {
       if (onTeaserTrigger) onTeaserTrigger();
       return;
     }
 
     setSelectedNode(node);
-  }, [onTeaserTrigger]);
+  }, [onTeaserTrigger, progress]);
 
   const handleClosePanel = useCallback(() => {
     setSelectedNode(null);

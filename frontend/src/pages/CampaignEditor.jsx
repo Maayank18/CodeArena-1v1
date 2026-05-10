@@ -2,7 +2,7 @@
 
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,6 +16,12 @@ import api from '../api';
 import SuccessModal from '../components/Campaign/SuccessModal';
 import SagePanel    from '../components/Campaign/SagePanel';
 import StarDisplay  from '../components/Campaign/StarDisplay';
+import CampaignTeaserModal from '../components/Campaign/CampaignTeaserModal';
+import {
+  getStoredCampaignUser,
+  hasPremiumCampaignAccess,
+  isRootCampaignNodeId,
+} from '../utils/campaignAccess';
 
 // --- Constants ----------------------------------------------------------------
 
@@ -196,7 +202,7 @@ const ProblemPanel = ({ node, existingBest }) => {
                 <div className="p-3 space-y-2">
                   <div>
                     <p className="text-[10px] text-slate-400 dark:text-gray-700 font-bold mb-1">Input</p>
-                    <pre className="text-xs font-mono text-slate-700 dark:text-gray-300 bg-white dark:bg-black/30 px-2.5 py-1.5 rounded whitespace-pre-wrap break-all">{tc.input}</pre>
+                    <pre className="text-xs font-mono text-slate-700 dark:text-gray-300 bg-white dark:bg-black/30 px-2.5 py-1.5 rounded whitespace-pre-wrap break-all">{tc.displayInput || tc.input}</pre>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 dark:text-gray-700 font-bold mb-1">Output</p>
@@ -285,6 +291,7 @@ const EditorPane = ({
 const CampaignEditor = () => {
   const { nodeId } = useParams();
   const navigate   = useNavigate();
+  const location   = useLocation();
   const { isDark, toggleTheme } = useTheme();
 
   const [node,         setNode]         = useState(null);
@@ -309,6 +316,7 @@ const CampaignEditor = () => {
 
   const [showSuccess,   setShowSuccess]   = useState(false);
   const [successResult, setSuccessResult] = useState(null);
+  const [showTeaserModal, setShowTeaserModal] = useState(false);
   const [mobileTab,     setMobileTab]     = useState('problem');
   const [startTime,     setStartTime]     = useState(null);
 
@@ -365,7 +373,26 @@ const CampaignEditor = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [nodeId, navigate]);
+  }, [nodeId, navigate, location.key]);
+
+  useEffect(() => {
+    const user = getStoredCampaignUser();
+    const shouldLock =
+      !hasPremiumCampaignAccess(user) &&
+      isRootCampaignNodeId(nodeId) &&
+      Boolean(existingBest);
+
+    if (!shouldLock) {
+      setShowTeaserModal(false);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowTeaserModal(true);
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [existingBest, nodeId]);
 
   const handleEditorMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
@@ -592,15 +619,19 @@ const CampaignEditor = () => {
         result={successResult}
         onViewMap={() =>
             navigate('/campaign', {
-                state: { newProgress: successResult?.progress }  // ? pass it here
+                state: { newProgress: successResult?.progress }
             })
         }
         onContinue={() => {
             setShowSuccess(false);
-            setRunResults(null);
-            setShowResults(false);
+            navigate(`/campaign/${nodeId}`, {
+              replace: true,
+              state: { retryAt: Date.now() }
+            });
         }}
     />
+
+      <CampaignTeaserModal isOpen={showTeaserModal} />
 
       
     </div>
