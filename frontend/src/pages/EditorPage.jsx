@@ -39,6 +39,7 @@ const resolveYjsUrl = () => {
 };
 
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
+const CUSTOMIZATION_ACCESS_TIERS = new Set(['pro', 'premium']);
 
 // ✅ FIXED TIMER: Receives initial time via props
 const Timer = React.memo(({ initialTime, socket }) => {
@@ -135,6 +136,9 @@ const EditorPage = () => {
     const username = location.state?.username ?? storedUser?.username ?? '';
     const joinToken = location.state?.joinToken ?? storedCustomJoin?.joinToken ?? '';
     const isValidRoomId = typeof roomId === 'string' && roomId.trim().length >= 3;
+    const userRole = storedUser?.role?.toLowerCase() || 'user';
+    const userPlan = storedUser?.subscriptionPlan?.toLowerCase() || 'free';
+    const hasCustomizationAccess = userRole === 'admin' || CUSTOMIZATION_ACCESS_TIERS.has(userPlan);
 
     // UI State
     const [clients, setClients] = useState([]);
@@ -264,9 +268,18 @@ const EditorPage = () => {
                 setTotalRounds(data.totalRounds);
             }
             // TRIGGER ENTRANCE BANNER (Only on initial join, not refresh if possible)
-            if (data.players) {
+            if (data.players && hasCustomizationAccess) {
                 const me = data.players.find(p => p.username.toLowerCase() === username.toLowerCase());
-                if (me?.customization?.entranceBanner) {
+                const hasCustomEntrance =
+                    me?.customization?.entranceBanner &&
+                    (
+                        me.customization.entranceBanner !== 'default-dark' ||
+                        (typeof me.customization.tagline === 'string' &&
+                            me.customization.tagline.trim() &&
+                            me.customization.tagline.trim().toLowerCase() !== 'novice')
+                    );
+
+                if (hasCustomEntrance) {
                     console.log('[ARENA] ✨ Triggering Entrance Banner:', me.customization.entranceBanner);
                     setEntranceData(me.customization);
                     setShowEntrance(true);
@@ -394,7 +407,7 @@ const EditorPage = () => {
                 providerRef.current = null;
             }
         };
-    }, [roomId, navigate, username, isValidRoomId, joinToken, storedUser?.token]);
+    }, [roomId, navigate, username, isValidRoomId, joinToken, storedUser?.token, hasCustomizationAccess]);
 
     // ✅ ANTI-CHEAT
     useEffect(() => {
