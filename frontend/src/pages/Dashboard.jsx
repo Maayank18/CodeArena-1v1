@@ -257,6 +257,9 @@ const Dashboard = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20">
+                      <Swords size={24} className="text-blue-500" />
+                    </div>
                     <span className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2">
                       {user.stats?.matchesPlayed || 0}
                     </span>
@@ -264,6 +267,9 @@ const Dashboard = () => {
                   </div>
 
                   <div className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 border border-accent/20">
+                      <Trophy size={24} className="text-accent" />
+                    </div>
                     <span className="text-3xl md:text-4xl font-extrabold text-accent mb-2">
                       {user.stats?.wins || 0}
                     </span>

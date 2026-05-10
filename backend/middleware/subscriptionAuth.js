@@ -56,10 +56,10 @@ export const requirePremium = (req, res, next) => {
 export const requireFullLanguageAccess = (req, res, next) => {
     if (req.user?.role === 'admin') return next();
     
-    const { language } = req.body;
+    const { language, isArena } = req.body;
     
-    // Free users only get javascript
-    if (!language || language === 'javascript') {
+    // Free users only get javascript, UNLESS they are in the Battle Arena
+    if (isArena || !language || language === 'javascript') {
         return next();
     }
 

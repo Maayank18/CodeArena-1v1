@@ -450,7 +450,7 @@ const EditorPage = () => {
             setExecutionStatus('running');
             for (const [index, tc] of publicCases.entries()) {
                 try {
-                    const response = await api.post('/run', { language, code, stdin: tc.input });
+                    const response = await api.post('/run', { language, code, stdin: tc.input, isArena: true });
                     const passed = (response.data.stdout ? response.data.stdout.trim() : "") === tc.output.trim();
                     newResults.push({ type: 'success', id: index, input: tc.input, expected: tc.output, actual: response.data.stdout, error: response.data.stderr, passed });
                 } catch (err) {
@@ -476,7 +476,7 @@ const EditorPage = () => {
         debounceTimerRef.current = setTimeout(() => { debounceTimerRef.current = null; }, 3000);
         try {
             setExecutionStatus('running');
-            const response = await api.post('/run/submit', { language, code, problemId: problem._id });
+            const response = await api.post('/run/submit', { language, code, problemId: problem._id, isArena: true });
             setRunResults(response.data.results);
             if (response.data.isCorrect) {
                 toast.success("✅ Correct! +10 Points", { icon: '🏆' });
