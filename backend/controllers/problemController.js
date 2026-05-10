@@ -125,6 +125,7 @@ export const getRandomProblem = async (req, res) => {
                     title: 1,
                     slug: 1,
                     description: 1,
+                    inputFormatDescription: 1,
                     difficulty: 1,
                     constraints: 1,
                     starterCode: 1,

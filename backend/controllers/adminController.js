@@ -563,6 +563,9 @@ const buildProblemPayload = (raw = {}, existingProblem = null) => {
         title: typeof merged.title === 'string' ? merged.title.trim() : merged.title,
         slug: typeof merged.slug === 'string' ? merged.slug.trim().toLowerCase() : merged.slug,
         description: merged.description,
+        inputFormatDescription: typeof merged.inputFormatDescription === 'string'
+            ? merged.inputFormatDescription
+            : undefined,
         difficulty: merged.difficulty || 'Easy',
         topics: sanitizeProblemTopics(merged.topics),
         type,
@@ -573,7 +576,14 @@ const buildProblemPayload = (raw = {}, existingProblem = null) => {
         memoryLimit: Number(merged.memoryLimit) > 0 ? Number(merged.memoryLimit) : 512,
         goldenSolution: merged.goldenSolution,
         starterCode: merged.starterCode && typeof merged.starterCode === 'object' ? merged.starterCode : {},
-        testCases: Array.isArray(merged.testCases) ? merged.testCases : [],
+        testCases: Array.isArray(merged.testCases)
+            ? merged.testCases.map((testCase) => ({
+                input: testCase?.input,
+                displayInput: typeof testCase?.displayInput === 'string' ? testCase.displayInput : undefined,
+                output: testCase?.output,
+                isPublic: Boolean(testCase?.isPublic),
+            }))
+            : [],
     };
 };
 
@@ -924,7 +934,7 @@ export const getAllProblems = async (req, res) => {
         }
 
         const problems = await Problem.find(filter)
-            .select('title slug difficulty type topics campaignRegion campaignNodeId constraints testCases goldenSolution timeLimit memoryLimit starterCode createdAt')
+            .select('title slug description inputFormatDescription difficulty type topics campaignRegion campaignNodeId constraints testCases goldenSolution timeLimit memoryLimit starterCode createdAt')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -1006,6 +1016,7 @@ export const updateProblem = async (req, res) => {
             $set: {
                 title: normalizedPayload.title,
                 description: normalizedPayload.description,
+                inputFormatDescription: normalizedPayload.inputFormatDescription,
                 difficulty: normalizedPayload.difficulty,
                 topics: normalizedPayload.topics,
                 type: normalizedPayload.type,

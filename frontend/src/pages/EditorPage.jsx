@@ -14,6 +14,7 @@ import api from '../api.js';
 import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap, Sun, Moon } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
+import SimpleMarkdown from '../components/SimpleMarkdown';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -675,10 +676,30 @@ const EditorPage = () => {
                         {problem && (
                             <div className="space-y-6 pb-6">
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">{problem.difficulty}</span>
-                                <div><h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Description</h3><div className={`${isDark ? 'text-gray-300 prose prose-invert' : 'text-slate-700 prose'} prose-sm max-w-none`} dangerouslySetInnerHTML={{ __html: problem.description.replace(/\n/g, '<br/>') }} /></div>
+                                <div>
+                                    <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Description</h3>
+                                    <SimpleMarkdown
+                                        content={problem.description}
+                                        className={`${isDark ? 'text-gray-300 prose prose-invert prose-headings:text-white prose-strong:text-white prose-code:text-accent' : 'text-slate-700 prose prose-headings:text-slate-900 prose-strong:text-slate-900 prose-code:text-emerald-700'} prose-sm max-w-none`}
+                                    />
+                                </div>
+                                {problem.inputFormatDescription && (
+                                    <div>
+                                        <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Input Format</h3>
+                                        <SimpleMarkdown
+                                            content={problem.inputFormatDescription}
+                                            className={`${isDark ? 'text-gray-300 prose prose-invert prose-headings:text-white prose-strong:text-white prose-code:text-accent' : 'text-slate-700 prose prose-headings:text-slate-900 prose-strong:text-slate-900 prose-code:text-emerald-700'} prose-sm max-w-none`}
+                                        />
+                                    </div>
+                                )}
                                 {problem.testCases?.filter(tc => tc.isPublic).map((tc, i) => (
                                     <div key={i} className={`p-3 rounded border ${isDark ? 'bg-[#1e1e1e] border-[#3e3e42]' : 'bg-white border-stone-300'}`}>
-                                        <div className="mb-2"><span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Input</span><code className={`block p-2 rounded font-mono text-xs whitespace-pre-wrap ${isDark ? 'bg-[#2d2d2d] text-gray-300' : 'bg-stone-100 text-slate-700'}`}>{tc.input}</code></div>
+                                        <div className="mb-2">
+                                            <span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Input</span>
+                                            <pre className={`overflow-x-auto whitespace-pre-wrap rounded-md p-3 font-mono text-sm ${isDark ? 'bg-white/5 text-gray-200' : 'bg-slate-100 text-slate-700'}`}>
+                                                <code>{tc.displayInput ? tc.displayInput : tc.input}</code>
+                                            </pre>
+                                        </div>
                                         <div><span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Output</span><code className={`block p-2 rounded font-mono text-xs whitespace-pre-wrap ${isDark ? 'bg-[#2d2d2d] text-green-400' : 'bg-stone-100 text-emerald-600'}`}>{tc.output}</code></div>
                                     </div>
                                 ))}

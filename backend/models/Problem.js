@@ -20,6 +20,9 @@ const problemSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    inputFormatDescription: {
+        type: String
+    },
     difficulty: {
         type: String,
         enum: ['Easy', 'Medium', 'Hard'],
@@ -135,6 +138,9 @@ public class Main {
         input: {
             type: String,
             required: true
+        },
+        displayInput: {
+            type: String
         },
         output: {
             type: String,

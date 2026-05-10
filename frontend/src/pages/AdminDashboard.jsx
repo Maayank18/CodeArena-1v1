@@ -1738,6 +1738,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
         title:           problem?.title || '',
         slug:            problem?.slug  || '',
         description:     problem?.description || '',
+        inputFormatDescription: problem?.inputFormatDescription || '',
         difficulty:      problem?.difficulty  || 'Easy',
         type:            problem?.type || initialType,
         campaignRegion:  problem?.campaignRegion || '',
@@ -1752,7 +1753,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
             cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
             java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
         },
-        testCases: problem?.testCases || [{ input:'', output:'', isPublic:true }],
+        testCases: problem?.testCases || [{ input:'', displayInput:'', output:'', isPublic:true }],
         topics: problem?.topics || [],
     });
 
@@ -1812,6 +1813,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 title: formData.title,
                 slug: formData.slug,
                 description: formData.description,
+                inputFormatDescription: formData.inputFormatDescription,
                 difficulty: formData.difficulty,
                 type: resolvedProblemType,
                 campaignRegion: resolvedProblemType === 'campaign' ? Number(formData.campaignRegion) : undefined,
@@ -1821,7 +1823,12 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 memoryLimit: formData.memoryLimit,
                 goldenSolution: formData.goldenSolution,
                 starterCode: formData.starterCode,
-                testCases: formData.testCases,
+                testCases: formData.testCases.map((testCase) => ({
+                    input: testCase.input,
+                    displayInput: testCase.displayInput || '',
+                    output: testCase.output,
+                    isPublic: Boolean(testCase.isPublic),
+                })),
                 topics: formData.topics,
             };
             if (isEditing) {
@@ -1938,6 +1945,17 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                             placeholder="Describe the problem clearly with examples..."/>
                     </div>
 
+                    <div>
+                        <label className="block text-sm font-semibold mb-1.5 text-gray-300">Input Format Details</label>
+                        <p className="text-xs text-gray-600 mb-2">Supports markdown. Explain exactly how users should read raw stdin, for example: Line 1 contains N, Line 2 contains the array, Line 3 contains the target.</p>
+                        <textarea
+                            value={formData.inputFormatDescription}
+                            onChange={e => set('inputFormatDescription', e.target.value)}
+                            className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 min-h-[120px] transition-all resize-y"
+                            placeholder={"## Input Format\n- Line 1 contains N\n- Line 2 contains the array elements\n- Line 3 contains the target value"}
+                        />
+                    </div>
+
                     <div className="grid grid-cols-3 gap-4">
                         {[
                             { label:'Difficulty', field:'difficulty', type:'select', options:['Easy','Medium','Hard'] },
@@ -2018,7 +2036,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <label className="text-sm font-semibold text-gray-300">Test Cases <span className="text-red-400">*</span></label>
-                            <button type="button" onClick={()=>set('testCases',[...formData.testCases,{input:'',output:'',isPublic:false}])}
+                            <button type="button" onClick={()=>set('testCases',[...formData.testCases,{input:'',displayInput:'',output:'',isPublic:false}])}
                                 className="text-xs px-3 py-1 bg-accent text-black rounded-lg hover:bg-accent/80 font-bold transition-all">+ Add Test Case</button>
                         </div>
                         <div className="space-y-3">
@@ -2047,6 +2065,16 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                                                     placeholder={field === 'input' ? '5 3' : '8'} required/>
                                             </div>
                                         ))}
+                                    </div>
+                                    <div className="mt-3">
+                                        <label className="block text-xs text-gray-600 mb-1">Visual Input (For Users)</label>
+                                        <textarea
+                                            value={tc.displayInput || ''}
+                                            onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],displayInput:e.target.value};set('testCases',nt);}}
+                                            className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[80px] resize-y transition-all"
+                                            placeholder={'nums = 2 3 4 5 6\ntarget = 9'}
+                                        />
+                                        <p className="mt-1 text-[11px] text-gray-600">Optional. This is shown in the battle room UI while raw input still powers code execution.</p>
                                     </div>
                                 </div>
                             ))}

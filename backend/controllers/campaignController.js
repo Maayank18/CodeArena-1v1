@@ -337,7 +337,7 @@ export const submitCampaignSolution = async (req, res) => {
         ensureEntryNodesUnlocked(progress, entryNodeIds);
 
         const node = await Problem.findOne({ campaignNodeId: nodeId, type: 'campaign' })
-            .select('title slug description difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds goldenSolution topics');
+            .select('title slug description inputFormatDescription difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds goldenSolution topics');
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
