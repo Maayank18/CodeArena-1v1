@@ -135,6 +135,11 @@ const EditorPage = () => {
     const username = location.state?.username ?? storedUser?.username ?? '';
     const joinToken = location.state?.joinToken ?? storedCustomJoin?.joinToken ?? '';
     const isValidRoomId = typeof roomId === 'string' && roomId.trim().length >= 3;
+
+    // RBAC Logic
+    const isAdmin = storedUser?.role === 'admin';
+    const isPremiumTier = ['plus', 'pro', 'premium'].includes(storedUser?.subscriptionPlan?.toLowerCase());
+    const hasFullLanguageAccess = isAdmin || isPremiumTier;
     
     // UI State
     const [clients, setClients] = useState([]);
@@ -523,8 +528,15 @@ const EditorPage = () => {
                     {mySide === side && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
                 </div>
                 {mySide === side && (
-                    <select className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                        <option value="cpp">C++</option><option value="java">Java</option><option value="python">Python</option><option value="javascript">JavaScript</option>
+                    <select 
+                        className="arena-lang-select bg-[#3e3e42] text-xs text-white p-1 rounded border border-[#555] outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
+                        value={language} 
+                        onChange={(e) => setLanguage(e.target.value)}
+                    >
+                        <option value="javascript">JavaScript</option>
+                        <option value="cpp" disabled={!hasFullLanguageAccess}>C++ {!hasFullLanguageAccess && '(Pro)'}</option>
+                        <option value="java" disabled={!hasFullLanguageAccess}>Java {!hasFullLanguageAccess && '(Pro)'}</option>
+                        <option value="python" disabled={!hasFullLanguageAccess}>Python {!hasFullLanguageAccess && '(Pro)'}</option>
                     </select>
                 )}
             </div>
@@ -635,11 +647,11 @@ const EditorPage = () => {
                                         <div><span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Output</span><code className="block bg-[#2d2d2d] p-2 rounded text-green-400 font-mono text-xs whitespace-pre-wrap">{tc.output}</code></div>
                                     </div>
                                 ))}
+                                {runResults && <div className="mt-6 border-t border-[#3e3e42] pt-4"><TestCaseResults results={runResults} /></div>}
                             </div>
                         )}
                     </div>
-                    <div className="arena-problem-footer bg-[#1e1e1e] border-t border-[#3e3e42] p-4 space-y-4">
-                        {runResults && <div className="max-h-40 overflow-y-auto mb-4"><TestCaseResults results={runResults} /></div>}
+                    <div className="arena-problem-footer bg-[#1e1e1e] border-t border-[#3e3e42] p-4 space-y-4 shrink-0">
                         <div className="flex items-center justify-between bg-[#252526] p-2 rounded border border-[#3e3e42]"><span className="text-[10px] text-gray-500 font-bold">ROOM: {roomId}</span><button onClick={copyRoomId} className="text-gray-400 hover:text-white"><Copy size={16} /></button></div>
                         <div className="flex gap-3">
                             <button onClick={runCode} disabled={isRunning} className="flex-1 py-3 rounded bg-white text-black font-bold hover:bg-gray-200 text-sm flex items-center justify-center gap-2 disabled:opacity-50"><Play size={16}/> Run</button>
