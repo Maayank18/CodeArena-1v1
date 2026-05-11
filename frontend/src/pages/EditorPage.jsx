@@ -693,14 +693,32 @@ const EditorPage = () => {
                                     </div>
                                 )}
                                 {problem.testCases?.filter(tc => tc.isPublic).map((tc, i) => (
-                                    <div key={i} className={`p-3 rounded border ${isDark ? 'bg-[#1e1e1e] border-[#3e3e42]' : 'bg-white border-stone-300'}`}>
-                                        <div className="mb-2">
-                                            <span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Input</span>
-                                            <pre className={`overflow-x-auto whitespace-pre-wrap rounded-md p-3 font-mono text-sm ${isDark ? 'bg-white/5 text-gray-200' : 'bg-slate-100 text-slate-700'}`}>
-                                                <code>{tc.displayInput ? tc.displayInput : tc.input}</code>
-                                            </pre>
+                                    <div key={i} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                        <div className={`px-4 py-2 border-b text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-white/5 border-white/5 text-gray-500' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                                            Example {i + 1}
                                         </div>
-                                        <div><span className={`text-[10px] font-bold uppercase block mb-1 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Output</span><code className={`block p-2 rounded font-mono text-xs whitespace-pre-wrap ${isDark ? 'bg-[#2d2d2d] text-green-400' : 'bg-stone-100 text-emerald-600'}`}>{tc.output}</code></div>
+                                        <div className="p-4 space-y-4">
+                                            <div>
+                                                <div className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Input</div>
+                                                <div className={`font-mono text-sm px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-emerald-400 border border-emerald-500/10' : 'bg-slate-50 text-emerald-700 border border-emerald-100'}`}>
+                                                    {tc.displayInput || tc.input}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Output</div>
+                                                <div className={`font-mono text-sm px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-blue-400 border border-blue-500/10' : 'bg-slate-50 text-blue-700 border border-blue-100'}`}>
+                                                    {tc.output}
+                                                </div>
+                                            </div>
+                                            {tc.explanation && (
+                                                <div>
+                                                    <div className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Explanation</div>
+                                                    <div className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-slate-600'}`}>
+                                                        {tc.explanation}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                                 {runResults && <div className={`mt-6 pt-4 border-t ${isDark ? 'border-[#3e3e42]' : 'border-stone-300'}`}><TestCaseResults results={runResults} /></div>}

@@ -153,7 +153,7 @@ const ResultRow = ({ result, index }) => {
   );
 };
 
-const ProblemPanel = ({ node, existingBest }) => {
+const ProblemPanel = ({ node, existingBest, isDark }) => {
   const problem = node?.problemId;
   if (!problem) return null;
   const publicCases = (problem.testCases || []).filter(tc => tc.isPublic);
@@ -193,21 +193,33 @@ const ProblemPanel = ({ node, existingBest }) => {
         )}
         {publicCases.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-2">Examples (public)</p>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-3">Examples (public)</p>
             {publicCases.map((tc, i) => (
-              <div key={i} className="mb-3 bg-slate-100 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-800/50 rounded-xl overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-slate-200 dark:border-gray-800/40 bg-slate-50 dark:bg-gray-900/40">
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-wider">Example {i + 1}</span>
+              <div key={i} className={`mb-4 border rounded-xl overflow-hidden ${isDark ? 'bg-gray-900/30 border-gray-800/60' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <div className={`px-3 py-2 border-b text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-white/5 border-white/5 text-gray-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                  Example {i + 1}
                 </div>
-                <div className="p-3 space-y-2">
+                <div className="p-4 space-y-4">
                   <div>
-                    <p className="text-[10px] text-slate-400 dark:text-gray-700 font-bold mb-1">Input</p>
-                    <pre className="text-xs font-mono text-slate-700 dark:text-gray-300 bg-white dark:bg-black/30 px-2.5 py-1.5 rounded whitespace-pre-wrap break-all">{tc.displayInput || tc.input}</pre>
+                    <p className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Input</p>
+                    <div className={`font-mono text-[13px] px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-emerald-400 border border-emerald-500/10' : 'bg-slate-50 text-emerald-700 border border-emerald-100'}`}>
+                      {tc.displayInput || tc.input}
+                    </div>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 dark:text-gray-700 font-bold mb-1">Output</p>
-                    <pre className="text-xs font-mono text-emerald-600 dark:text-emerald-400 bg-white dark:bg-black/30 px-2.5 py-1.5 rounded whitespace-pre-wrap break-all">{tc.output}</pre>
+                    <p className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Output</p>
+                    <div className={`font-mono text-[13px] px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-blue-400 border border-blue-500/10' : 'bg-slate-50 text-blue-700 border border-blue-100'}`}>
+                      {tc.output}
+                    </div>
                   </div>
+                  {tc.explanation && (
+                    <div>
+                      <p className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Explanation</p>
+                      <div className={`text-[13px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-slate-600'}`}>
+                        {tc.explanation}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -581,7 +593,7 @@ const CampaignEditor = () => {
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col sm:flex-row">
         {mobileTab === 'problem' ? (
           <div className="flex-1 h-full sm:w-2/5 border-r border-slate-200 dark:border-gray-800/40">
-            <ProblemPanel node={node} existingBest={existingBest} />
+            <ProblemPanel node={node} existingBest={existingBest} isDark={isDark} />
           </div>
         ) : null}
         
@@ -600,19 +612,6 @@ const CampaignEditor = () => {
         <button onClick={() => setMobileTab('problem')} className={`flex-1 py-2.5 text-xs font-bold border-b-2 ${mobileTab === 'problem' ? 'border-cyan-500 text-cyan-500' : 'border-transparent'}`}>Problem</button>
         <button onClick={() => setMobileTab('editor')} className={`flex-1 py-2.5 text-xs font-bold border-b-2 ${mobileTab === 'editor' ? 'border-cyan-500 text-cyan-500' : 'border-transparent'}`}>Editor</button>
       </div>
-
-      {/* ... bottom of CampaignEditor.jsx
-      <SuccessModal
-        isOpen={showSuccess}
-        result={successResult}
-        // ? Pass the new progress data directly to the Map
-        onViewMap={() => navigate('/campaign', { state: { newProgress: successResult?.progress } })} 
-        onContinue={() => {
-          setShowSuccess(false);
-          setRunResults(null);
-          setShowResults(false);
-        }}
-      /> */}
 
       <SuccessModal
         isOpen={showSuccess}

@@ -1753,7 +1753,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
             cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
             java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
         },
-        testCases: problem?.testCases || [{ input:'', displayInput:'', output:'', isPublic:true }],
+        testCases: problem?.testCases || [{ input:'', displayInput:'', output:'', explanation:'', isPublic:true }],
         topics: problem?.topics || [],
     });
 
@@ -1827,6 +1827,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                     input: testCase.input,
                     displayInput: testCase.displayInput || '',
                     output: testCase.output,
+                    explanation: testCase.explanation || '',
                     isPublic: Boolean(testCase.isPublic),
                 })),
                 topics: formData.topics,
@@ -2071,10 +2072,20 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                                         <textarea
                                             value={tc.displayInput || ''}
                                             onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],displayInput:e.target.value};set('testCases',nt);}}
-                                            className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[80px] resize-y transition-all"
-                                            placeholder={'nums = 2 3 4 5 6\ntarget = 9'}
+                                            className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[60px] resize-y transition-all"
+                                            placeholder={'n = 4, nums = [2, 7, 11, 15], target = 9'}
                                         />
-                                        <p className="mt-1 text-[11px] text-gray-600">Optional. This is shown in the battle room UI while raw input still powers code execution.</p>
+                                        <p className="mt-1 text-[10px] text-gray-600 italic">Example: n = 4, nums = [2, 7, 11], target = 9</p>
+                                    </div>
+                                    <div className="mt-3">
+                                        <label className="block text-xs text-gray-600 mb-1">Explanation (Optional)</label>
+                                        <textarea
+                                            value={tc.explanation || ''}
+                                            onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],explanation:e.target.value};set('testCases',nt);}}
+                                            className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg text-xs focus:outline-none focus:border-accent/60 min-h-[80px] resize-y transition-all"
+                                            placeholder={'Because nums[0] + nums[1] == 9, we return [0, 1].'}
+                                        />
+                                        <p className="mt-1 text-[11px] text-gray-600">Explain why this output is produced. Supports plain text.</p>
                                     </div>
                                 </div>
                             ))}
