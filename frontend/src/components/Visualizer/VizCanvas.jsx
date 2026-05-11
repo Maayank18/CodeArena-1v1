@@ -11,6 +11,7 @@
 import React, { useMemo, memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Activity, Hash, AlertTriangle } from 'lucide-react';
+import { useThemeColors } from './renderers/useThemeColors';
 
 import ArrayViz            from './renderers/ArrayViz';
 import StackViz            from './renderers/StackViz';
@@ -61,6 +62,8 @@ function isAdjacencyList(obj) {
 // MAIN CANVAS
 // ─────────────────────────────────────────────────────────────────────────────
 const VizCanvas = memo(({ variables }) => {
+    const colors = useThemeColors();
+    const isLight = colors.bgPrimary === '#fafaf9';
 
     const { complexVars, simpleVars, pointers, isEmpty } = useMemo(() => {
         if (!variables) return { complexVars:[], simpleVars:[], pointers:{}, isEmpty:true };
@@ -109,10 +112,10 @@ const VizCanvas = memo(({ variables }) => {
     return (
         <div
             className="viz-canvas flex flex-col h-full w-full overflow-hidden relative"
-            style={{ background: 'var(--vz-bg-primary, #0d1117)' }}
+            style={{ background: isLight ? 'linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%)' : 'var(--vz-bg-primary, #0d1117)' }}
         >
             {/* Complex vars (arrays, trees, linked lists, graphs…) */}
-            <div className="flex-1 overflow-auto" style={{ padding: 'clamp(12px, 3vw, 32px)' }}>
+            <div className="flex-1 overflow-auto relative z-10" style={{ padding: 'clamp(12px, 3vw, 32px)' }}>
                 <div className="flex flex-wrap justify-center items-start gap-8 content-start min-h-full">
                     <AnimatePresence mode="popLayout">
                         {complexVars.map(([name, value]) => (
@@ -146,7 +149,7 @@ const VizCanvas = memo(({ variables }) => {
                 <div className="w-full shrink-0 z-30"
                     style={{
                         borderTop:  '1px solid var(--vz-border, #30363d)',
-                        background: 'var(--vz-bg-secondary, #161b22)',
+                        background: isLight ? 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.98))' : 'var(--vz-bg-secondary, #161b22)',
                         padding:    'clamp(8px, 2vw, 14px) clamp(12px, 3vw, 24px)',
                     }}>
                     <div className="flex flex-wrap gap-2 justify-center items-center">

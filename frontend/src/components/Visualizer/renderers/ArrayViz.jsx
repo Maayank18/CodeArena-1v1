@@ -1,38 +1,52 @@
 import React, { useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useThemeColors } from './useThemeColors';
 
 const ArrayViz = memo(({ data, pointers }) => {
-    
-    // 🧠 OPTIMIZED: Memoize data preparation to prevent re-calc on every frame
-    // Handles duplicate values naturally by assigning sequential IDs (e.g., 5_1, 5_2)
+    const colors = useThemeColors();
+
     const uniqueData = useMemo(() => {
         if (!Array.isArray(data)) return [];
-        
+
         const counts = new Map();
         return data.map((val) => {
-            // Safe key generation for null/undefined/mixed types
             const safeKey = val === null ? 'null' : (val === undefined ? 'undefined' : String(val));
             const count = (counts.get(safeKey) || 0) + 1;
             counts.set(safeKey, count);
-            
-            return { 
-                val, 
-                // Stable ID ensures Framer Motion knows which block moved where
-                id: `${safeKey}_${count}` 
+
+            return {
+                val,
+                id: `${safeKey}_${count}`,
             };
         });
     }, [data]);
 
+    const isLight = colors.bgPrimary === '#fafaf9';
+
     return (
-        <div className="relative py-10 px-6 border border-gray-800 rounded-xl bg-[#0d1117] overflow-x-auto custom-scrollbar flex flex-col items-center">
-            
-            {/* Array Container */}
-            <div className="flex items-end justify-center min-w-max gap-3 pb-2"> 
-                <AnimatePresence mode='popLayout'>
+        <div
+            className="relative py-10 px-6 overflow-x-auto custom-scrollbar flex flex-col items-center rounded-[28px] border"
+            style={{
+                borderColor: colors.border,
+                background: `linear-gradient(180deg, ${colors.bgSecondary} 0%, ${colors.bgPrimary} 100%)`,
+                boxShadow: isLight
+                    ? '0 20px 46px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.85)'
+                    : '0 18px 40px rgba(0,0,0,0.28)',
+            }}
+        >
+            <div
+                className="absolute inset-x-8 top-4 h-16 rounded-full pointer-events-none"
+                style={{
+                    background: isLight
+                        ? 'radial-gradient(circle, rgba(96,165,250,0.14), transparent 70%)'
+                        : 'radial-gradient(circle, rgba(88,166,255,0.12), transparent 70%)',
+                    filter: 'blur(12px)',
+                }}
+            />
+
+            <div className="flex items-end justify-center min-w-max gap-3 pb-2">
+                <AnimatePresence mode="popLayout">
                     {uniqueData.map(({ val, id }, idx) => {
-                        
-                        // 1. POINTER LOOKUP
-                        // Find all variables (i, j, left, right) pointing to this index
                         const activePointers = Object.entries(pointers || {})
                             .filter(([, index]) => index === idx)
                             .map(([name]) => name);
@@ -41,52 +55,57 @@ const ArrayViz = memo(({ data, pointers }) => {
 
                         return (
                             <motion.div
-                                layout // 🚀 Enable Magic Motion for Swapping
-                                key={id} // Crucial: Track by content ID, not Index
+                                layout
+                                key={id}
                                 initial={{ opacity: 0, scale: 0.8, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-                                transition={{ 
-                                    type: "spring", 
-                                    stiffness: 350, 
+                                transition={{
+                                    type: 'spring',
+                                    stiffness: 350,
                                     damping: 25,
-                                    mass: 1
+                                    mass: 1,
                                 }}
                                 className="relative flex flex-col items-center"
-                                style={{ 
-                                    zIndex: isActive ? 10 : 0 // Ensure moving items fly ABOVE others
-                                }}
+                                style={{ zIndex: isActive ? 10 : 0 }}
                             >
-                                {/* --- THE VALUE BOX --- */}
                                 <motion.div
                                     layout
-                                    animate={{ 
-                                        backgroundColor: isActive ? 'rgba(245, 158, 11, 0.15)' : '#161b22',
-                                        borderColor: isActive ? '#f59e0b' : '#30363d',
-                                        boxShadow: isActive ? '0 0 15px rgba(245, 158, 11, 0.2)' : 'none',
-                                        y: isActive ? -8 : 0, // Lift active items visually
+                                    animate={{
+                                        backgroundColor: isActive ? colors.activeCell : colors.bgCard,
+                                        borderColor: isActive ? colors.activeBorder : colors.borderStrong,
+                                        boxShadow: isActive
+                                            ? (isLight
+                                                ? '0 14px 30px rgba(245, 158, 11, 0.16), 0 0 0 4px rgba(245, 158, 11, 0.08)'
+                                                : '0 0 15px rgba(245, 158, 11, 0.2)')
+                                            : (isLight ? '0 10px 24px rgba(15, 23, 42, 0.08)' : 'none'),
+                                        y: isActive ? -8 : 0,
                                     }}
-                                    className={`
-                                        w-14 h-14 flex items-center justify-center 
-                                        border-2 rounded-xl relative overflow-hidden backdrop-blur-sm
-                                        transition-colors duration-200
-                                    `}
+                                    className="w-14 h-14 flex items-center justify-center border-2 rounded-xl relative overflow-hidden backdrop-blur-sm transition-colors duration-200"
                                 >
-                                    <span className={`
-                                        text-lg font-mono font-bold z-10 
-                                        ${isActive ? 'text-amber-400' : 'text-gray-300'}
-                                    `}>
+                                    <div
+                                        className="absolute inset-x-2 top-1 h-3 rounded-full opacity-50"
+                                        style={{
+                                            background: isLight
+                                                ? 'linear-gradient(180deg, rgba(255,255,255,0.95), transparent)'
+                                                : 'linear-gradient(180deg, rgba(255,255,255,0.10), transparent)',
+                                        }}
+                                    />
+                                    <span
+                                        className="text-lg font-mono font-bold z-10"
+                                        style={{ color: isActive ? colors.activeText : colors.textPrimary }}
+                                    >
                                         {val === null ? '∅' : String(val)}
                                     </span>
                                 </motion.div>
 
-                                {/* --- INDEX LABEL --- */}
-                                {/* Static absolute position relative to the column */}
-                                <div className="mt-3 text-[10px] font-mono text-gray-600 font-bold select-none">
+                                <div
+                                    className="mt-3 text-[10px] font-mono font-bold select-none"
+                                    style={{ color: colors.textMuted }}
+                                >
                                     {idx}
                                 </div>
 
-                                {/* --- POINTER ARROWS --- */}
                                 <AnimatePresence>
                                     {isActive && (
                                         <motion.div
@@ -95,24 +114,28 @@ const ArrayViz = memo(({ data, pointers }) => {
                                             exit={{ opacity: 0, y: -5 }}
                                             className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
                                         >
-                                            {/* Arrow SVG */}
-                                            <svg 
-                                                width="14" height="14" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none" 
-                                                stroke="#f59e0b" 
-                                                strokeWidth="3" 
-                                                strokeLinecap="round" 
+                                            <svg
+                                                width="14"
+                                                height="14"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="#f59e0b"
+                                                strokeWidth="3"
+                                                strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 className="mb-1 drop-shadow-md"
                                             >
-                                                <path d="M12 19V5M5 12l7-7 7 7"/>
+                                                <path d="M12 19V5M5 12l7-7 7 7" />
                                             </svg>
-                                            
-                                            {/* Pointer Badge (e.g., "i, j") */}
-                                            <motion.div 
+
+                                            <motion.div
                                                 layoutId={`pointer-${id}`}
-                                                className="bg-amber-500 text-[#0d1117] text-[10px] font-bold px-2 py-0.5 rounded shadow-lg border border-amber-400 whitespace-nowrap"
+                                                className="text-[10px] font-bold px-2 py-0.5 rounded shadow-lg border whitespace-nowrap"
+                                                style={{
+                                                    background: '#f59e0b',
+                                                    color: colors.bgPrimary,
+                                                    borderColor: '#fbbf24',
+                                                }}
                                             >
                                                 {activePointers.join(', ')}
                                             </motion.div>
@@ -129,4 +152,3 @@ const ArrayViz = memo(({ data, pointers }) => {
 });
 
 export default ArrayViz;
-// V 1.5
