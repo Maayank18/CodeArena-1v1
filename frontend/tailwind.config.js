@@ -1,3 +1,5 @@
+import typography from '@tailwindcss/typography';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   // Legacy Bright Theme Config (for quick reversal)
@@ -19,5 +21,5 @@ export default {
     },
   },
 
-  plugins: [],
+  plugins: [typography],
 };

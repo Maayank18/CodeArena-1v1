@@ -17,6 +17,7 @@ import SuccessModal from '../components/Campaign/SuccessModal';
 import SagePanel    from '../components/Campaign/SagePanel';
 import StarDisplay  from '../components/Campaign/StarDisplay';
 import CampaignTeaserModal from '../components/Campaign/CampaignTeaserModal';
+import ProblemMarkdown from '../components/ProblemMarkdown';
 import {
   getStoredCampaignUser,
   hasPremiumCampaignAccess,
@@ -38,12 +39,6 @@ const LANG_OPTIONS = [
   { value: 'cpp',        label: 'C++'        },
   { value: 'java',       label: 'Java'       },
 ];
-
-const DIFF_BADGE = {
-  Easy:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-  Medium: 'bg-amber-500/10   text-amber-400   border-amber-500/25',
-  Hard:   'bg-red-500/10     text-red-400     border-red-500/25',
-};
 
 const fmt = (s) =>
   `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -156,6 +151,44 @@ const ResultRow = ({ result, index }) => {
 const ProblemPanel = ({ node, existingBest, isDark }) => {
   const problem = node?.problemId;
   if (!problem) return null;
+  return (
+    <div className="h-full overflow-y-auto bg-white dark:bg-[#07090e] transition-colors">
+      <div className="px-4 sm:px-5 py-5 text-[13px]">
+        <ProblemMarkdown
+          problem={problem}
+          titlePrefix={node?.nodeOrder}
+          isDark={isDark}
+          prelude={
+            <div className="flex flex-wrap items-center gap-2">
+              {node?.nodeType === 'boss' && (
+                <span className="rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-400">
+                  Boss
+                </span>
+              )}
+              {problem.timeLimit && (
+                <span className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-gray-600">
+                  <Clock size={10} />
+                  {problem.timeLimit}ms limit
+                </span>
+              )}
+              {existingBest && (
+                <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 dark:border-amber-800/30 dark:bg-amber-950/20">
+                  <StarDisplay stars={existingBest.starsAwarded} total={3} size="sm" />
+                  <span className="flex-1 text-xs text-amber-600 dark:text-amber-400/80">Your best</span>
+                  {existingBest.bestTimeMs && (
+                    <span className="text-xs font-mono text-slate-400 dark:text-gray-600">
+                      {existingBest.bestTimeMs}ms avg
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          }
+        />
+        <div className="h-6" />
+      </div>
+    </div>
+  );
   const publicCases = (problem.testCases || []).filter(tc => tc.isPublic);
   return (
     <div className="h-full overflow-y-auto bg-white dark:bg-[#07090e] transition-colors">

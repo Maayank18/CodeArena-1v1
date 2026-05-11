@@ -14,7 +14,7 @@ import api from '../api.js';
 import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap, Sun, Moon } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
-import SimpleMarkdown from '../components/SimpleMarkdown';
+import ProblemMarkdown from '../components/ProblemMarkdown';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -674,53 +674,12 @@ const EditorPage = () => {
                     </div>
                     <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
                         {problem && (
-                            <div className="space-y-6 pb-6">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">{problem.difficulty}</span>
-                                <div>
-                                    <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Description</h3>
-                                    <SimpleMarkdown
-                                        content={problem.description}
-                                        className={`${isDark ? 'text-gray-300 prose prose-invert prose-headings:text-white prose-strong:text-white prose-code:text-accent' : 'text-slate-700 prose prose-headings:text-slate-900 prose-strong:text-slate-900 prose-code:text-emerald-700'} prose-sm max-w-none`}
-                                    />
-                                </div>
-                                {problem.inputFormatDescription && (
-                                    <div>
-                                        <h3 className="text-accent font-bold mb-2 text-xs uppercase tracking-wider">Input Format</h3>
-                                        <SimpleMarkdown
-                                            content={problem.inputFormatDescription}
-                                            className={`${isDark ? 'text-gray-300 prose prose-invert prose-headings:text-white prose-strong:text-white prose-code:text-accent' : 'text-slate-700 prose prose-headings:text-slate-900 prose-strong:text-slate-900 prose-code:text-emerald-700'} prose-sm max-w-none`}
-                                        />
-                                    </div>
-                                )}
-                                {problem.testCases?.filter(tc => tc.isPublic).map((tc, i) => (
-                                    <div key={i} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-slate-200 shadow-sm'}`}>
-                                        <div className={`px-4 py-2 border-b text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-white/5 border-white/5 text-gray-500' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
-                                            Example {i + 1}
-                                        </div>
-                                        <div className="p-4 space-y-4">
-                                            <div>
-                                                <div className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Input</div>
-                                                <div className={`font-mono text-sm px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-emerald-400 border border-emerald-500/10' : 'bg-slate-50 text-emerald-700 border border-emerald-100'}`}>
-                                                    {tc.displayInput || tc.input}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Output</div>
-                                                <div className={`font-mono text-sm px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-blue-400 border border-blue-500/10' : 'bg-slate-50 text-blue-700 border border-blue-100'}`}>
-                                                    {tc.output}
-                                                </div>
-                                            </div>
-                                            {tc.explanation && (
-                                                <div>
-                                                    <div className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Explanation</div>
-                                                    <div className={`text-sm leading-relaxed ${isDark ? 'text-gray-300' : 'text-slate-600'}`}>
-                                                        {tc.explanation}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="pb-6">
+                                <ProblemMarkdown
+                                    problem={problem}
+                                    titlePrefix={round}
+                                    isDark={isDark}
+                                />
                                 {runResults && <div className={`mt-6 pt-4 border-t ${isDark ? 'border-[#3e3e42]' : 'border-stone-300'}`}><TestCaseResults results={runResults} /></div>}
                             </div>
                         )}
