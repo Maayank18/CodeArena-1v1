@@ -55,7 +55,55 @@ const getExampleInput = (testCase = {}) => {
   }
 
   if (typeof testCase.input === 'string') {
-    return testCase.input.replace(/\r\n/g, '\n').trim();
+    const raw = testCase.input.replace(/\r\n/g, '\n').trim();
+
+    // Try to detect common competitive-programming patterns and pretty-print them.
+    // Examples handled:
+    // - "4 1 2 3 4"           -> nums = [1, 2, 3, 4]
+    // - "4 1 2 3 4 9"         -> nums = [1, 2, 3, 4], target = 9
+    // - "4\n1 2 3 4"         -> nums = [1, 2, 3, 4]
+    // - "4\n1 2 3 4\n9"     -> nums = [1, 2, 3, 4], target = 9
+    try {
+      const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // If there are multiple lines, join appropriately for token parsing
+      let tokens = [];
+      if (lines.length === 1) {
+        tokens = lines[0].split(/\s+/);
+      } else {
+        // common pattern: first line = n, second line = array, optional third line = target
+        tokens = lines.flatMap(l => l.split(/\s+/));
+      }
+
+      const nums = tokens.map(t => (t === '-' ? t : Number(t))); // preserve '-' if any
+      const allNumericLike = nums.every(n => typeof n === 'number' && !Number.isNaN(n));
+
+      if (tokens.length >= 2 && allNumericLike) {
+        const first = Number(tokens[0]);
+        if (Number.isInteger(first) && tokens.length === first + 1) {
+          const arr = tokens.slice(1).map(x => Number(x));
+          return `nums = [${arr.join(', ')}]`;
+        }
+
+        if (Number.isInteger(first) && tokens.length >= first + 2) {
+          const arr = tokens.slice(1, 1 + first).map(x => Number(x));
+          const rest = tokens.slice(1 + first);
+          if (rest.length === 1 && !Number.isNaN(Number(rest[0]))) {
+            return `nums = [${arr.join(', ')}], target = ${Number(rest[0])}`;
+          }
+        }
+      }
+
+      // Fallback: if single-line space-separated numeric list (no leading size), show as array
+      if (lines.length === 1 && tokens.length > 1 && tokens.every(t => !Number.isNaN(Number(t)))) {
+        const arr = tokens.map(t => Number(t));
+        return `nums = [${arr.join(', ')}]`;
+      }
+
+      return raw;
+    } catch (err) {
+      return raw;
+    }
   }
 
   return '';
