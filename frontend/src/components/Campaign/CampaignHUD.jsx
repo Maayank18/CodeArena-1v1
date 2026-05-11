@@ -29,9 +29,9 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
     const solved = progress?.completedNodes?.length ?? 0;
 
     return (
-        <div className="flex items-center justify-between px-4 sm:px-5 py-2 bg-white/80 dark:bg-[#07090f]/95 border-b border-gray-200 dark:border-gray-800/40 backdrop-blur-md shrink-0 z-20 transition-colors duration-300">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-3 py-2.5 bg-white/80 dark:bg-[#07090f]/95 border-b border-gray-200 dark:border-gray-800/40 backdrop-blur-md shrink-0 z-20 transition-colors duration-300 sm:px-5 sm:py-2">
             {/* Brand */}
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
                 <span className="text-xl select-none">🗺️</span>
                 <div>
                     <h1 className="font-black text-xs text-gray-800 dark:text-white tracking-tight leading-none uppercase">Campaign</h1>
@@ -41,7 +41,7 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-4 sm:gap-5">
+            <div className="order-3 flex w-full items-center justify-between gap-3 overflow-x-auto pt-0.5 sm:order-2 sm:w-auto sm:justify-start sm:gap-5 sm:pt-0">
                 <Stat icon={Star}   value={stars}  label="stars"  color="text-amber-400" />
                 <Stat icon={Zap}    value={kp}     label="KP"     color="text-cyan-400"  />
                 {streak > 0 && <Stat icon={Flame} value={streak} label="streak" color="text-orange-400" />}
@@ -53,11 +53,11 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
             </div>
 
             {/* Right actions — children slot + Skill Tree button */}
-            <div className="flex items-center gap-2">
+            <div className="order-2 flex items-center gap-2 sm:order-3">
                 {children}
                 <button
                     onClick={onOpenSkillTree}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-900/20 hover:bg-purple-900/40 border border-purple-700/25 hover:border-purple-600/45 text-purple-300 hover:text-purple-200 rounded-lg text-xs font-bold transition-all"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-900/20 hover:bg-purple-900/40 border border-purple-700/25 hover:border-purple-600/45 text-purple-300 hover:text-purple-200 rounded-lg text-xs font-bold transition-all sm:px-3"
                 >
                     <ShoppingBag size={13} />
                     <span className="hidden sm:inline">Skill Tree</span>

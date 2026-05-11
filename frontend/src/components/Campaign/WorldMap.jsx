@@ -487,6 +487,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
   const { isDark } = useTheme();
   const scrollRef = useRef(null);
   const { width: viewportWidth, height: viewportHeight } = useRafViewport();
+  const [isZoneListOpen, setIsZoneListOpen] = useState(false);
 
   const allNodes = useMemo(
     () => (nodes.length > 0 || !useMockData ? nodes : generateMockWorld()),
@@ -618,12 +619,20 @@ const WorldMapScene = React.memo(function WorldMapScene({
   const canvasH = CAMPAIGN_REGIONS.length * (ZONE_H + ZONE_GAP);
 
   const mapScale = useMemo(() => {
-    const safePadding = viewportWidth < 640 ? 24 : viewportWidth < 1024 ? 48 : 80;
+    const safePadding = viewportWidth < 640 ? 20 : viewportWidth < 1024 ? 48 : 80;
     const widthLimited = (viewportWidth - safePadding) / ZONE_W;
     const heightLimited = viewportHeight < 720 ? 0.92 : viewportHeight < 900 ? 0.98 : 1;
-    const mobileBoost = viewportWidth < 640 ? 0.86 : 1;
+    const baseScale = Math.min(1, widthLimited, heightLimited);
 
-    return Math.max(0.72, Math.min(1, widthLimited, heightLimited) * mobileBoost);
+    if (viewportWidth < 400) {
+      return Math.max(0.44, baseScale);
+    }
+
+    if (viewportWidth < 640) {
+      return Math.max(0.5, Math.min(baseScale, 0.64));
+    }
+
+    return Math.max(0.72, baseScale);
   }, [viewportHeight, viewportWidth]);
 
   const scaledCanvasHeight = canvasH * mapScale;
@@ -642,7 +651,19 @@ const WorldMapScene = React.memo(function WorldMapScene({
     });
 
     scrollToOffset(zoneTops[Math.max(0, firstAvailableZoneIndex)] ?? 0);
+    setIsZoneListOpen(false);
   }, [displayNodesByZone, nodeStateById, scrollToOffset, zoneTops]);
+
+  const handleJumpToZone = useCallback((top) => {
+    scrollToOffset(top);
+    setIsZoneListOpen(false);
+  }, [scrollToOffset]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsZoneListOpen(false);
+    }
+  }, [isMobile]);
 
   const bridgeFrom = useMemo(() => getLocalNodePos(14), []);
   const bridgeTo = useMemo(() => getLocalNodePos(0), []);
@@ -768,29 +789,71 @@ const WorldMapScene = React.memo(function WorldMapScene({
         </div>
       </div>
 
-      <div className="absolute top-3 right-3 z-50 pointer-events-none w-[min(44vw,240px)] sm:w-auto">
-        <div className="bg-white/90 dark:bg-[#060810]/85 border border-gray-200 dark:border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60 transition-all shadow-lg dark:shadow-none">
-          <p className="text-[9px] text-slate-400 dark:text-gray-600 font-bold uppercase tracking-widest mb-1.5">
-            Zones
-          </p>
-          {CAMPAIGN_REGIONS.map((zone, index) => {
-            const zoneNodes = displayNodesByZone[zone.key] ?? [];
-            const done = zoneNodes.filter((node) => completedSet.has(node.nodeId)).length;
-            const total = zoneNodes.length || 15;
+      <div className="absolute top-3 right-3 z-50 pointer-events-none flex flex-col items-end gap-2 w-[min(46vw,248px)] sm:w-auto">
+        {isMobile ? (
+          <>
+            <button
+              onClick={() => setIsZoneListOpen((open) => !open)}
+              className="pointer-events-auto rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] backdrop-blur-md transition-all"
+              style={{
+                background: isDark ? 'rgba(6,8,16,0.88)' : 'rgba(255,255,255,0.92)',
+                borderColor: isDark ? 'rgba(71,85,105,0.42)' : 'rgba(148,163,184,0.28)',
+                color: isDark ? '#cbd5e1' : '#334155',
+                boxShadow: '0 10px 28px rgba(15, 23, 42, 0.18)',
+              }}
+            >
+              {isZoneListOpen ? 'Hide Zones' : 'Zones'}
+            </button>
 
-            return (
-              <ZoneProgressButton
-                key={zone.key}
-                zone={{ ...zone, index }}
-                done={done}
-                total={total}
-                zoneTop={zoneTops[index]}
-                onJump={scrollToOffset}
-                isDark={isDark}
-              />
-            );
-          })}
-        </div>
+            {isZoneListOpen ? (
+              <div className="pointer-events-auto w-full bg-white/92 dark:bg-[#060810]/90 border border-gray-200 dark:border-gray-800/40 rounded-2xl px-2.5 py-2 space-y-1.5 max-h-[38dvh] overflow-auto backdrop-blur-md shadow-lg dark:shadow-none">
+                <p className="text-[9px] text-slate-400 dark:text-gray-600 font-bold uppercase tracking-widest mb-1">
+                  Zones
+                </p>
+                {CAMPAIGN_REGIONS.map((zone, index) => {
+                  const zoneNodes = displayNodesByZone[zone.key] ?? [];
+                  const done = zoneNodes.filter((node) => completedSet.has(node.nodeId)).length;
+                  const total = zoneNodes.length || 15;
+
+                  return (
+                    <ZoneProgressButton
+                      key={zone.key}
+                      zone={{ ...zone, index }}
+                      done={done}
+                      total={total}
+                      zoneTop={zoneTops[index]}
+                      onJump={handleJumpToZone}
+                      isDark={isDark}
+                    />
+                  );
+                })}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div className="bg-white/90 dark:bg-[#060810]/85 border border-gray-200 dark:border-gray-800/40 rounded-xl px-2.5 py-2 space-y-1 max-h-[42vh] overflow-auto backdrop-blur-md sm:px-3 sm:max-h-60 transition-all shadow-lg dark:shadow-none">
+            <p className="text-[9px] text-slate-400 dark:text-gray-600 font-bold uppercase tracking-widest mb-1.5">
+              Zones
+            </p>
+            {CAMPAIGN_REGIONS.map((zone, index) => {
+              const zoneNodes = displayNodesByZone[zone.key] ?? [];
+              const done = zoneNodes.filter((node) => completedSet.has(node.nodeId)).length;
+              const total = zoneNodes.length || 15;
+
+              return (
+                <ZoneProgressButton
+                  key={zone.key}
+                  zone={{ ...zone, index }}
+                  done={done}
+                  total={total}
+                  zoneTop={zoneTops[index]}
+                  onJump={handleJumpToZone}
+                  isDark={isDark}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="absolute bottom-3 left-3 z-50 flex flex-col items-start gap-3 pointer-events-none sm:bottom-5 sm:left-5 sm:gap-4">
@@ -818,7 +881,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
 
         <button
           onClick={jumpToProgress}
-          className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg dark:shadow-none"
+          className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg dark:shadow-none sm:px-3.5 sm:py-2.5"
           style={{
             background: isDark ? 'rgba(34,211,238,0.12)' : 'rgba(255,255,255,0.92)',
             border: `1px solid ${isDark ? 'rgba(34,211,238,0.30)' : 'rgba(103, 165, 213, 0.28)'}`,

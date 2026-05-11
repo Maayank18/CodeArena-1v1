@@ -63,11 +63,11 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 20 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            className="fixed inset-0 z-[101] flex items-center justify-center p-4 sm:p-6"
+            className="fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-center sm:p-6"
             onClick={onClose}
           >
             <div
-              className="relative z-[101] w-full max-w-md md:max-w-lg bg-white dark:bg-[#0F172A] border border-gray-100 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[min(84vh,720px)] transition-colors"
+              className="relative z-[101] w-full max-w-md md:max-w-lg bg-white dark:bg-[#0F172A] border border-gray-100 dark:border-gray-700 rounded-t-[28px] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[88dvh] sm:max-h-[min(84vh,720px)] transition-colors"
               onClick={(event) => event.stopPropagation()}
               style={{ boxShadow: isDark ? `0 30px 80px ${accentColor}22` : `0 20px 60px rgba(0,0,0,0.15)` }}
             >
@@ -83,7 +83,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                 <X size={16} />
               </button>
 
-              <div className="flex items-start justify-between px-5 py-5 md:px-6 shrink-0">
+              <div className="flex items-start justify-between px-4 py-4 md:px-6 shrink-0 sm:px-5 sm:py-5">
                 <div className="flex items-center gap-3 flex-1 min-w-0 pr-10">
                   {isBoss && (
                     <div
@@ -95,7 +95,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                   )}
 
                   <div className="min-w-0">
-                    <h3 className="font-black text-gray-800 dark:text-white text-lg md:text-xl leading-tight truncate">
+                    <h3 className="font-black text-gray-800 dark:text-white text-base sm:text-lg md:text-xl leading-tight truncate">
                       {title}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -118,7 +118,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-4 min-h-0 md:px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-4 min-h-0 md:px-6 sm:px-5" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {effectiveLocked ? (
                   <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-50 dark:bg-slate-900/70 border border-gray-100 dark:border-slate-700/70 rounded-xl">
                     <Lock size={14} className="text-gray-400 dark:text-slate-500 shrink-0" />
@@ -233,7 +233,7 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                 )}
               </div>
 
-              <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800/80 shrink-0 md:px-6">
+              <div className="px-4 py-4 border-t border-gray-100 dark:border-slate-800/80 shrink-0 md:px-6 sm:px-5">
                 {effectiveLocked ? (
                   <button
                     disabled
