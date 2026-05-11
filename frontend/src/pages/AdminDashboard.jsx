@@ -2073,9 +2073,9 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                                             value={tc.displayInput || ''}
                                             onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],displayInput:e.target.value};set('testCases',nt);}}
                                             className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[60px] resize-y transition-all"
-                                            placeholder={'n = 4, nums = [2, 7, 11, 15], target = 9'}
+                                            placeholder={'nums = [2, 7, 11, 15]\ntarget = 9'}
                                         />
-                                        <p className="mt-1 text-[10px] text-gray-600 italic">Example: n = 4, nums = [2, 7, 11], target = 9</p>
+                                        <p className="mt-1 text-[10px] text-gray-600 italic">Write the human-friendly example only. Keep raw stdin details in Input Format Details.</p>
                                     </div>
                                     <div className="mt-3">
                                         <label className="block text-xs text-gray-600 mb-1">Explanation (Optional)</label>

@@ -552,6 +552,16 @@ import { verifyCustomRoomJoinToken } from './utils/customRoomAuth.js';
 dotenv.config();
 
 const isDatabaseReady = () => mongoose.connection.readyState === 1;
+const toPublicProblem = (problem) => {
+  if (!problem) return problem;
+
+  return {
+    ...problem,
+    testCases: Array.isArray(problem.testCases)
+      ? problem.testCases.filter((testCase) => testCase?.isPublic)
+      : [],
+  };
+};
 
 // ✅ DATABASE CONNECTION with retry logic
 const waitForDatabase = async () => {
@@ -1427,6 +1437,8 @@ io.on('connection', async (socket) => {
           .lean();
       }
 
+      problem = toPublicProblem(problem);
+
       if (room.isGameActive && !problem) {
         socket.emit('error', { message: 'Failed to load a valid Battle Arena problem.' });
         return;
@@ -1533,6 +1545,8 @@ io.on('connection', async (socket) => {
                       .select('-goldenSolution')
                       .lean();
                   }
+
+                  nextProblem = toPublicProblem(nextProblem);
 
                   if (!nextProblem) {
                     io.to(roomId).emit('error', { message: 'Failed to load the next Battle Arena problem.' });

@@ -272,7 +272,7 @@ export const getNodeDetails = async (req, res) => {
             };
         }
         const node = await Problem.findOne({ campaignNodeId: nodeId, type: 'campaign' })
-            .select('title description difficulty constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds');
+            .select('title slug description inputFormatDescription difficulty topics constraints testCases starterCode timeLimit memoryLimit campaignRegion campaignNodeId rewards starThresholds');
 
         if (!node) {
             return res.status(404).json({ success: false, message: 'Node not found' });
