@@ -40,6 +40,12 @@ const LANG_OPTIONS = [
   { value: 'java',       label: 'Java'       },
 ];
 
+const DIFF_BADGE = {
+  Easy:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+  Medium: 'bg-amber-500/10   text-amber-400   border-amber-500/25',
+  Hard:   'bg-red-500/10     text-red-400     border-red-500/25',
+};
+
 const fmt = (s) =>
   `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
@@ -172,7 +178,7 @@ const ProblemPanel = ({ node, existingBest, isDark }) => {
                 </span>
               )}
               {existingBest && (
-                <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 dark:border-amber-800/30 dark:bg-amber-950/20">
+                <div className="mt-2 w-full flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 dark:border-amber-800/30 dark:bg-amber-950/20">
                   <StarDisplay stars={existingBest.starsAwarded} total={3} size="sm" />
                   <span className="flex-1 text-xs text-amber-600 dark:text-amber-400/80">Your best</span>
                   {existingBest.bestTimeMs && (
@@ -185,79 +191,6 @@ const ProblemPanel = ({ node, existingBest, isDark }) => {
             </div>
           }
         />
-        <div className="h-6" />
-      </div>
-    </div>
-  );
-  const publicCases = (problem.testCases || []).filter(tc => tc.isPublic);
-  return (
-    <div className="h-full overflow-y-auto bg-white dark:bg-[#07090e] transition-colors">
-      <div className="px-4 sm:px-5 py-5 space-y-5 text-[13px]">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            {node?.nodeType === 'boss' && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/25">?? Boss</span>}
-            {problem.difficulty && <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${DIFF_BADGE[problem.difficulty] || DIFF_BADGE.Easy}`}>{problem.difficulty}</span>}
-            {problem.timeLimit && <span className="text-[11px] text-slate-400 dark:text-gray-600 flex items-center gap-1"><Clock size={10} />{problem.timeLimit}ms limit</span>}
-          </div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white leading-tight">{problem.title}</h2>
-        </div>
-        {existingBest && (
-          <div className="flex items-center gap-3 px-3.5 py-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-xl">
-            <StarDisplay stars={existingBest.starsAwarded} total={3} size="sm" />
-            <span className="text-xs text-amber-600 dark:text-amber-400/80 flex-1">Your best</span>
-            {existingBest.bestTimeMs && <span className="text-xs font-mono text-slate-400 dark:text-gray-600">{existingBest.bestTimeMs}ms avg</span>}
-          </div>
-        )}
-        {problem.description && (
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-2">Description</p>
-            <div className="text-slate-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: (problem.description || '').replace(/\n/g, '<br/>') }} />
-          </div>
-        )}
-        {problem.constraints?.length > 0 && (
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-2">Constraints</p>
-            <ul className="space-y-1">
-              {problem.constraints.map((c, i) => (
-                <li key={i} className="flex items-start gap-2 text-slate-500 dark:text-gray-500"><span className="text-cyan-500 mt-0.5 shrink-0">›</span><span className="font-mono text-[12px]">{c}</span></li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {publicCases.length > 0 && (
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-700 uppercase tracking-widest mb-3">Examples (public)</p>
-            {publicCases.map((tc, i) => (
-              <div key={i} className={`mb-4 border rounded-xl overflow-hidden ${isDark ? 'bg-gray-900/30 border-gray-800/60' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <div className={`px-3 py-2 border-b text-[10px] font-black uppercase tracking-widest ${isDark ? 'bg-white/5 border-white/5 text-gray-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
-                  Example {i + 1}
-                </div>
-                <div className="p-4 space-y-4">
-                  <div>
-                    <p className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Input</p>
-                    <div className={`font-mono text-[13px] px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-emerald-400 border border-emerald-500/10' : 'bg-slate-50 text-emerald-700 border border-emerald-100'}`}>
-                      {tc.displayInput || tc.input}
-                    </div>
-                  </div>
-                  <div>
-                    <p className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Output</p>
-                    <div className={`font-mono text-[13px] px-3 py-2 rounded-lg ${isDark ? 'bg-black/40 text-blue-400 border border-blue-500/10' : 'bg-slate-50 text-blue-700 border border-blue-100'}`}>
-                      {tc.output}
-                    </div>
-                  </div>
-                  {tc.explanation && (
-                    <div>
-                      <p className={`text-[11px] font-bold mb-1.5 ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>Explanation</p>
-                      <div className={`text-[13px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-slate-600'}`}>
-                        {tc.explanation}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
         <div className="h-6" />
       </div>
     </div>
