@@ -86,11 +86,50 @@ export const clearStatsCache = () => {
 export const getUserAnalytics = async (req, res) => {
     try {
         const userId = req.user._id;
+        const isMini = req.query.mini === 'true';
 
-        const [user, matches, campaignProgress] = await Promise.all([
-            User.findById(userId)
-                .select('stats totalTimeSpent totalSolved')
-                .lean(),
+        // 1. Fetch User data (Always needed)
+        // PERFORMANCE: Included missing activityLog and currentStreak fields
+        const user = await User.findById(userId)
+            .select('stats totalTimeSpent totalSolved activityLog currentStreak')
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // 2. MINI MODE: Return immediately with basic stats for Consistency Calendar
+        if (isMini) {
+            const today = new Date();
+            const activityMap = new Map();
+            for (let offset = 6; offset >= 0; offset--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - offset);
+                date.setHours(0, 0, 0, 0);
+                const key = date.toISOString().split('T')[0];
+                
+                activityMap.set(key, {
+                    dateKey: key,
+                    label: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+                    attempted: (user.activityLog || []).includes(key),
+                });
+            }
+
+            return res.json({
+                success: true,
+                data: {
+                    summary: {
+                        totalSolved: user.totalSolved || 0,
+                        currentStreak: user.currentStreak || 0,
+                        totalAttempts: user.stats?.matchesPlayed || 0, // Approx for mini mode
+                    },
+                    activity: [...activityMap.values()]
+                }
+            });
+        }
+
+        // 3. FULL MODE: Heavy processing for main Analytics page
+        const [matches, campaignProgress] = await Promise.all([
             Match.find({ 'players.userId': userId })
                 .select('createdAt problemIds players matchDurationSeconds')
                 .lean(),
@@ -98,10 +137,6 @@ export const getUserAnalytics = async (req, res) => {
                 .select('totalAttempts currentStreak completedNodes')
                 .lean(),
         ]);
-
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
 
         const completedNodes = campaignProgress?.completedNodes || [];
         const battleAttempts = matches.length;
@@ -239,3 +274,4 @@ export const getUserAnalytics = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
     }
 };
+

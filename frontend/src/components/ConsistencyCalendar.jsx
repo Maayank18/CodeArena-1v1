@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Flame, Trophy, X } from 'lucide-react';
 import api from '../api';
 import { useTheme } from '../context/ThemeContext';
@@ -8,17 +8,31 @@ import { useTheme } from '../context/ThemeContext';
  * 
  * A premium glassmorphism component that visualizes user streak
  * and activity over a rolling 7-day period using real backend data.
+ * Optimized for instant loading using localStorage caching and lightweight API calls.
  */
 const ConsistencyCalendar = ({ className = "" }) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Load from cache for instant visibility
+  const [data, setData] = useState(() => {
+    try {
+      const cached = localStorage.getItem('consistency_calendar_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  
+  // Only show loading if we have NO cached data at all
+  const [loading, setLoading] = useState(!data);
 
   useEffect(() => {
     const fetchActivity = async () => {
       try {
-        const res = await api.get('/stats/analytics');
+        // PERFORMANCE: Use ?mini=true for lightweight payload
+        const res = await api.get('/stats/analytics?mini=true');
         if (res.data.success) {
           setData(res.data.data);
+          // PERSISTENCE: Cache for next load
+          localStorage.setItem('consistency_calendar_cache', JSON.stringify(res.data.data));
         }
       } catch (err) {
         console.error('[CALENDAR] Fetch failed:', err);
@@ -30,41 +44,56 @@ const ConsistencyCalendar = ({ className = "" }) => {
   }, []);
 
   // Use today's date for labels and nodes
-  const today = new Date();
-  const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const today = useMemo(() => new Date(), []);
+  const currentMonth = useMemo(() => today.toLocaleString('default', { month: 'long', year: 'numeric' }), [today]);
   
   // Prepare week data from activity array (last 7 days)
   // Fallback to empty week if data is missing
-  const weekData = (data?.activity || Array.from({ length: 7 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - i));
-    return {
-      label: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
-      dateKey: date.toISOString().split('T')[0],
-      attempted: false
-    };
-  })).map((day, idx) => {
-    // Determine if it's today
-    const date = new Date(day.dateKey);
-    const isToday = date.toDateString() === today.toDateString();
-    
-    return {
-      label: day.label,
-      status: day.attempted ? 'completed' : (idx < 6 ? 'missed' : 'pending'),
-      isToday
-    };
-  });
+  const weekData = useMemo(() => {
+    const rawActivity = data?.activity || Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return {
+        label: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+        dateKey: date.toISOString().split('T')[0],
+        attempted: false
+      };
+    });
 
-  const { isDark } = useTheme();
-
-  // If no data yet, show loading or empty states
-  if (loading) {
-    return (
-      <div className={`bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 animate-pulse h-[180px] ${className}`} />
-    );
-  }
+    return rawActivity.map((day, idx) => {
+      const date = new Date(day.dateKey);
+      const isToday = date.toDateString() === today.toDateString();
+      
+      return {
+        label: day.label,
+        status: day.attempted ? 'completed' : (idx < 6 ? 'missed' : 'pending'),
+        isToday
+      };
+    });
+  }, [data, today]);
 
   const streakCount = data?.summary?.currentStreak || 0;
+
+  // Refined Skeleton matching actual layout
+  if (loading) {
+    return (
+      <div className={`bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 h-[210px] animate-pulse ${className}`}>
+        <div className="flex justify-between mb-5">
+          <div className="space-y-2">
+            <div className="h-2 w-12 bg-gray-200 dark:bg-white/5 rounded" />
+            <div className="h-4 w-24 bg-gray-200 dark:bg-white/10 rounded" />
+          </div>
+          <div className="h-8 w-12 bg-gray-200 dark:bg-white/10 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-7 gap-1 mb-2 px-1">
+          {Array(7).fill(0).map((_, i) => <div key={i} className="h-2 bg-gray-100 dark:bg-white/5 rounded mx-auto w-4" />)}
+        </div>
+        <div className="grid grid-cols-7 gap-1 mb-6 px-1">
+          {Array(7).fill(0).map((_, i) => <div key={i} className="aspect-square bg-gray-100 dark:bg-white/5 rounded-lg w-full max-w-[32px] mx-auto" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 shadow-xl dark:shadow-2xl transition-all hover:border-gray-200 dark:hover:border-white/10 ${className}`}>
@@ -139,3 +168,4 @@ const ConsistencyCalendar = ({ className = "" }) => {
 };
 
 export default ConsistencyCalendar;
+
