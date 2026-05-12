@@ -1027,7 +1027,10 @@ const AdminDashboard = () => {
                     key={`new-problem-${problemView}`}/>
             )}
             {editingProblem && (
-                <ProblemModal problem={editingProblem} onClose={() => setEditingProblem(null)}
+                <ProblemModal 
+                    key={editingProblem?._id || 'edit-problem'}
+                    problem={editingProblem} 
+                    onClose={() => setEditingProblem(null)}
                     onSuccess={() => { setEditingProblem(null); fetchAll(adminUser.username); }}
                     username={adminUser.username}
                     initialType={problemView}/>
@@ -1778,7 +1781,31 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
     }, []);
 
     useEffect(() => {
-        if (problem) return;
+        if (problem) {
+            setFormData({
+                title:           problem.title || '',
+                slug:            problem.slug  || '',
+                description:     problem.description || '',
+                inputFormatDescription: problem.inputFormatDescription || '',
+                difficulty:      problem.difficulty  || 'Easy',
+                type:            problem.type || initialType,
+                campaignRegion:  problem.campaignRegion || '',
+                campaignNodeId:  problem.campaignNodeId || '',
+                constraints:     problem.constraints || [''],
+                timeLimit:       problem.timeLimit   || 5000,
+                memoryLimit:     problem.memoryLimit || 512,
+                goldenSolution:  problem.goldenSolution || '',
+                starterCode:     problem.starterCode || {
+                    javascript: `const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\n\nfunction solve(input) {\n    // Write your solution here\n}\n\nconsole.log(solve(input));`,
+                    python:     `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    # Write your solution here\n\nsolve()`,
+                    cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
+                    java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
+                },
+                testCases: problem.testCases || [{ input:'', displayInput:'', output:'', explanation:'', isPublic:true }],
+                topics: problem.topics || [],
+            });
+            return;
+        }
 
         setProblemType(initialType);
     }, [initialType, problem, setProblemType]);
