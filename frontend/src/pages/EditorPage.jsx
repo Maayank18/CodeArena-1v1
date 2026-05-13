@@ -734,6 +734,7 @@ const EditorPage = () => {
                 isOpen={isNotesOpen} 
                 onClose={() => setIsNotesOpen(false)} 
                 type="battle_arena" 
+                contextKey={problem?._id || roomId}
                 contextTitle={problem ? `Battle Arena - ${problem.title}` : "Battle Arena"}
                 desktopSide={notebookSide}
             />

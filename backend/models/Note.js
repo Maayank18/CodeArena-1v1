@@ -16,6 +16,11 @@ const noteSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    contextKey: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     content: {
         type: String,
         default: ''
@@ -26,6 +31,7 @@ const noteSchema = new mongoose.Schema({
 
 // Ensure a user can only have one note per specific context title
 noteSchema.index({ user: 1, type: 1, contextTitle: 1 }, { unique: true });
+noteSchema.index({ user: 1, type: 1, contextKey: 1 });
 
 const Note = mongoose.model('Note', noteSchema);
 export default Note;

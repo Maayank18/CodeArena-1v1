@@ -1,5 +1,11 @@
 import Note from '../models/Note.js';
 
+const normalizeNoteIdentity = ({ type, contextTitle, contextKey }) => ({
+    type: typeof type === 'string' ? type.trim() : '',
+    contextTitle: typeof contextTitle === 'string' ? contextTitle.trim() : '',
+    contextKey: typeof contextKey === 'string' ? contextKey.trim() : '',
+});
+
 export const getNotes = async (req, res) => {
     try {
         const userId = req.user?._id;
@@ -13,14 +19,20 @@ export const getNotes = async (req, res) => {
 
 export const getNoteByContext = async (req, res) => {
     try {
-        const { type, contextTitle } = req.query;
+        const { type, contextTitle, contextKey } = normalizeNoteIdentity(req.query);
         
         if (!type || !contextTitle) {
             return res.status(400).json({ success: false, message: 'Type and contextTitle are required' });
         }
 
         const userId = req.user?._id;
-        const note = await Note.findOne({ user: userId, type, contextTitle });
+        const note = await Note.findOne({
+            user: userId,
+            type,
+            ...(contextKey
+                ? { $or: [{ contextKey }, { contextTitle }] }
+                : { contextTitle }),
+        });
         
         res.status(200).json({ success: true, note });
     } catch (error) {
@@ -31,18 +43,30 @@ export const getNoteByContext = async (req, res) => {
 
 export const saveNote = async (req, res) => {
     try {
-        const { type, contextTitle, content } = req.body;
+        const { type, contextTitle, contextKey } = normalizeNoteIdentity(req.body);
+        const content = typeof req.body?.content === 'string' ? req.body.content : '';
 
         if (!type || !contextTitle) {
             return res.status(400).json({ success: false, message: 'Type and contextTitle are required' });
         }
 
         const userId = req.user?._id;
-        const note = await Note.findOneAndUpdate(
-            { user: userId, type, contextTitle },
-            { user: userId, content },
-            { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-        );
+        const lookup = {
+            user: userId,
+            type,
+            ...(contextKey
+                ? { $or: [{ contextKey }, { contextTitle }] }
+                : { contextTitle }),
+        };
+        const existingNote = await Note.findOne(lookup);
+
+        const note = existingNote
+            ? await Note.findByIdAndUpdate(
+                existingNote._id,
+                { user: userId, type, contextTitle, contextKey, content },
+                { new: true, runValidators: true }
+            )
+            : await Note.create({ user: userId, type, contextTitle, contextKey, content });
 
         res.status(200).json({ success: true, note, message: 'Note saved successfully' });
     } catch (error) {

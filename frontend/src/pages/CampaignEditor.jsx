@@ -52,6 +52,15 @@ const fmt = (s) =>
 
 const getStorageKey = (nodeId, lang) => `codearena_campaign_${nodeId}_${lang}`;
 const isValidNodeId = (value) => typeof value === 'string' && value.trim().length > 0;
+const buildCampaignNoteTitle = (problem, node, nodeId) => {
+  if (problem?.title) {
+    return `Campaign - ${problem.title}`;
+  }
+
+  const region = node?.campaignRegion ? `Region ${node.campaignRegion}` : 'Campaign';
+  const order = node?.nodeOrder ? `Node ${node.nodeOrder}` : nodeId;
+  return `${region} - ${order}`;
+};
 
 // --- Helpers ------------------------------------------------------------------
 
@@ -615,7 +624,8 @@ const CampaignEditor = () => {
           isOpen={isNotesOpen} 
           onClose={() => setIsNotesOpen(false)} 
           type="campaign_editor" 
-          contextTitle={problem ? `Campaign - ${node?.campaignRegion} Node ${node?.nodeOrder}` : "Campaign"}
+          contextKey={node?.campaignNodeId || nodeId}
+          contextTitle={buildCampaignNoteTitle(problem, node, nodeId)}
       />
     </div>
   );

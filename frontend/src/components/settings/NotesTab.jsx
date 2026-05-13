@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Search, Loader2, Trash2, ExternalLink } from 'lucide-react';
+import { BookOpen, Search, Loader2, Trash2, ExternalLink, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../api.js';
 
 const LOCAL_NOTE_PREFIX = 'codearena_note_draft:';
 
-const getNotePreview = (content = '') => {
+const htmlToPlainText = (content = '', { collapseWhitespace = false } = {}) => {
     if (typeof window === 'undefined' || !content) return '';
 
-    const doc = new DOMParser().parseFromString(content, 'text/html');
-    return doc.body.textContent?.replace(/\s+/g, ' ').trim() || '';
+    const withBlockBreaks = content
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|ul|ol|pre|blockquote|h[1-6])>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '- ');
+
+    const doc = new DOMParser().parseFromString(withBlockBreaks, 'text/html');
+    const text = doc.body.textContent || '';
+
+    return collapseWhitespace
+        ? text.replace(/\s+/g, ' ').trim()
+        : text.replace(/\n{3,}/g, '\n\n').trim();
 };
 
 const getLocalDraftNotes = () => {
@@ -29,6 +38,7 @@ const getLocalDraftNotes = () => {
             drafts.push({
                 _id: `local:${key}`,
                 type: draft.type,
+                contextKey: draft.contextKey || '',
                 contextTitle: draft.contextTitle,
                 content: draft.content || '',
                 updatedAt: draft.updatedAt || Date.now(),
@@ -46,23 +56,25 @@ const NotesTab = () => {
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedNote, setSelectedNote] = useState(null);
+    const [loadWarning, setLoadWarning] = useState('');
 
     useEffect(() => {
         let isMounted = true;
         const fetchNotes = async () => {
+            const localDrafts = getLocalDraftNotes();
             try {
                 const { data } = await api.get('/notes');
-                const localDrafts = getLocalDraftNotes();
                 if (isMounted && data.success) {
                     const remoteNotes = data.notes || [];
                     const noteMap = new Map();
 
                     for (const note of remoteNotes) {
-                        noteMap.set(`${note.type}:${note.contextTitle}`, note);
+                        noteMap.set(`${note.type}:${note.contextKey || note.contextTitle}`, note);
                     }
 
                     for (const draft of localDrafts) {
-                        const key = `${draft.type}:${draft.contextTitle}`;
+                        const key = `${draft.type}:${draft.contextKey || draft.contextTitle}`;
                         const existing = noteMap.get(key);
                         const existingUpdatedAt = existing?.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
                         const draftUpdatedAt = draft.updatedAt || 0;
@@ -77,13 +89,21 @@ const NotesTab = () => {
                             (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
                         )
                     );
+                    setLoadWarning('');
                 }
             } catch (error) {
                 console.error("Failed to fetch notes:", error);
                 if (isMounted) {
-                    setNotes(getLocalDraftNotes());
+                    setNotes(localDrafts);
+                    setLoadWarning(
+                        localDrafts.length > 0
+                            ? 'Cloud notes could not be reached, so you are seeing locally saved drafts.'
+                            : ''
+                    );
                 }
-                toast.error("Unable to load notes");
+                if (localDrafts.length === 0) {
+                    toast.error("Unable to load notes");
+                }
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -95,11 +115,25 @@ const NotesTab = () => {
 
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this note?")) return;
+
+        if (id.startsWith('local:')) {
+            const storageKey = id.slice('local:'.length);
+            window.localStorage.removeItem(storageKey);
+            setNotes(prev => prev.filter(n => n._id !== id));
+            if (selectedNote?._id === id) {
+                setSelectedNote(null);
+            }
+            toast.success("Local draft deleted");
+            return;
+        }
         
         try {
             const { data } = await api.delete(`/notes/${id}`);
             if (data.success) {
                 setNotes(prev => prev.filter(n => n._id !== id));
+                if (selectedNote?._id === id) {
+                    setSelectedNote(null);
+                }
                 toast.success("Note deleted");
             }
         } catch (error) {
@@ -110,7 +144,7 @@ const NotesTab = () => {
 
     const filteredNotes = notes.filter(n => 
         n.contextTitle.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        getNotePreview(n.content).toLowerCase().includes(searchQuery.toLowerCase())
+        htmlToPlainText(n.content, { collapseWhitespace: true }).toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (loading) {
@@ -139,6 +173,12 @@ const NotesTab = () => {
                     />
                 </div>
             </div>
+
+            {loadWarning && (
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                    {loadWarning}
+                </div>
+            )}
 
             {notes.length === 0 ? (
                 <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-12 text-center">
@@ -185,15 +225,19 @@ const NotesTab = () => {
                             
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed whitespace-pre-wrap font-mono">
-                                    {getNotePreview(note.content) || <span className="italic text-gray-600">Empty note...</span>}
+                                    {htmlToPlainText(note.content, { collapseWhitespace: true }) || <span className="italic text-gray-600">Empty note...</span>}
                                 </p>
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-xs text-gray-500">
                                 <span>Updated: {new Date(note.updatedAt).toLocaleDateString()}</span>
-                                <span className="flex items-center gap-1 hover:text-emerald-400 cursor-pointer transition-colors">
-                                    View in editor <ExternalLink size={12} />
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedNote(note)}
+                                    className="flex items-center gap-1 hover:text-emerald-400 cursor-pointer transition-colors"
+                                >
+                                    Open note <ExternalLink size={12} />
+                                </button>
                             </div>
                         </motion.div>
                     ))}
@@ -202,6 +246,57 @@ const NotesTab = () => {
                             No notes match your search.
                         </div>
                     )}
+                </div>
+            )}
+
+            {selectedNote && (
+                <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+                    <button
+                        type="button"
+                        onClick={() => setSelectedNote(null)}
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        className="relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-gray-800 bg-[#121212] shadow-2xl"
+                    >
+                        <div className="flex items-start justify-between gap-4 border-b border-gray-800 px-5 py-4">
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${
+                                        selectedNote.type === 'battle_arena'
+                                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                            : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                    }`}>
+                                        {selectedNote.type === 'battle_arena' ? 'Battle Arena' : 'Campaign Mode'}
+                                    </span>
+                                    {selectedNote.isLocalDraft && (
+                                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                                            Local draft
+                                        </span>
+                                    )}
+                                </div>
+                                <h4 className="mt-3 text-lg font-bold text-white">{selectedNote.contextTitle}</h4>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Updated {new Date(selectedNote.updatedAt).toLocaleString()}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedNote(null)}
+                                className="rounded-full border border-gray-800 bg-[#191919] p-2 text-gray-400 transition-colors hover:border-gray-700 hover:text-white"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto px-5 py-5 custom-scrollbar">
+                            <pre className="whitespace-pre-wrap break-words text-sm leading-7 text-gray-200 font-mono">
+                                {htmlToPlainText(selectedNote.content) || 'Empty note...'}
+                            </pre>
+                        </div>
+                    </motion.div>
                 </div>
             )}
         </div>

@@ -78,6 +78,11 @@ const buildCampaignProblemNodes = (problems) =>
         };
     });
 
+const getCampaignNodeOrder = (campaignNodeId) => {
+    const parsedNodeOrder = parseCampaignNodeOrder(campaignNodeId);
+    return Number.isFinite(parsedNodeOrder) ? parsedNodeOrder : null;
+};
+
 const toPlainObject = (value) =>
     value && typeof value.toObject === 'function' ? value.toObject() : value;
 
@@ -297,6 +302,7 @@ export const getNodeDetails = async (req, res) => {
             success: true,
             node: {
                 ...problem,
+                nodeOrder: getCampaignNodeOrder(problem.campaignNodeId),
                 problemId: problem
             },
             existingCompletion: existingCompletion || null,

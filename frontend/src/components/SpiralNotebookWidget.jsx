@@ -58,38 +58,38 @@ const getPlainTextFromHtml = (html = '') => {
     return doc.body.textContent?.replace(/\s+/g, ' ').trim() || '';
 };
 
-const buildDraftStorageKey = (type, contextTitle) => `codearena_note_draft:${type}:${contextTitle}`;
+const buildDraftStorageKey = (type, contextKey, contextTitle) => `codearena_note_draft:${type}:${contextKey || contextTitle}`;
 
-const readDraft = (type, contextTitle) => {
-    if (typeof window === 'undefined' || !type || !contextTitle) return null;
+const readDraft = (type, contextKey, contextTitle) => {
+    if (typeof window === 'undefined' || !type || !(contextKey || contextTitle)) return null;
 
     try {
-        const raw = window.localStorage.getItem(buildDraftStorageKey(type, contextTitle));
+        const raw = window.localStorage.getItem(buildDraftStorageKey(type, contextKey, contextTitle));
         return raw ? JSON.parse(raw) : null;
     } catch {
         return null;
     }
 };
 
-const writeDraft = (type, contextTitle, content, updatedAt = Date.now()) => {
-    if (typeof window === 'undefined' || !type || !contextTitle) return;
+const writeDraft = (type, contextKey, contextTitle, content, updatedAt = Date.now()) => {
+    if (typeof window === 'undefined' || !type || !(contextKey || contextTitle)) return;
 
     window.localStorage.setItem(
-        buildDraftStorageKey(type, contextTitle),
-        JSON.stringify({ type, contextTitle, content, updatedAt })
+        buildDraftStorageKey(type, contextKey, contextTitle),
+        JSON.stringify({ type, contextKey, contextTitle, content, updatedAt })
     );
 };
 
-const clearDraft = (type, contextTitle) => {
-    if (typeof window === 'undefined' || !type || !contextTitle) return;
-    window.localStorage.removeItem(buildDraftStorageKey(type, contextTitle));
+const clearDraft = (type, contextKey, contextTitle) => {
+    if (typeof window === 'undefined' || !type || !(contextKey || contextTitle)) return;
+    window.localStorage.removeItem(buildDraftStorageKey(type, contextKey, contextTitle));
 };
 
-const syncNoteToServer = async ({ type, contextTitle, content }) => {
-    return api.post('/notes', { type, contextTitle, content });
+const syncNoteToServer = async ({ type, contextKey, contextTitle, content }) => {
+    return api.post('/notes', { type, contextKey, contextTitle, content });
 };
 
-const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide = 'right' }) => {
+const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextTitle, desktopSide = 'right' }) => {
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
@@ -98,7 +98,6 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [saveError, setSaveError] = useState('');
     const [hasLocalDraft, setHasLocalDraft] = useState(false);
-    const [hasShownSyncFailureToast, setHasShownSyncFailureToast] = useState(false);
     const [retryTick, setRetryTick] = useState(0);
 
     const editorRef = useRef(null);
@@ -147,6 +146,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         try {
             const { data } = await syncNoteToServer({
                 type,
+                contextKey,
                 contextTitle,
                 content: normalizedContent
             });
@@ -156,11 +156,10 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                 lastSavedContentRef.current = normalizedContent;
                 latestContentRef.current = normalizedContent;
                 setContent(normalizedContent);
-                setLastSaved(new Date());
+                setLastSaved(data?.note?.updatedAt ? new Date(data.note.updatedAt) : new Date());
                 setHasUnsavedChanges(false);
                 setHasLocalDraft(false);
-                setHasShownSyncFailureToast(false);
-                clearDraft(type, contextTitle);
+                clearDraft(type, contextKey, contextTitle);
                 if (showToast) toast.success('Note saved');
                 return true;
             }
@@ -182,13 +181,12 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                             : navigator.onLine
                                 ? 'Cloud sync could not be reached right now.'
                                 : 'Your internet connection appears offline.');
-            writeDraft(type, contextTitle, normalizedContent);
+            writeDraft(type, contextKey, contextTitle, normalizedContent);
             scheduleRetry();
             setHasLocalDraft(true);
             setSaveError(`Saved locally. ${errorMsg}`);
-            if (!hasShownSyncFailureToast || showToast) {
-                toast.error(`Autosave failed: ${errorMsg}`);
-                setHasShownSyncFailureToast(true);
+            if (showToast) {
+                toast.error(`Save failed. ${errorMsg} Your local draft is safe.`);
             }
             return false;
         } finally {
@@ -196,7 +194,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         }
 
         return false;
-    }, [clearRetryTimer, contextTitle, hasShownSyncFailureToast, scheduleRetry, type]);
+    }, [clearRetryTimer, contextKey, contextTitle, scheduleRetry, type]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -205,9 +203,11 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         const fetchNote = async () => {
             setIsLoading(true);
             setSaveError('');
-            setHasShownSyncFailureToast(false);
+            clearRetryTimer();
+            lastSavedContentRef.current = '';
+            latestContentRef.current = '';
 
-             const localDraft = readDraft(type, contextTitle);
+             const localDraft = readDraft(type, contextKey, contextTitle);
              if (localDraft?.content) {
                 const draftContent = toEditorHtml(localDraft.content);
                 setContent(draftContent);
@@ -219,7 +219,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
 
             try {
                 const { data } = await api.get('/notes/context', {
-                    params: { type, contextTitle }
+                    params: { type, contextKey, contextTitle }
                 });
 
                 if (!isMounted) return;
@@ -263,7 +263,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         return () => {
             isMounted = false;
         };
-    }, [contextTitle, isOpen, syncEditorContent, type]);
+    }, [clearRetryTimer, contextKey, contextTitle, isOpen, syncEditorContent, type]);
 
     useEffect(() => {
         if (!isOpen || !hasUnsavedChanges) return;
@@ -293,16 +293,16 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
             const pendingContent = normalizeEditorHtml(latestContentRef.current);
             if (!pendingContent || pendingContent === lastSavedContentRef.current) return;
 
-            writeDraft(type, contextTitle, pendingContent);
-            void syncNoteToServer({ type, contextTitle, content: pendingContent })
+            writeDraft(type, contextKey, contextTitle, pendingContent);
+            void syncNoteToServer({ type, contextKey, contextTitle, content: pendingContent })
                 .then(() => {
-                    clearDraft(type, contextTitle);
+                    clearDraft(type, contextKey, contextTitle);
                 })
                 .catch(() => {
                     // Keep the local draft for the next open/settings view.
                 });
         };
-    }, [contextTitle, isOpen, type]);
+    }, [contextKey, contextTitle, isOpen, type]);
 
     useEffect(() => {
         return () => {
@@ -316,9 +316,9 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         setContent(html);
         setHasUnsavedChanges(html !== lastSavedContentRef.current);
         setHasLocalDraft(true);
-        writeDraft(type, contextTitle, html);
+        writeDraft(type, contextKey, contextTitle, html);
         if (saveError) setSaveError('');
-    }, [contextTitle, saveError, type]);
+    }, [contextKey, contextTitle, saveError, type]);
 
     const focusEditor = useCallback(() => {
         editorRef.current?.focus();
