@@ -277,7 +277,7 @@ const Login = () => {
                 }
 
                 if (deliveryFailed) {
-                    toast(data.message || 'Account created. Please resend the verification code.');
+                    toast(data.message || 'Account created. Please request a new verification code.');
                 } else {
                     toast.success(data.message || 'Registration successful! Please verify your email.');
                 }

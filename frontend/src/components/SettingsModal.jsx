@@ -73,9 +73,6 @@ const tabs = [
 ];
 
 const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
-
 const buildInitialProfileForm = (user) => ({
   fullName: user?.fullName || '',
   username: user?.username || '',
@@ -122,18 +119,20 @@ const ToggleCard = ({ title, description, checked, onChange }) => (
   </label>
 );
 
+const EMPTY_ANALYTICS_DATA = {
+  summary: {
+    timeSpentMinutes: 0,
+    totalSolved: 0,
+    totalAttempts: 0,
+    accuracyPercent: 0,
+    currentStreak: 0,
+  },
+  activity: [],
+  topicBreakdown: [],
+};
+
 const AnalyticsTab = () => {
-  const [analyticsData, setAnalyticsData] = useState({
-    summary: {
-      timeSpentMinutes: 0,
-      totalSolved: 0,
-      totalAttempts: 0,
-      accuracyPercent: 0,
-      currentStreak: 0,
-    },
-    activity: [],
-    topicBreakdown: [],
-  });
+  const [analyticsData, setAnalyticsData] = useState(EMPTY_ANALYTICS_DATA);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -143,21 +142,11 @@ const AnalyticsTab = () => {
       try {
         const { data } = await api.get('/stats/analytics');
         if (!cancelled && data?.success) {
-          setAnalyticsData(data.data || analyticsData);
+          setAnalyticsData(data.data || EMPTY_ANALYTICS_DATA);
         }
-      } catch (error) {
+      } catch {
         if (!cancelled) {
-          setAnalyticsData({
-            summary: {
-              timeSpentMinutes: 0,
-              totalSolved: 0,
-              totalAttempts: 0,
-              accuracyPercent: 0,
-              currentStreak: 0,
-            },
-            activity: [],
-            topicBreakdown: [],
-          });
+          setAnalyticsData(EMPTY_ANALYTICS_DATA);
         }
       } finally {
         if (!cancelled) {
@@ -289,6 +278,17 @@ const VerifiedBadge = ({ label }) => (
     <BadgeCheck size={13} />
     {label}
   </span>
+);
+
+const StatusBadge = ({ verified }) => (
+  verified ? (
+    <VerifiedBadge label="Verified" />
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-full border border-gray-700 bg-[#1a1a1a] px-2.5 py-1 text-[11px] font-semibold text-gray-400">
+      <Info size={13} />
+      Unverified
+    </span>
+  )
 );
 
 const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth }) => {
@@ -441,24 +441,6 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
   };
 
   const requestOtp = async () => {
-    const payload = {};
-
-    if (securityForm.email.trim() && securityForm.email.trim() !== (user?.email || '')) {
-      if (!EMAIL_REGEX.test(securityForm.email.trim())) {
-        toast.error('Enter a valid email address');
-        return;
-      }
-      payload.email = securityForm.email.trim();
-    }
-
-    if (securityForm.phone.trim() && securityForm.phone.trim() !== (user?.phone || '')) {
-      if (!PHONE_REGEX.test(securityForm.phone.trim())) {
-        toast.error('Enter a valid phone number');
-        return;
-      }
-      payload.phone = securityForm.phone.trim();
-    }
-
     if (securityForm.password) {
       if (passwordError) {
         toast.error(passwordError);
@@ -469,19 +451,19 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
         toast.error('Passwords do not match');
         return;
       }
-
-      payload.password = securityForm.password;
     }
 
-    if (!payload.email && !payload.phone && !payload.password) {
-      toast.error('Change at least one sensitive field before requesting a code');
+    if (!securityForm.password) {
+      toast.error('Enter a new password before requesting a verification code');
       return;
     }
 
     setRequestingOtp(true);
     try {
-      const { data } = await api.post('/settings/request-otp', payload);
-      setOtpPending(payload);
+      const { data } = await api.post('/settings/request-otp', {
+        password: securityForm.password,
+      });
+      setOtpPending({ password: true });
       setOtpCode('');
       setDevOtp(data.devOtp || '');
       toast.success(data.message || 'Verification code sent');
@@ -687,15 +669,15 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   {activeTab === 'security' && (
                     <div className="space-y-8 animate-fade-in">
                       <div className="rounded-2xl border border-gray-800 bg-[#191919] p-5">
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
-                            <Shield size={20} />
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
+                              <Shield size={20} />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-white">Security Controls</h4>
+                              <p className="text-xs text-gray-500">Password changes require OTP verification via your current email address.</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-white">Security Controls</h4>
-                            <p className="text-xs text-gray-500">Sensitive changes require email verification.</p>
-                          </div>
-                        </div>
                       </div>
 
                       <div className="grid gap-6">
@@ -705,26 +687,15 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
                             <input
                               value={securityForm.email}
-                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, email: e.target.value }))}
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                              readOnly
+                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none"
                               placeholder="email@example.com"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                              {user?.emailVerified ? (
-                                <VerifiedBadge label="Verified" />
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setSecurityForm(prev => ({ ...prev, email: securityForm.email }));
-                                    requestOtp();
-                                  }}
-                                  className="text-[10px] font-bold text-accent hover:underline"
-                                >
-                                  Verify Now
-                                </button>
-                              )}
+                              <StatusBadge verified={user?.emailVerified} />
                             </div>
                           </div>
+                          <p className="px-2 text-[10px] text-gray-500">Email changes are currently not handled from this screen.</p>
                         </div>
 
                         <div className="space-y-2">
@@ -733,26 +704,15 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                             <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
                             <input
                               value={securityForm.phone}
-                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, phone: e.target.value }))}
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                              readOnly
+                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none"
                               placeholder="+1 234 567 890"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                              {user?.phoneVerified ? (
-                                <VerifiedBadge label="Verified" />
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setSecurityForm(prev => ({ ...prev, phone: securityForm.phone }));
-                                    requestOtp();
-                                  }}
-                                  className="text-[10px] font-bold text-accent hover:underline"
-                                >
-                                  Verify Now
-                                </button>
-                              )}
+                              <StatusBadge verified={user?.phoneVerified} />
                             </div>
                           </div>
+                          <p className="px-2 text-[10px] text-gray-500">Phone number updates are currently not handled from this screen.</p>
                         </div>
 
                         <div className="grid gap-6 sm:grid-cols-2">
@@ -866,8 +826,8 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   <div className="mb-4 inline-flex rounded-2xl bg-emerald-500/10 p-3 text-emerald-300">
                     <Settings2 size={22} />
                   </div>
-                  <h3 className="text-xl font-black text-white">Verify Sensitive Changes</h3>
-                  <p className="mt-2 text-sm text-gray-400">Enter the 6 digit code sent to your current email address to apply these updates.</p>
+                  <h3 className="text-xl font-black text-white">Verify Password Change</h3>
+                  <p className="mt-2 text-sm text-gray-400">Enter the 6 digit code sent to your current email address to update your password.</p>
                   <input
                     value={otpCode}
                     onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}

@@ -138,7 +138,6 @@ export const forgotPassword = async (req, res) => {
             trace.info('email.sent', {
                 userId: user._id,
                 otpRequestId: otpRequest._id,
-                provider: emailResult.provider,
                 messageId: emailResult.messageId,
             });
 

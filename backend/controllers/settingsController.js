@@ -13,15 +13,10 @@ import {
 
 const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+?[0-9]{10,15}$/;
 const MAX_OTP_ATTEMPTS = 5;
 const MAX_AVATAR_SIZE_BYTES = 1024 * 1024;
 
 const sanitizeString = (value) => typeof value === 'string' ? value.trim() : '';
-
-const normalizeEmail = (value) => sanitizeString(value).toLowerCase();
-
-const normalizePhone = (value) => sanitizeString(value).replace(/\s+/g, '');
 
 const parseBoolean = (value, fallback = false) => {
     if (typeof value === 'boolean') {
@@ -99,24 +94,6 @@ const validateProfileInput = ({ fullName, username, bio, avatar }) => {
     }
 
     return null;
-};
-
-const buildRequestedChanges = ({ email, phone, password }) => {
-    const items = [];
-
-    if (email) {
-        items.push(`Email change to ${email}`);
-    }
-
-    if (phone) {
-        items.push(`Phone number change to ${phone}`);
-    }
-
-    if (password) {
-        items.push('Password update');
-    }
-
-    return items;
 };
 
 export const getSettingsProfile = async (req, res) => {
@@ -199,19 +176,15 @@ export const updateProfileSettings = async (req, res) => {
 
 export const requestSettingsOtp = async (req, res) => {
     try {
-        const newEmail = req.body.email === undefined ? '' : normalizeEmail(req.body.email);
-        const newPhone = req.body.phone === undefined ? '' : normalizePhone(req.body.phone);
         const newPassword = req.body.password === undefined ? '' : String(req.body.password);
 
         console.log('[SETTINGS OTP] Request started', {
             userId: req.user?._id,
-            hasEmailChange: Boolean(newEmail),
-            hasPhoneChange: Boolean(newPhone),
             hasPasswordChange: Boolean(newPassword),
         });
 
-        if (!newEmail && !newPhone && !newPassword) {
-            return res.status(400).json({ success: false, message: 'Choose at least one sensitive field to update' });
+        if (!newPassword) {
+            return res.status(400).json({ success: false, message: 'Provide a new password before requesting a verification code' });
         }
 
         const user = await User.findById(req.user._id).select('+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone');
@@ -227,45 +200,14 @@ export const requestSettingsOtp = async (req, res) => {
             });
         }
 
-        const pendingUpdates = {};
-
-        if (newEmail) {
-            if (!EMAIL_REGEX.test(newEmail)) {
-                return res.status(400).json({ success: false, message: 'Enter a valid email address' });
-            }
-
-            if (newEmail === user.email) {
-                return res.status(400).json({ success: false, message: 'That email is already on your account' });
-            }
-
-            const existingEmail = await User.findOne({ email: newEmail }).select('_id').lean();
-            if (existingEmail) {
-                return res.status(400).json({ success: false, message: 'That email is already registered' });
-            }
-
-            pendingUpdates.email = newEmail;
+        const passwordError = validatePasswordStrength(newPassword);
+        if (passwordError) {
+            return res.status(400).json({ success: false, message: passwordError });
         }
 
-        if (newPhone) {
-            if (!PHONE_REGEX.test(newPhone)) {
-                return res.status(400).json({ success: false, message: 'Enter a valid phone number' });
-            }
-
-            if (newPhone === user.phone) {
-                return res.status(400).json({ success: false, message: 'That phone number is already on your account' });
-            }
-
-            pendingUpdates.phone = newPhone;
-        }
-
-        if (newPassword) {
-            const passwordError = validatePasswordStrength(newPassword);
-            if (passwordError) {
-                return res.status(400).json({ success: false, message: passwordError });
-            }
-
-            pendingUpdates.passwordHash = await bcrypt.hash(newPassword, 10);
-        }
+        const pendingUpdates = {
+            passwordHash: await bcrypt.hash(newPassword, 10),
+        };
 
         const otp = generateOtp();
         user.otpCode = hashOtp(otp);
@@ -290,11 +232,6 @@ export const requestSettingsOtp = async (req, res) => {
                 otp,
                 name: user.fullName || user.username,
                 expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
-                requestedChanges: buildRequestedChanges({
-                    email: pendingUpdates.email,
-                    phone: pendingUpdates.phone,
-                    password: pendingUpdates.passwordHash ? 'Password update' : '',
-                }),
             });
         } catch (emailError) {
             user.otpCode = null;
@@ -313,7 +250,6 @@ export const requestSettingsOtp = async (req, res) => {
                 success: false,
                 message: emailError.message || 'Unable to send verification code.',
                 code: emailError?.code || 'SETTINGS_OTP_SEND_FAILED',
-                debug: emailError.resendError || null
             });
         }
 
@@ -360,8 +296,6 @@ export const verifySettingsOtp = async (req, res) => {
         }
 
         const hasPendingChanges = Boolean(
-            user.pendingUpdates?.email ||
-            user.pendingUpdates?.phone ||
             user.pendingUpdates?.passwordHash ||
             user.pendingUpdates?.password
         );
@@ -390,20 +324,8 @@ export const verifySettingsOtp = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid verification code' });
         }
 
-        const pendingEmail = user.pendingUpdates?.email;
-        const pendingPhone = user.pendingUpdates?.phone;
         const pendingPasswordHash = user.pendingUpdates?.passwordHash;
         const legacyPendingPassword = user.pendingUpdates?.password;
-
-        if (pendingEmail) {
-            user.email = pendingEmail;
-            user.emailVerified = true;
-        }
-
-        if (pendingPhone) {
-            user.phone = pendingPhone;
-            user.phoneVerified = true;
-        }
 
         if (legacyPendingPassword) {
             const passwordError = validatePasswordStrength(legacyPendingPassword);

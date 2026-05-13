@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { AUTH_LIMITS, validatePasswordStrength } from '../utils/authSecurity.js';
-import { sendAccountVerificationEmail, getSmtpDiagnostics } from '../services/authEmailService.js';
+import { sendAccountVerificationEmail } from '../services/authEmailService.js';
 import { generateOtp, hashOtp, minutesFromNow, safeEqualHex } from '../utils/authSecurity.js';
 import { buildAuthUserPayload, createAuthTrace, normalizeEmail, normalizeOtp } from '../utils/authFlow.js';
 
@@ -54,7 +54,6 @@ const buildLockoutMessage = (lockUntil) => {
 
 const buildVerificationDeliveryPayload = (delivery = {}) => ({
     delivered: Boolean(delivery.delivered),
-    provider: delivery.provider || getSmtpDiagnostics().provider,
     messageId: delivery.messageId || null,
     retryable: delivery.retryable !== false,
     code: delivery.code || null,
@@ -143,7 +142,6 @@ export const registerUser = async (req, res) => {
 
             trace.info('email.sent', {
                 userId: user._id,
-                provider: emailResult.provider,
                 messageId: emailResult.messageId,
             });
 
@@ -158,7 +156,6 @@ export const registerUser = async (req, res) => {
         } catch (emailError) {
             const deliveryState = buildVerificationDeliveryPayload({
                 delivered: false,
-                provider: getSmtpDiagnostics().provider,
                 retryable: emailError?.retryable !== false,
                 code: emailError?.code || 'OTP_DELIVERY_FAILED',
             });
@@ -170,7 +167,7 @@ export const registerUser = async (req, res) => {
 
             return res.status(202).json({
                 success: true,
-                message: 'Account created, but the verification code could not be delivered yet. Please use resend verification code.',
+                message: 'Account created, but the verification code could not be delivered yet. Please request a new verification code.',
                 email: user.email,
                 requiresVerification: true,
                 emailDelivery: deliveryState,
@@ -405,7 +402,6 @@ export const resendVerificationOtp = async (req, res) => {
 
             trace.info('email.sent', {
                 userId: user._id,
-                provider: emailResult.provider,
                 messageId: emailResult.messageId,
             });
 

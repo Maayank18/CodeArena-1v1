@@ -3,33 +3,23 @@ import nodemailer from 'nodemailer';
 
 dns.setDefaultResultOrder('ipv4first');
 
-const DEFAULT_RESEND_FROM = 'CodeArena 1v1 <onboarding@resend.dev>';
 const SMTP_CONNECTION_ERRORS = ['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ECONNREFUSED', 'ENETUNREACH'];
-const PUBLIC_WEBMAIL_DOMAINS = ['@gmail.com', '@outlook.com', '@hotmail.com', '@yahoo.com'];
 
-let resendInstance = null;
 let smtpTransporter = null;
 
-const normalizeProviderPreference = () => {
-    const preferred = (process.env.EMAIL_PROVIDER || 'auto').trim().toLowerCase();
-    return ['auto', 'resend', 'nodemailer', 'none'].includes(preferred) ? preferred : 'auto';
-};
+const isProductionEnv = () => process.env.NODE_ENV === 'production';
 
-const getProviderAvailability = () => ({
-    hasResendKey: Boolean((process.env.RESEND_API_KEY || '').trim()),
-    hasSmtpCredentials: Boolean((process.env.EMAIL_USER || '').trim() && (process.env.EMAIL_PASS || '').trim()),
-});
+const stripWrappingQuotes = (value) => {
+    const trimmed = String(value || '').trim();
 
-const getProvider = () => {
-    const preferred = normalizeProviderPreference();
-    const availability = getProviderAvailability();
+    if (
+        (trimmed.startsWith('"') && trimmed.endsWith('"'))
+        || (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+    ) {
+        return trimmed.slice(1, -1).trim();
+    }
 
-    if (preferred === 'none') return 'none';
-    if (preferred === 'resend') return availability.hasResendKey ? 'resend' : 'none';
-    if (preferred === 'nodemailer') return availability.hasSmtpCredentials ? 'nodemailer' : 'none';
-    if (availability.hasResendKey) return 'resend';
-    if (availability.hasSmtpCredentials) return 'nodemailer';
-    return 'none';
+    return trimmed;
 };
 
 const maskEmail = (value) => {
@@ -38,117 +28,143 @@ const maskEmail = (value) => {
     return `${local.slice(0, 2)}***@${domain}`;
 };
 
-const resolveFromAddress = (provider = getProvider()) => {
-    if (provider === 'resend') {
-        let from = (process.env.EMAIL_FROM || DEFAULT_RESEND_FROM).trim();
-        const requiresFallback = PUBLIC_WEBMAIL_DOMAINS.some((domain) => from.toLowerCase().includes(domain));
-
-        if (requiresFallback) {
-            console.warn(`[MAIL:RESEND] Public mailbox detected in EMAIL_FROM (${from}). Falling back to ${DEFAULT_RESEND_FROM}.`);
-            from = DEFAULT_RESEND_FROM;
-        }
-
-        return from;
-    }
-
-    if (provider === 'nodemailer') {
-        return (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
-    }
-
-    return (process.env.EMAIL_FROM || DEFAULT_RESEND_FROM).trim();
+const parseBooleanEnv = (value, fallback = false) => {
+    if (typeof value !== 'string') return fallback;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+    return fallback;
 };
 
-const buildMailResult = (result = {}) => ({
-    delivered: Boolean(result.delivered),
-    debug: Boolean(result.debug),
-    provider: result.provider || getProvider(),
-    messageId: result.messageId || null,
-    retryable: result.retryable !== false,
-    code: result.code || null,
-});
+const resolveMailConfig = () => {
+    const host = stripWrappingQuotes(process.env.EMAIL_HOST || '');
+    const port = Number(stripWrappingQuotes(process.env.EMAIL_PORT || '587'));
+    const secure = parseBooleanEnv(process.env.EMAIL_SECURE, port === 465);
+    const user = stripWrappingQuotes(process.env.EMAIL_USER || '');
+    const pass = stripWrappingQuotes(process.env.EMAIL_PASS || '');
+    const fromAddress = stripWrappingQuotes(process.env.EMAIL_FROM || user);
 
-const createSmtpTransporter = () => {
-    const user = (process.env.EMAIL_USER || '').trim();
-    const pass = (process.env.EMAIL_PASS || '').trim();
-    const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
-    const port = Number(process.env.EMAIL_PORT || 587);
-
-    return nodemailer.createTransport({
+    return {
         host,
         port,
-        secure: port === 465,
-        auth: { user, pass },
+        secure,
+        user,
+        pass,
+        fromAddress,
+    };
+};
+
+const validateMailConfig = (config = resolveMailConfig(), { allowDebugFallback = !isProductionEnv() } = {}) => {
+    const errors = [];
+
+    if (!config.host) errors.push('EMAIL_HOST is required');
+    if (!Number.isFinite(config.port) || config.port <= 0) errors.push('EMAIL_PORT must be a valid positive number');
+    if (!config.user) errors.push('EMAIL_USER is required');
+    if (!config.pass) errors.push('EMAIL_PASS is required');
+    if (!config.fromAddress) errors.push('EMAIL_FROM is required');
+
+    if (config.fromAddress && !/^[^<>\r\n]+<[^<>\s@]+@[^<>\s@]+>$|^[^<>\s@]+@[^<>\s@]+$/.test(config.fromAddress)) {
+        errors.push('EMAIL_FROM must use `email@example.com` or `Name <email@example.com>` format');
+    }
+
+    if (errors.length > 0 && !allowDebugFallback) {
+        throw Object.assign(new Error(errors.join('; ')), {
+            code: 'MAIL_CONFIG_INVALID',
+            status: 500,
+            retryable: false,
+        });
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors,
+        config,
+    };
+};
+
+const createSmtpTransporter = () => {
+    const { config } = validateMailConfig(resolveMailConfig(), { allowDebugFallback: false });
+
+    return nodemailer.createTransport({
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        auth: {
+            user: config.user,
+            pass: config.pass,
+        },
         connectionTimeout: 10_000,
         greetingTimeout: 10_000,
         socketTimeout: 15_000,
-        tls: { rejectUnauthorized: false },
+        requireTLS: !config.secure,
+        tls: {
+            minVersion: 'TLSv1.2',
+        },
     });
 };
 
-const getResend = async () => {
-    if (!resendInstance) {
-        const { Resend } = await import('resend');
-        resendInstance = new Resend(process.env.RESEND_API_KEY.trim());
-    }
-
-    return resendInstance;
-};
-
-const sendViaResend = async ({ to, subject, html, label }) => {
-    const resend = await getResend();
-    const from = resolveFromAddress('resend');
-
-    console.log(`[MAIL:RESEND] Sending ${label} to ${maskEmail(to)} from ${from}`);
-    const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
-
-    if (error) {
-        console.error('[MAIL:RESEND] Delivery failed', {
-            label,
-            code: error.name || 'RESEND_SEND_FAILED',
-            message: error.message,
-        });
-        throw Object.assign(new Error(error.message || 'Resend delivery failed'), {
-            code: 'RESEND_SEND_FAILED',
-            status: 502,
-            retryable: true,
-            resendError: error,
-        });
-    }
-
-    console.log('[MAIL:RESEND] Delivery succeeded', {
-        label,
-        messageId: data?.id || null,
-    });
-
-    return buildMailResult({
-        delivered: true,
-        debug: false,
-        provider: 'resend',
-        messageId: data?.id,
-        retryable: true,
-    });
-};
-
-const sendViaNodemailer = async ({ to, subject, html, label }) => {
+const getTransporter = () => {
     if (!smtpTransporter) {
         smtpTransporter = createSmtpTransporter();
     }
 
-    const from = resolveFromAddress('nodemailer');
+    return smtpTransporter;
+};
+
+const buildMailResult = (result = {}) => ({
+    delivered: Boolean(result.delivered),
+    messageId: result.messageId || null,
+    retryable: result.retryable !== false,
+    code: result.code || null,
+    ...(result.debug ? { debug: true } : {}),
+});
+
+const sendMail = async ({ to, subject, html, label }) => {
+    const diagnostics = validateMailConfig(resolveMailConfig(), { allowDebugFallback: !isProductionEnv() });
+
+    if (!diagnostics.valid) {
+        if (isProductionEnv()) {
+            throw Object.assign(new Error(diagnostics.errors.join('; ')), {
+                code: 'MAIL_CONFIG_INVALID',
+                status: 500,
+                retryable: false,
+            });
+        }
+
+        console.warn('[MAIL:DEV] SMTP not fully configured. Returning debug delivery result.', {
+            label,
+            errors: diagnostics.errors,
+        });
+
+        return buildMailResult({
+            delivered: false,
+            debug: true,
+            retryable: false,
+            code: 'MAIL_CONFIG_INVALID',
+        });
+    }
+
+    const transporter = getTransporter();
+    const from = diagnostics.config.fromAddress;
 
     console.log(`[MAIL:SMTP] Sending ${label} to ${maskEmail(to)} from ${from}`);
 
     try {
-        const info = await smtpTransporter.sendMail({ from, to, subject, html });
+        const info = await transporter.sendMail({
+            from,
+            to,
+            subject,
+            html,
+        });
+
         console.log('[MAIL:SMTP] Delivery succeeded', {
             label,
             messageId: info.messageId,
+            response: info.response || null,
         });
 
         return buildMailResult({
             delivered: true,
-            debug: false,
-            provider: 'nodemailer',
             messageId: info.messageId,
             retryable: true,
         });
@@ -172,76 +188,60 @@ const sendViaNodemailer = async ({ to, subject, html, label }) => {
     }
 };
 
-const sendMail = async ({ to, subject, html, label }) => {
-    const provider = getProvider();
-    const preferredProvider = normalizeProviderPreference();
-
-    if (provider === 'resend') {
-        return sendViaResend({ to, subject, html, label });
-    }
-
-    if (provider === 'nodemailer') {
-        return sendViaNodemailer({ to, subject, html, label });
-    }
-
-    if (process.env.NODE_ENV === 'production') {
-        throw Object.assign(new Error('No email provider configured'), {
-            code: preferredProvider === 'none' ? 'MAIL_DISABLED' : 'MAIL_NOT_CONFIGURED',
-            status: 500,
-            retryable: false,
-        });
-    }
-
-    console.log(`[MAIL:DEV] ${label} -> ${to} (provider not configured, returning debug result)`);
-    return buildMailResult({
-        delivered: false,
-        debug: true,
-        provider: 'console',
-        retryable: true,
-    });
-};
-
 export const verifySmtpConnection = async () => {
-    const provider = getProvider();
-    console.log('[MAIL] Provider diagnostics', getSmtpDiagnostics());
+    const diagnostics = getSmtpDiagnostics();
+    console.log('[MAIL] SMTP diagnostics', diagnostics);
 
-    if (provider === 'resend') {
-        console.log('[MAIL] Resend configured. HTTP delivery path is active.');
-        return true;
-    }
-
-    if (provider === 'nodemailer') {
-        if (!smtpTransporter) {
-            smtpTransporter = createSmtpTransporter();
-        }
-
-        try {
-            await smtpTransporter.verify();
-            console.log('[MAIL] SMTP verification succeeded.');
-            return true;
-        } catch (error) {
-            console.error('[MAIL] SMTP verification failed', {
-                code: error.code,
-                message: error.message,
+    if (!diagnostics.configured) {
+        if (isProductionEnv()) {
+            throw Object.assign(new Error('SMTP mail configuration is incomplete'), {
+                code: 'MAIL_CONFIG_INVALID',
+                status: 500,
+                retryable: false,
             });
-            console.warn('[MAIL] If this server runs on Render, prefer EMAIL_PROVIDER=resend because outbound SMTP is often blocked.');
-            smtpTransporter = null;
-            return false;
         }
+
+        console.warn('[MAIL] SMTP not fully configured. Mail delivery will stay in debug mode.');
+        return false;
     }
 
-    console.warn('[MAIL] No email provider configured. Set EMAIL_PROVIDER=resend with RESEND_API_KEY for production.');
-    return false;
+    try {
+        await getTransporter().verify();
+        console.log('[MAIL] SMTP verification succeeded.');
+        return true;
+    } catch (error) {
+        console.error('[MAIL] SMTP verification failed', {
+            code: error.code,
+            message: error.message,
+        });
+        smtpTransporter = null;
+
+        if (isProductionEnv()) {
+            throw Object.assign(new Error('SMTP verification failed during startup'), {
+                code: error.code || 'SMTP_VERIFY_FAILED',
+                status: 500,
+                retryable: false,
+                cause: error,
+            });
+        }
+
+        return false;
+    }
 };
 
-export const getSmtpDiagnostics = () => ({
-    preferredProvider: normalizeProviderPreference(),
-    provider: getProvider(),
-    configured: getProvider() !== 'none',
-    hasResendKey: getProviderAvailability().hasResendKey,
-    hasSmtpCredentials: getProviderAvailability().hasSmtpCredentials,
-    fromAddress: resolveFromAddress(),
-});
+export const getSmtpDiagnostics = () => {
+    const { valid, errors, config } = validateMailConfig(resolveMailConfig(), { allowDebugFallback: true });
+
+    return {
+        configured: valid,
+        errors,
+        host: config.host || null,
+        port: config.port || null,
+        secure: config.secure,
+        senderConfigured: Boolean(config.fromAddress),
+        fromAddress: config.fromAddress || null,
+    };
+};
 
 const brandedHtml = ({ heading, subtitle, bodyHtml }) => `
 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#e5e7eb;background:#0f1117;padding:24px">
@@ -277,41 +277,36 @@ export const sendAccountVerificationEmail = ({ to, otp, name, expiresInMinutes }
         }),
     });
 
-export const sendSettingsOtpEmail = ({ to, otp, name, expiresInMinutes, requestedChanges = [] }) => {
-    const changeSummary = requestedChanges.length
-        ? requestedChanges.map((item) => `<li style="margin-bottom:6px">${item}</li>`).join('')
-        : '<li style="margin-bottom:6px">Account security changes</li>';
-
-    return sendMail({
+export const sendSettingsOtpEmail = ({ to, otp, name, expiresInMinutes }) =>
+    sendMail({
         to,
-        subject: 'CodeArena 1v1 security verification code',
+        subject: 'CodeArena 1v1 password change verification code',
         label: 'Settings OTP',
         html: brandedHtml({
-            heading: 'Verify your settings update',
+            heading: 'Verify your password update',
             subtitle: 'CodeArena 1v1 Security',
             bodyHtml: `
                 <p style="margin-top:0;color:#d1d5db">Hi ${name || 'there'},</p>
-                <p style="color:#d1d5db">We received a request to update sensitive settings on your account:</p>
-                <ul style="color:#f3f4f6;padding-left:20px">${changeSummary}</ul>
+                <p style="color:#d1d5db">We received a request to change your account password. Use the code below to continue:</p>
                 ${otpBlock(otp, expiresInMinutes)}
-                <p style="color:#d1d5db">If you did not request this change, you can ignore this email.</p>`,
+                <p style="color:#d1d5db">If you did not request this, you can ignore this email and your password will remain unchanged.</p>`,
         }),
     });
-};
 
 export const sendPasswordResetOtpEmail = ({ to, otp, name, expiresInMinutes }) =>
     sendMail({
         to,
         subject: 'CodeArena 1v1 password reset code',
         label: 'Password Reset',
-        html: `
-            <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-                <p>Hi ${name || 'there'},</p>
-                <p>Your CodeArena 1v1 password reset code is:</p>
-                <p style="font-size:28px;font-weight:700;letter-spacing:6px">${otp}</p>
-                <p>This code expires in ${expiresInMinutes} minutes.</p>
-                <p>If you did not request this, you can ignore this email.</p>
-            </div>`,
+        html: brandedHtml({
+            heading: 'Reset your password',
+            subtitle: 'CodeArena 1v1 Recovery',
+            bodyHtml: `
+                <p style="margin-top:0;color:#d1d5db">Hi ${name || 'there'},</p>
+                <p style="color:#d1d5db">Use the code below to continue resetting your CodeArena 1v1 password:</p>
+                ${otpBlock(otp, expiresInMinutes)}
+                <p style="color:#d1d5db">If you did not request this, you can ignore this email.</p>`,
+        }),
     });
 
 export const sendPaymentSubmissionEmail = ({ to, name, planName, amount, utrNumber }) =>
