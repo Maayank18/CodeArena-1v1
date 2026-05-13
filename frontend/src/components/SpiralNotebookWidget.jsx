@@ -56,6 +56,33 @@ const getPlainTextFromHtml = (html = '') => {
     return doc.body.textContent?.replace(/\s+/g, ' ').trim() || '';
 };
 
+const buildDraftStorageKey = (type, contextTitle) => `codearena_note_draft:${type}:${contextTitle}`;
+
+const readDraft = (type, contextTitle) => {
+    if (typeof window === 'undefined' || !type || !contextTitle) return null;
+
+    try {
+        const raw = window.localStorage.getItem(buildDraftStorageKey(type, contextTitle));
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const writeDraft = (type, contextTitle, content, updatedAt = Date.now()) => {
+    if (typeof window === 'undefined' || !type || !contextTitle) return;
+
+    window.localStorage.setItem(
+        buildDraftStorageKey(type, contextTitle),
+        JSON.stringify({ type, contextTitle, content, updatedAt })
+    );
+};
+
+const clearDraft = (type, contextTitle) => {
+    if (typeof window === 'undefined' || !type || !contextTitle) return;
+    window.localStorage.removeItem(buildDraftStorageKey(type, contextTitle));
+};
+
 const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide = 'right' }) => {
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -64,6 +91,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
     const [isLoading, setIsLoading] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const [hasLocalDraft, setHasLocalDraft] = useState(false);
 
     const editorRef = useRef(null);
     const lastSavedContentRef = useRef('');
@@ -104,6 +132,8 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                 setContent(normalizedContent);
                 setLastSaved(new Date());
                 setHasUnsavedChanges(false);
+                setHasLocalDraft(false);
+                clearDraft(type, contextTitle);
                 if (showToast) toast.success('Note saved');
                 return true;
             }
@@ -114,7 +144,9 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
 
             console.error('Failed to save note:', error);
             const errorMsg = error.response?.data?.message || 'Please check your network.';
-            setSaveError(errorMsg);
+            writeDraft(type, contextTitle, normalizedContent);
+            setHasLocalDraft(true);
+            setSaveError(`Saved locally. ${errorMsg}`);
             toast.error(`Autosave failed: ${errorMsg}`);
             return false;
         } finally {
@@ -132,6 +164,16 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
             setIsLoading(true);
             setSaveError('');
 
+             const localDraft = readDraft(type, contextTitle);
+             if (localDraft?.content) {
+                const draftContent = toEditorHtml(localDraft.content);
+                setContent(draftContent);
+                latestContentRef.current = draftContent;
+                setHasUnsavedChanges(true);
+                setHasLocalDraft(true);
+                syncEditorContent(draftContent);
+            }
+
             try {
                 const { data } = await api.get('/notes/context', {
                     params: { type, contextTitle }
@@ -139,12 +181,19 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
 
                 if (!isMounted) return;
 
-                const nextContent = toEditorHtml(data?.note?.content || '');
+                const remoteUpdatedAt = data?.note?.updatedAt ? new Date(data.note.updatedAt).getTime() : 0;
+                const localUpdatedAt = localDraft?.updatedAt || 0;
+                const shouldUseLocalDraft = Boolean(localDraft?.content) && localUpdatedAt >= remoteUpdatedAt;
+                const nextContent = shouldUseLocalDraft
+                    ? toEditorHtml(localDraft.content)
+                    : toEditorHtml(data?.note?.content || '');
+
                 setContent(nextContent);
                 latestContentRef.current = nextContent;
-                lastSavedContentRef.current = nextContent;
+                lastSavedContentRef.current = shouldUseLocalDraft ? (data?.note?.content || '') : nextContent;
                 setLastSaved(data?.note?.updatedAt ? new Date(data.note.updatedAt) : null);
-                setHasUnsavedChanges(false);
+                setHasUnsavedChanges(shouldUseLocalDraft);
+                setHasLocalDraft(shouldUseLocalDraft);
                 syncEditorContent(nextContent);
             } catch (error) {
                 if (!isMounted) return;
@@ -152,12 +201,15 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                     console.error('Failed to load note:', error);
                 }
 
-                setContent('');
-                latestContentRef.current = '';
-                lastSavedContentRef.current = '';
-                setLastSaved(null);
-                setHasUnsavedChanges(false);
-                syncEditorContent('');
+                if (!localDraft?.content) {
+                    setContent('');
+                    latestContentRef.current = '';
+                    lastSavedContentRef.current = '';
+                    setLastSaved(null);
+                    setHasUnsavedChanges(false);
+                    setHasLocalDraft(false);
+                    syncEditorContent('');
+                }
             } finally {
                 if (isMounted) setIsLoading(false);
             }
@@ -182,8 +234,10 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         latestContentRef.current = html;
         setContent(html);
         setHasUnsavedChanges(html !== lastSavedContentRef.current);
+        setHasLocalDraft(true);
+        writeDraft(type, contextTitle, html);
         if (saveError) setSaveError('');
-    }, [saveError]);
+    }, [contextTitle, saveError, type]);
 
     const focusEditor = useCallback(() => {
         editorRef.current?.focus();
@@ -368,6 +422,8 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                                     <><Loader2 size={12} className="animate-spin" /> Saving...</>
                                 ) : saveError ? (
                                     <><X size={12} className="text-red-500" /> {saveError}</>
+                                ) : hasLocalDraft && hasUnsavedChanges ? (
+                                    <><Edit3 size={12} className="text-amber-500" /> Saved locally. Sync pending</>
                                 ) : hasUnsavedChanges ? (
                                     <><Edit3 size={12} className="text-yellow-500" /> Unsaved changes</>
                                 ) : (

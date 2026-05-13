@@ -48,6 +48,7 @@ export const verifyToken = async (req, res, next) => {
         }
 
         req.user = { 
+            id: decoded.id,
             _id: decoded.id,
             subscriptionPlan: user.subscriptionPlan || 'free',
             role: user.role || 'user',
@@ -85,6 +86,7 @@ export const optionalAuth = async (req, res, next) => {
         }
 
         req.user = { 
+            id: decoded.id,
             _id: decoded.id,
             subscriptionPlan: user.subscriptionPlan || 'free',
             role: user.role || 'user',

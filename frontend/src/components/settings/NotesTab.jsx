@@ -4,11 +4,42 @@ import { BookOpen, Search, Loader2, Trash2, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../api.js';
 
+const LOCAL_NOTE_PREFIX = 'codearena_note_draft:';
+
 const getNotePreview = (content = '') => {
     if (typeof window === 'undefined' || !content) return '';
 
     const doc = new DOMParser().parseFromString(content, 'text/html');
     return doc.body.textContent?.replace(/\s+/g, ' ').trim() || '';
+};
+
+const getLocalDraftNotes = () => {
+    if (typeof window === 'undefined') return [];
+
+    const drafts = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+        const key = window.localStorage.key(i);
+        if (!key?.startsWith(LOCAL_NOTE_PREFIX)) continue;
+
+        try {
+            const raw = window.localStorage.getItem(key);
+            const draft = raw ? JSON.parse(raw) : null;
+            if (!draft?.type || !draft?.contextTitle) continue;
+
+            drafts.push({
+                _id: `local:${key}`,
+                type: draft.type,
+                contextTitle: draft.contextTitle,
+                content: draft.content || '',
+                updatedAt: draft.updatedAt || Date.now(),
+                isLocalDraft: true
+            });
+        } catch {
+            // Ignore malformed local draft entries
+        }
+    }
+
+    return drafts;
 };
 
 const NotesTab = () => {
@@ -21,11 +52,20 @@ const NotesTab = () => {
         const fetchNotes = async () => {
             try {
                 const { data } = await api.get('/notes');
+                const localDrafts = getLocalDraftNotes();
                 if (isMounted && data.success) {
-                    setNotes(data.notes || []);
+                    const remoteNotes = data.notes || [];
+                    const remoteKeys = new Set(remoteNotes.map((note) => `${note.type}:${note.contextTitle}`));
+                    setNotes([
+                        ...localDrafts.filter((draft) => !remoteKeys.has(`${draft.type}:${draft.contextTitle}`)),
+                        ...remoteNotes
+                    ]);
                 }
             } catch (error) {
                 console.error("Failed to fetch notes:", error);
+                if (isMounted) {
+                    setNotes(getLocalDraftNotes());
+                }
                 toast.error("Unable to load notes");
             } finally {
                 if (isMounted) setLoading(false);
@@ -109,6 +149,11 @@ const NotesTab = () => {
                                     }`}>
                                         {note.type === 'battle_arena' ? 'Battle Arena' : 'Campaign Mode'}
                                     </span>
+                                    {note.isLocalDraft && (
+                                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                                            Local draft
+                                        </span>
+                                    )}
                                     <h4 className="font-bold text-white mt-2 text-base truncate pr-2">
                                         {note.contextTitle}
                                     </h4>
