@@ -49,9 +49,9 @@ const buildTransportConfig = () => {
     if (isGmail) {
         return {
             host: "smtp.gmail.com",
-            port: 587,
-            secure: false,
-            family: 4,
+            port: 465,
+            secure: true, // Use Implicit SSL on Port 465
+            family: 4, // Keep IPv4 to avoid ENETUNREACH
             auth: { user, pass },
             connectionTimeout: 10000,
             greetingTimeout: 10000,
