@@ -55,11 +55,28 @@ const NotesTab = () => {
                 const localDrafts = getLocalDraftNotes();
                 if (isMounted && data.success) {
                     const remoteNotes = data.notes || [];
-                    const remoteKeys = new Set(remoteNotes.map((note) => `${note.type}:${note.contextTitle}`));
-                    setNotes([
-                        ...localDrafts.filter((draft) => !remoteKeys.has(`${draft.type}:${draft.contextTitle}`)),
-                        ...remoteNotes
-                    ]);
+                    const noteMap = new Map();
+
+                    for (const note of remoteNotes) {
+                        noteMap.set(`${note.type}:${note.contextTitle}`, note);
+                    }
+
+                    for (const draft of localDrafts) {
+                        const key = `${draft.type}:${draft.contextTitle}`;
+                        const existing = noteMap.get(key);
+                        const existingUpdatedAt = existing?.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+                        const draftUpdatedAt = draft.updatedAt || 0;
+
+                        if (!existing || draftUpdatedAt >= existingUpdatedAt) {
+                            noteMap.set(key, draft);
+                        }
+                    }
+
+                    setNotes(
+                        Array.from(noteMap.values()).sort(
+                            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+                        )
+                    );
                 }
             } catch (error) {
                 console.error("Failed to fetch notes:", error);

@@ -1,13 +1,11 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
-import { requirePlus } from '../middleware/subscriptionAuth.js';
 import { getNotes, getNoteByContext, saveNote, deleteNote } from '../controllers/noteController.js';
 
 const router = express.Router();
 
-// All note routes require authentication and Plus tier (or higher)
+// Notes are available to all authenticated users.
 router.use(verifyToken);
-router.use(requirePlus);
 
 router.get('/', getNotes);
 router.get('/context', getNoteByContext);

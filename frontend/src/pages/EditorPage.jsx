@@ -16,7 +16,6 @@ import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import PremiumGate from '../components/PremiumGate.jsx';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
@@ -663,14 +662,12 @@ const EditorPage = () => {
                     }`}>
                         <div className="flex items-center gap-2">
                             <div className="flex p-1 bg-black/20 rounded-lg mr-2">
-                                <PremiumGate requiredTier="plus" fallback={null}>
-                                    <button 
-                                        onClick={() => setIsNotesOpen(true)}
-                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isNotesOpen ? 'bg-accent text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                    >
-                                        Notes
-                                    </button>
-                                </PremiumGate>
+                                <button 
+                                    onClick={() => setIsNotesOpen(true)}
+                                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isNotesOpen ? 'bg-accent text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    Notes
+                                </button>
                             </div>
                             <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`} title={problemLabel}>
                                 {problemLabel}

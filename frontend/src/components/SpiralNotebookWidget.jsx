@@ -8,6 +8,8 @@ import {
 import toast from 'react-hot-toast';
 import api from '../api.js';
 
+const NOTE_RETRY_DELAY_MS = 5000;
+
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -83,6 +85,10 @@ const clearDraft = (type, contextTitle) => {
     window.localStorage.removeItem(buildDraftStorageKey(type, contextTitle));
 };
 
+const syncNoteToServer = async ({ type, contextTitle, content }) => {
+    return api.post('/notes', { type, contextTitle, content });
+};
+
 const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide = 'right' }) => {
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -92,13 +98,32 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [saveError, setSaveError] = useState('');
     const [hasLocalDraft, setHasLocalDraft] = useState(false);
+    const [hasShownSyncFailureToast, setHasShownSyncFailureToast] = useState(false);
+    const [retryTick, setRetryTick] = useState(0);
 
     const editorRef = useRef(null);
     const lastSavedContentRef = useRef('');
     const latestContentRef = useRef('');
+    const retryTimeoutRef = useRef(null);
 
     const debouncedContent = useDebounce(content, 1200);
     const hasVisibleContent = Boolean(getPlainTextFromHtml(content));
+
+    const clearRetryTimer = useCallback(() => {
+        if (retryTimeoutRef.current) {
+            window.clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+        }
+    }, []);
+
+    const scheduleRetry = useCallback(() => {
+        if (retryTimeoutRef.current) return;
+
+        retryTimeoutRef.current = window.setTimeout(() => {
+            retryTimeoutRef.current = null;
+            setRetryTick((value) => value + 1);
+        }, NOTE_RETRY_DELAY_MS);
+    }, []);
 
     const syncEditorContent = useCallback((html) => {
         if (editorRef.current && editorRef.current.innerHTML !== html) {
@@ -120,19 +145,21 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         setSaveError('');
 
         try {
-            const { data } = await api.post('/notes', {
+            const { data } = await syncNoteToServer({
                 type,
                 contextTitle,
                 content: normalizedContent
             });
 
             if (data.success) {
+                clearRetryTimer();
                 lastSavedContentRef.current = normalizedContent;
                 latestContentRef.current = normalizedContent;
                 setContent(normalizedContent);
                 setLastSaved(new Date());
                 setHasUnsavedChanges(false);
                 setHasLocalDraft(false);
+                setHasShownSyncFailureToast(false);
                 clearDraft(type, contextTitle);
                 if (showToast) toast.success('Note saved');
                 return true;
@@ -143,18 +170,33 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
             }
 
             console.error('Failed to save note:', error);
-            const errorMsg = error.response?.data?.message || 'Please check your network.';
+            const status = error.response?.status;
+            const errorMsg =
+                error.response?.data?.message ||
+                (status === 401
+                    ? 'Your session expired. Please log in again.'
+                    : status === 403
+                        ? 'Cloud sync is unavailable for this account right now.'
+                        : status && status >= 500
+                            ? 'The notes server is temporarily unavailable.'
+                            : navigator.onLine
+                                ? 'Cloud sync could not be reached right now.'
+                                : 'Your internet connection appears offline.');
             writeDraft(type, contextTitle, normalizedContent);
+            scheduleRetry();
             setHasLocalDraft(true);
             setSaveError(`Saved locally. ${errorMsg}`);
-            toast.error(`Autosave failed: ${errorMsg}`);
+            if (!hasShownSyncFailureToast || showToast) {
+                toast.error(`Autosave failed: ${errorMsg}`);
+                setHasShownSyncFailureToast(true);
+            }
             return false;
         } finally {
             setIsSaving(false);
         }
 
         return false;
-    }, [contextTitle, type]);
+    }, [clearRetryTimer, contextTitle, hasShownSyncFailureToast, scheduleRetry, type]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -163,6 +205,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         const fetchNote = async () => {
             setIsLoading(true);
             setSaveError('');
+            setHasShownSyncFailureToast(false);
 
              const localDraft = readDraft(type, contextTitle);
              if (localDraft?.content) {
@@ -227,7 +270,45 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         if (debouncedContent === lastSavedContentRef.current) return;
 
         saveNote(debouncedContent);
-    }, [debouncedContent, hasUnsavedChanges, isOpen, saveNote]);
+    }, [debouncedContent, hasUnsavedChanges, isOpen, retryTick, saveNote]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        const handleOnline = () => {
+            if (hasUnsavedChanges) {
+                clearRetryTimer();
+                setRetryTick((value) => value + 1);
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [clearRetryTimer, hasUnsavedChanges, isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        return () => {
+            const pendingContent = normalizeEditorHtml(latestContentRef.current);
+            if (!pendingContent || pendingContent === lastSavedContentRef.current) return;
+
+            writeDraft(type, contextTitle, pendingContent);
+            void syncNoteToServer({ type, contextTitle, content: pendingContent })
+                .then(() => {
+                    clearDraft(type, contextTitle);
+                })
+                .catch(() => {
+                    // Keep the local draft for the next open/settings view.
+                });
+        };
+    }, [contextTitle, isOpen, type]);
+
+    useEffect(() => {
+        return () => {
+            clearRetryTimer();
+        };
+    }, [clearRetryTimer]);
 
     const updateContentFromEditor = useCallback(() => {
         const html = normalizeEditorHtml(editorRef.current?.innerHTML || '');
