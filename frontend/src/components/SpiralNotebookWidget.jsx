@@ -56,7 +56,7 @@ const getPlainTextFromHtml = (html = '') => {
     return doc.body.textContent?.replace(/\s+/g, ' ').trim() || '';
 };
 
-const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
+const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide = 'right' }) => {
     const [content, setContent] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
@@ -207,9 +207,15 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
 
     if (!isOpen) return null;
 
+    const desktopPlacement = isPinned
+        ? 'items-end justify-end'
+        : desktopSide === 'left'
+            ? 'md:items-start md:justify-start'
+            : 'md:items-start md:justify-end';
+
     return (
         <AnimatePresence>
-            <div className={`fixed inset-0 z-[200] pointer-events-none flex p-3 sm:p-5 md:p-6 ${isPinned ? 'items-end justify-end' : 'items-center justify-center'}`}>
+            <div className={`fixed inset-0 z-[200] pointer-events-none flex items-end justify-center p-3 sm:p-5 md:p-6 ${desktopPlacement}`}>
                 <motion.div
                     initial={{ opacity: 0, y: 32, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -217,8 +223,8 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                     transition={{ type: 'spring', damping: 24, stiffness: 260 }}
                     className={`pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden ${
                         isPinned
-                            ? 'w-full max-w-[420px] h-[min(72vh,540px)] rounded-[28px]'
-                            : 'w-full max-w-[720px] h-[min(78vh,860px)] rounded-[32px]'
+                            ? 'w-full max-w-[380px] h-[min(66vh,500px)] rounded-[28px]'
+                            : 'w-full max-w-[360px] h-[min(58vh,520px)] rounded-[28px] md:mt-[66px]'
                     }`}
                     style={{ backgroundColor: '#faf8ef' }}
                 >
@@ -240,7 +246,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                     <div className="relative flex h-full flex-col pl-10">
                         <div className="flex justify-between items-center px-5 py-4 pr-6 relative z-20">
                             <h2
-                                className="text-xl md:text-[2rem] font-black text-gray-800 flex items-center gap-2 tracking-tight truncate max-w-[82%]"
+                                className="text-xl md:text-[1.2rem] font-black text-gray-800 flex items-center gap-2 tracking-tight truncate max-w-[76%]"
                                 style={{ fontFamily: "'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
                             >
                                 {contextTitle} <Edit3 size={16} className="text-gray-400 shrink-0" />
@@ -329,6 +335,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                                         ref={editorRef}
                                         contentEditable
                                         suppressContentEditableWarning
+                                        spellCheck={false}
                                         onInput={updateContentFromEditor}
                                         className="h-full overflow-y-auto outline-none custom-scrollbar px-12 py-[5px] text-gray-800"
                                         style={{

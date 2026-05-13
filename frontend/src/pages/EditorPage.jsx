@@ -11,7 +11,7 @@ import { io } from 'socket.io-client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js';
-import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap, Sun, Moon } from 'lucide-react';
+import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap, Sun, Moon, Clock3 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
@@ -106,6 +106,24 @@ const Timer = React.memo(({ initialTime, socket }) => {
 
 Timer.displayName = 'Timer';
 
+const TimerBadge = React.memo(({ initialTime, socket, compact = false }) => {
+    if (compact) {
+        return (
+            <div
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent animate-pulse"
+                title="Match timer is running"
+                aria-label="Match timer is running"
+            >
+                <Clock3 size={15} />
+            </div>
+        );
+    }
+
+    return <Timer initialTime={initialTime} socket={socket} />;
+});
+
+TimerBadge.displayName = 'TimerBadge';
+
 const EditorPage = () => {
     const socketRef = useRef(null);
     const location = useLocation();
@@ -177,6 +195,9 @@ const EditorPage = () => {
 
     const ydocRef = useRef(null);
     const providerRef = useRef(null);
+    const problemLabel = problem ? `Q${round}/${totalRounds}: ${problem.title}` : 'Loading...';
+    const shouldCompactTimer = problemLabel.length > 30;
+    const notebookSide = mySide === 'left' ? 'right' : 'left';
 
     // ✅ Robust Entrance Animation Control
     useEffect(() => {
@@ -665,8 +686,8 @@ const EditorPage = () => {
                                     </button>
                                 </PremiumGate>
                             </div>
-                            <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                {problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}
+                            <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`} title={problemLabel}>
+                                {problemLabel}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -682,7 +703,7 @@ const EditorPage = () => {
                             >
                                 {isDark ? <Sun size={15} /> : <Moon size={15} />}
                             </button>
-                            <Timer initialTime={remainingTime} socket={socketRef.current} />
+                            <TimerBadge initialTime={remainingTime} socket={socketRef.current} compact={shouldCompactTimer} />
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
@@ -731,6 +752,7 @@ const EditorPage = () => {
                 onClose={() => setIsNotesOpen(false)} 
                 type="battle_arena" 
                 contextTitle={problem ? `Battle Arena - ${problem.title}` : "Battle Arena"}
+                desktopSide={notebookSide}
             />
         </div>
     );
