@@ -13,6 +13,21 @@ import {
   Shield,
   Smartphone,
   UserRound,
+import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import {
+  BadgeCheck,
+  Bell,
+  Camera,
+  Check,
+  Lock,
+  Mail,
+  Save,
+  Settings2,
+  Shield,
+  Smartphone,
+  UserRound,
   X,
   BarChart3,
   Activity,
@@ -21,10 +36,12 @@ import {
   Palette,
   Users,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 import BadgesTab from './settings/BadgesTab.jsx';
 import CustomizationTab from './settings/CustomizationTab.jsx';
 import CommunityTab from './settings/CommunityTab.jsx';
+import NotesTab from './settings/NotesTab.jsx';
 import PremiumGate from './PremiumGate.jsx';
 import {
   BarChart,
@@ -48,6 +65,7 @@ const tabs = [
   { id: 'preferences', label: 'Preferences', icon: Bell },
   { id: 'badges', label: 'Badges', icon: Award },
   { id: 'customization', label: 'Customize', icon: Palette },
+  { id: 'notes', label: 'Notes', icon: BookOpen },
   { id: 'community', label: 'Community', icon: Users },
 ];
 
@@ -543,210 +561,6 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition-all ${
-                        isActive
-                          ? 'bg-emerald-500 text-black shadow-[0_10px_24px_rgba(74,222,128,0.18)]'
-                          : 'bg-[#191919] text-gray-300 hover:bg-[#1e1e1e] hover:text-white'
-                      }`}
-                    >
-                      <Icon size={16} />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-
-            <div className="flex-1 overflow-y-auto scrollbar-hide px-5 py-5 sm:px-7">
-              {loadingProfile ? (
-                <div className="flex min-h-[420px] items-center justify-center text-sm text-gray-400">
-                  Loading your settings...
-                </div>
-              ) : (
-                <>
-                  {activeTab === 'profile' && (
-                    <div className="space-y-6">
-                      <div className="rounded-3xl border border-gray-800 bg-[#171717] p-5">
-                        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                          <Avatar username={profileForm.username} src={profileForm.avatar} className="h-24 w-24 border-gray-700" />
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-white">Avatar</p>
-                            <p className="mt-1 text-xs text-gray-400">Upload a square image up to 1MB. Preview updates instantly before saving.</p>
-                            <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-700 bg-[#1d1d1d] px-4 py-2 text-sm font-semibold text-gray-100 transition-colors hover:border-gray-600 hover:bg-[#222]">
-                              <Camera size={15} />
-                              Choose Image
-                              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <label className="space-y-2">
-                          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Full Name</span>
-                          <input
-                            value={profileForm.fullName}
-                            onChange={(event) => setProfileForm((prev) => ({ ...prev, fullName: event.target.value }))}
-                            className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                            placeholder="Enter your full name"
-                          />
-                        </label>
-                        <label className="space-y-2">
-                          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Username</span>
-                          <input
-                            value={profileForm.username}
-                            onChange={(event) => setProfileForm((prev) => ({ ...prev, username: event.target.value.replace(/\s/g, '') }))}
-                            className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                            placeholder="Choose a unique username"
-                          />
-                          {usernameError && <p className="text-xs text-red-400">{usernameError}</p>}
-                        </label>
-                      </div>
-
-                      <label className="space-y-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Bio</span>
-                        <textarea
-                          value={profileForm.bio}
-                          onChange={(event) => setProfileForm((prev) => ({ ...prev, bio: event.target.value.slice(0, 240) }))}
-                          rows={4}
-                          className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                          placeholder="Tell the arena a little about yourself"
-                        />
-                        <p className="text-right text-xs text-gray-500">{profileForm.bio.length}/240</p>
-                      </label>
-
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={saveProfile}
-                          disabled={savingProfile}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          <Save size={16} />
-                          {savingProfile ? 'Saving...' : 'Save Profile'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'security' && (
-                    <div className="space-y-6">
-                      <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-100">
-                        Sensitive changes are protected with a one-time verification code sent to your currently registered email address.
-                      </div>
-
-                      <div className="grid gap-4">
-                        <label className="space-y-2">
-                          <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
-                            <span className="inline-flex items-center gap-2"><Mail size={14} /> Email</span>
-                            <VerifiedBadge label="Verified" />
-                          </span>
-                          <input
-                            value={securityForm.email}
-                            onChange={(event) => setSecurityForm((prev) => ({ ...prev, email: event.target.value }))}
-                            className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                            placeholder="Update your email"
-                          />
-                        </label>
-
-                        <label className="space-y-2">
-                          <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
-                            <span className="inline-flex items-center gap-2"><Smartphone size={14} /> Phone</span>
-                            <VerifiedBadge label="Verified" />
-                          </span>
-                          <input
-                            value={securityForm.phone}
-                            onChange={(event) => setSecurityForm((prev) => ({ ...prev, phone: event.target.value }))}
-                            className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                            placeholder="Update your phone number"
-                          />
-                        </label>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <label className="space-y-2">
-                            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">New Password</span>
-                            <input
-                              type="password"
-                              value={securityForm.password}
-                              onChange={(event) => setSecurityForm((prev) => ({ ...prev, password: event.target.value }))}
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                              placeholder="Create a strong password"
-                            />
-                          </label>
-                          <label className="space-y-2">
-                            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Confirm Password</span>
-                            <input
-                              type="password"
-                              value={securityForm.confirmPassword}
-                              onChange={(event) => setSecurityForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-emerald-500"
-                              placeholder="Confirm your new password"
-                            />
-                          </label>
-                        </div>
-
-                        {passwordError && <p className="text-xs text-red-400">{passwordError}</p>}
-
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            onClick={requestOtp}
-                            disabled={requestingOtp}
-                            className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
-                          >
-                            <Lock size={16} />
-                            {requestingOtp ? 'Sending Code...' : 'Update with OTP'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'preferences' && (
-                    <div className="space-y-6">
-                      <div className="grid gap-4">
-                        <ToggleCard
-                          title="Email Notifications"
-                          description="Receive match reminders, account alerts, and important updates."
-                          checked={preferencesForm.emailNotifications}
-                          onChange={() => setPreferencesForm((prev) => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
-                        />
-                        <ToggleCard
-                          title="Marketing Updates"
-                          description="Hear about launches, tournaments, and premium feature drops."
-                          checked={preferencesForm.marketingUpdates}
-                          onChange={() => setPreferencesForm((prev) => ({ ...prev, marketingUpdates: !prev.marketingUpdates }))}
-                        />
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={savePreferences}
-                          disabled={savingPreferences}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          <Check size={16} />
-                          {savingPreferences ? 'Saving...' : 'Save Preferences'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'analytics' && <AnalyticsTab />}
-                  {activeTab === 'badges' && <BadgesTab />}
-                  {activeTab === 'customization' && <CustomizationTab />}
-                  {activeTab === 'community' && <CommunityTab />}
-                </>
-              )}
-            </div>
-          </div>
-
           <AnimatePresence>
             {otpPending && (
               <div className="absolute inset-0 z-20 flex items-center justify-center p-4">

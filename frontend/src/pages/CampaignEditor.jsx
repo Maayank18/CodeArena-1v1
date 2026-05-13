@@ -23,6 +23,8 @@ import {
   hasPremiumCampaignAccess,
   isRootCampaignNodeId,
 } from '../utils/campaignAccess';
+import PremiumGate from '../components/PremiumGate';
+import SpiralNotebookWidget from '../components/SpiralNotebookWidget';
 
 // --- Constants ----------------------------------------------------------------
 
@@ -285,6 +287,7 @@ const CampaignEditor = () => {
   const [isRunning,    setIsRunning]    = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResults,  setShowResults]  = useState(false);
+  const [isNotesOpen,  setIsNotesOpen]  = useState(false);
 
   const [failCount,      setFailCount]      = useState(0);
   const [showSage,       setShowSage]       = useState(false);
@@ -546,6 +549,19 @@ const CampaignEditor = () => {
           {isDark ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
+        <PremiumGate requiredTier="plus" fallback={null}>
+          <button
+            onClick={() => setIsNotesOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 ml-2 text-xs font-bold rounded-lg transition-all border
+              ${isNotesOpen 
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                : 'text-slate-600 dark:text-gray-400 border-transparent hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-white'
+              }`}
+          >
+            <BookOpen size={14} /> <span className="hidden sm:inline">Notes</span>
+          </button>
+        </PremiumGate>
+
         <div className="hidden sm:flex items-center gap-2 shrink-0">
           <button onClick={handleRun} disabled={isBusy || !code.trim()} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-gray-800 text-xs font-bold rounded-lg transition-all">
             {isRunning ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />} Run
@@ -598,7 +614,12 @@ const CampaignEditor = () => {
 
       <CampaignTeaserModal isOpen={showTeaserModal} />
 
-      
+      <SpiralNotebookWidget 
+          isOpen={isNotesOpen} 
+          onClose={() => setIsNotesOpen(false)} 
+          type="campaign_editor" 
+          contextTitle={problem ? `Campaign - ${node?.campaignRegion} Node ${node?.nodeOrder}` : "Campaign"}
+      />
     </div>
   );
 };

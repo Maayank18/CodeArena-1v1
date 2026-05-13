@@ -242,7 +242,7 @@ const Dashboard = () => {
                     Create New Battle Room
                   </button>
 
-                  <PremiumGate requiredTier="plus" compact message="Upgrade to Pro to unlock custom matches">
+                  <PremiumGate requiredTier="plus" compact message="Upgrade to Plus to unlock custom matches">
                     <button
                       onClick={() => setShowCustomModal(true)}
                       disabled={isNavigating}

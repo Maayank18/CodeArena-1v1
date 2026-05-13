@@ -343,7 +343,7 @@ const Visualizer = () => {
                 isOpen={showTeaserModal}
                 onClose={() => setShowTeaserModal(false)}
                 title="Trial Expired"
-                message="You've used your free visualization! Upgrade to Premium to visualize endless algorithms and data structures."
+                message="You've used your free visualization! Upgrade to Pro to visualize endless algorithms and data structures."
             />
             {/* Inject scoped CSS variables for both themes */}
             <style>{`

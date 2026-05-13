@@ -42,29 +42,30 @@ const Pricing = () => {
   const featuresPlus = [
     '100 1v1 battle/month',
     'Access to all code languages',
+    'Custom battle rooms',
+    'In-editor personal notes',
     'Access to your match history',
     'Access to leaderboards',
-    'Access to limited AI assistance',
   ];
 
   const featuresPro = [
     'Everything in Plus',
+    'Code visualization tool',
     'Access to learn section',
     'Analytics and insights',
     'Priority matchmaking',
     'Exclusive badges',
-    'Contest participation',
-    'Community support',
     'Profile customization',
   ];
 
   const featuresPremium = [
     'Everything in Pro',
-    'Code visualization tool',
-    'Advanced theme optimization',
     'Campaign Mode access',
     'Full AI support',
+    'Advanced theme optimization',
+    'Contest participation',
     'Weekly report generation',
+    'Community support',
   ];
 
   const openPlanModal = useCallback((planType) => {

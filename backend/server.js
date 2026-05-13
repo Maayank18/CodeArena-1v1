@@ -526,6 +526,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import campaignRoutes from './routes/campaignRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import noteRoutes from './routes/noteRoutes.js';
 import { verifySmtpConnection } from './services/authEmailService.js';
 
 // ✅ MODELS
@@ -628,6 +629,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/visualize', visualizerRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/campaign', campaignRoutes);
+app.use('/api/notes', noteRoutes);
 app.use('/uploads', express.static('uploads'));
 
 // ✅ HEALTH CHECK (Enhanced)

@@ -17,6 +17,8 @@ import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import PremiumGate from '../components/PremiumGate.jsx';
+import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
 const resolveBackendHttpUrl = () => {
@@ -45,7 +47,6 @@ const CUSTOMIZATION_ACCESS_TIERS = new Set(['pro', 'premium']);
 // ✅ FIXED TIMER: Receives initial time via props
 const Timer = React.memo(({ initialTime, socket }) => {
     const [timeLeft, setTimeLeft] = useState(initialTime);
-
     const intervalRef = useRef(null);
 
     useEffect(() => {
@@ -56,10 +57,7 @@ const Timer = React.memo(({ initialTime, socket }) => {
 
     useEffect(() => {
         if (timeLeft === null || timeLeft === undefined) return;
-
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-        }
+        if (intervalRef.current) clearInterval(intervalRef.current);
 
         intervalRef.current = setInterval(() => {
             setTimeLeft(prev => {
@@ -78,18 +76,12 @@ const Timer = React.memo(({ initialTime, socket }) => {
 
     useEffect(() => {
         if (!socket) return;
-
         const handleSyncTime = (serverTime) => {
             const diff = Math.abs(serverTime - (timeLeft || 0));
-            if (diff > 2) {
-                setTimeLeft(serverTime);
-            }
+            if (diff > 2) setTimeLeft(serverTime);
         };
-
         socket.on('sync_time', handleSyncTime);
-        return () => {
-            socket.off('sync_time', handleSyncTime);
-        };
+        return () => socket.off('sync_time', handleSyncTime);
     }, [socket, timeLeft]);
 
     const formatTime = (s) => {
@@ -118,8 +110,13 @@ const EditorPage = () => {
     const socketRef = useRef(null);
     const location = useLocation();
     const { roomId } = useParams();
+    const [centerTab, setCenterTab]     = useState('problem'); // 'problem' or 'notes'
+    const [notes, setNotes]             = useState('');
+
     const navigate = useNavigate();
+
     const { theme, toggleTheme } = useTheme();
+    
     const storedUser = (() => {
         try {
             return JSON.parse(localStorage.getItem('codearena_user') || '{}');
@@ -127,6 +124,7 @@ const EditorPage = () => {
             return {};
         }
     })();
+
     const storedCustomJoin = (() => {
         try {
             return JSON.parse(localStorage.getItem(buildCustomRoomAuthKey(roomId)) || '{}');
@@ -148,6 +146,7 @@ const EditorPage = () => {
     const [mySide, setMySide] = useState(null); 
     const [runResults, setRunResults] = useState(null); 
     const [isRunning, setIsRunning] = useState(false);
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [language, setLanguage] = useState('cpp'); 
     const [executionStatus, setExecutionStatus] = useState('idle');
     const [arenaUnavailableMessage, setArenaUnavailableMessage] = useState('');
@@ -655,7 +654,21 @@ const EditorPage = () => {
                     <div className={`arena-pane-header p-3 flex justify-between items-center border-b shrink-0 h-14 ${
                         isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
                     }`}>
-                        <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}</span>
+                        <div className="flex items-center gap-2">
+                            <div className="flex p-1 bg-black/20 rounded-lg mr-2">
+                                <PremiumGate requiredTier="plus" fallback={null}>
+                                    <button 
+                                        onClick={() => setIsNotesOpen(true)}
+                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isNotesOpen ? 'bg-accent text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        Notes
+                                    </button>
+                                </PremiumGate>
+                            </div>
+                            <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {problem ? `Q${round}/${totalRounds}: ${problem.title}` : "Loading..."}
+                            </span>
+                        </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={toggleTheme}
@@ -712,6 +725,13 @@ const EditorPage = () => {
                 <button onClick={() => setActiveTab('problem')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'problem' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><FileText size={18} /><span className="text-[10px] font-bold">Problem</span></button>
                 <button onClick={() => setActiveTab('right')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'right' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Terminal size={18} /><span className="text-[10px] font-bold">Right</span></button>
             </div>
+
+            <SpiralNotebookWidget 
+                isOpen={isNotesOpen} 
+                onClose={() => setIsNotesOpen(false)} 
+                type="battle_arena" 
+                contextTitle={problem ? `Battle Arena - ${problem.title}` : "Battle Arena"}
+            />
         </div>
     );
 };
