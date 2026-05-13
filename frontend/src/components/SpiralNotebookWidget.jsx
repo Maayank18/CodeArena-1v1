@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Pin, Undo, Redo, Bold, Italic, Underline, 
     List, ListOrdered, Image as ImageIcon, MoreHorizontal,
-    Star, CloudSelect, Loader2, Edit3
+    Star, CloudCheck, Loader2, Edit3
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
@@ -220,7 +220,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                             {isSaving ? (
                                 <><Loader2 size={12} className="animate-spin" /> Saving...</>
                             ) : (
-                                <><CloudSelect size={14} className="text-green-500" /> 
+                                <><CloudCheck size={14} className="text-green-500" /> 
                                   Last saved: {lastSaved ? "just now" : "Synced"}
                                 </>
                             )}
