@@ -92,11 +92,42 @@ import {
     createProblem,
     updateProblem,
     deleteProblem,
+    uploadProblemImage,
 
     // Leaderboard Management
     resetSeasonScores,
     resetAllStats,
 } from '../controllers/adminController.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+// ── MULTER CONFIGURATION ─────────────────────────────────────────
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = 'uploads/problems';
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `problem-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const allowed = /jpeg|jpg|png|gif|webp/;
+        const isExt = allowed.test(path.extname(file.originalname).toLowerCase());
+        const isMime = allowed.test(file.mimetype);
+        if (isExt && isMime) return cb(null, true);
+        cb(new Error('Only images are allowed'));
+    }
+});
 
 const router = express.Router();
 
@@ -122,6 +153,7 @@ router.post('/matches/clear',      adminAuth, clearMatchHistory);
 // to prevent Express matching "create" as a problemId param
 router.post('/problems',                           adminAuth, getAllProblems);
 router.post('/problems/create',                    adminAuth, createProblem);
+router.post('/problems/upload-image',              adminAuth, upload.single('image'), uploadProblemImage);
 router.post('/problems/:problemId/update',         adminAuth, updateProblem);
 router.post('/problems/:problemId/delete',         adminAuth, deleteProblem);
 

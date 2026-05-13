@@ -146,6 +146,9 @@ public class Main {
         displayInput: {
             type: String
         },
+        visualInput: {
+            type: String
+        },
         output: {
             type: String,
             required: true

@@ -468,6 +468,29 @@ import User from '../models/User.js';
 import Match from '../models/Match.js';
 import Problem from '../models/Problem.js';
 import { clearProblemCache } from './problemController.js';
+import fs from 'fs';
+import path from 'path';
+
+// ═══════════════════════════════════════════════════════════════
+// PROBLEM IMAGE UPLOAD
+// ═══════════════════════════════════════════════════════════════
+export const uploadProblemImage = async (req, res) => {
+    try {
+        await verifyAdmin(req.body.username);
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Return the relative URL to the file
+        const imageUrl = `/uploads/problems/${req.file.filename}`;
+        res.json({ imageUrl });
+    } catch (error) {
+        console.error('[Admin] uploadProblemImage error:', error);
+        const status = error.message.startsWith('Unauthorized') ? 403 : 500;
+        res.status(status).json({ message: error.message });
+    }
+};
 
 // ═══════════════════════════════════════════════════════════════
 // MIDDLEWARE HELPER — validate admin identity
@@ -580,7 +603,9 @@ const buildProblemPayload = (raw = {}, existingProblem = null) => {
             ? merged.testCases.map((testCase) => ({
                 input: testCase?.input,
                 displayInput: typeof testCase?.displayInput === 'string' ? testCase.displayInput : undefined,
+                visualInput: typeof testCase?.visualInput === 'string' ? testCase.visualInput : undefined,
                 output: testCase?.output,
+                explanation: typeof testCase?.explanation === 'string' ? testCase.explanation : undefined,
                 isPublic: Boolean(testCase?.isPublic),
             }))
             : [],
@@ -935,7 +960,7 @@ export const getAllProblems = async (req, res) => {
         }
 
         const problems = await Problem.find(filter)
-            .select('title slug description inputFormatDescription difficulty type topics campaignRegion campaignNodeId constraints testCases goldenSolution timeLimit memoryLimit starterCode createdAt')
+            .select('title slug description inputFormatDescription difficulty type topics campaignRegion campaignNodeId constraints testCases goldenSolution timeLimit memoryLimit starterCode createdAt problemImage')
             .sort({ createdAt: -1 })
             .lean();
 

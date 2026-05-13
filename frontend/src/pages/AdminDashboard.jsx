@@ -6,7 +6,7 @@ import {
     Code, Plus, X, Eye, EyeOff, Save, ChevronDown, ChevronUp,
     CheckCircle, Zap, Database, Star,
     ChevronLeft, ChevronRight, Download, ArrowUp,
-    ArrowDown, Target, HardDrive,
+    ArrowDown, Target, HardDrive, Upload, Image, Loader2,
     Wifi, AlertCircle, Info, Layers,
     UserCheck, BarChart2, PieChart, TrendingDown,
     Server, Radio, Save as SaveIcon
@@ -1756,13 +1756,43 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
             cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
             java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
         },
-        testCases: problem?.testCases || [{ input:'', displayInput:'', output:'', explanation:'', isPublic:true }],
+        testCases: problem?.testCases || [{ input:'', displayInput:'', visualInput:'', output:'', explanation:'', isPublic:true }],
         topics: problem?.topics || [],
         problemImage: problem?.problemImage || '',
     });
 
     const [submitting, setSubmitting] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [activeCodeTab, setActiveCodeTab] = useState('javascript');
+    const fileInputRef = useRef(null);
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please upload an image file');
+            return;
+        }
+
+        const formDataPayload = new FormData();
+        formDataPayload.append('image', file);
+        formDataPayload.append('username', username);
+
+        setUploading(true);
+        try {
+            const res = await api.post('/admin/problems/upload-image', formDataPayload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            set('problemImage', res.data.imageUrl);
+            toast.success('Image uploaded successfully');
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error(error.response?.data?.message || 'Failed to upload image');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
     const resolvedProblemType = String(formData.type ?? '').trim().toLowerCase() === 'campaign'
@@ -1802,7 +1832,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                     cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
                     java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
                 },
-                testCases: problem.testCases || [{ input:'', displayInput:'', output:'', explanation:'', isPublic:true }],
+                testCases: problem.testCases || [{ input:'', displayInput:'', visualInput:'', output:'', explanation:'', isPublic:true }],
                 topics: problem.topics || [],
                 problemImage: problem.problemImage || '',
             });
@@ -1976,15 +2006,74 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                             placeholder="Describe the problem clearly with examples..."/>
                     </div>
  
-                    <div>
-                        <label className="block text-sm font-semibold mb-1.5 text-gray-300">Problem Image URL (Optional)</label>
-                        <p className="text-xs text-gray-600 mb-2">Provide a URL for a pictorial representation (e.g., a tree diagram or graph structure).</p>
-                        <input
-                            value={formData.problemImage}
-                            onChange={e => set('problemImage', e.target.value)}
-                            className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 transition-all"
-                            placeholder="https://example.com/tree-diagram.png"
-                        />
+                    <div className="bg-gray-900/30 border border-gray-800 rounded-xl p-4">
+                        <label className="block text-sm font-semibold mb-3 text-gray-300">Problem Image (Optional)</label>
+                        
+                        <div className="flex items-start gap-4">
+                            {formData.problemImage ? (
+                                <div className="relative group shrink-0">
+                                    <img 
+                                        src={formData.problemImage} 
+                                        alt="Problem" 
+                                        className="w-32 h-32 object-cover rounded-xl border border-gray-700 shadow-lg"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => set('problemImage', '')}
+                                        className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-xl"
+                                    >
+                                        <X size={12}/>
+                                    </button>
+                                </div>
+                            ) : (
+                                <div 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-800 bg-black/20 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-accent/40 hover:bg-accent/5 transition-all"
+                                >
+                                    <Image size={24} className="text-gray-600"/>
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">No Image</span>
+                                </div>
+                            )}
+
+                            <div className="flex-1 space-y-3">
+                                <p className="text-xs text-gray-500 leading-relaxed">
+                                    Upload a pictorial representation (Tree, Graph, etc.) from your local device. 
+                                    Max 5MB.
+                                </p>
+                                
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleImageUpload} 
+                                    className="hidden" 
+                                    accept="image/*"
+                                />
+                                
+                                <button
+                                    type="button"
+                                    disabled={uploading}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                                        uploading 
+                                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+                                            : 'bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20'
+                                    }`}
+                                >
+                                    {uploading ? (
+                                        <Loader2 size={16} className="animate-spin"/>
+                                    ) : (
+                                        <Upload size={16}/>
+                                    )}
+                                    {uploading ? 'Uploading...' : formData.problemImage ? 'Change Image' : 'Upload Image'}
+                                </button>
+                                
+                                {formData.problemImage && (
+                                    <div className="text-[10px] font-mono text-gray-600 truncate max-w-[200px]">
+                                        Path: {formData.problemImage}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -2078,7 +2167,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <label className="text-sm font-semibold text-gray-300">Test Cases <span className="text-red-400">*</span></label>
-                            <button type="button" onClick={()=>set('testCases',[...formData.testCases,{input:'',displayInput:'',output:'',isPublic:false}])}
+                            <button type="button" onClick={()=>set('testCases',[...formData.testCases,{input:'',displayInput:'',visualInput:'',output:'',explanation:'',isPublic:false}])}
                                 className="text-xs px-3 py-1 bg-accent text-black rounded-lg hover:bg-accent/80 font-bold transition-all">+ Add Test Case</button>
                         </div>
                         <div className="space-y-3">
@@ -2108,15 +2197,25 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="mt-3">
-                                        <label className="block text-xs text-gray-600 mb-1">Visual Input (For Users)</label>
-                                        <textarea
-                                            value={tc.displayInput || ''}
-                                            onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],displayInput:e.target.value};set('testCases',nt);}}
-                                            className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[60px] resize-y transition-all"
-                                            placeholder={'nums = [2, 7, 11, 15]\ntarget = 9'}
-                                        />
-                                        <p className="mt-1 text-[10px] text-gray-600 italic">Write the human-friendly example only. Keep raw stdin details in Input Format Details.</p>
+                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-gray-600 mb-1">Display Input (e.g. nums=[1,2])</label>
+                                            <textarea
+                                                value={tc.displayInput || ''}
+                                                onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],displayInput:e.target.value};set('testCases',nt);}}
+                                                className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[60px] resize-y transition-all"
+                                                placeholder={'nums = [2, 7, 11, 15]\ntarget = 9'}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-600 mb-1">Visual Input (Optional)</label>
+                                            <textarea
+                                                value={tc.visualInput || ''}
+                                                onChange={e=>{const nt=[...formData.testCases];nt[i]={...nt[i],visualInput:e.target.value};set('testCases',nt);}}
+                                                className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg font-mono text-xs focus:outline-none focus:border-accent/60 min-h-[60px] resize-y transition-all"
+                                                placeholder={'[2,7,11,15]'}
+                                            />
+                                        </div>
                                     </div>
                                     <div className="mt-3">
                                         <label className="block text-xs text-gray-600 mb-1">Explanation (Optional)</label>

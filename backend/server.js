@@ -628,6 +628,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/visualize', visualizerRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/campaign', campaignRoutes);
+app.use('/uploads', express.static('uploads'));
 
 // ✅ HEALTH CHECK (Enhanced)
 app.get('/health', (req, res) => {
