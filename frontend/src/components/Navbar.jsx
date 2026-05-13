@@ -75,7 +75,17 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
         <div className="flex items-center gap-3 sm:gap-8">
           <button
-            onClick={() => toast('Contests coming soon!')}
+            onClick={() => toast('Contests coming soon!', { 
+              icon: <Trophy size={18} className="text-yellow-500" />,
+              style: {
+                borderRadius: '12px',
+                background: 'var(--surface-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                fontSize: '14px',
+                fontWeight: '600'
+              }
+            })}
             className="hidden items-center gap-2 text-sm font-bold text-[var(--text-secondary)] transition-all cursor-pointer hover:text-[var(--text-primary)] hover:underline sm:flex"
           >
             <Trophy size={16} />
