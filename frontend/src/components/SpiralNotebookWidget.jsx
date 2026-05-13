@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Pin, Undo, Redo, Bold, Italic, Underline, 
     List, ListOrdered, Image as ImageIcon, MoreHorizontal,
-    Star, CloudCheck, Loader2, Edit3
+    Star, CloudSelect, Loader2, Edit3
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
@@ -28,9 +28,10 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
     const [lastSaved, setLastSaved] = useState(null);
     const [isPinned, setIsPinned] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    // Add a flag to track if changes were made by the user, not just initial load
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    
     const debouncedContent = useDebounce(content, 1500);
-
-    const isInitialMount = useRef(true);
     const textareaRef = useRef(null);
 
     // Fetch existing note on mount
@@ -47,8 +48,10 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                 if (isMounted && data.success && data.note) {
                     setContent(data.note.content || '');
                     setLastSaved(new Date());
+                    setHasUnsavedChanges(false);
                 } else if (isMounted) {
                     setContent('');
+                    setHasUnsavedChanges(false);
                 }
             } catch (error) {
                 if (error.response?.status !== 404) {
@@ -66,12 +69,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
 
     // Autosave functionality
     useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            return;
-        }
-
-        if (!isOpen) return;
+        if (!isOpen || !hasUnsavedChanges) return;
 
         const saveNote = async () => {
             setIsSaving(true);
@@ -83,10 +81,12 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                 });
                 if (data.success) {
                     setLastSaved(new Date());
+                    setHasUnsavedChanges(false);
                 }
             } catch (error) {
                 console.error("Failed to save note:", error);
-                toast.error("Autosave failed");
+                const errorMsg = error.response?.data?.message || "Please check your network.";
+                toast.error(`Autosave failed: ${errorMsg}`);
             } finally {
                 setIsSaving(false);
             }
@@ -95,7 +95,33 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
         if (debouncedContent !== undefined) {
             saveNote();
         }
-    }, [debouncedContent, isOpen, type, contextTitle]);
+    }, [debouncedContent, isOpen, type, contextTitle, hasUnsavedChanges]);
+
+    const handleContentChange = (e) => {
+        setContent(e.target.value);
+        setHasUnsavedChanges(true);
+    };
+
+    // Helper for inserting markdown text
+    const insertMarkdown = (prefix, suffix = '') => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = content.substring(start, end);
+        const replacement = prefix + selectedText + suffix;
+
+        const newContent = content.substring(0, start) + replacement + content.substring(end);
+        setContent(newContent);
+        setHasUnsavedChanges(true);
+
+        // Reset cursor position after React re-renders
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+        }, 0);
+    };
 
     if (!isOpen) return null;
 
@@ -106,13 +132,14 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 50, scale: 0.9 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className={`fixed z-[200] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] 
+                className={`fixed z-[200] shadow-[0_24px_80px_rgba(0,0,0,0.6)] 
                     flex flex-col
-                    md:bottom-8 md:right-8 bottom-0 right-0
-                    md:w-[500px] w-full md:h-[650px] h-[85vh]
-                    md:rounded-2xl rounded-t-2xl
+                    w-full h-[85vh]
+                    rounded-t-2xl md:rounded-2xl
                     overflow-hidden
-                    ${isPinned ? 'md:bottom-8 md:right-8' : ''}
+                    ${isPinned 
+                        ? 'md:w-[400px] md:h-[500px] md:bottom-6 md:right-6 md:top-auto md:left-auto md:translate-x-0 md:translate-y-0' 
+                        : 'md:w-[460px] md:h-[580px] md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bottom-0 right-0'}
                 `}
                 style={{
                     backgroundColor: '#faf8ef', // Creamy notebook color
@@ -124,7 +151,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                          background: 'linear-gradient(90deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.02) 40%, transparent 100%)',
                          borderRight: '1px solid rgba(0,0,0,0.05)'
                      }}>
-                    {Array.from({ length: 24 }).map((_, i) => (
+                    {Array.from({ length: isPinned ? 18 : 22 }).map((_, i) => (
                         <div key={i} className="relative w-full h-3">
                             {/* Hole */}
                             <div className="absolute left-2 top-0 w-3 h-3 rounded-full bg-[#e4e1d5] shadow-[inset_1px_1px_3px_rgba(0,0,0,0.2)]" />
@@ -139,42 +166,36 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                     
                     {/* Header */}
                     <div className="flex justify-between items-center p-4 pr-5 relative z-20">
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 font-sans tracking-tight"
+                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 font-sans tracking-tight truncate max-w-[80%]"
                             style={{ fontFamily: "'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
-                            {contextTitle} <Edit3 size={16} className="text-gray-400" />
+                            {contextTitle} <Edit3 size={16} className="text-gray-400 shrink-0" />
                         </h2>
-                        <div className="flex items-center gap-3 text-gray-500">
-                            <button onClick={() => setIsPinned(!isPinned)} className={`hover:text-gray-800 transition-colors ${isPinned ? 'text-gray-800' : ''}`}>
+                        <div className="flex items-center gap-3 text-gray-500 shrink-0">
+                            <button onClick={() => setIsPinned(!isPinned)} className={`hover:text-gray-800 transition-colors ${isPinned ? 'text-gray-800' : ''}`} title="Pin to corner">
                                 <Pin size={18} className={isPinned ? "fill-gray-800" : ""} />
                             </button>
-                            <button onClick={onClose} className="hover:text-gray-800 transition-colors bg-black/5 hover:bg-black/10 rounded-full p-1">
+                            <button onClick={onClose} className="hover:text-gray-800 transition-colors bg-black/5 hover:bg-black/10 rounded-full p-1" title="Close notes">
                                 <X size={18} />
                             </button>
                         </div>
                     </div>
 
-                    {/* Toolbar (Aesthetic/Functional Mock) */}
-                    <div className="flex items-center gap-4 px-6 py-2 border-y border-black/5 relative z-20 bg-white/30 backdrop-blur-sm">
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><Undo size={16} /></button>
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><Redo size={16} /></button>
+                    {/* Toolbar (Functional Markdown Insertion) */}
+                    <div className="flex items-center gap-3 px-5 py-2 border-y border-black/5 relative z-20 bg-white/30 backdrop-blur-sm overflow-x-auto custom-scrollbar">
+                        <div className="flex items-center gap-1 text-gray-500">
+                            <button onClick={() => insertMarkdown('**', '**')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Bold"><Bold size={15} /></button>
+                            <button onClick={() => insertMarkdown('*', '*')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Italic"><Italic size={15} /></button>
+                            <button onClick={() => insertMarkdown('__', '__')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Underline"><Underline size={15} /></button>
                         </div>
                         <div className="w-px h-4 bg-gray-300"></div>
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><Bold size={16} /></button>
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><Italic size={16} /></button>
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><Underline size={16} /></button>
+                        <div className="flex items-center gap-1 text-gray-500">
+                            <button onClick={() => insertMarkdown('- ')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Bullet List"><List size={15} /></button>
+                            <button onClick={() => insertMarkdown('1. ')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Numbered List"><ListOrdered size={15} /></button>
                         </div>
                         <div className="w-px h-4 bg-gray-300"></div>
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><List size={16} /></button>
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><ListOrdered size={16} /></button>
-                        </div>
-                        <div className="w-px h-4 bg-gray-300"></div>
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><Edit3 size={16} className="text-yellow-500" /></button>
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><ImageIcon size={16} /></button>
-                            <button className="hover:text-gray-700 p-1 rounded hover:bg-black/5"><MoreHorizontal size={16} /></button>
+                        <div className="flex items-center gap-1 text-gray-500">
+                            <button onClick={() => insertMarkdown('`', '`')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Inline Code"><Edit3 size={15} className="text-yellow-600" /></button>
+                            <button onClick={() => insertMarkdown('![alt text](url)')} className="hover:text-gray-800 p-1.5 rounded hover:bg-black/5" title="Image"><ImageIcon size={15} /></button>
                         </div>
                     </div>
 
@@ -200,8 +221,8 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                             <textarea
                                 ref={textareaRef}
                                 value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Type your notes here..."
+                                onChange={handleContentChange}
+                                placeholder="Type your notes here... Use the toolbar above for markdown formatting."
                                 spellCheck="false"
                                 className="flex-1 w-full bg-transparent resize-none outline-none z-10 px-12 py-[5px] text-gray-800 custom-scrollbar"
                                 style={{
@@ -219,8 +240,10 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle }) => {
                         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                             {isSaving ? (
                                 <><Loader2 size={12} className="animate-spin" /> Saving...</>
+                            ) : hasUnsavedChanges ? (
+                                <><Edit3 size={12} className="text-yellow-500" /> Unsaved changes</>
                             ) : (
-                                <><CloudCheck size={14} className="text-green-500" /> 
+                                <><CloudSelect size={14} className="text-green-500" /> 
                                   Last saved: {lastSaved ? "just now" : "Synced"}
                                 </>
                             )}
