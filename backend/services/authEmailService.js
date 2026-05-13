@@ -48,20 +48,16 @@ const buildTransportConfig = () => {
 
     if (isGmail) {
         return {
-            host: 'smtp.gmail.com',
+            host: "smtp.gmail.com",
             port: 587,
             secure: false,
-            family: 4, // Force IPv4 to avoid ENETUNREACH on IPv6
-            pool: true,
-            maxConnections: 2,
-            maxMessages: 50,
-            connectionTimeout: 15000,
-            greetingTimeout: 10000,
-            socketTimeout: 20000,
+            family: 4,
             auth: { user, pass },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
             tls: {
-                minVersion: 'TLSv1.2',
-                requireTLS: true
+                rejectUnauthorized: false,
             },
         };
     }
@@ -70,16 +66,13 @@ const buildTransportConfig = () => {
         host,
         port,
         secure,
-        pool: true,
-        maxConnections: 2,
-        maxMessages: 50,
-        connectionTimeout: 15000,
-        greetingTimeout: 10000,
-        socketTimeout: 20000,
+        family: 4,
         auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         tls: {
-            minVersion: 'TLSv1.2',
-            requireTLS: port === 587,
+            rejectUnauthorized: false,
         },
     };
 };
