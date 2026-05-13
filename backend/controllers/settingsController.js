@@ -276,8 +276,13 @@ export const requestSettingsOtp = async (req, res) => {
             ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
         });
     } catch (error) {
-        console.error('REQUEST SETTINGS OTP ERROR:', error.message);
-        return res.status(500).json({ success: false, message: 'Unable to send a verification code right now.' });
+        console.error('REQUEST SETTINGS OTP ERROR:', error);
+        
+        const message = process.env.NODE_ENV === 'production' 
+            ? 'Unable to send verification code. Please contact support or try again later.'
+            : `Email Error: ${error.message}`;
+
+        return res.status(500).json({ success: false, message });
     }
 };
 

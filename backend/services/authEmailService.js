@@ -21,15 +21,25 @@ const getTransporter = () => {
         const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 465;
         const secure = process.env.SMTP_SECURE === 'true' || (port === 465);
 
-        cachedTransporter = nodemailer.createTransport({
+        const config = {
             host,
             port,
             secure,
-            auth: {
-                user,
-                pass,
-            },
-        });
+            auth: { user, pass },
+            tls: {
+                rejectUnauthorized: false // Necessary for many cloud providers and SMTP relays
+            }
+        };
+
+        // Professional optimization for Gmail
+        if (host.includes('gmail.com')) {
+            delete config.host;
+            delete config.port;
+            delete config.secure;
+            config.service = 'gmail';
+        }
+
+        cachedTransporter = nodemailer.createTransport(config);
     }
 
     return cachedTransporter;
