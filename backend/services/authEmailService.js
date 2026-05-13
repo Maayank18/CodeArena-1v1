@@ -1,3 +1,17 @@
+/**
+ * authEmailService.js
+ * Professional Nodemailer email service for Render-hosted backends.
+ *
+ * KEY DESIGN DECISIONS:
+ *  - No persistent transporter: avoids stale-connection timeouts after cold starts
+ *  - Gmail SMTP over port 587 (STARTTLS): works on Render (port 25 is blocked, 587/465 are not)
+ *  - App Password auth: required since Google killed "Less Secure Apps"
+ *  - Per-send transporter + verify(): catches dead connections before sending
+ *  - Exponential-backoff retry: survives transient network hiccups
+ *  - Structured error objects: status + code + retryable flag, consumed by controllers
+ *  - IPv4 Enforcement: Prevents ENETUNREACH errors on cloud hosts without IPv6 routing to Gmail
+ */
+
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 
@@ -5,215 +19,446 @@ import dns from 'dns';
 // This prevents the 'ENETUNREACH' error when trying to connect via IPv6 on Render/cloud hosts.
 dns.setDefaultResultOrder('ipv4first');
 
-let transporter = null;
+// ─── Config ──────────────────────────────────────────────────────────────────
 
-const resolveConfig = () => ({
-    host: (process.env.EMAIL_HOST || 'smtp.gmail.com').trim(),
-    port: Number(process.env.EMAIL_PORT || 587),
-    user: (process.env.EMAIL_USER || '').trim(),
-    pass: (process.env.EMAIL_PASS || '').trim(),
-    from: (process.env.EMAIL_FROM || process.env.EMAIL_USER || 'CodeArena 1v1 <noreply@gmail.com>').trim(),
-});
+const SMTP_CONFIG = {
+    host:    process.env.EMAIL_HOST     || 'smtp.gmail.com',
+    port:    parseInt(process.env.EMAIL_PORT || '587', 10),
+    secure:  process.env.EMAIL_SECURE   === 'true' || parseInt(process.env.EMAIL_PORT || '587', 10) === 465,
+    user:    process.env.EMAIL_USER     || '',
+    pass:    process.env.EMAIL_PASS     || '',
+    fromName:  process.env.EMAIL_FROM_NAME  || 'CodeArena 1v1',
+    fromEmail: process.env.EMAIL_FROM       || process.env.EMAIL_USER || '',
+};
 
-const getTransporter = () => {
-    if (!transporter) {
-        const config = resolveConfig();
-        
-        console.log(`[MAIL] Initializing transporter: ${config.host}:${config.port}`);
-        
-        transporter = nodemailer.createTransport({
-            host: config.host,
-            port: config.port,
-            secure: config.port === 465, // true for 465, false for other ports
-            auth: {
-                user: config.user,
-                pass: config.pass,
-            },
-            // ── Robust Connection Settings ──
-            connectionTimeout: 15000, // 15 seconds
-            greetingTimeout: 15000,
-            socketTimeout: 20000,
-            tls: {
-                // Do not fail on invalid certs (common in some environments)
-                rejectUnauthorized: false,
-                // Force IPv4 if the OS supports it
-                servername: config.host
-            }
-        });
+// Retry policy
+const RETRY_POLICY = {
+    maxAttempts: 3,
+    baseDelayMs: 800,   // first retry after ~0.8s
+    maxDelayMs: 5000,   // cap at 5s
+};
+
+// Per-send timeouts (ms) — aggressive but fair for Render
+const TRANSPORT_TIMEOUTS = {
+    connectionTimeout: 8000,   // TCP connect
+    greetingTimeout:   8000,   // SMTP banner
+    socketTimeout:    12000,   // idle socket
+};
+
+// ─── Diagnostics (exposed via /health) ───────────────────────────────────────
+
+let _smtpDiag = {
+    configured: false,
+    host: null,
+    port: null,
+    secure: null,
+    user: null,
+    verifiedAt: null,
+    lastError: null,
+};
+
+export const getSmtpDiagnostics = () => ({ ..._smtpDiag });
+
+// ─── Transporter factory ──────────────────────────────────────────────────────
+// Returns a FRESH transporter every call.
+// This is intentional: on Render's free tier the process may have been
+// dormant for >15 min; any cached TCP connection will be dead.
+
+const createTransporter = () => {
+    if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
+        throw makeSmtpError(
+            'SMTP credentials are not configured. Set EMAIL_USER and EMAIL_PASS in your environment variables.',
+            'SMTP_NOT_CONFIGURED',
+            500,
+            false   // not retryable — needs human action
+        );
     }
-    return transporter;
+
+    return nodemailer.createTransport({
+        host:   SMTP_CONFIG.host,
+        port:   SMTP_CONFIG.port,
+        secure: SMTP_CONFIG.secure,
+        auth: {
+            user: SMTP_CONFIG.user,
+            pass: SMTP_CONFIG.pass,
+        },
+        // Per-call timeouts — prevents the 15s hang you were seeing
+        connectionTimeout: TRANSPORT_TIMEOUTS.connectionTimeout,
+        greetingTimeout:   TRANSPORT_TIMEOUTS.greetingTimeout,
+        socketTimeout:     TRANSPORT_TIMEOUTS.socketTimeout,
+        // Disable connection pooling — we create fresh transporters deliberately
+        pool: false,
+        // TLS options: accept self-signed certs in dev, strict in prod
+        tls: {
+            rejectUnauthorized: process.env.NODE_ENV === 'production',
+            servername: SMTP_CONFIG.host // Help with SNI
+        },
+    });
 };
 
-const maskEmail = (email) => {
-    if (!email || !email.includes('@')) return '***';
-    const [name, domain] = email.split('@');
-    return `${name.substring(0, 2)}***@${domain}`;
+// ─── Structured error factory ─────────────────────────────────────────────────
+
+const makeSmtpError = (message, code, status = 502, retryable = true) => {
+    const err = new Error(message);
+    err.code     = code;
+    err.status   = status;
+    err.retryable = retryable;
+    return err;
 };
 
-/**
- * Primary mail sending function
- */
-export const sendMail = async ({ to, subject, html, label = 'Email' }) => {
-    const config = resolveConfig();
-    const mailTransporter = getTransporter();
+// ─── Map raw nodemailer / OS errors → structured errors ──────────────────────
 
-    console.log(`[MAIL] Sending ${label} to ${maskEmail(to)}...`);
+const classifySmtpError = (rawError) => {
+    const msg     = rawError?.message || '';
+    const errno   = rawError?.errno   || '';
+    const code    = rawError?.code    || '';
+    const responseCode = rawError?.responseCode || 0;
 
-    try {
-        const info = await mailTransporter.sendMail({
-            from: config.from,
-            to,
-            subject,
-            html,
-        });
+    // Auth failures — not retryable, need env var fix
+    if (responseCode === 535 || /invalid login|username and password not accepted|authentication failed/i.test(msg)) {
+        return makeSmtpError(
+            'SMTP authentication failed. Check EMAIL_USER and EMAIL_PASS (Gmail requires an App Password, not your regular password).',
+            'SMTP_AUTH_FAILED', 500, false
+        );
+    }
 
-        console.log(`[MAIL] ✅ ${label} sent successfully: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error(`[MAIL] ❌ ${label} delivery failed:`, {
-            code: error.code,
-            message: error.message,
-            command: error.command
-        });
+    // Network unreachable / refused — likely port blocked or wrong host
+    if (code === 'ECONNREFUSED' || errno === 'ECONNREFUSED' || code === 'ENETUNREACH' || errno === 'ENETUNREACH') {
+        return makeSmtpError(
+            `SMTP connection refused/unreachable on ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}. ` +
+            'If using Render, port 25 is blocked — use port 587 (EMAIL_PORT=587) or 465.',
+            'SMTP_CONNECTION_REFUSED', 502, false
+        );
+    }
 
-        // Reset transporter on connection errors to force a fresh connection next time
-        if (['ETIMEDOUT', 'ECONNRESET', 'ESOCKET', 'ENETUNREACH'].includes(error.code)) {
-            transporter = null;
+    // DNS resolution failure — wrong EMAIL_HOST
+    if (code === 'ENOTFOUND' || errno === 'ENOTFOUND') {
+        return makeSmtpError(
+            `SMTP host not found: "${SMTP_CONFIG.host}". Check your EMAIL_HOST environment variable.`,
+            'SMTP_HOST_NOT_FOUND', 502, false
+        );
+    }
+
+    // Timeout — transient, retryable
+    if (code === 'ETIMEDOUT' || errno === 'ETIMEDOUT' || /timeout/i.test(msg)) {
+        return makeSmtpError(
+            'SMTP connection timed out. This is usually transient — the request will be retried.',
+            'SMTP_TIMEOUT', 502, true
+        );
+    }
+
+    // Recipient rejected
+    if (responseCode === 550 || responseCode === 553) {
+        return makeSmtpError(
+            'The recipient email address was rejected by the SMTP server.',
+            'SMTP_RECIPIENT_REJECTED', 400, false
+        );
+    }
+
+    // Rate limited by SMTP provider
+    if (responseCode === 421 || responseCode === 450) {
+        return makeSmtpError(
+            'SMTP server is temporarily unavailable or rate-limiting. Will retry.',
+            'SMTP_RATE_LIMITED', 502, true
+        );
+    }
+
+    // Generic fallback
+    return makeSmtpError(
+        `Email delivery failed: ${msg || 'unknown SMTP error'}`,
+        'SMTP_SEND_FAILED', 502, true
+    );
+};
+
+// ─── Retry with exponential backoff ──────────────────────────────────────────
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withRetry = async (fn, context = 'email') => {
+    let lastError;
+
+    for (let attempt = 1; attempt <= RETRY_POLICY.maxAttempts; attempt++) {
+        try {
+            return await fn();
+        } catch (rawError) {
+            const structured = rawError.code && rawError.status
+                ? rawError                          // already classified
+                : classifySmtpError(rawError);      // classify raw nodemailer error
+
+            lastError = structured;
+
+            const isLastAttempt = attempt === RETRY_POLICY.maxAttempts;
+            const isRetryable   = structured.retryable !== false;
+
+            console.error(`[EMAIL] ${context} attempt ${attempt}/${RETRY_POLICY.maxAttempts} failed`, {
+                code:      structured.code,
+                message:   structured.message,
+                retryable: isRetryable,
+            });
+
+            if (!isRetryable || isLastAttempt) {
+                break;
+            }
+
+            // Exponential backoff: 800ms, 1600ms, 3200ms … capped at 5000ms
+            const delay = Math.min(
+                RETRY_POLICY.baseDelayMs * Math.pow(2, attempt - 1),
+                RETRY_POLICY.maxDelayMs
+            );
+            console.log(`[EMAIL] Retrying in ${delay}ms…`);
+            await sleep(delay);
+        }
+    }
+
+    throw lastError;
+};
+
+// ─── Core send function ───────────────────────────────────────────────────────
+
+const sendEmail = async ({ to, subject, html, text }) => {
+    return withRetry(async () => {
+        const transporter = createTransporter();
+
+        // Verify the connection BEFORE trying to send.
+        // This surfaces auth/host/port problems immediately with a clear error
+        // rather than letting them manifest as a cryptic timeout.
+        try {
+            await transporter.verify();
+        } catch (verifyError) {
+            throw classifySmtpError(verifyError);
         }
 
-        throw Object.assign(new Error(`Failed to send ${label}`), {
-            code: error.code || 'SMTP_ERROR',
-            status: 502,
-            cause: error
-        });
-    }
+        const from = SMTP_CONFIG.fromEmail;
+
+        const info = await transporter.sendMail({ from, to, subject, html, text });
+
+        // Close transport immediately — no lingering TCP connections
+        transporter.close();
+
+        _smtpDiag.verifiedAt = new Date().toISOString();
+        _smtpDiag.lastError  = null;
+
+        return {
+            delivered:  true,
+            messageId:  info.messageId,
+            // In dev, expose the OTP preview URL (Ethereal / nodemailer test accounts)
+            debug: process.env.NODE_ENV !== 'production'
+                ? { previewUrl: nodemailer.getTestMessageUrl(info) || null }
+                : undefined,
+        };
+    }, `send → ${to}`);
 };
 
-/**
- * Startup verification check
- * CRITICAL: This is now modified to NEVER throw an error that crashes the server.
- */
+// ─── Startup SMTP verification ────────────────────────────────────────────────
+// Called once from server.js startServer(). Logs clearly and never crashes the
+// server — email is important but not worth killing startup over.
+
 export const verifySmtpConnection = async () => {
-    const config = resolveConfig();
-    
-    if (!config.user || !config.pass) {
-        console.warn('[MAIL] ⚠️ Email credentials missing in environment. Mail features will fail.');
+    _smtpDiag = {
+        configured: Boolean(SMTP_CONFIG.user && SMTP_CONFIG.pass),
+        host:       SMTP_CONFIG.host,
+        port:       SMTP_CONFIG.port,
+        secure:     SMTP_CONFIG.secure,
+        user:       SMTP_CONFIG.user ? `${SMTP_CONFIG.user.slice(0, 4)}***` : null,
+        verifiedAt: null,
+        lastError:  null,
+    };
+
+    if (!_smtpDiag.configured) {
+        console.warn('[SMTP] ⚠️  EMAIL_USER or EMAIL_PASS is not set. Email delivery will fail until these are configured.');
         return false;
     }
 
     try {
-        const mailTransporter = getTransporter();
-        console.log('[MAIL] Verifying SMTP connection...');
+        const transporter = createTransporter();
         
-        // We use a promise wrapper with a timeout to prevent startup hanging
-        const verification = await Promise.race([
-            mailTransporter.verify(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Verification timed out')), 10000))
+        // Wrap verify in a promise race to prevent startup hanging forever
+        await Promise.race([
+            transporter.verify(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP Verification timed out')), 15000))
         ]);
+        
+        transporter.close();
 
-        console.log('[MAIL] ✅ SMTP connection verified.');
+        _smtpDiag.verifiedAt = new Date().toISOString();
+        console.log(`[SMTP] ✅ Connection verified → ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}`);
         return true;
     } catch (error) {
-        // ── DO NOT THROW HERE ──
-        // We log the error but return false instead of crashing the server.
-        console.error('[MAIL] ⚠️ SMTP connection check failed during startup:', {
-            message: error.message,
-            code: error.code
+        const structured = classifySmtpError(error);
+        _smtpDiag.lastError = { code: structured.code, message: structured.message };
+
+        console.error('[SMTP] ❌ Startup verification failed', {
+            code:    structured.code,
+            message: structured.message,
+            hint:    getHint(structured.code),
         });
-        console.warn('[MAIL] Server will continue to start, but email delivery might fail.');
+
+        // Not fatal — server continues, but emails will fail until fixed
         return false;
     }
 };
 
-// ── Email Templates ────────────────────────────────────────
+const getHint = (code) => ({
+    SMTP_NOT_CONFIGURED:     'Set EMAIL_USER and EMAIL_PASS in Render → Environment',
+    SMTP_AUTH_FAILED:        'Gmail requires an App Password. Go to myaccount.google.com/apppasswords',
+    SMTP_CONNECTION_REFUSED: 'Change EMAIL_PORT to 587 and EMAIL_SECURE to false in Render env vars',
+    SMTP_HOST_NOT_FOUND:     'Check EMAIL_HOST — should be smtp.gmail.com for Gmail',
+    SMTP_TIMEOUT:            'Transient. Will retry on next send. Check Render network settings if persistent.',
+}[code] || 'Check EMAIL_* environment variables');
 
-const brandedHtml = ({ heading, subtitle, bodyHtml }) => `
-<div style="font-family:Arial,sans-serif;line-height:1.6;color:#e5e7eb;background:#0f1117;padding:24px">
-  <div style="max-width:560px;margin:0 auto;background:#121212;border:1px solid #1f2937;border-radius:20px;overflow:hidden">
-    <div style="padding:28px;border-bottom:1px solid #1f2937;background:linear-gradient(135deg,#0f172a,#121212)">
-      <p style="margin:0 0 8px;color:#4ade80;font-size:12px;letter-spacing:.18em;font-weight:700;text-transform:uppercase">${subtitle}</p>
-      <h1 style="margin:0;font-size:24px;color:#f9fafb">${heading}</h1>
-    </div>
-    <div style="padding:28px">${bodyHtml}</div>
-  </div>
-</div>`;
+// ─── Email templates ──────────────────────────────────────────────────────────
 
-const otpBlock = (otp, expiresInMinutes) => `
-<div style="margin:24px 0;padding:18px;border-radius:16px;border:1px solid #1f2937;background:#0b0d12;text-align:center">
-  <p style="margin:0 0 10px;color:#9ca3af;font-size:12px;text-transform:uppercase;letter-spacing:.16em">Verification Code</p>
-  <p style="margin:0;font-size:32px;letter-spacing:8px;font-weight:700;color:#4ade80">${otp}</p>
-</div>
-<p style="color:#d1d5db">This code expires in ${expiresInMinutes} minutes.</p>`;
+const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena' }) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title}</title>
+</head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="520" cellpadding="0" cellspacing="0"
+          style="background:#161616;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
 
-// ── Specific Email Methods ─────────────────────────────────
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1a1a,#111);padding:32px 40px;border-bottom:1px solid #2a2a2a;">
+              <h1 style="margin:0;font-size:22px;font-weight:800;color:#4ade80;letter-spacing:-0.5px;">
+                ${appName}
+              </h1>
+            </td>
+          </tr>
 
-export const sendAccountVerificationEmail = ({ to, otp, name, expiresInMinutes }) =>
-    sendMail({
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;">
+              <h2 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#f5f5f5;">
+                ${title}
+              </h2>
+              <p style="margin:0 0 28px;font-size:15px;color:#a3a3a3;line-height:1.6;">
+                ${bodyText}
+              </p>
+
+              <!-- OTP Box -->
+              <div style="background:#0d0d0d;border:1px solid #2a2a2a;border-radius:12px;
+                          padding:24px;text-align:center;margin-bottom:28px;">
+                <p style="margin:0 0 8px;font-size:12px;font-weight:600;
+                           text-transform:uppercase;letter-spacing:2px;color:#6b7280;">
+                  Verification Code
+                </p>
+                <p style="margin:0;font-size:40px;font-weight:800;
+                           letter-spacing:12px;color:#4ade80;font-family:monospace;">
+                  ${otp}
+                </p>
+              </div>
+
+              <p style="margin:0;font-size:13px;color:#6b7280;">
+                ⏱ This code expires in <strong style="color:#a3a3a3;">${expiresInMinutes} minutes</strong>.
+                If you did not request this, please ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #1f1f1f;">
+              <p style="margin:0;font-size:12px;color:#404040;">
+                This is an automated message from ${appName}. Do not reply.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+export const sendAccountVerificationEmail = async ({ to, otp, name, expiresInMinutes }) => {
+    const title    = 'Verify Your Email Address';
+    const bodyText = `Hi ${name}, welcome to CodeArena! Use the code below to verify your email address and activate your account.`;
+
+    return sendEmail({
         to,
-        subject: 'Verify your CodeArena 1v1 account',
-        label: 'Account Verification',
-        html: brandedHtml({
-            heading: 'Welcome to the Arena!',
-            subtitle: 'CodeArena 1v1 Verification',
-            bodyHtml: `<p>Hi ${name || 'there'},</p><p>Verify your email using the code below:</p>${otpBlock(otp, expiresInMinutes)}`
-        }),
+        subject: `${otp} — Your CodeArena Verification Code`,
+        html: buildOtpEmailHtml({ title, otp, bodyText, expiresInMinutes }),
+        text: `Hi ${name},\n\nYour CodeArena verification code is: ${otp}\n\nIt expires in ${expiresInMinutes} minutes.\n\nIf you did not register, ignore this email.`,
     });
+};
 
-export const sendSettingsOtpEmail = ({ to, otp, name, expiresInMinutes }) =>
-    sendMail({
+export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinutes }) => {
+    const title    = 'Reset Your Password';
+    const bodyText = `Hi ${name}, we received a request to reset your CodeArena password. Use the code below to proceed.`;
+
+    return sendEmail({
         to,
-        subject: 'Security verification code',
-        label: 'Settings OTP',
-        html: brandedHtml({
-            heading: 'Verify your update',
-            subtitle: 'CodeArena 1v1 Security',
-            bodyHtml: `<p>Hi ${name || 'there'},</p><p>Use the code below to verify your changes:</p>${otpBlock(otp, expiresInMinutes)}`
-        }),
+        subject: `${otp} — CodeArena Password Reset`,
+        html: buildOtpEmailHtml({ title, otp, bodyText, expiresInMinutes }),
+        text: `Hi ${name},\n\nYour CodeArena password reset code is: ${otp}\n\nIt expires in ${expiresInMinutes} minutes.\n\nIf you did not request this, ignore this email.`,
     });
+};
 
-export const sendPasswordResetOtpEmail = ({ to, otp, name, expiresInMinutes }) =>
-    sendMail({
+export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes }) => {
+    const title    = 'Confirm Your Security Change';
+    const bodyText = `Hi ${name}, a request was made to update your account security settings. Enter the code below to confirm.`;
+
+    return sendEmail({
         to,
-        subject: 'Password reset code',
-        label: 'Password Reset',
-        html: brandedHtml({
-            heading: 'Reset your password',
-            subtitle: 'CodeArena 1v1 Recovery',
-            bodyHtml: `<p>Hi ${name || 'there'},</p><p>Use this code to reset your password:</p>${otpBlock(otp, expiresInMinutes)}`
-        }),
+        subject: `${otp} — CodeArena Security Verification`,
+        html: buildOtpEmailHtml({ title, otp, bodyText, expiresInMinutes }),
+        text: `Hi ${name},\n\nYour CodeArena security verification code is: ${otp}\n\nIt expires in ${expiresInMinutes} minutes.\n\nIf you did not request this, change your password immediately.`,
     });
+};
 
-export const sendPaymentSubmissionEmail = ({ to, name, planName, amount, utrNumber }) =>
-    sendMail({
+// Payment Email Exports ─────────────────────────────────────────────────────────
+
+export const sendPaymentSubmissionEmail = async ({ to, name, planName, amount, utrNumber }) => {
+    const title    = 'Payment Request Received';
+    const bodyText = `Hi ${name}, we have received your manual UPI payment request for the ${planName} plan.`;
+    
+    // We reuse the basic HTML structure without the OTP box by modifying the template manually
+    const html = buildOtpEmailHtml({ title, otp: 'PROCESSING', bodyText: `Amount: Rs. ${amount}<br/>UTR: ${utrNumber}<br/><br/>Our team is reviewing the payment now. You will receive another email once it is approved.`, expiresInMinutes: 'N/A' });
+
+    return sendEmail({
         to,
-        subject: `Payment received for ${planName}`,
-        label: 'Payment Submission',
-        html: `<p>Hi ${name},</p><p>We received your request for ${planName} (Rs. ${amount}). UTR: ${utrNumber}</p>`
+        subject: `CodeArena 1v1 payment received for ${planName}`,
+        html: html,
+        text: `Hi ${name},\n\We received your manual UPI payment request for ${planName}.\nAmount: Rs. ${amount}\nUTR: ${utrNumber}\n\nOur team is verifying the payment now. You will receive another email once it is approved or rejected.`,
     });
+};
 
-export const sendPaymentApprovedEmail = ({ to, name, planName, amount }) =>
-    sendMail({
+export const sendPaymentApprovedEmail = async ({ to, name, planName, amount }) => {
+    const title    = 'Payment Approved';
+    const bodyText = `Hi ${name}, great news! Your payment for the ${planName} plan has been successfully verified.`;
+    
+    const html = buildOtpEmailHtml({ title, otp: 'APPROVED', bodyText: `Amount received: Rs. ${amount}<br/><br/>Welcome to Pro! Your premium access is now active in CodeArena 1v1.`, expiresInMinutes: 'N/A' });
+
+    return sendEmail({
         to,
         subject: `Welcome to CodeArena 1v1 ${planName}`,
-        label: 'Payment Approved',
-        html: `<p>Hi ${name},</p><p>Your ${planName} payment of Rs. ${amount} was approved!</p>`
+        html: html,
+        text: `Hi ${name},\n\nYour payment for ${planName} has been approved.\nAmount received: Rs. ${amount}\n\nWelcome to Pro. Your premium access is now active in CodeArena 1v1.`,
     });
+};
 
-export const sendPaymentRejectedEmail = ({ to, name, planName, amount, adminNotes }) =>
-    sendMail({
+export const sendPaymentRejectedEmail = async ({ to, name, planName, amount, adminNotes }) => {
+    const title    = 'Payment Verification Failed';
+    const bodyText = `Hi ${name}, we could not verify your payment request for the ${planName} plan.`;
+    const notesBlock = adminNotes ? `Reviewer note: <strong>${adminNotes}</strong><br/>` : `Please check the UTR with your bank or payment app and try again.<br/>`;
+    
+    const html = buildOtpEmailHtml({ title, otp: 'REJECTED', bodyText: `Amount expected: Rs. ${amount}<br/>${notesBlock}<br/>You can submit a fresh payment request with the correct 12-digit UTR once the issue is resolved.`, expiresInMinutes: 'N/A' });
+
+    return sendEmail({
         to,
-        subject: 'Payment could not be verified',
-        label: 'Payment Rejected',
-        html: `<p>Hi ${name},</p><p>We couldn't verify your ${planName} payment. Note: ${adminNotes || 'Please check your UTR.'}</p>`
+        subject: 'CodeArena 1v1 payment could not be verified',
+        html: html,
+        text: `Hi ${name},\n\nWe could not verify your payment request for ${planName}.\nAmount expected: Rs. ${amount}\n${adminNotes ? `Reviewer note: ${adminNotes}\n` : 'Please check the UTR with your bank or payment app and try again.\n'}\nYou can submit a fresh payment request with the correct 12-digit UTR once the issue is resolved.`,
     });
-
-// ── Legacy Diagnostics Export ──
-export const getSmtpDiagnostics = () => {
-    const config = resolveConfig();
-    return {
-        host: config.host,
-        port: config.port,
-        user: maskEmail(config.user),
-        configured: Boolean(config.user && config.pass)
-    };
 };
