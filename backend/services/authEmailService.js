@@ -34,9 +34,18 @@ const getResend = async () => {
 
 const sendViaResend = async ({ to, subject, html, label }) => {
     const resend = await getResend();
-    const from = (process.env.EMAIL_FROM || 'CodeArena 1v1 <onboarding@resend.dev>').trim();
+    let from = (process.env.EMAIL_FROM || 'CodeArena 1v1 <onboarding@resend.dev>').trim();
 
-    console.log(`[MAIL:RESEND] Sending ${label} to ${maskEmail(to)}...`);
+    // ── PRO-TIP: Resend requires a verified domain to send emails. ──
+    // On the free tier, you MUST send from 'onboarding@resend.dev' until you verify a custom domain.
+    // If we detect a gmail/outlook address being used as 'from', we force it to the onboarding address
+    // to prevent the 403 Forbidden 'Domain not verified' error.
+    if (from.includes('@gmail.com') || from.includes('@outlook.com') || from.includes('@hotmail.com') || from.includes('@yahoo.com')) {
+        console.warn(`[MAIL:RESEND] ⚠️  Gmail/Public domain detected in EMAIL_FROM (${from}). Forcing 'onboarding@resend.dev' to comply with Resend's security policy.`);
+        from = 'CodeArena 1v1 <onboarding@resend.dev>';
+    }
+
+    console.log(`[MAIL:RESEND] Sending ${label} to ${maskEmail(to)} (From: ${from})...`);
 
     const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
 
