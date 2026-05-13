@@ -115,6 +115,7 @@ const requestCache = new Map();
 
 // ✅ PENDING REQUESTS (prevent duplicate simultaneous requests)
 const pendingRequests = new Map();
+const DEFAULT_PRODUCTION_API_ORIGIN = 'https://codearena-1v1.onrender.com';
 
 const AUTH_FLOW_ENDPOINTS = new Set([
     '/auth/login',
@@ -123,6 +124,49 @@ const AUTH_FLOW_ENDPOINTS = new Set([
     '/auth/verify-otp',
     '/auth/reset-password',
 ]);
+
+const isLocalhostLike = (value = '') => /localhost|127\.0\.0\.1/i.test(String(value));
+
+const normalizeBackendOrigin = (url) => (url || '').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
+
+const getStoredUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem('codearena_user') || '{}');
+    } catch {
+        return {};
+    }
+};
+
+export const getStoredAuthToken = () => {
+    const user = getStoredUser();
+    return typeof user?.token === 'string' ? user.token.trim() : '';
+};
+
+export const resolveBackendOrigin = () => {
+    const explicitBackend = normalizeBackendOrigin(import.meta.env.VITE_BACKEND_URL);
+    if (explicitBackend) {
+        if (import.meta.env.PROD && isLocalhostLike(explicitBackend)) {
+            console.warn('[API] Ignoring localhost VITE_BACKEND_URL in production.', explicitBackend);
+        } else {
+            return explicitBackend;
+        }
+    }
+
+    const apiOrigin = normalizeBackendOrigin(import.meta.env.VITE_API_URL);
+    if (apiOrigin) {
+        if (import.meta.env.PROD && isLocalhostLike(apiOrigin)) {
+            console.warn('[API] Ignoring localhost VITE_API_URL in production.', apiOrigin);
+        } else {
+            return apiOrigin;
+        }
+    }
+
+    if (!import.meta.env.PROD) {
+        return 'http://localhost:5000';
+    }
+
+    return DEFAULT_PRODUCTION_API_ORIGIN;
+};
 
 const stableStringify = (value) => {
     if (value === null || value === undefined) return '';
@@ -168,13 +212,7 @@ const getBaseURL = () => {
         return '/api';
     }
 
-    const envURLRaw = import.meta.env.VITE_API_URL;
-    if (envURLRaw) {
-        return normalizeApiBase(envURLRaw);
-    }
-    
-    // Production fallback
-    return 'https://codearena-1v1.onrender.com/api';
+    return normalizeApiBase(resolveBackendOrigin());
 };
 
 const isAuthFlowRequest = (config) => {
@@ -196,17 +234,13 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         // 1. Add auth token
-        const userStr = localStorage.getItem('codearena_user');
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                if (user?.token) {
-                    config.headers.Authorization = `Bearer ${user.token}`;
-                }
-            } catch (e) {
-                console.error("[API] Token parse error:", e);
-                localStorage.removeItem('codearena_user');
-            }
+        const token = getStoredAuthToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        } else if ((config.url || '').startsWith('/settings')) {
+            console.warn('[API] Missing auth token for protected settings request.', {
+                url: config.url,
+            });
         }
 
         // 2. ✅ CHECK CACHE for GET requests
@@ -307,6 +341,11 @@ api.interceptors.response.use(
 
         // ✅ HANDLE 401 (Unauthorized)
         if (error.response?.status === 401) {
+            console.warn('[API] 401 Unauthorized response', {
+                url: config?.url,
+                code: error.response?.data?.code,
+                message: error.response?.data?.message,
+            });
             if (!isAuthFlowRequest(config)) {
                 console.log('[API] 401 Unauthorized - clearing auth');
                 localStorage.removeItem('codearena_user');

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye, Map } from 'lucide-react';
 import ConsistencyCalendar from './ConsistencyCalendar';
+import { getStoredAuthToken, resolveBackendOrigin } from '../api.js';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -10,7 +11,8 @@ const Sidebar = () => {
   const [stats, setStats] = useState({ live: 0, total: 0 });
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
+    const socketUrl = resolveBackendOrigin();
+    const token = getStoredAuthToken();
 
     const fetchStats = async () => {
       try {
@@ -34,10 +36,17 @@ const Sidebar = () => {
 
     fetchStats();
 
+    if (!token) {
+      return undefined;
+    }
+
     const socket = io(socketUrl, {
       transports: ['websocket'],
       upgrade: false,
       reconnectionAttempts: 5,
+      auth: {
+        token,
+      },
     });
 
     socket.on('site_stats', (data) => {

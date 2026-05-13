@@ -177,6 +177,10 @@ const pendingUpdatesSchema = new mongoose.Schema({
     password: {
         type: String,
     },
+    passwordHash: {
+        type: String,
+        default: null,
+    },
     requestedAt: {
         type: Date,
         default: null,
@@ -437,7 +441,7 @@ userSchema.pre('save', async function () {
     }
 
     // 2. Hash password if modified
-    if (this.isModified('password')) {
+    if (this.isModified('password') && !BCRYPT_HASH_REGEX.test(this.password || '')) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
     }

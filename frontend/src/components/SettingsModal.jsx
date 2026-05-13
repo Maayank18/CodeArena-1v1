@@ -43,6 +43,24 @@ import {
 import api from '../api.js';
 import Avatar from './Avatar.jsx';
 
+const getApiErrorMessage = (error, fallback) => {
+  if (error?.message === 'Duplicate request') {
+    return error.message;
+  }
+
+  const backendMessage = error?.response?.data?.message;
+  const backendCode = error?.response?.data?.code;
+  const status = error?.response?.status;
+
+  if (import.meta.env.DEV && (backendMessage || error?.message)) {
+    return [backendCode, backendMessage || error.message, status ? `(HTTP ${status})` : '']
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  return backendMessage || fallback;
+};
+
 const tabs = [
   { id: 'profile', label: 'Profile', icon: UserRound },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -468,7 +486,13 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
       setDevOtp(data.devOtp || '');
       toast.success(data.message || 'Verification code sent');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Unable to send verification code');
+      if (error?.message === 'Duplicate request') return;
+      console.error('[SETTINGS OTP] Request failed', {
+        status: error?.response?.status,
+        code: error?.response?.data?.code,
+        message: error?.response?.data?.message || error?.message,
+      });
+      toast.error(getApiErrorMessage(error, 'Unable to send verification code'));
     } finally {
       setRequestingOtp(false);
     }
@@ -498,7 +522,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
         onRequireReauth?.();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Unable to verify code');
+      toast.error(getApiErrorMessage(error, 'Unable to verify code'));
     } finally {
       setVerifyingOtp(false);
     }

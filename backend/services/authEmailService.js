@@ -1,48 +1,148 @@
 import nodemailer from 'nodemailer';
 
 let cachedTransporter = null;
+let smtpDiagnostics = {
+    configured: false,
+    verified: false,
+    provider: null,
+    host: null,
+    port: null,
+    username: null,
+    from: null,
+    lastVerifiedAt: null,
+    lastError: null,
+};
+
+const maskEmail = (value) => {
+    if (typeof value !== 'string' || !value.includes('@')) return 'missing';
+    const [local, domain] = value.split('@');
+    return `${local.slice(0, 2)}***@${domain}`;
+};
+
+const getSmtpEnv = () => {
+    const user = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
+    const pass = (process.env.SMTP_PASS || process.env.EMAIL_PASS || '').trim();
+    const host = (process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
+    const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587);
+    const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+    const from = (process.env.SMTP_FROM || process.env.EMAIL_FROM || user).trim();
+    const isGmail = /gmail\.com$/i.test(host) || /gmail\.com$/i.test(user.split('@')[1] || '');
+
+    return { user, pass, host, port, secure, from, isGmail };
+};
+
+const updateSmtpDiagnostics = (overrides = {}) => {
+    smtpDiagnostics = {
+        ...smtpDiagnostics,
+        ...overrides,
+    };
+};
 
 const hasSmtpConfig = () => {
-    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-    const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
+    const { user, pass } = getSmtpEnv();
     return Boolean(user && pass);
+};
+
+const buildTransportConfig = () => {
+    const { user, pass, host, port, secure, isGmail } = getSmtpEnv();
+
+    if (isGmail) {
+        return {
+            service: 'gmail',
+            pool: true,
+            maxConnections: 2,
+            maxMessages: 50,
+            connectionTimeout: 15000,
+            greetingTimeout: 10000,
+            socketTimeout: 20000,
+            auth: { user, pass },
+            tls: {
+                minVersion: 'TLSv1.2',
+            },
+        };
+    }
+
+    return {
+        host,
+        port,
+        secure,
+        pool: true,
+        maxConnections: 2,
+        maxMessages: 50,
+        connectionTimeout: 15000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
+        auth: { user, pass },
+        tls: {
+            minVersion: 'TLSv1.2',
+            requireTLS: port === 587,
+        },
+    };
 };
 
 const getTransporter = () => {
     if (!hasSmtpConfig()) {
+        updateSmtpDiagnostics({
+            configured: false,
+            verified: false,
+            provider: null,
+            host: null,
+            port: null,
+            username: null,
+            from: null,
+            lastError: 'SMTP credentials are missing',
+        });
         return null;
     }
 
     if (!cachedTransporter) {
-        const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-        const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-        const host = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com';
-        const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 465;
-        const secure = process.env.SMTP_SECURE === 'true' || (port === 465);
+        const { user, host, port, secure, from, isGmail } = getSmtpEnv();
+        cachedTransporter = nodemailer.createTransport(buildTransportConfig());
 
-        const config = {
+        updateSmtpDiagnostics({
+            configured: true,
+            verified: false,
+            provider: isGmail ? 'gmail' : 'smtp',
+            host,
+            port,
+            username: maskEmail(user),
+            from,
+            lastError: null,
+        });
+
+        console.log('[SMTP] Transporter created', {
+            provider: smtpDiagnostics.provider,
             host,
             port,
             secure,
-            auth: { user, pass },
-            tls: {
-                rejectUnauthorized: false // Necessary for many cloud providers and SMTP relays
-            }
-        };
-
-        // Professional optimization for Gmail
-        if (host.includes('gmail.com')) {
-            delete config.host;
-            delete config.port;
-            delete config.secure;
-            config.service = 'gmail';
-        }
-
-        cachedTransporter = nodemailer.createTransport(config);
+            username: smtpDiagnostics.username,
+            from,
+        });
     }
 
     return cachedTransporter;
+};
+
+const normalizeMailError = (error) => {
+    const code = error?.code || 'SMTP_SEND_FAILED';
+    let userMessage = 'The email service could not deliver the verification code.';
+    let status = 502;
+
+    if (code === 'EAUTH') {
+        userMessage = 'Email service authentication failed.';
+    } else if (code === 'ETIMEDOUT' || code === 'ESOCKET' || code === 'ECONNECTION') {
+        userMessage = 'Email service connection timed out.';
+        status = 503;
+    } else if (code === 'EENVELOPE') {
+        userMessage = 'The email recipient address was rejected.';
+        status = 400;
+    }
+
+    return Object.assign(new Error(userMessage), {
+        code,
+        status,
+        cause: error,
+    });
 };
 
 const sendMailOrLog = async ({ to, subject, html, debugLabel }) => {
@@ -50,39 +150,96 @@ const sendMailOrLog = async ({ to, subject, html, debugLabel }) => {
 
     if (!transporter) {
         if (process.env.NODE_ENV === 'production') {
-            throw new Error(`SMTP is not configured for ${debugLabel}`);
+            throw Object.assign(new Error(`SMTP is not configured for ${debugLabel}`), {
+                code: 'SMTP_NOT_CONFIGURED',
+                status: 500,
+            });
         }
 
         console.log(`[${debugLabel.toUpperCase()}][DEV] ${to}`);
         return { delivered: false, debug: true };
     }
 
-    await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER || process.env.EMAIL_USER,
-        to,
-        subject,
-        html,
-    });
+    const { from } = getSmtpEnv();
 
-    return { delivered: true, debug: false };
+    try {
+        const result = await transporter.sendMail({
+            from,
+            to,
+            subject,
+            html,
+        });
+
+        console.log('[SMTP] Email dispatched', {
+            debugLabel,
+            to: maskEmail(to),
+            accepted: result.accepted,
+            rejected: result.rejected,
+            response: result.response,
+            messageId: result.messageId,
+        });
+
+        return { delivered: true, debug: false };
+    } catch (error) {
+        updateSmtpDiagnostics({
+            verified: false,
+            lastError: error?.message || 'Unknown SMTP send failure',
+        });
+        console.error('[SMTP] sendMail failed', {
+            debugLabel,
+            to: maskEmail(to),
+            code: error?.code,
+            command: error?.command,
+            response: error?.response,
+            message: error?.message,
+        });
+        throw normalizeMailError(error);
+    }
 };
 
 export const verifySmtpConnection = async () => {
     const transporter = getTransporter();
     if (!transporter) {
         console.log('[SMTP] No SMTP configuration found. Skipping verification.');
+        updateSmtpDiagnostics({
+            configured: false,
+            verified: false,
+            lastVerifiedAt: new Date().toISOString(),
+        });
         return false;
     }
 
     try {
         await transporter.verify();
-        console.log('[SMTP] Connection verified successfully');
+        updateSmtpDiagnostics({
+            verified: true,
+            lastVerifiedAt: new Date().toISOString(),
+            lastError: null,
+        });
+        console.log('[SMTP] Connection verified successfully', {
+            provider: smtpDiagnostics.provider,
+            host: smtpDiagnostics.host,
+            port: smtpDiagnostics.port,
+            username: smtpDiagnostics.username,
+        });
         return true;
     } catch (error) {
-        console.error('[SMTP] Verification failed:', error.message);
+        updateSmtpDiagnostics({
+            verified: false,
+            lastVerifiedAt: new Date().toISOString(),
+            lastError: error?.message || 'Unknown SMTP verification failure',
+        });
+        console.error('[SMTP] Verification failed:', {
+            code: error?.code,
+            command: error?.command,
+            response: error?.response,
+            message: error?.message,
+        });
         return false;
     }
 };
+
+export const getSmtpDiagnostics = () => ({ ...smtpDiagnostics });
 
 export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinutes }) => {
     const subject = 'CodeArena 1v1 password reset code';

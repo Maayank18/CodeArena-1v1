@@ -145,7 +145,7 @@ export const loginUser = async (req, res) => {
 
         const trimmedEmail = email.trim().toLowerCase();
         const user = await User.findOne({ email: trimmedEmail })
-            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil');
+            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil emailVerified phoneVerified createdAt');
 
         if (!user) {
             console.log(`[AUTH] User not found: ${trimmedEmail}`);
@@ -229,6 +229,8 @@ export const loginUser = async (req, res) => {
             avatar: user.avatar,
             bio: user.bio || '',
             preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
+            emailVerified: Boolean(user.emailVerified),
+            phoneVerified: Boolean(user.phoneVerified),
             isPro: user.isPro || false,
             role: safeRole,
             planId: user.planId || null,
@@ -240,6 +242,7 @@ export const loginUser = async (req, res) => {
             stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
             badges: user.badges || [],
             customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
+            createdAt: user.createdAt || null,
             token,
         });
     } catch (error) {

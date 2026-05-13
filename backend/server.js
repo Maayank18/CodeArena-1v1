@@ -527,7 +527,7 @@ import campaignRoutes from './routes/campaignRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
-import { verifySmtpConnection } from './services/authEmailService.js';
+import { getSmtpDiagnostics, verifySmtpConnection } from './services/authEmailService.js';
 
 // ✅ MODELS
 import Problem from './models/Problem.js';
@@ -580,13 +580,29 @@ const waitForDatabase = async () => {
 // ✅ EXPRESS APP SETUP
 const app = express();
 
+const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/+$/, '');
 const ALLOWED_ORIGINS = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL
+  'http://localhost:5173',
+  ...(process.env.FRONTEND_URL || '')
+    .split(',')
+    .map(normalizeOrigin)
+    .filter(Boolean),
 ].filter(Boolean);
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  return ALLOWED_ORIGINS.includes(normalizeOrigin(origin));
+};
+
 app.use(cors({
-  origin: ALLOWED_ORIGINS,
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn('[CORS] Blocked origin', { origin, allowed: ALLOWED_ORIGINS });
+    return callback(new Error('Not allowed by CORS'));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
@@ -646,6 +662,7 @@ app.get('/health', (req, res) => {
             readyState: mongoose.connection.readyState,
             host: mongoose.connection.host || null,
         },
+        smtp: getSmtpDiagnostics(),
         memory: {
             heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
             heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
@@ -733,6 +750,11 @@ io.use(async (socket, next) => {
   try {
     const token = resolveSocketToken(socket);
     if (!token || !process.env.JWT_SECRET) {
+      console.warn('[SOCKET AUTH] Missing token or JWT secret', {
+        socketId: socket.id,
+        hasToken: Boolean(token),
+        hasJwtSecret: Boolean(process.env.JWT_SECRET),
+      });
       return next(new Error('Unauthorized'));
     }
 
@@ -746,10 +768,18 @@ io.use(async (socket, next) => {
       .lean();
 
     if (!user) {
+      console.warn('[SOCKET AUTH] User not found for token', {
+        socketId: socket.id,
+        userId: decoded.id,
+      });
       return next(new Error('Unauthorized'));
     }
 
     if (user.passwordChangedAt && decoded.iat && (decoded.iat * 1000) < new Date(user.passwordChangedAt).getTime() - 1000) {
+      console.warn('[SOCKET AUTH] Token is stale after password change', {
+        socketId: socket.id,
+        userId: decoded.id,
+      });
       return next(new Error('Unauthorized'));
     }
 
@@ -768,6 +798,11 @@ io.use(async (socket, next) => {
 
     return next();
   } catch (error) {
+    console.warn('[SOCKET AUTH] JWT verification failed', {
+      socketId: socket.id,
+      name: error?.name,
+      message: error?.message,
+    });
     return next(new Error('Unauthorized'));
   }
 });
@@ -1723,6 +1758,14 @@ const startServer = async () => {
     await waitForDatabase();
     await ensurePaymentTransactionIndexes();
     await verifySmtpConnection();
+
+    console.log('[BOOT] Runtime configuration', {
+        nodeEnv: process.env.NODE_ENV || 'development',
+        port: PORT,
+        frontendOrigins: ALLOWED_ORIGINS,
+        apiBaseHint: process.env.RENDER_EXTERNAL_URL || 'local-only',
+        smtp: getSmtpDiagnostics(),
+    });
 
     server.listen(PORT, () => {
         console.log(`

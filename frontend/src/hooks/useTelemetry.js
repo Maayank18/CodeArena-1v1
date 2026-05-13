@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { getStoredAuthToken, resolveBackendOrigin } from '../api.js';
 
 // ── Route → Activity mapping ──────────────────────────────────
 const ROUTE_ACTIVITY_MAP = {
@@ -72,13 +73,22 @@ export default function useTelemetry() {
 
         if (!storedUser?.username) return; // Not logged in — skip
 
-        const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
+        const socketUrl = resolveBackendOrigin();
+        const token = getStoredAuthToken();
+
+        if (!token) {
+            console.warn('[Telemetry] No auth token found; skipping realtime presence socket.');
+            return;
+        }
 
         socketRef.current = io(socketUrl, {
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 5,
             timeout: 5000,
+            auth: {
+                token,
+            },
         });
 
         socketRef.current.on('connect', () => {

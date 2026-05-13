@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
 import { BADGE_DEFINITIONS } from '../services/badgeEngine.js';
 import { sendSettingsOtpEmail } from '../services/authEmailService.js';
 import {
@@ -202,6 +203,13 @@ export const requestSettingsOtp = async (req, res) => {
         const newPhone = req.body.phone === undefined ? '' : normalizePhone(req.body.phone);
         const newPassword = req.body.password === undefined ? '' : String(req.body.password);
 
+        console.log('[SETTINGS OTP] Request started', {
+            userId: req.user?._id,
+            hasEmailChange: Boolean(newEmail),
+            hasPhoneChange: Boolean(newPhone),
+            hasPasswordChange: Boolean(newPassword),
+        });
+
         if (!newEmail && !newPhone && !newPassword) {
             return res.status(400).json({ success: false, message: 'Choose at least one sensitive field to update' });
         }
@@ -209,6 +217,14 @@ export const requestSettingsOtp = async (req, res) => {
         const user = await User.findById(req.user._id).select('+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone');
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.email || !EMAIL_REGEX.test(user.email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Your account does not have a valid email address for OTP delivery.',
+                code: 'SETTINGS_OTP_EMAIL_INVALID',
+            });
         }
 
         const pendingUpdates = {};
@@ -248,7 +264,7 @@ export const requestSettingsOtp = async (req, res) => {
                 return res.status(400).json({ success: false, message: passwordError });
             }
 
-            pendingUpdates.password = newPassword;
+            pendingUpdates.passwordHash = await bcrypt.hash(newPassword, 10);
         }
 
         const otp = generateOtp();
@@ -261,12 +277,50 @@ export const requestSettingsOtp = async (req, res) => {
         };
         await user.save();
 
-        const emailResult = await sendSettingsOtpEmail({
-            to: user.email,
-            otp,
-            name: user.fullName || user.username,
-            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
-            requestedChanges: buildRequestedChanges(pendingUpdates),
+        console.log('[SETTINGS OTP] OTP persisted', {
+            userId: req.user?._id,
+            deliveryTarget: user.email,
+            expiresAt: user.otpExpiry,
+        });
+
+        let emailResult;
+        try {
+            emailResult = await sendSettingsOtpEmail({
+                to: user.email,
+                otp,
+                name: user.fullName || user.username,
+                expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+                requestedChanges: buildRequestedChanges({
+                    email: pendingUpdates.email,
+                    phone: pendingUpdates.phone,
+                    password: pendingUpdates.passwordHash ? 'Password update' : '',
+                }),
+            });
+        } catch (emailError) {
+            user.otpCode = null;
+            user.otpExpiry = null;
+            user.otpAttemptCount = 0;
+            user.pendingUpdates = {};
+            await user.save();
+
+            console.error('[SETTINGS OTP] Email delivery failed; OTP rolled back', {
+                userId: req.user?._id,
+                code: emailError?.code,
+                message: emailError?.message,
+            });
+
+            return res.status(emailError?.status || 500).json({
+                success: false,
+                message: process.env.NODE_ENV === 'production'
+                    ? 'Unable to send verification code right now. Please try again later.'
+                    : emailError.message,
+                code: emailError?.code || 'SETTINGS_OTP_SEND_FAILED',
+            });
+        }
+
+        console.log('[SETTINGS OTP] Verification email sent', {
+            userId: req.user?._id,
+            delivered: emailResult?.delivered,
         });
 
         return res.json({
@@ -282,7 +336,11 @@ export const requestSettingsOtp = async (req, res) => {
             ? 'Unable to send verification code. Please contact support or try again later.'
             : `Email Error: ${error.message}`;
 
-        return res.status(500).json({ success: false, message });
+        return res.status(error?.status || 500).json({
+            success: false,
+            message,
+            code: error?.code || 'SETTINGS_OTP_REQUEST_FAILED',
+        });
     }
 };
 
@@ -303,7 +361,10 @@ export const verifySettingsOtp = async (req, res) => {
         }
 
         const hasPendingChanges = Boolean(
-            user.pendingUpdates?.email || user.pendingUpdates?.phone || user.pendingUpdates?.password
+            user.pendingUpdates?.email ||
+            user.pendingUpdates?.phone ||
+            user.pendingUpdates?.passwordHash ||
+            user.pendingUpdates?.password
         );
 
         if (!user.otpCode || !user.otpExpiry || !hasPendingChanges) {
@@ -332,7 +393,8 @@ export const verifySettingsOtp = async (req, res) => {
 
         const pendingEmail = user.pendingUpdates?.email;
         const pendingPhone = user.pendingUpdates?.phone;
-        const pendingPassword = user.pendingUpdates?.password;
+        const pendingPasswordHash = user.pendingUpdates?.passwordHash;
+        const legacyPendingPassword = user.pendingUpdates?.password;
 
         if (pendingEmail) {
             user.email = pendingEmail;
@@ -344,13 +406,20 @@ export const verifySettingsOtp = async (req, res) => {
             user.phoneVerified = true;
         }
 
-        if (pendingPassword) {
-            const passwordError = validatePasswordStrength(pendingPassword);
+        if (legacyPendingPassword) {
+            const passwordError = validatePasswordStrength(legacyPendingPassword);
             if (passwordError) {
                 return res.status(400).json({ success: false, message: passwordError });
             }
+        }
 
-            user.password = pendingPassword;
+        if (pendingPasswordHash) {
+            user.password = pendingPasswordHash;
+            user.passwordChangedAt = new Date();
+            user.failedLoginAttempts = 0;
+            user.lockUntil = null;
+        } else if (legacyPendingPassword) {
+            user.password = legacyPendingPassword;
             user.passwordChangedAt = new Date();
             user.failedLoginAttempts = 0;
             user.lockUntil = null;
@@ -365,7 +434,7 @@ export const verifySettingsOtp = async (req, res) => {
         return res.json({
             success: true,
             message: 'Sensitive settings updated successfully.',
-            requiresReauth: Boolean(pendingPassword),
+            requiresReauth: Boolean(pendingPasswordHash || legacyPendingPassword),
             user: buildSettingsPayload(user),
         });
     } catch (error) {

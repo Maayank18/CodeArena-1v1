@@ -10,6 +10,7 @@ import {
     Shield, Search, Wifi, WifiOff
 } from 'lucide-react';
 import Avatar from './Avatar';
+import { getStoredAuthToken, resolveBackendOrigin } from '../api.js';
 
 // ── Activity badge config ─────────────────────────────────────
 const ACTIVITY_META = {
@@ -50,8 +51,21 @@ const LiveUsersTable = () => {
     const socketRef = useRef(null);
 
     useEffect(() => {
-        const socketUrl = import.meta.env.VITE_API_URL || 'https://codearena-1v1.onrender.com';
-        socketRef.current = io(socketUrl, { transports: ['websocket', 'polling'], reconnection: true });
+        const socketUrl = resolveBackendOrigin();
+        const token = getStoredAuthToken();
+
+        if (!token) {
+            setConnected(false);
+            return undefined;
+        }
+
+        socketRef.current = io(socketUrl, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            auth: {
+                token,
+            },
+        });
 
         socketRef.current.on('connect', () => {
             setConnected(true);

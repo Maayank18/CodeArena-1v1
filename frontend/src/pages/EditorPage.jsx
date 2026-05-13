@@ -17,20 +17,28 @@ import ProblemMarkdown from '../components/ProblemMarkdown';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
+import { resolveBackendOrigin } from '../api.js';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
+const isLocalhostLike = (value = '') => /localhost|127\.0\.0\.1/i.test(String(value));
 const resolveBackendHttpUrl = () => {
     const explicitBackend = import.meta.env.VITE_BACKEND_URL;
-    if (explicitBackend) return explicitBackend;
+    if (explicitBackend && !(import.meta.env.PROD && isLocalhostLike(explicitBackend))) return explicitBackend;
 
     const apiUrl = import.meta.env.VITE_API_URL;
-    if (apiUrl) return apiUrl.replace(/\/api\/?$/, '');
+    if (apiUrl && !(import.meta.env.PROD && isLocalhostLike(apiUrl))) return apiUrl.replace(/\/api\/?$/, '');
+
+    if (import.meta.env.PROD) {
+        return resolveBackendOrigin();
+    }
 
     return DEFAULT_BACKEND_URL;
 };
 
 const resolveYjsUrl = () => {
-    if (import.meta.env.VITE_YJS_URL) return import.meta.env.VITE_YJS_URL;
+    if (import.meta.env.VITE_YJS_URL && !(import.meta.env.PROD && isLocalhostLike(import.meta.env.VITE_YJS_URL))) {
+        return import.meta.env.VITE_YJS_URL;
+    }
 
     const backendUrl = resolveBackendHttpUrl();
     if (backendUrl.startsWith('https://')) return backendUrl.replace(/^https:\/\//, 'wss://');
