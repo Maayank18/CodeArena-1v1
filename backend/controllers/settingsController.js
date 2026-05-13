@@ -63,8 +63,8 @@ const buildSettingsPayload = (user) => ({
     subscriptionPlan: user.subscriptionPlan || 'free',
     badges: user.badges || [],
     customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
-    emailVerified: Boolean(user.email),
-    phoneVerified: Boolean(user.phone),
+    emailVerified: Boolean(user.emailVerified),
+    phoneVerified: Boolean(user.phoneVerified),
 });
 
 const validateUsername = (username) => {
@@ -121,7 +121,7 @@ const buildRequestedChanges = ({ email, phone, password }) => {
 export const getSettingsProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization')
+            .select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified phoneVerified')
             .lean();
 
         if (!user) {
@@ -178,7 +178,7 @@ export const updateProfileSettings = async (req, res) => {
                 },
             },
             { new: true, runValidators: true }
-        ).select('username fullName email phone avatar bio preferences rating seasonScore stats');
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified phoneVerified');
 
         return res.json({
             success: true,
@@ -290,7 +290,7 @@ export const verifySettingsOtp = async (req, res) => {
         }
 
         const user = await User.findById(req.user._id).select(
-            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats passwordChangedAt failedLoginAttempts lockUntil'
+            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats passwordChangedAt failedLoginAttempts lockUntil emailVerified phoneVerified'
         );
 
         if (!user) {
@@ -330,16 +330,13 @@ export const verifySettingsOtp = async (req, res) => {
         const pendingPassword = user.pendingUpdates?.password;
 
         if (pendingEmail) {
-            const existingEmail = await User.findOne({ email: pendingEmail, _id: { $ne: user._id } }).select('_id').lean();
-            if (existingEmail) {
-                return res.status(400).json({ success: false, message: 'That email is already registered' });
-            }
-
             user.email = pendingEmail;
+            user.emailVerified = true;
         }
 
         if (pendingPhone) {
             user.phone = pendingPhone;
+            user.phoneVerified = true;
         }
 
         if (pendingPassword) {
@@ -428,7 +425,7 @@ export const updateCustomization = async (req, res) => {
             userId,
             { $set: update },
             { new: true, runValidators: true }
-        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization').lean();
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified phoneVerified').lean();
 
         if (!updatedUser) {
             return res.status(404).json({ success: false, message: 'User not found' });

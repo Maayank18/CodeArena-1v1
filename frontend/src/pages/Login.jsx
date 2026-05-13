@@ -70,6 +70,12 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showRecoveryPassword, setShowRecoveryPassword] = useState(false);
     const [recoveryStep, setRecoveryStep] = useState('');
+    const [signupVerification, setSignupVerification] = useState({
+        active: false,
+        email: '',
+        otp: '',
+        devOtp: '',
+    });
     const [formData, setFormData] = useState(initialFormData);
     const [recoveryData, setRecoveryData] = useState(initialRecoveryData);
     const navigate = useNavigate();
@@ -238,6 +244,17 @@ const Login = () => {
 
             const { data } = await api.post(endpoint, payload);
 
+            if (isRegister && data.requiresVerification) {
+                setSignupVerification({
+                    active: true,
+                    email: data.email,
+                    otp: '',
+                    devOtp: data.devOtp || '',
+                });
+                toast.success('Registration successful! Please verify your email.');
+                return;
+            }
+
             localStorage.removeItem('codearena_user');
             localStorage.removeItem('dashboard_profile_cache');
             localStorage.removeItem('leaderboard_cache');
@@ -376,25 +393,68 @@ const Login = () => {
         }
     }, [recoveryData.email, recoveryData.resendAvailableIn]);
 
-    const headerTitle = isRecoveryMode
-        ? recoveryStep === 'request'
-            ? 'Reset Password'
-            : recoveryStep === 'verify'
-                ? 'Verify Code'
-                : 'Choose New Password'
-        : isRegister
-            ? 'Create Account'
-            : 'Welcome Back';
+    const handleVerifySignup = useCallback(async (e) => {
+        e.preventDefault();
+        if (!signupVerification.otp || signupVerification.otp.length !== 6) {
+            toast.error('Enter 6 digit code');
+            return;
+        }
 
-    const headerDescription = isRecoveryMode
-        ? recoveryStep === 'request'
-            ? 'We will send a verification code to your email'
-            : recoveryStep === 'verify'
-                ? 'Enter the 6 digit code to continue'
-                : 'Set a new password for your account'
-        : isRegister
-            ? 'Join the coding arena today'
-            : 'Continue your coding journey';
+        setIsLoading(true);
+        try {
+            const { data } = await api.post('/auth/verify-account', {
+                email: signupVerification.email,
+                otp: signupVerification.otp,
+            });
+
+            localStorage.setItem('codearena_user', JSON.stringify(data));
+            toast.success('Account verified! Welcome to CodeArena.');
+            navigate('/dashboard');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Verification failed');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [signupVerification, navigate]);
+
+    const handleResendSignupOtp = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const { data } = await api.post('/auth/resend-verification', {
+                email: signupVerification.email,
+            });
+            setSignupVerification(prev => ({ ...prev, devOtp: data.devOtp || '' }));
+            toast.success('Verification code resent');
+        } catch (error) {
+            toast.error('Failed to resend code');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [signupVerification.email]);
+
+    const headerTitle = signupVerification.active
+        ? 'Verify Account'
+        : isRecoveryMode
+            ? recoveryStep === 'request'
+                ? 'Reset Password'
+                : recoveryStep === 'verify'
+                    ? 'Verify Code'
+                    : 'Choose New Password'
+            : isRegister
+                ? 'Create Account'
+                : 'Welcome Back';
+
+    const headerDescription = signupVerification.active
+        ? `Enter the code sent to ${signupVerification.email}`
+        : isRecoveryMode
+            ? recoveryStep === 'request'
+                ? 'We will send a verification code to your email'
+                : recoveryStep === 'verify'
+                    ? 'Enter the 6 digit code to continue'
+                    : 'Set a new password for your account'
+            : isRegister
+                ? 'Join the coding arena today'
+                : 'Continue your coding journey';
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] p-4 relative overflow-hidden transition-colors duration-300">
@@ -414,7 +474,7 @@ const Login = () => {
                     </p>
                 </div>
 
-                {!isRecoveryMode && (
+                {!isRecoveryMode && !signupVerification.active && (
                     <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                         {isRegister && (
                             <>
@@ -564,6 +624,55 @@ const Login = () => {
                                     <ArrowRight size={18} />
                                 </>
                             )}
+                        </button>
+                    </form>
+                )}
+
+                {signupVerification.active && (
+                    <form onSubmit={handleVerifySignup} className="space-y-4 animate-fade-in">
+                        <div className="relative group">
+                            <ShieldCheck className="absolute left-3 top-3.5 text-[var(--text-secondary)] h-5 w-5 pointer-events-none" />
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={6}
+                                placeholder="000000"
+                                required
+                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-3 text-sm tracking-[0.4em] font-bold focus:outline-none focus:border-accent transition-all"
+                                value={signupVerification.otp}
+                                onChange={(e) => setSignupVerification(prev => ({ ...prev, otp: e.target.value.replace(/\D/g, '') }))}
+                            />
+                        </div>
+
+                        {signupVerification.devOtp && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-300">
+                                Development Code: <span className="font-bold tracking-widest">{signupVerification.devOtp}</span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between px-1">
+                            <button
+                                type="button"
+                                onClick={handleResendSignupOtp}
+                                className="text-xs font-bold text-accent hover:underline transition-all"
+                            >
+                                Resend Code
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSignupVerification({ active: false, email: '', otp: '', devOtp: '' })}
+                                className="text-xs font-bold text-[var(--text-secondary)] hover:underline transition-all"
+                            >
+                                Back to Signup
+                            </button>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center"
+                        >
+                            {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Verify & Continue'}
                         </button>
                     </form>
                 )}

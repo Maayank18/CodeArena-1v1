@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { AUTH_LIMITS, validatePasswordStrength } from '../utils/authSecurity.js';
+import { sendAccountVerificationEmail } from '../services/authEmailService.js';
+import { generateOtp, hashOtp, minutesFromNow, safeEqualHex } from '../utils/authSecurity.js';
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
@@ -84,6 +86,9 @@ export const registerUser = async (req, res) => {
 
         const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${trimmedUsername}`;
 
+        const otp = generateOtp();
+        const otpExpiry = minutesFromNow(AUTH_LIMITS.otpExpiryMinutes);
+
         const user = await User.create({
             fullName: trimmedFullName,
             username: trimmedUsername,
@@ -91,35 +96,22 @@ export const registerUser = async (req, res) => {
             phone: trimmedPhone,
             password,
             avatar,
+            otpCode: hashOtp(otp),
+            otpExpiry,
         });
 
-        const token = generateToken(user._id);
-        attachAccessCookie(res, token);
-
-        const safeRole = user.role || 'user';
-        const safePlan = user.subscriptionPlan || 'free';
+        const emailResult = await sendAccountVerificationEmail({
+            to: user.email,
+            otp,
+            name: user.fullName || user.username,
+            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+        });
 
         return res.status(201).json({
-            _id: user._id,
-            username: user.username,
-            fullName: user.fullName,
+            message: 'Registration successful. Please verify your email with the code sent.',
             email: user.email,
-            phone: user.phone,
-            avatar: user.avatar,
-            bio: user.bio || '',
-            preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
-            isPro: user.isPro || false,
-            role: safeRole,
-            planId: user.planId || null,
-            subscriptionPlan: safePlan,
-            proActivatedAt: user.proActivatedAt || null,
-            subscriptionExpiry: user.subscriptionExpiry || null,
-            rating: user.rating,
-            seasonScore: user.seasonScore,
-            stats: user.stats,
-            badges: user.badges || [],
-            customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
-            token,
+            requiresVerification: true,
+            ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
         });
     } catch (error) {
         console.error('REGISTRATION ERROR:', error.message);
@@ -257,5 +249,109 @@ export const loginUser = async (req, res) => {
             message: 'An internal server error occurred during login',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
+    }
+};
+
+export const verifyAccountOtp = async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and verification code are required' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() })
+            .select('+otpCode +otpExpiry +otpAttemptCount');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.otpCode || !user.otpExpiry) {
+            return res.status(400).json({ message: 'No verification request found' });
+        }
+
+        if (user.otpExpiry < new Date()) {
+            return res.status(400).json({ message: 'Verification code has expired' });
+        }
+
+        const isMatch = safeEqualHex(hashOtp(otp), user.otpCode);
+
+        if (!isMatch) {
+            user.otpAttemptCount = (user.otpAttemptCount || 0) + 1;
+            await user.save();
+            return res.status(400).json({ message: 'Invalid verification code' });
+        }
+
+        user.emailVerified = true;
+        user.phoneVerified = true; // For now, we verify both via email as requested
+        user.otpCode = null;
+        user.otpExpiry = null;
+        user.otpAttemptCount = 0;
+        await user.save();
+
+        const token = generateToken(user._id);
+        attachAccessCookie(res, token);
+
+        return res.json({
+            message: 'Email verified successfully',
+            _id: user._id,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone,
+            avatar: user.avatar,
+            bio: user.bio || '',
+            emailVerified: user.emailVerified,
+            phoneVerified: user.phoneVerified,
+            isPro: user.isPro || false,
+            role: user.role || 'user',
+            subscriptionPlan: user.subscriptionPlan || 'free',
+            token,
+        });
+    } catch (error) {
+        console.error('VERIFY ACCOUNT ERROR:', error.message);
+        return res.status(500).json({ message: 'Server error during verification' });
+    }
+};
+
+export const resendVerificationOtp = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.emailVerified) {
+            return res.status(400).json({ message: 'Account is already verified' });
+        }
+
+        const otp = generateOtp();
+        user.otpCode = hashOtp(otp);
+        user.otpExpiry = minutesFromNow(AUTH_LIMITS.otpExpiryMinutes);
+        user.otpAttemptCount = 0;
+        await user.save();
+
+        const emailResult = await sendAccountVerificationEmail({
+            to: user.email,
+            otp,
+            name: user.fullName || user.username,
+            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+        });
+
+        return res.json({
+            message: 'Verification code resent',
+            ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+        });
+    } catch (error) {
+        console.error('RESEND VERIFICATION ERROR:', error.message);
+        return res.status(500).json({ message: 'Server error during resend' });
     }
 };

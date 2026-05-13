@@ -94,6 +94,37 @@ export const sendPasswordResetOtpEmail = async ({ to, otp, name, expiresInMinute
     });
 };
 
+export const sendAccountVerificationEmail = async ({ to, otp, name, expiresInMinutes }) => {
+    const subject = 'Verify your CodeArena 1v1 account';
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #e5e7eb; background: #0f1117; padding: 24px;">
+            <div style="max-width: 560px; margin: 0 auto; background: #121212; border: 1px solid #1f2937; border-radius: 20px; overflow: hidden;">
+                <div style="padding: 28px; border-bottom: 1px solid #1f2937; background: linear-gradient(135deg, #0f172a 0%, #121212 100%);">
+                    <p style="margin: 0 0 8px; color: #4ade80; font-size: 12px; letter-spacing: 0.18em; font-weight: 700; text-transform: uppercase;">CodeArena 1v1 Verification</p>
+                    <h1 style="margin: 0; font-size: 24px; color: #f9fafb;">Welcome to the Arena!</h1>
+                </div>
+                <div style="padding: 28px;">
+                    <p style="margin-top: 0; color: #d1d5db;">Hi ${name || 'there'},</p>
+                    <p style="color: #d1d5db;">Thank you for joining CodeArena 1v1. To complete your registration and start battling, please verify your email address using the code below:</p>
+                    <div style="margin: 24px 0; padding: 18px; border-radius: 16px; border: 1px solid #1f2937; background: #0b0d12; text-align: center;">
+                        <p style="margin: 0 0 10px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.16em;">Verification Code</p>
+                        <p style="margin: 0; font-size: 32px; letter-spacing: 8px; font-weight: 700; color: #4ade80;">${otp}</p>
+                    </div>
+                    <p style="color: #d1d5db;">This code expires in ${expiresInMinutes} minutes.</p>
+                    <p style="color: #d1d5db;">If you didn't create an account, you can safely ignore this email.</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return sendMailOrLog({
+        to,
+        subject,
+        html,
+        debugLabel: 'account verification emails',
+    });
+};
+
 export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes, requestedChanges = [] }) => {
     const subject = 'CodeArena 1v1 security verification code';
     const changeSummary = requestedChanges.length

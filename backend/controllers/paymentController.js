@@ -67,13 +67,20 @@ export const submitPaymentUtr = async (req, res) => {
         }
 
         const user = await User.findById(req.user?._id)
-            .select('_id username fullName email')
+            .select('_id username fullName email emailVerified phoneVerified')
             .lean();
 
         if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'User not found for this session',
+            });
+        }
+
+        if (!user.emailVerified || !user.phoneVerified) {
+            return res.status(403).json({
+                success: false,
+                message: 'Please verify your email and phone number in settings before purchasing a plan',
             });
         }
 

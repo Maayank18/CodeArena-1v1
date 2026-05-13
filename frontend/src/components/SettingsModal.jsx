@@ -685,6 +685,21 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                               className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
                               placeholder="email@example.com"
                             />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                              {user?.emailVerified ? (
+                                <VerifiedBadge label="Verified" />
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSecurityForm(prev => ({ ...prev, email: securityForm.email }));
+                                    requestOtp();
+                                  }}
+                                  className="text-[10px] font-bold text-accent hover:underline"
+                                >
+                                  Verify Now
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -698,6 +713,21 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                               className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
                               placeholder="+1 234 567 890"
                             />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                              {user?.phoneVerified ? (
+                                <VerifiedBadge label="Verified" />
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSecurityForm(prev => ({ ...prev, phone: securityForm.phone }));
+                                    requestOtp();
+                                  }}
+                                  className="text-[10px] font-bold text-accent hover:underline"
+                                >
+                                  Verify Now
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
 

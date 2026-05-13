@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  AlertCircle,
   ArrowLeft,
   CheckCircle2,
   Loader2,
@@ -400,14 +401,37 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                     </div>
 
                     <div className="flex flex-col gap-4">
-                      <button
-                        onClick={() => setStep(3)}
-                        disabled={!isFormValid}
-                        className={`w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest text-black transition-all ${!isFormValid ? 'opacity-30 cursor-not-allowed bg-gray-600' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
-                        style={isFormValid ? { backgroundColor: color, boxShadow: `0 10px 30px -10px ${color}60` } : undefined}
-                      >
-                        Continue to Payment
-                      </button>
+                      {!user?.emailVerified || !user?.phoneVerified ? (
+                        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 mb-2">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
+                            <div>
+                              <p className="text-[10px] font-bold text-white uppercase tracking-widest">Verification Required</p>
+                              <p className="mt-1 text-[10px] text-gray-400 leading-relaxed">
+                                Please verify your email and phone in settings to purchase a plan.
+                              </p>
+                              <button
+                                onClick={() => {
+                                  onClose();
+                                  window.dispatchEvent(new CustomEvent('codearena:open-settings', { detail: { tab: 'security' } }));
+                                }}
+                                className="mt-2 text-[10px] font-bold text-accent hover:underline"
+                              >
+                                Go to Security Settings
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setStep(3)}
+                          disabled={!isFormValid}
+                          className={`w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest text-black transition-all ${!isFormValid ? 'opacity-30 cursor-not-allowed bg-gray-600' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
+                          style={isFormValid ? { backgroundColor: color, boxShadow: `0 10px 30px -10px ${color}60` } : undefined}
+                        >
+                          Continue to Payment
+                        </button>
+                      )}
 
                       <button
                         onClick={() => setStep(1)}
