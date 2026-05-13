@@ -14,7 +14,7 @@ import {
     ShieldCheck,
     User,
 } from 'lucide-react';
-import api from '../api.js';
+import api, { isApiRequestCancelled } from '../api.js';
 import { Logo } from '../components/Logo.jsx';
 
 const initialFormData = {
@@ -62,6 +62,13 @@ const getResetPasswordError = (password) => {
     }
 
     return null;
+};
+
+const clearClientAuthState = () => {
+    localStorage.removeItem('codearena_user');
+    localStorage.removeItem('dashboard_profile_cache');
+    localStorage.removeItem('leaderboard_cache');
+    localStorage.removeItem('history_cache');
 };
 
 const Login = () => {
@@ -244,26 +251,52 @@ const Login = () => {
 
             const { data } = await api.post(endpoint, payload);
 
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] submit response', {
+                    endpoint,
+                    status: isRegister ? 'register' : 'login',
+                    data,
+                });
+            }
+
             if (isRegister && data.requiresVerification) {
+                const deliveryFailed = data?.emailDelivery?.delivered === false;
+
                 setSignupVerification({
                     active: true,
                     email: data.email,
                     otp: '',
                     devOtp: data.devOtp || '',
                 });
-                toast.success('Registration successful! Please verify your email.');
+
+                if (import.meta.env.DEV) {
+                    console.log('[AUTH UI] signup toast branch', {
+                        deliveryFailed,
+                        toastMessage: data.message,
+                    });
+                }
+
+                if (deliveryFailed) {
+                    toast(data.message || 'Account created. Please resend the verification code.');
+                } else {
+                    toast.success(data.message || 'Registration successful! Please verify your email.');
+                }
                 return;
             }
 
-            localStorage.removeItem('codearena_user');
-            localStorage.removeItem('dashboard_profile_cache');
-            localStorage.removeItem('leaderboard_cache');
-            localStorage.removeItem('history_cache');
+            clearClientAuthState();
             localStorage.setItem('codearena_user', JSON.stringify(data));
 
-            toast.success(`Welcome, ${data.username}!`, { duration: 3000 });
+            toast.success(data.message || `Welcome, ${data.username}!`, { duration: 3000 });
             window.setTimeout(() => navigate('/dashboard'), 500);
         } catch (error) {
+            if (isApiRequestCancelled(error)) {
+                if (import.meta.env.DEV) {
+                    console.log('[AUTH UI] submit request cancelled', { endpoint });
+                }
+                return;
+            }
+
             const errorData = error.response?.data;
             const message = errorData?.error || errorData?.message || 'Authentication failed. Please try again.';
             toast.error(message, { duration: 6000 });
@@ -286,6 +319,10 @@ const Login = () => {
                 email: recoveryData.email,
             });
 
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] forgot-password response', data);
+            }
+
             setRecoveryData((prev) => ({
                 ...prev,
                 resendAvailableIn: data.resendAvailableIn || 0,
@@ -294,6 +331,7 @@ const Login = () => {
             setRecoveryStep('verify');
             toast.success(data.message || 'Verification code sent');
         } catch (error) {
+            if (isApiRequestCancelled(error)) return;
             toast.error(error.response?.data?.message || 'Unable to send verification code');
         } finally {
             setIsLoading(false);
@@ -315,6 +353,10 @@ const Login = () => {
                 otp: recoveryData.otp,
             });
 
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] verify-otp response', data);
+            }
+
             setRecoveryData((prev) => ({
                 ...prev,
                 resetToken: data.resetToken,
@@ -323,6 +365,7 @@ const Login = () => {
             setRecoveryStep('reset');
             toast.success(data.message || 'Verification successful');
         } catch (error) {
+            if (isApiRequestCancelled(error)) return;
             toast.error(error.response?.data?.message || 'Invalid verification code');
         } finally {
             setIsLoading(false);
@@ -354,7 +397,11 @@ const Login = () => {
                 password: recoveryData.password,
             });
 
-            localStorage.removeItem('codearena_user');
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] reset-password response', data);
+            }
+
+            clearClientAuthState();
             resetRecoveryState(recoveryData.email);
             setFormData((prev) => ({
                 ...prev,
@@ -363,6 +410,7 @@ const Login = () => {
             }));
             toast.success(data.message || 'Password reset successful');
         } catch (error) {
+            if (isApiRequestCancelled(error)) return;
             toast.error(error.response?.data?.message || 'Unable to reset password');
         } finally {
             setIsLoading(false);
@@ -380,6 +428,10 @@ const Login = () => {
                 email: recoveryData.email,
             });
 
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] resend forgot-password response', data);
+            }
+
             setRecoveryData((prev) => ({
                 ...prev,
                 resendAvailableIn: data.resendAvailableIn || 0,
@@ -387,6 +439,7 @@ const Login = () => {
             }));
             toast.success(data.message || 'Verification code resent');
         } catch (error) {
+            if (isApiRequestCancelled(error)) return;
             toast.error(error.response?.data?.message || 'Unable to resend verification code');
         } finally {
             setIsLoading(false);
@@ -407,10 +460,16 @@ const Login = () => {
                 otp: signupVerification.otp,
             });
 
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] verify-account response', data);
+            }
+
+            clearClientAuthState();
             localStorage.setItem('codearena_user', JSON.stringify(data));
-            toast.success('Account verified! Welcome to CodeArena.');
+            toast.success(data.message || 'Account verified! Welcome to CodeArena.');
             navigate('/dashboard');
         } catch (error) {
+            if (isApiRequestCancelled(error)) return;
             toast.error(error.response?.data?.message || 'Verification failed');
         } finally {
             setIsLoading(false);
@@ -423,10 +482,16 @@ const Login = () => {
             const { data } = await api.post('/auth/resend-verification', {
                 email: signupVerification.email,
             });
+
+            if (import.meta.env.DEV) {
+                console.log('[AUTH UI] resend verify-account response', data);
+            }
+
             setSignupVerification(prev => ({ ...prev, devOtp: data.devOtp || '' }));
-            toast.success('Verification code resent');
+            toast.success(data.message || 'Verification code resent');
         } catch (error) {
-            toast.error('Failed to resend code');
+            if (isApiRequestCancelled(error)) return;
+            toast.error(error.response?.data?.message || 'Failed to resend code');
         } finally {
             setIsLoading(false);
         }

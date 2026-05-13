@@ -113,13 +113,15 @@ const CONFIG = {
 // ✅ REQUEST CACHE (for GET requests)
 const requestCache = new Map();
 
-// ✅ PENDING REQUESTS (prevent duplicate simultaneous requests)
+// ✅ PENDING REQUESTS (opt-in dedupe only)
 const pendingRequests = new Map();
 const DEFAULT_PRODUCTION_API_ORIGIN = 'https://codearena-1v1.onrender.com';
 
 const AUTH_FLOW_ENDPOINTS = new Set([
     '/auth/login',
     '/auth/register',
+    '/auth/verify-account',
+    '/auth/resend-verification',
     '/auth/forgot-password',
     '/auth/verify-otp',
     '/auth/reset-password',
@@ -189,6 +191,10 @@ const buildRequestKey = (config) => {
     const data = stableStringify(config?.data || {});
     return `${method}:${url}:${params}:${data}`;
 };
+
+const shouldDedupeRequest = (config) => (
+    Boolean(config?.meta?.dedupe) && config?.method && config.method !== 'get'
+);
 
 const invalidateCache = (predicate) => {
     for (const key of requestCache.keys()) {
@@ -261,20 +267,15 @@ api.interceptors.request.use(
             }
         }
 
-        // 3. ✅ PREVENT DUPLICATE NON-GET REQUESTS
-        // React 18 Strict Mode intentionally double-invokes effects in development.
-        // Cancelling duplicate GETs can leave the "live" component instance with no
-        // successful response to hydrate from, so we only dedupe mutating requests here.
+        // 3. ✅ PREVENT DUPLICATE NON-GET REQUESTS ONLY WHEN A CALLER OPTS IN
         const requestKey = buildRequestKey(config);
-        const shouldDedupe = config.method && config.method !== 'get';
 
-        if (shouldDedupe && pendingRequests.has(requestKey)) {
+        if (shouldDedupeRequest(config) && pendingRequests.has(requestKey)) {
             console.log(`[API] Duplicate request prevented: ${config.url}`);
-            // Cancel duplicate request
             const source = axios.CancelToken.source();
             config.cancelToken = source.token;
             source.cancel('Duplicate request');
-        } else if (shouldDedupe) {
+        } else if (shouldDedupeRequest(config)) {
             pendingRequests.set(requestKey, true);
         }
 
@@ -310,8 +311,10 @@ api.interceptors.response.use(
         }
 
         // 2. ✅ REMOVE FROM PENDING
-        const requestKey = buildRequestKey(response.config);
-        pendingRequests.delete(requestKey);
+        if (shouldDedupeRequest(response.config)) {
+            const requestKey = buildRequestKey(response.config);
+            pendingRequests.delete(requestKey);
+        }
 
         if (response.config.method !== 'get') {
             invalidateCache((key) => key.includes('/notes'));
@@ -328,7 +331,7 @@ api.interceptors.response.use(
         const config = error.config;
 
         // ✅ REMOVE FROM PENDING
-        if (config) {
+        if (config && shouldDedupeRequest(config)) {
             const requestKey = buildRequestKey(config);
             pendingRequests.delete(requestKey);
         }
@@ -411,12 +414,18 @@ api.getCacheSize = () => requestCache.size;
 // ✅ UTILITY: Health check
 api.healthCheck = async () => {
     try {
-        const response = await api.get('/health');
+        const backendOrigin = resolveBackendOrigin();
+        const response = await axios.get(`${backendOrigin}/health`, {
+            timeout: CONFIG.timeout,
+            withCredentials: true,
+        });
         return { healthy: true, data: response.data };
     } catch (error) {
         return { healthy: false, error: error.message };
     }
 };
+
+export const isApiRequestCancelled = (error) => axios.isCancel(error);
 
 export default api;
 // V 1.5

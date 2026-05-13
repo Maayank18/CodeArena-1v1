@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { AUTH_LIMITS, validatePasswordStrength } from '../utils/authSecurity.js';
-import { sendAccountVerificationEmail } from '../services/authEmailService.js';
+import { sendAccountVerificationEmail, getSmtpDiagnostics } from '../services/authEmailService.js';
 import { generateOtp, hashOtp, minutesFromNow, safeEqualHex } from '../utils/authSecurity.js';
+import { buildAuthUserPayload, createAuthTrace, normalizeEmail, normalizeOtp } from '../utils/authFlow.js';
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
@@ -51,43 +52,68 @@ const buildLockoutMessage = (lockUntil) => {
     return `Account temporarily locked. Try again in ${retryInSeconds} seconds.`;
 };
 
+const buildVerificationDeliveryPayload = (delivery = {}) => ({
+    delivered: Boolean(delivery.delivered),
+    provider: delivery.provider || getSmtpDiagnostics().provider,
+    messageId: delivery.messageId || null,
+    retryable: delivery.retryable !== false,
+    code: delivery.code || null,
+});
+
 export const registerUser = async (req, res) => {
     const { fullName, username, email, phone, password } = req.body;
+    const trace = createAuthTrace('register', req, { username, email });
 
     try {
-        console.log('Registration attempt for:', { username, email });
+        trace.info('request.received', {
+            hasFullName: Boolean(fullName),
+            hasUsername: Boolean(username),
+            hasEmail: Boolean(email),
+            hasPhone: Boolean(phone),
+            hasPassword: Boolean(password),
+        });
 
         if (!fullName || !username || !email || !phone || !password) {
-            return res.status(400).json({ message: 'Please fill in all fields (Name, User, Email, Phone, Password)' });
+            return res.status(400).json({
+                success: false,
+                message: 'Please fill in all fields (Name, User, Email, Phone, Password)',
+            });
         }
 
         const trimmedFullName = fullName.trim();
         const trimmedUsername = username.trim();
-        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedEmail = normalizeEmail(email);
         const trimmedPhone = phone.trim();
 
         const passwordValidationError = validatePasswordStrength(password);
         if (passwordValidationError) {
-            return res.status(400).json({ message: passwordValidationError });
+            trace.warn('validation.password_failed', { reason: passwordValidationError });
+            return res.status(400).json({ success: false, message: passwordValidationError });
         }
 
         const [emailExists, userExists] = await Promise.all([
-            User.findOne({ email: trimmedEmail }).select('_id').lean(),
-            User.findByUsername(trimmedUsername)
+            User.findOne({ email: trimmedEmail }).select('_id emailVerified').lean(),
+            User.findByUsername(trimmedUsername),
         ]);
 
         if (emailExists) {
-            return res.status(400).json({ message: 'This Email is already registered' });
+            trace.warn('validation.email_exists', {
+                existingUserId: emailExists._id,
+                emailVerified: emailExists.emailVerified,
+            });
+            return res.status(400).json({ success: false, message: 'This Email is already registered' });
         }
 
         if (userExists) {
-            return res.status(400).json({ message: 'This Username is already taken' });
+            trace.warn('validation.username_exists', { existingUserId: userExists._id });
+            return res.status(400).json({ success: false, message: 'This Username is already taken' });
         }
 
         const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${trimmedUsername}`;
-
         const otp = generateOtp();
         const otpExpiry = minutesFromNow(AUTH_LIMITS.otpExpiryMinutes);
+
+        trace.info('otp.generated', { otpExpiry });
 
         const user = await User.create({
             fullName: trimmedFullName,
@@ -98,65 +124,104 @@ export const registerUser = async (req, res) => {
             avatar,
             otpCode: hashOtp(otp),
             otpExpiry,
+            otpAttemptCount: 0,
         });
 
-        const emailResult = await sendAccountVerificationEmail({
-            to: user.email,
-            otp,
-            name: user.fullName || user.username,
-            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+        trace.info('user.created', {
+            userId: user._id,
+            emailVerified: user.emailVerified,
+            phoneVerified: user.phoneVerified,
         });
 
-        return res.status(201).json({
-            message: 'Registration successful. Please verify your email with the code sent.',
-            email: user.email,
-            requiresVerification: true,
-            ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
-        });
+        try {
+            const emailResult = await sendAccountVerificationEmail({
+                to: user.email,
+                otp,
+                name: user.fullName || user.username,
+                expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+            });
+
+            trace.info('email.sent', {
+                userId: user._id,
+                provider: emailResult.provider,
+                messageId: emailResult.messageId,
+            });
+
+            return res.status(201).json({
+                success: true,
+                message: 'Registration successful. Please verify your email with the code sent.',
+                email: user.email,
+                requiresVerification: true,
+                emailDelivery: buildVerificationDeliveryPayload(emailResult),
+                ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+            });
+        } catch (emailError) {
+            const deliveryState = buildVerificationDeliveryPayload({
+                delivered: false,
+                provider: getSmtpDiagnostics().provider,
+                retryable: emailError?.retryable !== false,
+                code: emailError?.code || 'OTP_DELIVERY_FAILED',
+            });
+
+            trace.error('email.failed', emailError, {
+                userId: user._id,
+                deliveryState,
+            });
+
+            return res.status(202).json({
+                success: true,
+                message: 'Account created, but the verification code could not be delivered yet. Please use resend verification code.',
+                email: user.email,
+                requiresVerification: true,
+                emailDelivery: deliveryState,
+                ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+            });
+        }
     } catch (error) {
-        console.error('REGISTRATION ERROR:', error.message);
-        console.error(error.stack);
+        trace.error('request.failed', error);
 
         if (error.code === 11000) {
             const field = Object.keys(error.keyPattern || {})[0] || 'field';
-            return res.status(400).json({ message: `This ${field} is already registered` });
+            return res.status(400).json({ success: false, message: `This ${field} is already registered` });
         }
 
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: `Validation error: ${error.message}` });
+            return res.status(400).json({ success: false, message: `Validation error: ${error.message}` });
         }
 
         return res.status(500).json({
-            message: 'Server Error during registration',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            success: false,
+            message: 'Server error during registration',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };
 
 export const loginUser = async (req, res) => {
     const { email, password, rememberMe } = req.body;
+    const trace = createAuthTrace('login', req, { email });
 
     try {
-        console.log(`[AUTH] Login attempt started: ${email}`);
+        trace.info('request.received');
 
         if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
-            return res.status(400).json({ message: 'Please provide email and password' });
+            return res.status(400).json({ success: false, message: 'Please provide email and password' });
         }
 
-        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedEmail = normalizeEmail(email);
         const user = await User.findOne({ email: trimmedEmail })
             .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil emailVerified phoneVerified createdAt');
 
         if (!user) {
-            console.log(`[AUTH] User not found: ${trimmedEmail}`);
-            return res.status(401).json({ message: 'Invalid email or password' });
+            trace.warn('lookup.user_not_found');
+            return res.status(401).json({ success: false, message: 'Invalid email or password' });
         }
 
-        console.log(`[AUTH] User found: ${user.username} (ID: ${user._id})`);
+        trace.info('lookup.user_found', { userId: user._id, username: user.username });
 
         if (user.lockUntil && user.lockUntil > new Date()) {
-            console.log(`[AUTH] Account locked: ${user.username}`);
-            return res.status(423).json({ message: buildLockoutMessage(user.lockUntil) });
+            trace.warn('login.locked', { userId: user._id, lockUntil: user.lockUntil });
+            return res.status(423).json({ success: false, message: buildLockoutMessage(user.lockUntil) });
         }
 
         if (!isUsablePasswordHash(user.password)) {
@@ -164,44 +229,45 @@ export const loginUser = async (req, res) => {
 
             if (isUsablePasswordHash(rawPasswordHash)) {
                 user.password = rawPasswordHash;
-                console.warn(`[AUTH] Recovered password hash from raw user document for: ${trimmedEmail}`);
+                trace.warn('password.recovered_from_raw', { userId: user._id });
             } else {
-                console.error(`[AUTH] Account data error for ${trimmedEmail}: missing or invalid password hash.`);
+                trace.warn('password.invalid_hash', { userId: user._id });
                 return res.status(401).json({
-                    message: 'Account error: No valid password is set for this user. Please reset your password or register again.'
+                    success: false,
+                    message: 'Account error: No valid password is set for this user. Please reset your password or register again.',
                 });
             }
         }
 
-        console.log('[AUTH] Verifying password...');
         const isPasswordMatch = await user.matchPassword(password);
 
         if (!isPasswordMatch) {
-            console.warn(`[AUTH] Password mismatch for: ${trimmedEmail}`);
-
             const failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
             const update = { $set: { failedLoginAttempts } };
 
             if (failedLoginAttempts >= AUTH_LIMITS.loginMaxFailures) {
                 update.$set.lockUntil = new Date(Date.now() + AUTH_LIMITS.lockMinutes * 60 * 1000);
                 update.$set.failedLoginAttempts = 0;
-                console.log(`[AUTH] Max attempts reached. Locking ${user.username}`);
             }
 
             await User.updateOne({ _id: user._id }, update);
-            return res.status(401).json({ message: 'Invalid email or password' });
+            trace.warn('password.mismatch', {
+                userId: user._id,
+                failedLoginAttempts,
+                accountLocked: Boolean(update.$set.lockUntil),
+            });
+            return res.status(401).json({ success: false, message: 'Invalid email or password' });
         }
-
-        console.log(`[AUTH] Password verified for: ${user.username}`);
 
         let token;
         try {
             token = generateToken(user._id, { rememberMe });
         } catch (tokenError) {
-            console.error('[AUTH] Token generation error:', tokenError.message);
+            trace.error('token.generation_failed', tokenError, { userId: user._id });
             return res.status(500).json({
+                success: false,
                 message: 'Authentication service configuration error',
-                error: process.env.NODE_ENV === 'development' ? tokenError.message : undefined
+                error: process.env.NODE_ENV === 'development' ? tokenError.message : undefined,
             });
         }
 
@@ -210,72 +276,53 @@ export const loginUser = async (req, res) => {
             if (!user.usernameLower) update.$set.usernameLower = user.username.toLowerCase();
             await User.updateOne({ _id: user._id }, update);
         } catch (updateError) {
-            console.error('[AUTH] Post-login update failed (non-critical):', updateError.message);
+            trace.error('post_login_update.failed', updateError, { userId: user._id });
         }
 
         attachAccessCookie(res, token, { rememberMe });
+        trace.info('login.succeeded', { userId: user._id });
 
-        console.log(`[AUTH] Login successful: ${user.username}`);
-
-        const safeRole = user.role || 'user';
-        const safePlan = user.subscriptionPlan || 'free';
-
-        return res.json({
-            _id: user._id,
-            username: user.username,
-            fullName: user.fullName,
-            email: user.email,
-            phone: user.phone,
-            avatar: user.avatar,
-            bio: user.bio || '',
-            preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
-            emailVerified: Boolean(user.emailVerified),
-            phoneVerified: Boolean(user.phoneVerified),
-            isPro: user.isPro || false,
-            role: safeRole,
-            planId: user.planId || null,
-            subscriptionPlan: safePlan,
-            proActivatedAt: user.proActivatedAt || null,
-            subscriptionExpiry: user.subscriptionExpiry || null,
-            rating: user.rating,
-            seasonScore: user.seasonScore,
-            stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
-            badges: user.badges || [],
-            customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
-            createdAt: user.createdAt || null,
-            token,
-        });
+        return res.json(buildAuthUserPayload(user, token, {
+            message: `Welcome, ${user.username}!`,
+        }));
     } catch (error) {
-        console.error('[AUTH] LOGIN ERROR:', error.message);
-        console.error('Error Stack:', error.stack);
+        trace.error('request.failed', error);
         return res.status(500).json({
+            success: false,
             message: 'An internal server error occurred during login',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };
 
 export const verifyAccountOtp = async (req, res) => {
-    const { email, otp } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const otp = normalizeOtp(req.body.otp);
+    const trace = createAuthTrace('verify-account', req, { email });
 
     try {
+        trace.info('request.received');
+
         if (!email || !otp) {
-            return res.status(400).json({ message: 'Email and verification code are required' });
+            return res.status(400).json({ success: false, message: 'Email and verification code are required' });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() })
-            .select('+otpCode +otpExpiry +otpAttemptCount');
+        const user = await User.findOne({ email })
+            .select('+otpCode +otpExpiry +otpAttemptCount username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization emailVerified phoneVerified createdAt');
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            trace.warn('lookup.user_not_found');
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         if (!user.otpCode || !user.otpExpiry) {
-            return res.status(400).json({ message: 'No verification request found' });
+            trace.warn('otp.missing', { userId: user._id });
+            return res.status(400).json({ success: false, message: 'No verification request found' });
         }
 
         if (user.otpExpiry < new Date()) {
-            return res.status(400).json({ message: 'Verification code has expired' });
+            trace.warn('otp.expired', { userId: user._id, otpExpiry: user.otpExpiry });
+            return res.status(400).json({ success: false, message: 'Verification code has expired' });
         }
 
         const isMatch = safeEqualHex(hashOtp(otp), user.otpCode);
@@ -283,11 +330,12 @@ export const verifyAccountOtp = async (req, res) => {
         if (!isMatch) {
             user.otpAttemptCount = (user.otpAttemptCount || 0) + 1;
             await user.save();
-            return res.status(400).json({ message: 'Invalid verification code' });
+            trace.warn('otp.invalid', { userId: user._id, otpAttemptCount: user.otpAttemptCount });
+            return res.status(400).json({ success: false, message: 'Invalid verification code' });
         }
 
         user.emailVerified = true;
-        user.phoneVerified = true; // For now, we verify both via email as requested
+        user.phoneVerified = true;
         user.otpCode = null;
         user.otpExpiry = null;
         user.otpAttemptCount = 0;
@@ -296,45 +344,45 @@ export const verifyAccountOtp = async (req, res) => {
         const token = generateToken(user._id);
         attachAccessCookie(res, token);
 
-        return res.json({
+        trace.info('otp.verified', { userId: user._id });
+
+        return res.json(buildAuthUserPayload(user, token, {
             message: 'Email verified successfully',
-            _id: user._id,
-            username: user.username,
-            fullName: user.fullName,
-            email: user.email,
-            phone: user.phone,
-            avatar: user.avatar,
-            bio: user.bio || '',
-            emailVerified: user.emailVerified,
-            phoneVerified: user.phoneVerified,
-            isPro: user.isPro || false,
-            role: user.role || 'user',
-            subscriptionPlan: user.subscriptionPlan || 'free',
-            token,
-        });
+        }));
     } catch (error) {
-        console.error('VERIFY ACCOUNT ERROR:', error.message);
-        return res.status(500).json({ message: 'Server error during verification' });
+        trace.error('request.failed', error);
+        return res.status(500).json({ success: false, message: 'Server error during verification' });
     }
 };
 
 export const resendVerificationOtp = async (req, res) => {
-    const { email } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const trace = createAuthTrace('resend-verification', req, { email });
 
     try {
+        trace.info('request.received');
+
         if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
+            return res.status(400).json({ success: false, message: 'Email is required' });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await User.findOne({ email }).select('+otpCode +otpExpiry +otpAttemptCount');
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            trace.warn('lookup.user_not_found');
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         if (user.emailVerified) {
-            return res.status(400).json({ message: 'Account is already verified' });
+            trace.warn('validation.already_verified', { userId: user._id });
+            return res.status(400).json({ success: false, message: 'Account is already verified' });
         }
+
+        const previousOtpState = {
+            otpCode: user.otpCode,
+            otpExpiry: user.otpExpiry,
+            otpAttemptCount: user.otpAttemptCount || 0,
+        };
 
         const otp = generateOtp();
         user.otpCode = hashOtp(otp);
@@ -342,19 +390,50 @@ export const resendVerificationOtp = async (req, res) => {
         user.otpAttemptCount = 0;
         await user.save();
 
-        const emailResult = await sendAccountVerificationEmail({
-            to: user.email,
-            otp,
-            name: user.fullName || user.username,
-            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+        trace.info('otp.persisted', {
+            userId: user._id,
+            otpExpiry: user.otpExpiry,
         });
 
-        return res.json({
-            message: 'Verification code resent',
-            ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
-        });
+        try {
+            const emailResult = await sendAccountVerificationEmail({
+                to: user.email,
+                otp,
+                name: user.fullName || user.username,
+                expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+            });
+
+            trace.info('email.sent', {
+                userId: user._id,
+                provider: emailResult.provider,
+                messageId: emailResult.messageId,
+            });
+
+            return res.json({
+                success: true,
+                message: 'Verification code resent',
+                emailDelivery: buildVerificationDeliveryPayload(emailResult),
+                ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+            });
+        } catch (emailError) {
+            user.otpCode = previousOtpState.otpCode;
+            user.otpExpiry = previousOtpState.otpExpiry;
+            user.otpAttemptCount = previousOtpState.otpAttemptCount;
+            await user.save();
+
+            trace.error('email.failed_otp_restored', emailError, {
+                userId: user._id,
+                restoredOtpExpiry: user.otpExpiry,
+            });
+
+            return res.status(emailError?.status || 502).json({
+                success: false,
+                message: 'Unable to resend verification code right now.',
+                code: emailError?.code || 'OTP_RESEND_FAILED',
+            });
+        }
     } catch (error) {
-        console.error('RESEND VERIFICATION ERROR:', error.message);
-        return res.status(500).json({ message: 'Server error during resend' });
+        trace.error('request.failed', error);
+        return res.status(500).json({ success: false, message: 'Server error during resend' });
     }
 };

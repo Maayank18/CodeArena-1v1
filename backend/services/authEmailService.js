@@ -1,75 +1,71 @@
-// ─────────────────────────────────────────────────────────────
-// authEmailService.js — Production Email Service
-// Uses Resend (HTTP API) as primary, Nodemailer (SMTP) as local fallback
-//
-// WHY: Render's free tier blocks outbound SMTP on ports 25, 465, and 587.
-// No amount of Nodemailer config changes will fix this — the TCP packets
-// are dropped at the network layer before they ever reach Gmail.
-// Resend uses HTTPS (port 443) which is never blocked.
-// ─────────────────────────────────────────────────────────────
+import dns from 'dns';
+import nodemailer from 'nodemailer';
 
-// ── Provider detection ─────────────────────────────────────
-// If RESEND_API_KEY is set → use Resend (HTTP, works on Render)
-// If EMAIL_USER + EMAIL_PASS are set → use Nodemailer (SMTP, works locally)
-// If neither → log to console in dev, throw in production
+dns.setDefaultResultOrder('ipv4first');
+
+const DEFAULT_RESEND_FROM = 'CodeArena 1v1 <onboarding@resend.dev>';
+const SMTP_CONNECTION_ERRORS = ['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ECONNREFUSED', 'ENETUNREACH'];
+const PUBLIC_WEBMAIL_DOMAINS = ['@gmail.com', '@outlook.com', '@hotmail.com', '@yahoo.com'];
+
+let resendInstance = null;
+let smtpTransporter = null;
+
+const normalizeProviderPreference = () => {
+    const preferred = (process.env.EMAIL_PROVIDER || 'auto').trim().toLowerCase();
+    return ['auto', 'resend', 'nodemailer', 'none'].includes(preferred) ? preferred : 'auto';
+};
+
+const getProviderAvailability = () => ({
+    hasResendKey: Boolean((process.env.RESEND_API_KEY || '').trim()),
+    hasSmtpCredentials: Boolean((process.env.EMAIL_USER || '').trim() && (process.env.EMAIL_PASS || '').trim()),
+});
 
 const getProvider = () => {
-    if ((process.env.RESEND_API_KEY || '').trim()) return 'resend';
-    if ((process.env.EMAIL_USER || '').trim() && (process.env.EMAIL_PASS || '').trim()) return 'nodemailer';
+    const preferred = normalizeProviderPreference();
+    const availability = getProviderAvailability();
+
+    if (preferred === 'none') return 'none';
+    if (preferred === 'resend') return availability.hasResendKey ? 'resend' : 'none';
+    if (preferred === 'nodemailer') return availability.hasSmtpCredentials ? 'nodemailer' : 'none';
+    if (availability.hasResendKey) return 'resend';
+    if (availability.hasSmtpCredentials) return 'nodemailer';
     return 'none';
 };
 
-// ═══════════════════════════════════════════════════════════
-// RESEND PROVIDER (HTTP-based — works on Render, Vercel, etc.)
-// ═══════════════════════════════════════════════════════════
-let resendInstance = null;
-
-const getResend = async () => {
-    if (!resendInstance) {
-        const { Resend } = await import('resend');
-        resendInstance = new Resend(process.env.RESEND_API_KEY.trim());
-    }
-    return resendInstance;
+const maskEmail = (value) => {
+    if (typeof value !== 'string' || !value.includes('@')) return 'missing';
+    const [local, domain] = value.split('@');
+    return `${local.slice(0, 2)}***@${domain}`;
 };
 
-const sendViaResend = async ({ to, subject, html, label }) => {
-    const resend = await getResend();
-    let from = (process.env.EMAIL_FROM || 'CodeArena 1v1 <onboarding@resend.dev>').trim();
+const resolveFromAddress = (provider = getProvider()) => {
+    if (provider === 'resend') {
+        let from = (process.env.EMAIL_FROM || DEFAULT_RESEND_FROM).trim();
+        const requiresFallback = PUBLIC_WEBMAIL_DOMAINS.some((domain) => from.toLowerCase().includes(domain));
 
-    // ── PRO-TIP: Resend requires a verified domain to send emails. ──
-    // On the free tier, you MUST send from 'onboarding@resend.dev' until you verify a custom domain.
-    // If we detect a gmail/outlook address being used as 'from', we force it to the onboarding address
-    // to prevent the 403 Forbidden 'Domain not verified' error.
-    if (from.includes('@gmail.com') || from.includes('@outlook.com') || from.includes('@hotmail.com') || from.includes('@yahoo.com')) {
-        console.warn(`[MAIL:RESEND] ⚠️  Gmail/Public domain detected in EMAIL_FROM (${from}). Forcing 'onboarding@resend.dev' to comply with Resend's security policy.`);
-        from = 'CodeArena 1v1 <onboarding@resend.dev>';
+        if (requiresFallback) {
+            console.warn(`[MAIL:RESEND] Public mailbox detected in EMAIL_FROM (${from}). Falling back to ${DEFAULT_RESEND_FROM}.`);
+            from = DEFAULT_RESEND_FROM;
+        }
+
+        return from;
     }
 
-    console.log(`[MAIL:RESEND] Sending ${label} to ${maskEmail(to)} (From: ${from})...`);
-
-    const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
-
-    if (error) {
-        console.error(`[MAIL:RESEND] ❌ ${label} failed. Detail:`, JSON.stringify(error, null, 2));
-        throw Object.assign(new Error(error.message || 'Resend delivery failed'), {
-            code: 'RESEND_SEND_FAILED', 
-            status: 502,
-            resendError: error
-        });
+    if (provider === 'nodemailer') {
+        return (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
     }
 
-    console.log(`[MAIL:RESEND] ✅ ${label} sent successfully.`, { id: data?.id });
-    return { delivered: true, debug: false };
+    return (process.env.EMAIL_FROM || DEFAULT_RESEND_FROM).trim();
 };
 
-// ═══════════════════════════════════════════════════════════
-// NODEMAILER PROVIDER (SMTP — works locally, NOT on Render free tier)
-// ═══════════════════════════════════════════════════════════
-import nodemailer from 'nodemailer';
-import dns from 'dns';
-dns.setDefaultResultOrder('ipv4first');
-
-let smtpTransporter = null;
+const buildMailResult = (result = {}) => ({
+    delivered: Boolean(result.delivered),
+    debug: Boolean(result.debug),
+    provider: result.provider || getProvider(),
+    messageId: result.messageId || null,
+    retryable: result.retryable !== false,
+    code: result.code || null,
+});
 
 const createSmtpTransporter = () => {
     const user = (process.env.EMAIL_USER || '').trim();
@@ -89,36 +85,96 @@ const createSmtpTransporter = () => {
     });
 };
 
+const getResend = async () => {
+    if (!resendInstance) {
+        const { Resend } = await import('resend');
+        resendInstance = new Resend(process.env.RESEND_API_KEY.trim());
+    }
+
+    return resendInstance;
+};
+
+const sendViaResend = async ({ to, subject, html, label }) => {
+    const resend = await getResend();
+    const from = resolveFromAddress('resend');
+
+    console.log(`[MAIL:RESEND] Sending ${label} to ${maskEmail(to)} from ${from}`);
+    const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
+
+    if (error) {
+        console.error('[MAIL:RESEND] Delivery failed', {
+            label,
+            code: error.name || 'RESEND_SEND_FAILED',
+            message: error.message,
+        });
+        throw Object.assign(new Error(error.message || 'Resend delivery failed'), {
+            code: 'RESEND_SEND_FAILED',
+            status: 502,
+            retryable: true,
+            resendError: error,
+        });
+    }
+
+    console.log('[MAIL:RESEND] Delivery succeeded', {
+        label,
+        messageId: data?.id || null,
+    });
+
+    return buildMailResult({
+        delivered: true,
+        debug: false,
+        provider: 'resend',
+        messageId: data?.id,
+        retryable: true,
+    });
+};
+
 const sendViaNodemailer = async ({ to, subject, html, label }) => {
     if (!smtpTransporter) {
         smtpTransporter = createSmtpTransporter();
     }
 
-    const from = (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
+    const from = resolveFromAddress('nodemailer');
 
-    console.log(`[MAIL:SMTP] Sending ${label} to ${maskEmail(to)}...`);
+    console.log(`[MAIL:SMTP] Sending ${label} to ${maskEmail(to)} from ${from}`);
 
     try {
         const info = await smtpTransporter.sendMail({ from, to, subject, html });
-        console.log(`[MAIL:SMTP] ✅ ${label} sent`, { messageId: info.messageId });
-        return { delivered: true, debug: false };
-    } catch (err) {
-        console.error(`[MAIL:SMTP] ❌ ${label} failed`, { code: err.code, message: err.message });
-        // Reset transporter on connection errors
-        if (['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ECONNREFUSED', 'ENETUNREACH'].includes(err.code)) {
+        console.log('[MAIL:SMTP] Delivery succeeded', {
+            label,
+            messageId: info.messageId,
+        });
+
+        return buildMailResult({
+            delivered: true,
+            debug: false,
+            provider: 'nodemailer',
+            messageId: info.messageId,
+            retryable: true,
+        });
+    } catch (error) {
+        console.error('[MAIL:SMTP] Delivery failed', {
+            label,
+            code: error.code,
+            message: error.message,
+        });
+
+        if (SMTP_CONNECTION_ERRORS.includes(error.code)) {
             smtpTransporter = null;
         }
+
         throw Object.assign(new Error('Email delivery failed'), {
-            code: err.code || 'SMTP_SEND_FAILED', status: 502, cause: err,
+            code: error.code || 'SMTP_SEND_FAILED',
+            status: 502,
+            retryable: true,
+            cause: error,
         });
     }
 };
 
-// ═══════════════════════════════════════════════════════════
-// UNIFIED SEND (routes to the correct provider)
-// ═══════════════════════════════════════════════════════════
 const sendMail = async ({ to, subject, html, label }) => {
     const provider = getProvider();
+    const preferredProvider = normalizeProviderPreference();
 
     if (provider === 'resend') {
         return sendViaResend({ to, subject, html, label });
@@ -128,58 +184,65 @@ const sendMail = async ({ to, subject, html, label }) => {
         return sendViaNodemailer({ to, subject, html, label });
     }
 
-    // No provider configured
     if (process.env.NODE_ENV === 'production') {
         throw Object.assign(new Error('No email provider configured'), {
-            code: 'MAIL_NOT_CONFIGURED', status: 500,
+            code: preferredProvider === 'none' ? 'MAIL_DISABLED' : 'MAIL_NOT_CONFIGURED',
+            status: 500,
+            retryable: false,
         });
     }
 
-    console.log(`[MAIL:DEV] ${label} → ${to} (no provider, logging only)`);
-    return { delivered: false, debug: true };
+    console.log(`[MAIL:DEV] ${label} -> ${to} (provider not configured, returning debug result)`);
+    return buildMailResult({
+        delivered: false,
+        debug: true,
+        provider: 'console',
+        retryable: true,
+    });
 };
 
-// ── Startup verification ───────────────────────────────────
 export const verifySmtpConnection = async () => {
     const provider = getProvider();
-    console.log(`[MAIL] Provider: ${provider}`);
+    console.log('[MAIL] Provider diagnostics', getSmtpDiagnostics());
 
     if (provider === 'resend') {
-        console.log('[MAIL] ✅ Resend API key configured — HTTP-based delivery ready.');
+        console.log('[MAIL] Resend configured. HTTP delivery path is active.');
         return true;
     }
 
     if (provider === 'nodemailer') {
-        if (!smtpTransporter) smtpTransporter = createSmtpTransporter();
+        if (!smtpTransporter) {
+            smtpTransporter = createSmtpTransporter();
+        }
+
         try {
             await smtpTransporter.verify();
-            console.log('[MAIL] ✅ SMTP connection verified.');
+            console.log('[MAIL] SMTP verification succeeded.');
             return true;
-        } catch (err) {
-            console.error('[MAIL] ❌ SMTP verification failed:', err.code, err.message);
-            console.warn('[MAIL] ⚠️  If you are on Render free tier, SMTP is blocked. Set RESEND_API_KEY instead.');
+        } catch (error) {
+            console.error('[MAIL] SMTP verification failed', {
+                code: error.code,
+                message: error.message,
+            });
+            console.warn('[MAIL] If this server runs on Render, prefer EMAIL_PROVIDER=resend because outbound SMTP is often blocked.');
             smtpTransporter = null;
             return false;
         }
     }
 
-    console.warn('[MAIL] ⚠️  No email provider configured. Set RESEND_API_KEY or EMAIL_USER+EMAIL_PASS.');
+    console.warn('[MAIL] No email provider configured. Set EMAIL_PROVIDER=resend with RESEND_API_KEY for production.');
     return false;
 };
 
 export const getSmtpDiagnostics = () => ({
+    preferredProvider: normalizeProviderPreference(),
     provider: getProvider(),
     configured: getProvider() !== 'none',
+    hasResendKey: getProviderAvailability().hasResendKey,
+    hasSmtpCredentials: getProviderAvailability().hasSmtpCredentials,
+    fromAddress: resolveFromAddress(),
 });
 
-// ── Helper ─────────────────────────────────────────────────
-const maskEmail = (value) => {
-    if (typeof value !== 'string' || !value.includes('@')) return 'missing';
-    const [local, domain] = value.split('@');
-    return `${local.slice(0, 2)}***@${domain}`;
-};
-
-// ── Branded HTML templates ─────────────────────────────────
 const brandedHtml = ({ heading, subtitle, bodyHtml }) => `
 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#e5e7eb;background:#0f1117;padding:24px">
   <div style="max-width:560px;margin:0 auto;background:#121212;border:1px solid #1f2937;border-radius:20px;overflow:hidden">
@@ -198,10 +261,6 @@ const otpBlock = (otp, expiresInMinutes) => `
 </div>
 <p style="color:#d1d5db">This code expires in ${expiresInMinutes} minutes.</p>`;
 
-// ═══════════════════════════════════════════════════════════
-// PUBLIC API — all exports match the original signatures
-// ═══════════════════════════════════════════════════════════
-
 export const sendAccountVerificationEmail = ({ to, otp, name, expiresInMinutes }) =>
     sendMail({
         to,
@@ -214,7 +273,7 @@ export const sendAccountVerificationEmail = ({ to, otp, name, expiresInMinutes }
                 <p style="margin-top:0;color:#d1d5db">Hi ${name || 'there'},</p>
                 <p style="color:#d1d5db">Thank you for joining CodeArena 1v1. Verify your email address using the code below:</p>
                 ${otpBlock(otp, expiresInMinutes)}
-                <p style="color:#d1d5db">If you didn't create an account, you can safely ignore this email.</p>`,
+                <p style="color:#d1d5db">If you did not create an account, you can safely ignore this email.</p>`,
         }),
     });
 

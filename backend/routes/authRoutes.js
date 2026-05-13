@@ -14,6 +14,48 @@ import { createRateLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
+const sanitizeLogValue = (value) => {
+    if (typeof value === 'string' && value.includes('@')) {
+        const [local, domain] = value.split('@');
+        return `${local.slice(0, 2)}***@${domain}`;
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(sanitizeLogValue);
+    }
+
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
+
+    return Object.fromEntries(
+        Object.entries(value).map(([key, nestedValue]) => {
+            if (/token|otp/i.test(key)) {
+                return [key, '[redacted]'];
+            }
+
+            return [key, sanitizeLogValue(nestedValue)];
+        })
+    );
+};
+
+router.use((req, res, next) => {
+    const originalJson = res.json.bind(res);
+
+    res.json = (body) => {
+        console.log('[AUTH RESPONSE]', {
+            method: req.method,
+            path: req.originalUrl,
+            status: res.statusCode,
+            body: sanitizeLogValue(body),
+        });
+
+        return originalJson(body);
+    };
+
+    next();
+});
+
 const loginLimiter = createRateLimiter({
     keyPrefix: 'auth-login',
     limit: 12,

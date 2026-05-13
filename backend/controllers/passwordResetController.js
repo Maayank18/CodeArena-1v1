@@ -11,6 +11,7 @@ import {
     secondsFromNow,
     validatePasswordStrength,
 } from '../utils/authSecurity.js';
+import { createAuthTrace, normalizeEmail, normalizeOtp } from '../utils/authFlow.js';
 
 const RESET_TOKEN_PURPOSE = 'password-reset';
 
@@ -31,17 +32,44 @@ const generateResetToken = ({ userId, otpRequestId, email }) => {
     );
 };
 
-const normalizeEmail = (email) => email.trim().toLowerCase();
-
 const genericForgotPasswordResponse = (extra = {}) => ({
     success: true,
     message: 'If that email is registered, a verification code has been sent.',
     ...extra,
 });
 
+const restoreOtpRequestState = async (otpRequestId, snapshot) => {
+    if (!otpRequestId) {
+        return;
+    }
+
+    if (!snapshot) {
+        await PasswordResetOtp.deleteOne({ _id: otpRequestId });
+        return;
+    }
+
+    await PasswordResetOtp.updateOne(
+        { _id: otpRequestId },
+        {
+            $set: {
+                email: snapshot.email,
+                otpHash: snapshot.otpHash,
+                expiresAt: snapshot.expiresAt,
+                resendAvailableAt: snapshot.resendAvailableAt,
+                attemptCount: snapshot.attemptCount || 0,
+                verifiedAt: snapshot.verifiedAt || null,
+                consumedAt: snapshot.consumedAt || null,
+            },
+        }
+    );
+};
+
 export const forgotPassword = async (req, res) => {
+    const email = normalizeEmail(req.body.email);
+    const trace = createAuthTrace('forgot-password', req, { email });
+
     try {
-        const email = typeof req.body.email === 'string' ? normalizeEmail(req.body.email) : '';
+        trace.info('request.received');
 
         if (!email) {
             return res.status(400).json({ success: false, message: 'Email is required' });
@@ -49,6 +77,7 @@ export const forgotPassword = async (req, res) => {
 
         const user = await User.findOne({ email }).select('_id email fullName username').lean();
         if (!user) {
+            trace.info('lookup.user_missing_generic_response');
             return res.json(genericForgotPasswordResponse());
         }
 
@@ -57,20 +86,24 @@ export const forgotPassword = async (req, res) => {
 
         if (existingRequest?.resendAvailableAt && existingRequest.resendAvailableAt > now) {
             const retryInSeconds = Math.max(1, Math.ceil((existingRequest.resendAvailableAt.getTime() - now.getTime()) / 1000));
+            trace.warn('cooldown.active', { userId: user._id, retryInSeconds });
             return res.status(429).json({
                 success: false,
                 message: `Please wait ${retryInSeconds} seconds before requesting another code.`,
             });
         }
 
-        const otp = generateOtp();
-        const emailResult = await sendPasswordResetOtpEmail({
-            to: user.email,
-            otp,
-            name: user.fullName || user.username,
-            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
-        });
+        const previousSnapshot = existingRequest ? {
+            email: existingRequest.email,
+            otpHash: existingRequest.otpHash,
+            expiresAt: existingRequest.expiresAt,
+            resendAvailableAt: existingRequest.resendAvailableAt,
+            attemptCount: existingRequest.attemptCount,
+            verifiedAt: existingRequest.verifiedAt,
+            consumedAt: existingRequest.consumedAt,
+        } : null;
 
+        const otp = generateOtp();
         const otpHash = hashOtp(otp);
         const otpRequest = await PasswordResetOtp.findOneAndUpdate(
             { userId: user._id },
@@ -83,33 +116,69 @@ export const forgotPassword = async (req, res) => {
                     attemptCount: 0,
                     verifiedAt: null,
                     consumedAt: null,
-                }
+                },
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        return res.json(genericForgotPasswordResponse({
-            resendAvailableIn: AUTH_LIMITS.otpResendCooldownSeconds,
-            ...(emailResult.debug && process.env.NODE_ENV !== 'production'
-                ? { devOtp: otp, devHint: 'OTP logged in backend console for local development.' }
-                : {}),
-            requestId: otpRequest._id,
-        }));
+        trace.info('otp.persisted', {
+            userId: user._id,
+            otpRequestId: otpRequest._id,
+            expiresAt: otpRequest.expiresAt,
+        });
+
+        try {
+            const emailResult = await sendPasswordResetOtpEmail({
+                to: user.email,
+                otp,
+                name: user.fullName || user.username,
+                expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+            });
+
+            trace.info('email.sent', {
+                userId: user._id,
+                otpRequestId: otpRequest._id,
+                provider: emailResult.provider,
+                messageId: emailResult.messageId,
+            });
+
+            return res.json(genericForgotPasswordResponse({
+                resendAvailableIn: AUTH_LIMITS.otpResendCooldownSeconds,
+                ...(emailResult.debug && process.env.NODE_ENV !== 'production'
+                    ? { devOtp: otp, devHint: 'OTP logged in backend console for local development.' }
+                    : {}),
+                requestId: otpRequest._id,
+            }));
+        } catch (emailError) {
+            await restoreOtpRequestState(otpRequest?._id, previousSnapshot);
+            trace.error('email.failed_state_restored', emailError, {
+                userId: user._id,
+                otpRequestId: otpRequest?._id,
+            });
+
+            return res.status(emailError?.status || 502).json({
+                success: false,
+                message: 'Unable to send verification code right now.',
+                code: emailError?.code || 'PASSWORD_RESET_EMAIL_FAILED',
+            });
+        }
     } catch (error) {
-        console.error('FORGOT PASSWORD ERROR:', error.message);
-        console.error(error.stack);
-        return res.status(500).json({ 
-            success: false, 
+        trace.error('request.failed', error);
+        return res.status(500).json({
+            success: false,
             message: 'Unable to start password reset right now.',
-            error: error.message 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };
 
 export const verifyPasswordResetOtp = async (req, res) => {
+    const email = normalizeEmail(req.body.email);
+    const otp = normalizeOtp(req.body.otp);
+    const trace = createAuthTrace('verify-password-reset-otp', req, { email });
+
     try {
-        const email = typeof req.body.email === 'string' ? normalizeEmail(req.body.email) : '';
-        const otp = typeof req.body.otp === 'string' ? req.body.otp.trim() : '';
+        trace.info('request.received');
 
         if (!email || !otp) {
             return res.status(400).json({ success: false, message: 'Email and OTP are required' });
@@ -117,15 +186,18 @@ export const verifyPasswordResetOtp = async (req, res) => {
 
         const user = await User.findOne({ email }).select('_id email').lean();
         if (!user) {
+            trace.warn('lookup.user_not_found');
             return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
         }
 
         const otpRequest = await PasswordResetOtp.findOne({ userId: user._id });
         if (!otpRequest || otpRequest.consumedAt || otpRequest.expiresAt <= new Date()) {
+            trace.warn('otp.invalid_state', { userId: user._id, otpRequestId: otpRequest?._id || null });
             return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
         }
 
         if ((otpRequest.attemptCount || 0) >= AUTH_LIMITS.otpMaxAttempts) {
+            trace.warn('otp.max_attempts', { userId: user._id, otpRequestId: otpRequest._id });
             return res.status(429).json({ success: false, message: 'Too many invalid code attempts. Request a new code.' });
         }
 
@@ -133,12 +205,19 @@ export const verifyPasswordResetOtp = async (req, res) => {
         if (!otpMatches) {
             otpRequest.attemptCount = (otpRequest.attemptCount || 0) + 1;
             await otpRequest.save();
+            trace.warn('otp.mismatch', {
+                userId: user._id,
+                otpRequestId: otpRequest._id,
+                attemptCount: otpRequest.attemptCount,
+            });
             return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
         }
 
         otpRequest.verifiedAt = new Date();
         otpRequest.attemptCount = 0;
         await otpRequest.save();
+
+        trace.info('otp.verified', { userId: user._id, otpRequestId: otpRequest._id });
 
         return res.json({
             success: true,
@@ -150,19 +229,24 @@ export const verifyPasswordResetOtp = async (req, res) => {
             }),
         });
     } catch (error) {
-        console.error('VERIFY OTP ERROR:', error.message);
-        console.error(error.stack);
-        return res.status(500).json({ 
-            success: false, 
+        trace.error('request.failed', error);
+        return res.status(500).json({
+            success: false,
             message: 'Unable to verify code right now.',
-            error: error.message 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };
 
 export const resetPasswordWithOtp = async (req, res) => {
+    const trace = createAuthTrace('reset-password', req);
+
     try {
         const { resetToken, password } = req.body;
+        trace.info('request.received', {
+            hasResetToken: Boolean(resetToken),
+            hasPassword: Boolean(password),
+        });
 
         if (!resetToken || !password) {
             return res.status(400).json({ success: false, message: 'Reset token and new password are required' });
@@ -170,11 +254,13 @@ export const resetPasswordWithOtp = async (req, res) => {
 
         const passwordValidationError = validatePasswordStrength(password);
         if (passwordValidationError) {
+            trace.warn('validation.password_failed', { reason: passwordValidationError });
             return res.status(400).json({ success: false, message: passwordValidationError });
         }
 
         const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
         if (decoded?.purpose !== RESET_TOKEN_PURPOSE || !decoded?.sub || !decoded?.otpRequestId) {
+            trace.warn('token.invalid_payload');
             return res.status(400).json({ success: false, message: 'Invalid reset session' });
         }
 
@@ -184,14 +270,20 @@ export const resetPasswordWithOtp = async (req, res) => {
         ]);
 
         if (!user || !otpRequest) {
+            trace.warn('lookup.missing_user_or_request', {
+                userId: decoded.sub,
+                otpRequestId: decoded.otpRequestId,
+            });
             return res.status(400).json({ success: false, message: 'Invalid reset session' });
         }
 
         if (otpRequest.userId.toString() !== user._id.toString()) {
+            trace.warn('lookup.request_user_mismatch', { userId: user._id, otpRequestId: otpRequest._id });
             return res.status(400).json({ success: false, message: 'Invalid reset session' });
         }
 
         if (otpRequest.consumedAt || !otpRequest.verifiedAt || otpRequest.expiresAt <= new Date()) {
+            trace.warn('token.session_expired', { userId: user._id, otpRequestId: otpRequest._id });
             return res.status(400).json({ success: false, message: 'Reset session expired. Request a new code.' });
         }
 
@@ -205,21 +297,23 @@ export const resetPasswordWithOtp = async (req, res) => {
         otpRequest.otpHash = hashOtp(generateOtp());
         await otpRequest.save();
 
+        trace.info('password.reset_completed', { userId: user._id, otpRequestId: otpRequest._id });
+
         return res.json({
             success: true,
             message: 'Password reset successful. Please sign in again.',
         });
     } catch (error) {
         if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            trace.warn('token.expired_or_invalid', { jwtError: error.message });
             return res.status(400).json({ success: false, message: 'Reset session expired. Request a new code.' });
         }
 
-        console.error('RESET PASSWORD ERROR:', error.message);
-        console.error(error.stack);
-        return res.status(500).json({ 
-            success: false, 
+        trace.error('request.failed', error);
+        return res.status(500).json({
+            success: false,
             message: 'Unable to reset password right now.',
-            error: error.message 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };
