@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  Download,
   Loader2,
   QrCode,
   ShieldCheck,
@@ -146,6 +147,30 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
       toast.error(error.response?.data?.message || 'Failed to submit payment request');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!submittedTransaction?._id) return;
+    
+    try {
+      toast.loading('Generating invoice...', { id: 'invoice-toast' });
+      const response = await api.get(`/payments/${submittedTransaction._id}/invoice`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CodeArena_Invoice_${submittedTransaction.planName || name}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      toast.success('Invoice downloaded successfully', { id: 'invoice-toast' });
+    } catch (error) {
+      toast.error('Failed to download invoice. Please try again.', { id: 'invoice-toast' });
+      console.error('[INVOICE ERROR]', error);
     }
   };
 
@@ -604,9 +629,23 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                           </div>
                         </div>
 
-                        <p className="text-center text-[11px] text-gray-500 mb-6">
-                          You&apos;ll receive an email when the request is approved or rejected.
-                        </p>
+                        {submittedTransaction?.status === 'approved' ? (
+                          <div className="flex flex-col gap-3 mb-6">
+                            <button
+                              onClick={handleDownloadInvoice}
+                              className="w-full rounded-2xl py-4 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 text-white bg-blue-600 hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20"
+                            >
+                              <Download size={18} /> Download Invoice
+                            </button>
+                            <p className="text-center text-[10px] text-gray-400">
+                              Your payment is verified. You can now download your invoice.
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-center text-[11px] text-gray-500 mb-6">
+                            You&apos;ll receive an email when the request is approved or rejected.
+                          </p>
+                        )}
 
                         <button
                           onClick={closeModal}

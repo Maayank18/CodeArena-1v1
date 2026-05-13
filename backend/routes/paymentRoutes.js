@@ -9,6 +9,8 @@ import { isAdmin } from '../middleware/adminAuth.js';
 import { verifyToken } from '../middleware/auth.js';
 import { createRateLimiter } from '../middleware/rateLimit.js';
 
+import { generateInvoicePDF } from '../controllers/invoiceController.js';
+
 const router = express.Router();
 
 const paymentSubmissionLimiter = createRateLimiter({
@@ -23,5 +25,6 @@ router.post('/submit-utr', verifyToken, paymentSubmissionLimiter, submitPaymentU
 router.get('/mine', verifyToken, getMyPaymentTransactions);
 router.get('/admin/transactions', isAdmin, listPaymentTransactions);
 router.post('/verify-utr', isAdmin, verifyPaymentUtr);
+router.get('/:transactionId/invoice', verifyToken, generateInvoicePDF);
 
 export default router;
