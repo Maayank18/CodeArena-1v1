@@ -1,33 +1,72 @@
 // ─────────────────────────────────────────────────────────────
-// authEmailService.js — Production-grade Nodemailer for Render
-// Rebuilt from scratch to fix IPv6/ETIMEDOUT on cloud hosting
+// authEmailService.js — Production Email Service
+// Uses Resend (HTTP API) as primary, Nodemailer (SMTP) as local fallback
+//
+// WHY: Render's free tier blocks outbound SMTP on ports 25, 465, and 587.
+// No amount of Nodemailer config changes will fix this — the TCP packets
+// are dropped at the network layer before they ever reach Gmail.
+// Resend uses HTTPS (port 443) which is never blocked.
 // ─────────────────────────────────────────────────────────────
+
+// ── Provider detection ─────────────────────────────────────
+// If RESEND_API_KEY is set → use Resend (HTTP, works on Render)
+// If EMAIL_USER + EMAIL_PASS are set → use Nodemailer (SMTP, works locally)
+// If neither → log to console in dev, throw in production
+
+const getProvider = () => {
+    if ((process.env.RESEND_API_KEY || '').trim()) return 'resend';
+    if ((process.env.EMAIL_USER || '').trim() && (process.env.EMAIL_PASS || '').trim()) return 'nodemailer';
+    return 'none';
+};
+
+// ═══════════════════════════════════════════════════════════
+// RESEND PROVIDER (HTTP-based — works on Render, Vercel, etc.)
+// ═══════════════════════════════════════════════════════════
+let resendInstance = null;
+
+const getResend = async () => {
+    if (!resendInstance) {
+        const { Resend } = await import('resend');
+        resendInstance = new Resend(process.env.RESEND_API_KEY.trim());
+    }
+    return resendInstance;
+};
+
+const sendViaResend = async ({ to, subject, html, label }) => {
+    const resend = await getResend();
+    const from = (process.env.EMAIL_FROM || 'CodeArena 1v1 <onboarding@resend.dev>').trim();
+
+    console.log(`[MAIL:RESEND] Sending ${label} to ${maskEmail(to)}...`);
+
+    const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
+
+    if (error) {
+        console.error(`[MAIL:RESEND] ❌ ${label} failed`, error);
+        throw Object.assign(new Error(error.message || 'Resend delivery failed'), {
+            code: 'RESEND_SEND_FAILED', status: 502,
+        });
+    }
+
+    console.log(`[MAIL:RESEND] ✅ ${label} sent`, { id: data?.id });
+    return { delivered: true, debug: false };
+};
+
+// ═══════════════════════════════════════════════════════════
+// NODEMAILER PROVIDER (SMTP — works locally, NOT on Render free tier)
+// ═══════════════════════════════════════════════════════════
 import nodemailer from 'nodemailer';
 import dns from 'dns';
-
-// ── CRITICAL FIX: Force Node.js DNS to resolve IPv4 first ──
-// Render's network frequently resolves Gmail's SMTP to an IPv6
-// address that is unreachable from their infrastructure.
-// This single line fixes the ENETUNREACH error at the OS level
-// before Nodemailer even creates a socket.
 dns.setDefaultResultOrder('ipv4first');
 
-// ── Transporter singleton ──────────────────────────────────
-let transporter = null;
+let smtpTransporter = null;
 
-const createTransporter = () => {
+const createSmtpTransporter = () => {
     const user = (process.env.EMAIL_USER || '').trim();
     const pass = (process.env.EMAIL_PASS || '').trim();
     const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
     const port = Number(process.env.EMAIL_PORT || 587);
-    const from = (process.env.EMAIL_FROM || user).trim();
 
-    if (!user || !pass) {
-        console.warn('[MAIL] ⚠️  EMAIL_USER or EMAIL_PASS is missing. Emails will be logged to console.');
-        return null;
-    }
-
-    const t = nodemailer.createTransport({
+    return nodemailer.createTransport({
         host,
         port,
         secure: port === 465,
@@ -37,79 +76,90 @@ const createTransporter = () => {
         socketTimeout: 15_000,
         tls: { rejectUnauthorized: false },
     });
-
-    console.log('[MAIL] ✅ Transporter created', { host, port, user: maskEmail(user), from });
-    return t;
 };
 
-const getTransporter = () => {
-    if (!transporter) {
-        transporter = createTransporter();
-    }
-    return transporter;
-};
-
-// ── Startup verification (non-blocking) ────────────────────
-export const verifySmtpConnection = async () => {
-    const t = getTransporter();
-    if (!t) {
-        console.log('[MAIL] Skipping SMTP verification — no credentials configured.');
-        return false;
-    }
-
-    try {
-        await t.verify();
-        console.log('[MAIL] ✅ SMTP connection verified — server is ready to send.');
-        return true;
-    } catch (err) {
-        console.error('[MAIL] ❌ SMTP verification failed:', err.code, err.message);
-        // Reset transporter so the next send attempt creates a fresh one
-        transporter = null;
-        return false;
-    }
-};
-
-// ── Diagnostics (for health endpoint) ──────────────────────
-export const getSmtpDiagnostics = () => {
-    const user = (process.env.EMAIL_USER || '').trim();
-    return {
-        configured: Boolean(user && (process.env.EMAIL_PASS || '').trim()),
-        host: (process.env.EMAIL_HOST || 'smtp.gmail.com').trim(),
-        port: Number(process.env.EMAIL_PORT || 587),
-        user: maskEmail(user),
-    };
-};
-
-// ── Core send function ─────────────────────────────────────
-const sendMail = async ({ to, subject, html, label }) => {
-    const t = getTransporter();
-
-    // Dev fallback — log OTP to console if SMTP is not configured
-    if (!t) {
-        if (process.env.NODE_ENV === 'production') {
-            throw Object.assign(new Error('SMTP is not configured'), { code: 'SMTP_NOT_CONFIGURED', status: 500 });
-        }
-        console.log(`[MAIL][DEV] ${label} → ${to}`);
-        return { delivered: false, debug: true };
+const sendViaNodemailer = async ({ to, subject, html, label }) => {
+    if (!smtpTransporter) {
+        smtpTransporter = createSmtpTransporter();
     }
 
     const from = (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
 
-    console.log(`[MAIL] Sending ${label} to ${maskEmail(to)}...`);
+    console.log(`[MAIL:SMTP] Sending ${label} to ${maskEmail(to)}...`);
 
     try {
-        const info = await t.sendMail({ from, to, subject, html });
-        console.log(`[MAIL] ✅ ${label} sent`, { messageId: info.messageId, accepted: info.accepted });
+        const info = await smtpTransporter.sendMail({ from, to, subject, html });
+        console.log(`[MAIL:SMTP] ✅ ${label} sent`, { messageId: info.messageId });
         return { delivered: true, debug: false };
     } catch (err) {
-        console.error(`[MAIL] ❌ ${label} failed`, { code: err.code, command: err.command, message: err.message });
-        // Reset transporter on connection errors so a fresh one is created next time
+        console.error(`[MAIL:SMTP] ❌ ${label} failed`, { code: err.code, message: err.message });
+        // Reset transporter on connection errors
         if (['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ECONNREFUSED', 'ENETUNREACH'].includes(err.code)) {
-            transporter = null;
+            smtpTransporter = null;
         }
-        throw Object.assign(new Error('Email delivery failed'), { code: err.code || 'SMTP_SEND_FAILED', status: 502, cause: err });
+        throw Object.assign(new Error('Email delivery failed'), {
+            code: err.code || 'SMTP_SEND_FAILED', status: 502, cause: err,
+        });
     }
 };
+
+// ═══════════════════════════════════════════════════════════
+// UNIFIED SEND (routes to the correct provider)
+// ═══════════════════════════════════════════════════════════
+const sendMail = async ({ to, subject, html, label }) => {
+    const provider = getProvider();
+
+    if (provider === 'resend') {
+        return sendViaResend({ to, subject, html, label });
+    }
+
+    if (provider === 'nodemailer') {
+        return sendViaNodemailer({ to, subject, html, label });
+    }
+
+    // No provider configured
+    if (process.env.NODE_ENV === 'production') {
+        throw Object.assign(new Error('No email provider configured'), {
+            code: 'MAIL_NOT_CONFIGURED', status: 500,
+        });
+    }
+
+    console.log(`[MAIL:DEV] ${label} → ${to} (no provider, logging only)`);
+    return { delivered: false, debug: true };
+};
+
+// ── Startup verification ───────────────────────────────────
+export const verifySmtpConnection = async () => {
+    const provider = getProvider();
+    console.log(`[MAIL] Provider: ${provider}`);
+
+    if (provider === 'resend') {
+        console.log('[MAIL] ✅ Resend API key configured — HTTP-based delivery ready.');
+        return true;
+    }
+
+    if (provider === 'nodemailer') {
+        if (!smtpTransporter) smtpTransporter = createSmtpTransporter();
+        try {
+            await smtpTransporter.verify();
+            console.log('[MAIL] ✅ SMTP connection verified.');
+            return true;
+        } catch (err) {
+            console.error('[MAIL] ❌ SMTP verification failed:', err.code, err.message);
+            console.warn('[MAIL] ⚠️  If you are on Render free tier, SMTP is blocked. Set RESEND_API_KEY instead.');
+            smtpTransporter = null;
+            return false;
+        }
+    }
+
+    console.warn('[MAIL] ⚠️  No email provider configured. Set RESEND_API_KEY or EMAIL_USER+EMAIL_PASS.');
+    return false;
+};
+
+export const getSmtpDiagnostics = () => ({
+    provider: getProvider(),
+    configured: getProvider() !== 'none',
+});
 
 // ── Helper ─────────────────────────────────────────────────
 const maskEmail = (value) => {
@@ -118,7 +168,7 @@ const maskEmail = (value) => {
     return `${local.slice(0, 2)}***@${domain}`;
 };
 
-// ── Branded email wrapper ──────────────────────────────────
+// ── Branded HTML templates ─────────────────────────────────
 const brandedHtml = ({ heading, subtitle, bodyHtml }) => `
 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#e5e7eb;background:#0f1117;padding:24px">
   <div style="max-width:560px;margin:0 auto;background:#121212;border:1px solid #1f2937;border-radius:20px;overflow:hidden">
@@ -138,7 +188,7 @@ const otpBlock = (otp, expiresInMinutes) => `
 <p style="color:#d1d5db">This code expires in ${expiresInMinutes} minutes.</p>`;
 
 // ═══════════════════════════════════════════════════════════
-// PUBLIC API — each function matches the old export signature
+// PUBLIC API — all exports match the original signatures
 // ═══════════════════════════════════════════════════════════
 
 export const sendAccountVerificationEmail = ({ to, otp, name, expiresInMinutes }) =>
