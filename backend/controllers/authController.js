@@ -121,8 +121,8 @@ export const registerUser = async (req, res) => {
             phone: trimmedPhone,
             password,
             avatar,
-            emailVerified: true, // TEMPORARY BYPASS: Auto-verify email
-            phoneVerified: true, // TEMPORARY BYPASS: Auto-verify phone
+            emailVerified: true, 
+            phoneVerified: true, 
         });
 
         trace.info('user.created', {
@@ -131,29 +131,19 @@ export const registerUser = async (req, res) => {
             phoneVerified: user.phoneVerified,
         });
 
-        try {
-            // TEMPORARY BYPASS: Skip sending the verification email
-            // const emailResult = await sendAccountVerificationEmail({ ... });
+        // Seamless Auto-login after registration
+        const token = generateToken(user._id);
+        attachAccessCookie(res, token);
+        const userPayload = buildAuthUserPayload(user, token);
 
+        trace.info('login.success', { userId: user._id });
 
-            // TEMPORARY BYPASS: Auto-login instead of requiring verification step
-            const token = generateToken(user._id);
-            attachAccessCookie(res, token);
-            const userPayload = buildAuthUserPayload(user);
-
-            trace.info('login.success', { userId: user._id });
-
-            return res.status(201).json({
-                success: true,
-                message: 'Registration successful! You are now logged in.',
-                token,
-                user: userPayload,
-            });
-        } catch (emailError) {
-            // This catch block won't be hit with the bypass, but keeping it for structure
-            trace.error('email.failed', emailError);
-            return res.status(500).json({ success: false, message: 'Server error' });
-        }
+        return res.status(201).json({
+            success: true,
+            message: 'Registration successful! You are now logged in.',
+            token,
+            user: userPayload,
+        });
     } catch (error) {
         trace.error('request.failed', error);
 
