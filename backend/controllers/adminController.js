@@ -584,6 +584,7 @@ const buildProblemPayload = (raw = {}, existingProblem = null) => {
                 isPublic: Boolean(testCase?.isPublic),
             }))
             : [],
+        problemImage: typeof merged.problemImage === 'string' ? merged.problemImage.trim() : merged.problemImage,
     };
 };
 
@@ -1026,6 +1027,7 @@ export const updateProblem = async (req, res) => {
                 goldenSolution: normalizedPayload.goldenSolution,
                 starterCode: normalizedPayload.starterCode,
                 testCases: normalizedPayload.testCases,
+                problemImage: normalizedPayload.problemImage,
             }
         };
 

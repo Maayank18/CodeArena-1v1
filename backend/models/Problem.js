@@ -20,6 +20,10 @@ const problemSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    problemImage: {
+        type: String, // URL
+        trim: true
+    },
     inputFormatDescription: {
         type: String
     },

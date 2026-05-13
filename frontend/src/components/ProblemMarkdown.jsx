@@ -198,6 +198,23 @@ const ProblemMarkdown = ({
           </ReactMarkdown>
         </div>
       )}
+ 
+      {problem.problemImage && (
+        <div className="flex justify-center my-6">
+          <div className="relative group">
+            <img 
+              src={problem.problemImage} 
+              alt={problem.title} 
+              className={`max-w-full h-auto rounded-2xl shadow-2xl border transition-all duration-300 group-hover:scale-[1.02] ${
+                isDark ? 'border-white/10' : 'border-slate-200'
+              }`}
+            />
+            <div className={`absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300 opacity-0 group-hover:opacity-100 ${
+              isDark ? 'bg-gradient-to-t from-black/20 to-transparent' : 'bg-gradient-to-t from-slate-200/20 to-transparent'
+            }`} />
+          </div>
+        </div>
+      )}
 
       {publicCases.length > 0 && (
         <div className="space-y-6">

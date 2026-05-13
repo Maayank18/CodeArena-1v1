@@ -1758,6 +1758,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
         },
         testCases: problem?.testCases || [{ input:'', displayInput:'', output:'', explanation:'', isPublic:true }],
         topics: problem?.topics || [],
+        problemImage: problem?.problemImage || '',
     });
 
     const [submitting, setSubmitting] = useState(false);
@@ -1803,6 +1804,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 },
                 testCases: problem.testCases || [{ input:'', displayInput:'', output:'', explanation:'', isPublic:true }],
                 topics: problem.topics || [],
+                problemImage: problem.problemImage || '',
             });
             return;
         }
@@ -1848,6 +1850,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 constraints: formData.constraints.filter(c => c && c.trim()),
                 timeLimit: formData.timeLimit,
                 memoryLimit: formData.memoryLimit,
+                problemImage: formData.problemImage?.trim() || undefined,
                 goldenSolution: formData.goldenSolution,
                 starterCode: formData.starterCode,
                 testCases: formData.testCases.map((testCase) => ({
@@ -1971,6 +1974,17 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                         <textarea value={formData.description} onChange={e=>set('description',e.target.value)} required
                             className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 min-h-[160px] transition-all resize-y"
                             placeholder="Describe the problem clearly with examples..."/>
+                    </div>
+ 
+                    <div>
+                        <label className="block text-sm font-semibold mb-1.5 text-gray-300">Problem Image URL (Optional)</label>
+                        <p className="text-xs text-gray-600 mb-2">Provide a URL for a pictorial representation (e.g., a tree diagram or graph structure).</p>
+                        <input
+                            value={formData.problemImage}
+                            onChange={e => set('problemImage', e.target.value)}
+                            className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 transition-all"
+                            placeholder="https://example.com/tree-diagram.png"
+                        />
                     </div>
 
                     <div>
