@@ -12,18 +12,29 @@ import { createRateLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
-const sanitizeLogValue = (value) => {
+const isPlainObject = (v) =>
+    v !== null && typeof v === 'object' && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+
+const sanitizeLogValue = (value, depth = 0) => {
+    if (depth > 6) return '[nested]';
+
     if (typeof value === 'string' && value.includes('@')) {
         const [local, domain] = value.split('@');
         return `${local.slice(0, 2)}***@${domain}`;
     }
 
     if (Array.isArray(value)) {
-        return value.map(sanitizeLogValue);
+        return value.slice(0, 20).map((v) => sanitizeLogValue(v, depth + 1));
     }
 
     if (!value || typeof value !== 'object') {
         return value;
+    }
+
+    // Don't recurse into non-plain objects (ObjectId, Buffer, Date, etc.)
+    if (!isPlainObject(value)) {
+        if (typeof value.toString === 'function') return value.toString();
+        return '[object]';
     }
 
     return Object.fromEntries(
@@ -32,7 +43,7 @@ const sanitizeLogValue = (value) => {
                 return [key, '[redacted]'];
             }
 
-            return [key, sanitizeLogValue(nestedValue)];
+            return [key, sanitizeLogValue(nestedValue, depth + 1)];
         })
     );
 };

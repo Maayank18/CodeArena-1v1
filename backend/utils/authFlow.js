@@ -23,9 +23,14 @@ const maskPhone = (value) => {
     return `${'*'.repeat(Math.max(0, trimmed.length - 4))}${trimmed.slice(-4)}`;
 };
 
-const sanitizeValue = (value) => {
+const isPlainObject = (v) =>
+    v !== null && typeof v === 'object' && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+
+const sanitizeValue = (value, depth = 0) => {
+    if (depth > 6) return '[nested]';
+
     if (Array.isArray(value)) {
-        return value.map(sanitizeValue);
+        return value.map((v) => sanitizeValue(v, depth + 1));
     }
 
     if (value instanceof Date) {
@@ -34,6 +39,12 @@ const sanitizeValue = (value) => {
 
     if (!value || typeof value !== 'object') {
         return value;
+    }
+
+    // Don't recurse into non-plain objects (ObjectId, Buffer, etc.)
+    if (!isPlainObject(value)) {
+        if (typeof value.toString === 'function') return value.toString();
+        return '[object]';
     }
 
     return Object.fromEntries(
@@ -50,7 +61,7 @@ const sanitizeValue = (value) => {
                 return [key, '[redacted]'];
             }
 
-            return [key, sanitizeValue(nestedValue)];
+            return [key, sanitizeValue(nestedValue, depth + 1)];
         })
     );
 };

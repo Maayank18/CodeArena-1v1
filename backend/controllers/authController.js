@@ -1,9 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { AUTH_LIMITS, validatePasswordStrength } from '../utils/authSecurity.js';
-import { sendAccountVerificationEmail } from '../services/authEmailService.js';
-import { generateOtp, hashOtp, minutesFromNow, safeEqualHex } from '../utils/authSecurity.js';
-import { buildAuthUserPayload, createAuthTrace, normalizeEmail, normalizeOtp } from '../utils/authFlow.js';
+import { validatePasswordStrength } from '../utils/authSecurity.js';
+import { buildAuthUserPayload, createAuthTrace, normalizeEmail } from '../utils/authFlow.js';
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
@@ -109,10 +107,6 @@ export const registerUser = async (req, res) => {
         }
 
         const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${trimmedUsername}`;
-        const otp = generateOtp();
-        const otpExpiry = minutesFromNow(AUTH_LIMITS.otpExpiryMinutes);
-
-        trace.info('otp.generated', { otpExpiry });
 
         const user = await User.create({
             fullName: trimmedFullName,
