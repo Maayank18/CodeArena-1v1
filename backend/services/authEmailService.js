@@ -17,9 +17,9 @@ const getTransporter = () => {
     if (!cachedTransporter) {
         const user = process.env.SMTP_USER || process.env.EMAIL_USER;
         const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-        const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-        const port = Number(process.env.SMTP_PORT) || 465;
-        const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+        const host = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com';
+        const port = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 465;
+        const secure = process.env.SMTP_SECURE === 'true' || (port === 465);
 
         cachedTransporter = nodemailer.createTransport({
             host,
@@ -48,7 +48,7 @@ const sendMailOrLog = async ({ to, subject, html, debugLabel }) => {
     }
 
     await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.EMAIL_USER,
+        from: process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER || process.env.EMAIL_USER,
         to,
         subject,
         html,
