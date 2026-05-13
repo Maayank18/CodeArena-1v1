@@ -311,10 +311,9 @@ export const requestSettingsOtp = async (req, res) => {
 
             return res.status(emailError?.status || 500).json({
                 success: false,
-                message: process.env.NODE_ENV === 'production'
-                    ? 'Unable to send verification code right now. Please try again later.'
-                    : emailError.message,
+                message: emailError.message || 'Unable to send verification code.',
                 code: emailError?.code || 'SETTINGS_OTP_SEND_FAILED',
+                debug: emailError.resendError || null
             });
         }
 

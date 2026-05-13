@@ -50,13 +50,15 @@ const sendViaResend = async ({ to, subject, html, label }) => {
     const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
 
     if (error) {
-        console.error(`[MAIL:RESEND] ❌ ${label} failed`, error);
+        console.error(`[MAIL:RESEND] ❌ ${label} failed. Detail:`, JSON.stringify(error, null, 2));
         throw Object.assign(new Error(error.message || 'Resend delivery failed'), {
-            code: 'RESEND_SEND_FAILED', status: 502,
+            code: 'RESEND_SEND_FAILED', 
+            status: 502,
+            resendError: error
         });
     }
 
-    console.log(`[MAIL:RESEND] ✅ ${label} sent`, { id: data?.id });
+    console.log(`[MAIL:RESEND] ✅ ${label} sent successfully.`, { id: data?.id });
     return { delivered: true, debug: false };
 };
 
