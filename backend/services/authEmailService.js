@@ -48,7 +48,10 @@ const buildTransportConfig = () => {
 
     if (isGmail) {
         return {
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            family: 4, // Force IPv4 to avoid ENETUNREACH on IPv6
             pool: true,
             maxConnections: 2,
             maxMessages: 50,
@@ -58,6 +61,7 @@ const buildTransportConfig = () => {
             auth: { user, pass },
             tls: {
                 minVersion: 'TLSv1.2',
+                requireTLS: true
             },
         };
     }
