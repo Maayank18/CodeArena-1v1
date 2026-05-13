@@ -113,6 +113,7 @@ export const registerUser = async (req, res) => {
             planId: user.planId || null,
             subscriptionPlan: safePlan,
             proActivatedAt: user.proActivatedAt || null,
+            subscriptionExpiry: user.subscriptionExpiry || null,
             rating: user.rating,
             seasonScore: user.seasonScore,
             stats: user.stats,
@@ -152,7 +153,7 @@ export const loginUser = async (req, res) => {
 
         const trimmedEmail = email.trim().toLowerCase();
         const user = await User.findOne({ email: trimmedEmail })
-            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil');
+            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil');
 
         if (!user) {
             console.log(`[AUTH] User not found: ${trimmedEmail}`);
@@ -241,6 +242,7 @@ export const loginUser = async (req, res) => {
             planId: user.planId || null,
             subscriptionPlan: safePlan,
             proActivatedAt: user.proActivatedAt || null,
+            subscriptionExpiry: user.subscriptionExpiry || null,
             rating: user.rating,
             seasonScore: user.seasonScore,
             stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },

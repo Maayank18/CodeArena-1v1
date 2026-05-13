@@ -26,6 +26,7 @@ const TABS = [
     { id: 'matches',     icon: Trophy,    label: 'Matches'     },
     { id: 'problems',    icon: Code,      label: 'Problems'    },
     { id: 'leaderboard', icon: Star,      label: 'Leaderboard' },
+    { id: 'payments',    icon: Shield,    label: 'Payments'    },
     { id: 'analytics',   icon: BarChart,  label: 'Analytics'   },
     { id: 'system',      icon: Server,    label: 'System'      },
 ];
@@ -164,6 +165,7 @@ const AdminDashboard = () => {
     const [users, setUsers]                     = useState([]);
     const [matches, setMatches]                 = useState([]);
     const [problems, setProblems]               = useState([]);
+    const [payments, setPayments]               = useState([]);
     const [recentActivity, setRecentActivity]   = useState({ matches:[], users:[] });
     const [hourlyActivity, setHourlyActivity]   = useState([]);
     const [systemHealth, setSystemHealth]       = useState(null);
@@ -217,7 +219,7 @@ const AdminDashboard = () => {
     const fetchAll = async (username) => {
         setLoading(true);
         try {
-            const [statsRes, usersRes, activityRes, hourlyRes, problemsRes, matchesRes, healthRes] = await Promise.all([
+            const [statsRes, usersRes, activityRes, hourlyRes, problemsRes, matchesRes, healthRes, paymentsRes] = await Promise.all([
                 api.post('/admin/stats',              { username }),
                 api.post('/admin/users',              { username, limit: 500 }),
                 api.post('/admin/activity/recent',    { username }),
@@ -225,6 +227,7 @@ const AdminDashboard = () => {
                 api.post('/admin/problems',           { username }),
                 api.post('/admin/matches',            { username, limit: 500 }),
                 api.post('/admin/system/health',      { username }).catch(() => ({ data: null })),
+                api.get('/payments/admin/transactions', { params: { status: 'all' } }).catch(() => ({ data: { transactions: [] } }))
             ]);
             setStats(statsRes.data);
             setUsers(usersRes.data.users || []);
@@ -233,6 +236,7 @@ const AdminDashboard = () => {
             setProblems(problemsRes.data.problems || []);
             setMatches(matchesRes.data.matches || []);
             setSystemHealth(healthRes.data);
+            setPayments(paymentsRes.data?.transactions || []);
         } catch (err) {
             console.error(err);
             toast.error('Failed to load admin data');
@@ -323,6 +327,21 @@ const AdminDashboard = () => {
             setMatches([]);
             fetchAll(adminUser.username);
         } catch { toast.error('Failed to clear matches'); }
+    };
+
+    const handleVerifyPayment = async (transactionId, decision) => {
+        if (!confirm(`Are you sure you want to ${decision} this payment?`)) return;
+        try {
+            const res = await api.post('/payments/verify-utr', {
+                transactionId,
+                decision,
+                adminNotes: `Manually ${decision} by ${adminUser.username}`
+            });
+            toast.success(res.data.message);
+            fetchAll(adminUser.username);
+        } catch (error) {
+            toast.error(error.response?.data?.message || `Failed to ${decision} payment`);
+        }
     };
 
     // ── COMPUTED / FILTERED DATA ─────────────────────────────────
@@ -1007,6 +1026,11 @@ const AdminDashboard = () => {
                 {/* ════════ SYSTEM TAB ════════ */}
                 {activeTab === 'system' && (
                     <SystemTab health={systemHealth} users={users} matches={matches} problems={problems} adminUser={adminUser}/>
+                )}
+
+                {/* ════════ PAYMENTS TAB ════════ */}
+                {activeTab === 'payments' && (
+                    <PaymentsTab payments={payments} onVerify={handleVerifyPayment} />
                 )}
 
                 {/* ════════ LIVE PRESENCE TAB ════════ */}

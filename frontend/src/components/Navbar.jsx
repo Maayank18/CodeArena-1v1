@@ -126,9 +126,20 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
               />
 
               <div className="hidden flex-col sm:flex">
-                <span className="mb-0.5 max-w-[120px] truncate text-sm font-bold leading-none text-gray-800 dark:text-[var(--text-primary)] sm:text-base">
-                  {displayUser?.username || 'Guest'}
-                </span>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="max-w-[120px] truncate text-sm font-bold leading-none text-gray-800 dark:text-[var(--text-primary)] sm:text-base">
+                    {displayUser?.username || 'Guest'}
+                  </span>
+                  {displayUser?.subscriptionPlan && displayUser.subscriptionPlan !== 'free' && (
+                    <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md shadow-sm ${
+                        displayUser.subscriptionPlan === 'plus' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                        displayUser.subscriptionPlan === 'pro' ? 'bg-accent/10 text-accent border border-accent/20 text-glow-accent' :
+                        'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                    }`}>
+                        {displayUser.subscriptionPlan}
+                    </span>
+                  )}
+                </div>
                 <span className={`text-[10px] font-semibold sm:text-xs ${levelInfo.color}`}>
                   Level {levelInfo.level} {levelInfo.title}
                 </span>

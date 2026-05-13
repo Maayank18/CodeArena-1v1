@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Crown, Sparkles } from 'lucide-react';
+import { ArrowRight, Crown, Sparkles, Loader2, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../api';
 
 const CampaignTeaserModal = ({ isOpen }) => {
     const navigate = useNavigate();
+    const [hasPending, setHasPending] = useState(false);
+    const [isLoadingPending, setIsLoadingPending] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const checkPendingRequests = async () => {
+            try {
+                setIsLoadingPending(true);
+                const res = await api.get('/payments/mine');
+                const pending = res.data.transactions?.some((t) => t.status === 'pending');
+                if (pending) {
+                    setHasPending(true);
+                }
+            } catch (error) {
+                console.error('Failed to check pending transactions:', error);
+            } finally {
+                setIsLoadingPending(false);
+            }
+        };
+        checkPendingRequests();
+    }, [isOpen]);
 
     return (
         <AnimatePresence>
@@ -51,13 +73,34 @@ const CampaignTeaserModal = ({ isOpen }) => {
                             </div>
 
                             <div className="w-full space-y-4 pt-1">
-                                <button
-                                    onClick={() => navigate('/pricing')}
-                                    className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 px-5 py-4 text-base font-black text-black shadow-[0_0_36px_rgba(250,204,21,0.26)] transition-all hover:scale-[1.02] hover:shadow-[0_0_46px_rgba(250,204,21,0.4)] active:scale-[0.99]"
-                                >
-                                    <span>Upgrade to Premium</span>
-                                    <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                                </button>
+                                {isLoadingPending ? (
+                                    <button
+                                        disabled
+                                        className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-800 px-5 py-4 text-base font-black text-gray-500 transition-all"
+                                    >
+                                        <Loader2 size={18} className="animate-spin" />
+                                        <span>Checking Status...</span>
+                                    </button>
+                                ) : hasPending ? (
+                                    <button
+                                        disabled
+                                        className="group flex w-full flex-col items-center justify-center gap-1 rounded-2xl bg-amber-500/20 px-5 py-3 border border-amber-500/30 text-amber-300 transition-all shadow-[0_0_20px_rgba(250,204,21,0.1)]"
+                                    >
+                                        <div className="flex items-center gap-2 font-black">
+                                            <Clock size={16} />
+                                            <span>Verification Pending</span>
+                                        </div>
+                                        <span className="text-[10px] uppercase tracking-widest text-amber-500/80">Access will be granted within 24 hours</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => navigate('/pricing')}
+                                        className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 px-5 py-4 text-base font-black text-black shadow-[0_0_36px_rgba(250,204,21,0.26)] transition-all hover:scale-[1.02] hover:shadow-[0_0_46px_rgba(250,204,21,0.4)] active:scale-[0.99]"
+                                    >
+                                        <span>Upgrade to Premium</span>
+                                        <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => navigate('/dashboard')}
                                     className="text-sm font-semibold text-gray-400 transition-colors hover:text-white"

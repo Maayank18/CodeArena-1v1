@@ -669,6 +669,32 @@ cron.schedule('*/14 * * * *', async () => {
     }
 });
 
+// ✅ CRON JOB: Daily Subscription Expiry Downgrade
+// Runs at 00:00 every day
+cron.schedule('0 0 * * *', async () => {
+    try {
+        const now = new Date();
+        const result = await User.updateMany(
+            { 
+                subscriptionExpiry: { $ne: null, $lt: now },
+                isPro: true
+            },
+            {
+                $set: {
+                    isPro: false,
+                    planId: null,
+                    subscriptionPlan: 'free'
+                }
+            }
+        );
+        if (result.modifiedCount > 0) {
+            console.log(`[CRON] 🛡️ Downgraded ${result.modifiedCount} users due to subscription expiry.`);
+        }
+    } catch (error) {
+        console.error(`[CRON] ⚠️ Downgrade CRON failed:`, error.message);
+    }
+});
+
 // ✅ ROOT ROUTE
 app.get('/', (req, res) => res.send('CodeArena API v2.0 - Optimized'));
 

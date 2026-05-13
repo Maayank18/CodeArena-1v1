@@ -18,6 +18,8 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submittedTransaction, setSubmittedTransaction] = useState(null);
   const [utrNumber, setUtrNumber] = useState('');
+  const [hasPending, setHasPending] = useState(false);
+  const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [orderData, setOrderData] = useState({
     fullName: '',
     college: '',
@@ -46,6 +48,27 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
       passoutYear: '2026',
       agreedToTC: false,
     });
+    setHasPending(false);
+
+    const checkPendingRequests = async () => {
+      try {
+        setIsLoadingPending(true);
+        const res = await api.get('/payments/mine');
+        const pending = res.data.transactions?.find((t) => t.status === 'pending');
+        if (pending) {
+          setSubmittedTransaction(pending);
+          setSubmissionComplete(true);
+          setStep(3);
+          setHasPending(true);
+        }
+      } catch (error) {
+        console.error('Failed to check pending transactions:', error);
+      } finally {
+        setIsLoadingPending(false);
+      }
+    };
+
+    checkPendingRequests();
   }, [isOpen, user.fullName, user.phone]);
 
   const pricing = useMemo(() => {
@@ -202,8 +225,14 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
             </div>
 
             <div className="relative flex-1 overflow-y-auto custom-scrollbar">
-              <AnimatePresence mode="wait">
-                {step === 1 && (
+              {isLoadingPending ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                    <Loader2 size={32} className="animate-spin text-accent mb-4" />
+                    <p className="text-xs font-black uppercase tracking-widest">Checking Verification Status...</p>
+                  </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  {step === 1 && (
                   <motion.div
                     key="step-1"
                     variants={slideVariants}
@@ -570,6 +599,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                   </motion.div>
                 )}
               </AnimatePresence>
+              )}
             </div>
           </motion.div>
         </div>

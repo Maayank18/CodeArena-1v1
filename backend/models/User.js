@@ -300,6 +300,10 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    subscriptionExpiry: {
+        type: Date,
+        default: null,
+    },
 
     // ── Pro Feature: Badge System ──────────────────────────────────
     badges: {

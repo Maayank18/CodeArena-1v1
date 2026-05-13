@@ -203,7 +203,9 @@ export const verifyPaymentUtr = async (req, res) => {
             if (normalizedDecision === 'approved') {
                 user.isPro = true;
                 user.planId = transaction.planId;
+                user.subscriptionPlan = transaction.planId;
                 user.proActivatedAt = reviewedAt;
+                user.subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                 await user.save({ session });
             }
 
