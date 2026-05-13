@@ -2,8 +2,6 @@ import express from 'express';
 import {
     loginUser,
     registerUser,
-    resendVerificationOtp,
-    verifyAccountOtp,
 } from '../controllers/authController.js';
 import {
     forgotPassword,
@@ -92,8 +90,6 @@ const resetPasswordLimiter = createRateLimiter({
 });
 
 router.post('/register', registerLimiter, registerUser);
-router.post('/verify-account', verifyOtpLimiter, verifyAccountOtp);
-router.post('/resend-verification', verifyOtpLimiter, resendVerificationOtp);
 router.post('/login', loginLimiter, loginUser);
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 router.post('/verify-otp', verifyOtpLimiter, verifyPasswordResetOtp);
