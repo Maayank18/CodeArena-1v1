@@ -104,6 +104,9 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
     const lastSavedContentRef = useRef('');
     const latestContentRef = useRef('');
     const retryTimeoutRef = useRef(null);
+    const hydratedNoteKeyRef = useRef('');
+
+    const noteIdentity = `${type}:${contextKey || contextTitle || ''}`;
 
     const debouncedContent = useDebounce(content, 1200);
     const hasVisibleContent = Boolean(getPlainTextFromHtml(content));
@@ -129,6 +132,11 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
             editorRef.current.innerHTML = html;
         }
     }, []);
+
+    useEffect(() => {
+        if (!isOpen || isLoading) return;
+        syncEditorContent(content);
+    }, [content, isLoading, isOpen, syncEditorContent]);
 
     const saveNote = useCallback(async (html, { showToast = false } = {}) => {
         const normalizedContent = normalizeEditorHtml(html);
@@ -201,6 +209,12 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
         let isMounted = true;
 
         const fetchNote = async () => {
+            const isSameNoteSession = hydratedNoteKeyRef.current === noteIdentity;
+            if (isSameNoteSession && (hasUnsavedChanges || hasLocalDraft || Boolean(saveError))) {
+                syncEditorContent(content);
+                return;
+            }
+
             setIsLoading(true);
             setSaveError('');
             clearRetryTimer();
@@ -237,6 +251,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                 setLastSaved(data?.note?.updatedAt ? new Date(data.note.updatedAt) : null);
                 setHasUnsavedChanges(shouldUseLocalDraft);
                 setHasLocalDraft(shouldUseLocalDraft);
+                hydratedNoteKeyRef.current = noteIdentity;
                 syncEditorContent(nextContent);
             } catch (error) {
                 if (!isMounted) return;
@@ -253,6 +268,10 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                     setHasLocalDraft(false);
                     syncEditorContent('');
                 }
+
+                if (localDraft?.content) {
+                    hydratedNoteKeyRef.current = noteIdentity;
+                }
             } finally {
                 if (isMounted) setIsLoading(false);
             }
@@ -263,7 +282,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
         return () => {
             isMounted = false;
         };
-    }, [clearRetryTimer, contextKey, contextTitle, isOpen, syncEditorContent, type]);
+    }, [clearRetryTimer, contextKey, contextTitle, isOpen, noteIdentity, syncEditorContent, type]);
 
     useEffect(() => {
         if (!isOpen || !hasUnsavedChanges) return;
