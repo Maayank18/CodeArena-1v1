@@ -183,6 +183,30 @@ export const sendPasswordResetOtpEmail = ({ to, otp, name, expiresInMinutes }) =
         }),
     });
 
+export const sendPaymentSubmissionEmail = ({ to, name, planName, amount, utrNumber }) =>
+    sendMail({
+        to,
+        subject: `Payment received for ${planName}`,
+        label: 'Payment Submission',
+        html: `<p>Hi ${name},</p><p>We received your request for ${planName} (Rs. ${amount}). UTR: ${utrNumber}</p>`
+    });
+
+export const sendPaymentApprovedEmail = ({ to, name, planName, amount }) =>
+    sendMail({
+        to,
+        subject: `Welcome to CodeArena 1v1 ${planName}`,
+        label: 'Payment Approved',
+        html: `<p>Hi ${name},</p><p>Your ${planName} payment of Rs. ${amount} was approved!</p>`
+    });
+
+export const sendPaymentRejectedEmail = ({ to, name, planName, amount, adminNotes }) =>
+    sendMail({
+        to,
+        subject: 'Payment could not be verified',
+        label: 'Payment Rejected',
+        html: `<p>Hi ${name},</p><p>We couldn't verify your ${planName} payment. Note: ${adminNotes || 'Please check your UTR.'}</p>`
+    });
+
 // ── Legacy Diagnostics Export ──
 export const getSmtpDiagnostics = () => {
     const config = resolveConfig();
