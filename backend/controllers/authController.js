@@ -121,9 +121,8 @@ export const registerUser = async (req, res) => {
             phone: trimmedPhone,
             password,
             avatar,
-            otpCode: hashOtp(otp),
-            otpExpiry,
-            otpAttemptCount: 0,
+            emailVerified: true, // TEMPORARY BYPASS: Auto-verify email
+            phoneVerified: true, // TEMPORARY BYPASS: Auto-verify phone
         });
 
         trace.info('user.created', {
@@ -133,46 +132,27 @@ export const registerUser = async (req, res) => {
         });
 
         try {
-            const emailResult = await sendAccountVerificationEmail({
-                to: user.email,
-                otp,
-                name: user.fullName || user.username,
-                expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
-            });
+            // TEMPORARY BYPASS: Skip sending the verification email
+            // const emailResult = await sendAccountVerificationEmail({ ... });
 
-            trace.info('email.sent', {
-                userId: user._id,
-                messageId: emailResult.messageId,
-            });
+
+            // TEMPORARY BYPASS: Auto-login instead of requiring verification step
+            const token = generateToken(user._id);
+            attachAccessCookie(res, token);
+            const userPayload = buildAuthUserPayload(user);
+
+            trace.info('login.success', { userId: user._id });
 
             return res.status(201).json({
                 success: true,
-                message: 'Registration successful. Please verify your email with the code sent.',
-                email: user.email,
-                requiresVerification: true,
-                emailDelivery: buildVerificationDeliveryPayload(emailResult),
-                ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+                message: 'Registration successful! You are now logged in.',
+                token,
+                user: userPayload,
             });
         } catch (emailError) {
-            const deliveryState = buildVerificationDeliveryPayload({
-                delivered: false,
-                retryable: emailError?.retryable !== false,
-                code: emailError?.code || 'OTP_DELIVERY_FAILED',
-            });
-
-            trace.error('email.failed', emailError, {
-                userId: user._id,
-                deliveryState,
-            });
-
-            return res.status(202).json({
-                success: true,
-                message: 'Account created, but the verification code could not be delivered yet. Please request a new verification code.',
-                email: user.email,
-                requiresVerification: true,
-                emailDelivery: deliveryState,
-                ...(process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
-            });
+            // This catch block won't be hit with the bypass, but keeping it for structure
+            trace.error('email.failed', emailError);
+            return res.status(500).json({ success: false, message: 'Server error' });
         }
     } catch (error) {
         trace.error('request.failed', error);
