@@ -231,7 +231,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 32, scale: 0.96 }}
                     transition={{ type: 'spring', damping: 24, stiffness: 260 }}
-                    className={`pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden ${
+                    className={`relative pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden ${
                         isPinned
                             ? 'w-full max-w-[380px] h-[min(66vh,500px)] rounded-[28px]'
                             : 'w-full max-w-[360px] h-[min(58vh,520px)] rounded-[28px] md:mt-[66px]'
@@ -348,12 +348,14 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                                         spellCheck={false}
                                         onInput={updateContentFromEditor}
                                         onBlur={flushPendingSave}
-                                        className="h-full overflow-y-auto outline-none custom-scrollbar px-12 py-[5px] text-gray-800"
+                                        className="h-full overflow-y-auto overflow-x-hidden outline-none custom-scrollbar px-12 py-[5px] text-gray-800 break-words"
                                         style={{
                                             lineHeight: '32px',
                                             fontSize: '16px',
                                             fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif",
-                                            letterSpacing: '0.01em'
+                                            letterSpacing: '0.01em',
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word'
                                         }}
                                     />
                                 </div>

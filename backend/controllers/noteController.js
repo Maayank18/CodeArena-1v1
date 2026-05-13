@@ -2,7 +2,8 @@ import Note from '../models/Note.js';
 
 export const getNotes = async (req, res) => {
     try {
-        const notes = await Note.find({ user: req.user.id }).sort({ updatedAt: -1 });
+        const userId = req.user?._id;
+        const notes = await Note.find({ user: userId }).sort({ updatedAt: -1 });
         res.status(200).json({ success: true, notes });
     } catch (error) {
         console.error('Error fetching notes:', error);
@@ -18,7 +19,8 @@ export const getNoteByContext = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Type and contextTitle are required' });
         }
 
-        let note = await Note.findOne({ user: req.user.id, type, contextTitle });
+        const userId = req.user?._id;
+        const note = await Note.findOne({ user: userId, type, contextTitle });
         
         res.status(200).json({ success: true, note });
     } catch (error) {
@@ -35,10 +37,11 @@ export const saveNote = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Type and contextTitle are required' });
         }
 
+        const userId = req.user?._id;
         const note = await Note.findOneAndUpdate(
-            { user: req.user.id, type, contextTitle },
-            { content },
-            { new: true, upsert: true }
+            { user: userId, type, contextTitle },
+            { user: userId, content },
+            { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
         );
 
         res.status(200).json({ success: true, note, message: 'Note saved successfully' });
@@ -51,8 +54,9 @@ export const saveNote = async (req, res) => {
 export const deleteNote = async (req, res) => {
     try {
         const { id } = req.params;
+        const userId = req.user?._id;
         
-        const note = await Note.findOneAndDelete({ _id: id, user: req.user.id });
+        const note = await Note.findOneAndDelete({ _id: id, user: userId });
         
         if (!note) {
             return res.status(404).json({ success: false, message: 'Note not found' });
