@@ -13,21 +13,6 @@ import {
   Shield,
   Smartphone,
   UserRound,
-import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import toast from 'react-hot-toast';
-import {
-  BadgeCheck,
-  Bell,
-  Camera,
-  Check,
-  Lock,
-  Mail,
-  Save,
-  Settings2,
-  Shield,
-  Smartphone,
-  UserRound,
   X,
   BarChart3,
   Activity,
@@ -561,6 +546,248 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex min-w-max items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all lg:min-w-0 ${
+                        isActive
+                          ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/10'
+                          : 'text-gray-400 hover:bg-[#191919] hover:text-white'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span className="hidden lg:inline">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            <main className="flex-1 overflow-y-auto bg-[#121212] p-5 custom-scrollbar sm:p-7">
+              {loadingProfile ? (
+                <div className="flex h-64 items-center justify-center">
+                  <Loader2 className="animate-spin text-emerald-500" size={32} />
+                </div>
+              ) : (
+                <div className="mx-auto max-w-2xl">
+                  {activeTab === 'profile' && (
+                    <div className="space-y-8 animate-fade-in">
+                      <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+                        <div className="group relative">
+                          <div className="h-24 w-24 overflow-hidden rounded-3xl bg-[#191919]">
+                            {profileForm.avatar ? (
+                              <img src={profileForm.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                            ) : (
+                              <Avatar username={user?.username} size={96} />
+                            )}
+                          </div>
+                          <label className="absolute -bottom-2 -right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border-4 border-[#121212] bg-emerald-500 text-black transition-transform hover:scale-110">
+                            <Camera size={18} />
+                            <input type="file" className="sr-only" accept="image/*" onChange={handleAvatarUpload} />
+                          </label>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-lg font-bold text-white">{user?.username}</h4>
+                          <p className="text-xs text-gray-500">
+                            Member since {new Date(user?.createdAt).toLocaleDateString()}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <VerifiedBadge label={user?.subscriptionPlan?.toUpperCase() || 'FREE'} />
+                            <span className="inline-flex items-center gap-1 rounded-full border border-gray-800 bg-[#191919] px-2.5 py-1 text-[11px] font-semibold text-gray-400">
+                              Rank #{user?.stats?.rank || '---'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name</label>
+                          <div className="relative">
+                            <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <input
+                              value={profileForm.fullName}
+                              onChange={(e) => setProfileForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                              placeholder="Your full name"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
+                          <div className="relative">
+                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <input
+                              value={profileForm.username}
+                              onChange={(e) => setProfileForm((prev) => ({ ...prev, username: e.target.value }))}
+                              className={`w-full rounded-2xl border bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors ${
+                                usernameError ? 'border-red-500/50' : 'border-gray-800 focus:border-emerald-500'
+                              }`}
+                              placeholder="username"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Bio</label>
+                        <textarea
+                          value={profileForm.bio}
+                          onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
+                          rows={3}
+                          className="w-full rounded-2xl border border-gray-800 bg-[#171717] p-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                          placeholder="Tell us about yourself..."
+                        />
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          onClick={saveProfile}
+                          disabled={savingProfile || !!usernameError}
+                          className="flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {savingProfile ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Save size={18} />
+                          )}
+                          Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'analytics' && <AnalyticsTab />}
+
+                  {activeTab === 'security' && (
+                    <div className="space-y-8 animate-fade-in">
+                      <div className="rounded-2xl border border-gray-800 bg-[#191919] p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
+                            <Shield size={20} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">Security Controls</h4>
+                            <p className="text-xs text-gray-500">Sensitive changes require email verification.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-6">
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Email Address</label>
+                          <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <input
+                              value={securityForm.email}
+                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, email: e.target.value }))}
+                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                              placeholder="email@example.com"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Phone Number</label>
+                          <div className="relative">
+                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <input
+                              value={securityForm.phone}
+                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, phone: e.target.value }))}
+                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                              placeholder="+1 234 567 890"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid gap-6 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">New Password</label>
+                            <div className="relative">
+                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                              <input
+                                type="password"
+                                value={securityForm.password}
+                                onChange={(e) => setSecurityForm((prev) => ({ ...prev, password: e.target.value }))}
+                                className={`w-full rounded-2xl border bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors ${
+                                  passwordError ? 'border-red-500/50' : 'border-gray-800 focus:border-emerald-500'
+                                }`}
+                                placeholder="••••••••"
+                              />
+                            </div>
+                            {passwordError && <p className="text-[10px] text-red-400 px-2">{passwordError}</p>}
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Confirm Password</label>
+                            <div className="relative">
+                              <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                              <input
+                                type="password"
+                                value={securityForm.confirmPassword}
+                                onChange={(e) => setSecurityForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                                placeholder="••••••••"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          onClick={requestOtp}
+                          disabled={requestingOtp}
+                          className="flex items-center gap-2 rounded-2xl bg-[#191919] border border-gray-800 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {requestingOtp ? <Loader2 size={18} className="animate-spin" /> : 'Update Security'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'preferences' && (
+                    <div className="space-y-8 animate-fade-in">
+                      <div className="space-y-4">
+                        <ToggleCard
+                          title="Email Notifications"
+                          description="Receive updates about your account activity."
+                          checked={preferencesForm.emailNotifications}
+                          onChange={(e) =>
+                            setPreferencesForm((prev) => ({ ...prev, emailNotifications: e.target.checked }))
+                          }
+                        />
+                        <ToggleCard
+                          title="Marketing Updates"
+                          description="Stay informed about new features and events."
+                          checked={preferencesForm.marketingUpdates}
+                          onChange={(e) =>
+                            setPreferencesForm((prev) => ({ ...prev, marketingUpdates: e.target.checked }))
+                          }
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={savePreferences}
+                          disabled={savingPreferences}
+                          className="flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {savingPreferences ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                          Save Preferences
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'badges' && <BadgesTab />}
+                  {activeTab === 'customization' && <CustomizationTab />}
+                  {activeTab === 'notes' && <NotesTab />}
+                  {activeTab === 'community' && <CommunityTab />}
+                </div>
+              )}
+            </main>
+          </div>
+
           <AnimatePresence>
             {otpPending && (
               <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
