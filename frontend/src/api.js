@@ -124,6 +124,36 @@ const AUTH_FLOW_ENDPOINTS = new Set([
     '/auth/reset-password',
 ]);
 
+const stableStringify = (value) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value !== 'object') return String(value);
+    if (Array.isArray(value)) {
+        return `[${value.map(stableStringify).join(',')}]`;
+    }
+
+    return `{${Object.keys(value)
+        .sort()
+        .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+        .join(',')}}`;
+};
+
+const buildRequestKey = (config) => {
+    const method = (config?.method || 'get').toLowerCase();
+    const url = config?.url || '';
+    const params = stableStringify(config?.params || {});
+    const data = stableStringify(config?.data || {});
+    return `${method}:${url}:${params}:${data}`;
+};
+
+const invalidateCache = (predicate) => {
+    for (const key of requestCache.keys()) {
+        if (predicate(key)) {
+            requestCache.delete(key);
+        }
+    }
+};
+
 const normalizeApiBase = (url) => {
     const trimmed = (url || '').trim().replace(/\/+$/, '');
     if (!trimmed) return '';
@@ -201,7 +231,7 @@ api.interceptors.request.use(
         // React 18 Strict Mode intentionally double-invokes effects in development.
         // Cancelling duplicate GETs can leave the "live" component instance with no
         // successful response to hydrate from, so we only dedupe mutating requests here.
-        const requestKey = `${config.method}:${config.url}`;
+        const requestKey = buildRequestKey(config);
         const shouldDedupe = config.method && config.method !== 'get';
 
         if (shouldDedupe && pendingRequests.has(requestKey)) {
@@ -246,8 +276,12 @@ api.interceptors.response.use(
         }
 
         // 2. ✅ REMOVE FROM PENDING
-        const requestKey = `${response.config.method}:${response.config.url}`;
+        const requestKey = buildRequestKey(response.config);
         pendingRequests.delete(requestKey);
+
+        if (response.config.method !== 'get') {
+            invalidateCache((key) => key.includes('/notes'));
+        }
 
         // 3. ✅ LOGGING (dev only)
         if (import.meta.env.DEV) {
@@ -261,7 +295,7 @@ api.interceptors.response.use(
 
         // ✅ REMOVE FROM PENDING
         if (config) {
-            const requestKey = `${config.method}:${config.url}`;
+            const requestKey = buildRequestKey(config);
             pendingRequests.delete(requestKey);
         }
 

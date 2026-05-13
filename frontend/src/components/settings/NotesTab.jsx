@@ -4,6 +4,13 @@ import { BookOpen, Search, Loader2, Trash2, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../api.js';
 
+const getNotePreview = (content = '') => {
+    if (typeof window === 'undefined' || !content) return '';
+
+    const doc = new DOMParser().parseFromString(content, 'text/html');
+    return doc.body.textContent?.replace(/\s+/g, ' ').trim() || '';
+};
+
 const NotesTab = () => {
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -46,7 +53,7 @@ const NotesTab = () => {
 
     const filteredNotes = notes.filter(n => 
         n.contextTitle.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (n.content && n.content.toLowerCase().includes(searchQuery.toLowerCase()))
+        getNotePreview(n.content).toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (loading) {
@@ -116,7 +123,7 @@ const NotesTab = () => {
                             
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed whitespace-pre-wrap font-mono">
-                                    {note.content || <span className="italic text-gray-600">Empty note...</span>}
+                                    {getNotePreview(note.content) || <span className="italic text-gray-600">Empty note...</span>}
                                 </p>
                             </div>
 
