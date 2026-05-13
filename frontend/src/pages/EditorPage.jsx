@@ -361,21 +361,21 @@ const EditorPage = () => {
                 if (history.length > 50) history.length = 50;
                 localStorage.setItem('codearena_history', JSON.stringify(history));
 
-                const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-                if (user.username) {
-                    if (!user.stats) user.stats = { matchesPlayed: 0, wins: 0, losses: 0 };
-                    user.stats.matchesPlayed += 1;
-                    if (data.winner === myName) user.stats.wins += 1;
-                    else if (data.winner !== "Draw") user.stats.losses += 1;
+                const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+                if (storedUser.username) {
+                    if (!storedUser.stats) storedUser.stats = { matchesPlayed: 0, wins: 0, losses: 0 };
+                    storedUser.stats.matchesPlayed += 1;
+                    if (data.winner === myName) storedUser.stats.wins += 1;
+                    else if (data.winner !== "Draw") storedUser.stats.losses += 1;
                     
                     if (data.eloChanges) {
                         const myEloUpdate = Object.values(data.eloChanges).find(p => p.username === myName);
                         if (myEloUpdate) {
-                            user.rating = myEloUpdate.newRating;
-                            user.seasonScore = (user.seasonScore || 0) + (myEloUpdate.seasonPoints || 0);
+                            storedUser.rating = myEloUpdate.newRating;
+                            storedUser.seasonScore = (storedUser.seasonScore || 0) + (myEloUpdate.seasonPoints || 0);
                         }
                     }
-                    localStorage.setItem('codearena_user', JSON.stringify(user));
+                    localStorage.setItem('codearena_user', JSON.stringify(storedUser));
                 }
             } catch (e) { console.error("Failed to save game stats:", e); }
             toast.success("Match Ended!", { icon: '🏁' });

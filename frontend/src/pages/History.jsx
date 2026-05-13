@@ -14,7 +14,14 @@ const CACHE_DURATION = 60000; // 60 seconds
 
 const History = () => {
     const [history, setHistory] = useState([]);
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        try {
+            const stored = localStorage.getItem('codearena_user');
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    });
     const [loading, setLoading] = useState(true);
 
     const navigate = useNavigate();

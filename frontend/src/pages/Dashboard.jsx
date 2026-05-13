@@ -20,7 +20,14 @@ const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('codearena_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const navigate = useNavigate();
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
@@ -68,14 +75,17 @@ const Dashboard = () => {
         const response = await api.get(`/users/profile/${storedUser.username}`);
         const serverUser = response.data;
 
+        // ✅ SAFE SYNC: Merge server data with local state (preserves token)
         const finalUser = { 
           ...storedUser,
           ...serverUser,
+          // Ensure nested fields are properly handled if server returns partials
           stats: serverUser.stats || storedUser.stats || { 
             matchesPlayed: 0, 
             wins: 0, 
             losses: 0 
-          }
+          },
+          customization: serverUser.customization || storedUser.customization || {}
         };
         
         setUser(finalUser);

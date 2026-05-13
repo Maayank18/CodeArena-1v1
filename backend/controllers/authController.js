@@ -128,16 +128,12 @@ export const registerUser = async (req, res) => {
         // Seamless Auto-login after registration
         const token = generateToken(user._id);
         attachAccessCookie(res, token);
-        const userPayload = buildAuthUserPayload(user, token);
-
+        
         trace.info('login.success', { userId: user._id });
 
-        return res.status(201).json({
-            success: true,
+        return res.status(201).json(buildAuthUserPayload(user, token, {
             message: 'Registration successful! You are now logged in.',
-            token,
-            user: userPayload,
-        });
+        }));
     } catch (error) {
         trace.error('request.failed', error);
 

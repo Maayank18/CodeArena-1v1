@@ -89,17 +89,14 @@ const CustomizationTab = () => {
             });
             if (res.data?.success) {
                 toast.success('Customization saved!');
-                // Update localStorage with the newly returned full user document
-                if (res.data.user) {
-                    localStorage.setItem('codearena_user', JSON.stringify(res.data.user));
-                    window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: res.data.user }));
-                } else {
-                    // Fallback
-                    const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-                    storedUser.customization = res.data.customization;
-                    localStorage.setItem('codearena_user', JSON.stringify(storedUser));
-                    window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: storedUser }));
-                }
+                
+                // ✅ SAFE UPDATE: Merge with existing localStorage to preserve token
+                const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+                const nextUser = res.data.user || { ...storedUser, customization: res.data.customization };
+                const mergedUser = { ...storedUser, ...nextUser };
+                
+                localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
+                window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
             }
         } catch (err) {
             const msg = err?.response?.data?.message || 'Failed to save customization';
