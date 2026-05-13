@@ -4,14 +4,13 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import Client from '../components/Client';
 import CodeEditor from '../components/CodeEditor';
 import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js';
-import { Copy, CheckCircle, XCircle, Play, FileText, Code2, Terminal, Swords, Zap, Sun, Moon, Clock3 } from 'lucide-react';
+import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
@@ -128,9 +127,6 @@ const EditorPage = () => {
     const socketRef = useRef(null);
     const location = useLocation();
     const { roomId } = useParams();
-    const [centerTab, setCenterTab]     = useState('problem'); // 'problem' or 'notes'
-    const [notes, setNotes]             = useState('');
-
     const navigate = useNavigate();
 
     const { theme, toggleTheme } = useTheme();
@@ -166,7 +162,6 @@ const EditorPage = () => {
     const [isRunning, setIsRunning] = useState(false);
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [language, setLanguage] = useState('cpp'); 
-    const [executionStatus, setExecutionStatus] = useState('idle');
     const [arenaUnavailableMessage, setArenaUnavailableMessage] = useState('');
     const [roomLoadError, setRoomLoadError] = useState('');
     
@@ -264,12 +259,12 @@ const EditorPage = () => {
             }
         });
 
-        socket.on('reconnect', (attemptNumber) => {
+        socket.on('reconnect', () => {
             setConnectionStatus('connected');
             toast.success('Reconnected!', { icon: '✅', duration: 2000 });
         });
 
-        socket.on('connect_error', (err) => {
+        socket.on('connect_error', () => {
             if (hasConnectedOnce.current) setConnectionStatus('error');
         });
 
@@ -335,7 +330,6 @@ const EditorPage = () => {
             }
             setScores(data.scores || {});
             setRunResults(null); 
-            setExecutionStatus('idle');
         };
 
         const handleScoreUpdate = (newScores) => setScores(newScores);
@@ -473,16 +467,14 @@ const EditorPage = () => {
     const runCode = useCallback(async () => {
         if (debounceTimerRef.current || !problem || !ydocRef.current) return;
         setIsRunning(true);
-        setExecutionStatus('queued');
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
         if (!code.trim()) { 
-            toast.error("Code is empty!"); setIsRunning(false); setExecutionStatus('idle'); return; 
+            toast.error("Code is empty!"); setIsRunning(false); return; 
         }
         const publicCases = problem.testCases.filter(tc => tc.isPublic) || [];
         const newResults = [];
         debounceTimerRef.current = setTimeout(() => { debounceTimerRef.current = null; }, 2000);
         try {
-            setExecutionStatus('running');
             for (const [index, tc] of publicCases.entries()) {
                 try {
                     const response = await api.post('/run', { language, code, stdin: tc.input, isArena: true });
@@ -493,37 +485,31 @@ const EditorPage = () => {
                 }
             }
             setRunResults(newResults);
-            setExecutionStatus('success');
-        } catch (error) { 
-            toast.error("Execution Failed"); setExecutionStatus('error');
+        } catch {
+            toast.error("Execution Failed");
         } finally { setIsRunning(false); }
     }, [problem, language, mySide]);
 
     const submitCode = useCallback(async () => {
         if (debounceTimerRef.current || !problem || !ydocRef.current || !socketRef.current) return;
         setIsRunning(true);
-        setExecutionStatus('queued');
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
         if (!code.trim()) {
-            toast.error("Code is empty!"); setIsRunning(false); setExecutionStatus('idle'); return;
+            toast.error("Code is empty!"); setIsRunning(false); return;
         }
         socketRef.current.emit('code_submitted', { roomId, username: location.state?.username });
         debounceTimerRef.current = setTimeout(() => { debounceTimerRef.current = null; }, 3000);
         try {
-            setExecutionStatus('running');
             const response = await api.post('/run/submit', { language, code, problemId: problem._id, isArena: true });
             setRunResults(response.data.results);
             if (response.data.isCorrect) {
                 toast.success("✅ Correct! +10 Points", { icon: '🏆' });
-                setExecutionStatus('success');
                 socketRef.current.emit('level_completed', { roomId, username: location.state?.username });
             } else {
                 toast.error(`❌ Incorrect Solution`);
-                setExecutionStatus('error');
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Submission Error");
-            setExecutionStatus('error');
         } finally { setIsRunning(false); }
     }, [problem, language, mySide, roomId, location.state]);
 

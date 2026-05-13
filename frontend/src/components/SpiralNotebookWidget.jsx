@@ -205,6 +205,16 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
         saveNote(latestContentRef.current, { showToast: true });
     }, [saveNote]);
 
+    const flushPendingSave = useCallback(async () => {
+        if (!hasUnsavedChanges) return true;
+        return saveNote(latestContentRef.current);
+    }, [hasUnsavedChanges, saveNote]);
+
+    const handleClose = useCallback(async () => {
+        await flushPendingSave();
+        onClose?.();
+    }, [flushPendingSave, onClose]);
+
     if (!isOpen) return null;
 
     const desktopPlacement = isPinned
@@ -260,7 +270,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                                     <Pin size={18} className={isPinned ? 'fill-gray-800' : ''} />
                                 </button>
                                 <button
-                                    onClick={onClose}
+                                    onClick={handleClose}
                                     className="hover:text-gray-800 transition-colors bg-black/5 hover:bg-black/10 rounded-full p-1.5"
                                     title="Close notes"
                                 >
@@ -337,6 +347,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextTitle, desktopSide
                                         suppressContentEditableWarning
                                         spellCheck={false}
                                         onInput={updateContentFromEditor}
+                                        onBlur={flushPendingSave}
                                         className="h-full overflow-y-auto outline-none custom-scrollbar px-12 py-[5px] text-gray-800"
                                         style={{
                                             lineHeight: '32px',
