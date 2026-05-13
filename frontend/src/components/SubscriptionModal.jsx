@@ -73,12 +73,12 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
 
   const pricing = useMemo(() => {
     const basePrice = Number(plan?.basePrice || 0);
-    const gst = Math.round(basePrice * 0.18);
+    const gst = 0;
 
     return {
       basePrice,
       gst,
-      totalPrice: basePrice + gst,
+      totalPrice: basePrice,
     };
   }, [plan?.basePrice]);
 
@@ -454,10 +454,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                               <span className="text-gray-500 font-bold uppercase tracking-widest">Base Subscription</span>
                               <span className="text-white font-black whitespace-nowrap">Rs. {basePrice}.00</span>
                             </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-500 font-bold uppercase tracking-widest">GST (18%)</span>
-                              <span className="text-white font-black whitespace-nowrap">Rs. {gst}.00</span>
-                            </div>
+
                             <div className="pt-4 border-t border-gray-800 flex justify-between items-end">
                               <div>
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Payable Amount</p>

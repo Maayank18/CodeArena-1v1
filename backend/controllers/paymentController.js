@@ -22,12 +22,12 @@ const getPlanDetails = (planId) => {
         return null;
     }
 
-    const gst = Math.round(plan.baseAmount * 0.18);
+    const gst = 0;
 
     return {
         ...plan,
         gst,
-        amount: plan.baseAmount + gst,
+        amount: plan.baseAmount,
     };
 };
 
