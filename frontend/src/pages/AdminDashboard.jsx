@@ -2293,5 +2293,88 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
     );
 };
 
+// ═══════════════════════════════════════════════════════════════
+// PAYMENTS TAB
+// ═══════════════════════════════════════════════════════════════
+const PaymentsTab = ({ payments, onVerify }) => {
+    return (
+        <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+                <StatCard icon={<Shield size={22} className="text-amber-400"/>} title="Pending"
+                    value={payments.filter(p=>p.status==='pending').length} color="yellow"/>
+                <StatCard icon={<CheckCircle size={22} className="text-emerald-400"/>} title="Approved"
+                    value={payments.filter(p=>p.status==='approved').length} color="green"/>
+                <StatCard icon={<AlertTriangle size={22} className="text-red-400"/>} title="Rejected"
+                    value={payments.filter(p=>p.status==='rejected').length} color="red"/>
+            </div>
+
+            <div className="bg-gray-900/30 border border-gray-800/60 rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-800/60">
+                    <h3 className="font-bold flex items-center gap-2"><Shield size={16} className="text-accent"/> Transaction Queue</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-900/60 border-b border-gray-800">
+                            <tr>
+                                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Date</th>
+                                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">User</th>
+                                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Plan</th>
+                                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">UTR</th>
+                                <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</th>
+                                <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-500">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/50">
+                            {payments.map(p => (
+                                <tr key={p._id} className="hover:bg-gray-800/30 transition-colors">
+                                    <td className="px-4 py-3 text-gray-400 text-xs">{fmtDateTime(p.createdAt)}</td>
+                                    <td className="px-4 py-3">
+                                        <div className="font-semibold text-white">{p.userId?.username || 'Unknown'}</div>
+                                        <div className="text-[10px] text-gray-500">{p.userId?.email || ''}</div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                            p.planId === 'premium' ? 'bg-purple-500/20 text-purple-400' :
+                                            p.planId === 'pro' ? 'bg-accent/20 text-accent' :
+                                            'bg-emerald-500/20 text-emerald-400'
+                                        }`}>
+                                            {p.planId}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-300 font-mono text-xs tracking-widest">{p.utrNumber}</td>
+                                    <td className="px-4 py-3">
+                                        <Badge color={p.status==='approved'?'green':p.status==='rejected'?'red':'yellow'}>
+                                            {p.status}
+                                        </Badge>
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        {p.status === 'pending' ? (
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => onVerify(p._id, 'approved')} className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded font-bold text-xs transition-all">
+                                                    Approve
+                                                </button>
+                                                <button onClick={() => onVerify(p._id, 'rejected')} className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded font-bold text-xs transition-all">
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-gray-600">Reviewed</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                            {!payments.length && (
+                                <tr>
+                                    <td colSpan={6} className="text-center py-10 text-gray-500 text-sm">No transactions found</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default AdminDashboard;
 // V 1.5
