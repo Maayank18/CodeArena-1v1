@@ -550,6 +550,12 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
             <aside className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 lg:w-64 lg:border-b-0 lg:border-r">
               <div className="flex gap-2 overflow-x-auto lg:flex-col">
                 {tabs.map((tab) => {
+                  // ✅ TIERED VISIBILITY CHECK
+                  const plan = user?.subscriptionPlan || 'free';
+                  const tier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+
+                  if (tab.id === 'analytics' && tier < 2) return null;
+
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (

@@ -5,42 +5,42 @@ import api from '../../api';
 
 const BADGE_DEFINITIONS = [
     // ── Speed (6) ─────────────────────────────────────────────────
-    { id: 'flash',           category: 'Speed',       name: 'Flash',            desc: 'Win a match in under 5 minutes.',           icon: Zap,    gradient: 'from-yellow-400 to-amber-600',   glow: 'yellow' },
-    { id: 'sub_minute',      category: 'Speed',       name: 'Sub-Minute',       desc: 'Solve a problem in under 60 seconds.',      icon: Timer,  gradient: 'from-cyan-400 to-blue-600',      glow: 'cyan' },
-    { id: 'lightning_round', category: 'Speed',       name: 'Lightning Round',  desc: 'Complete all rounds in under 10 minutes.',  icon: Zap,    gradient: 'from-amber-400 to-orange-600',   glow: 'amber' },
-    { id: 'speed_demon',     category: 'Speed',       name: 'Speed Demon',      desc: 'Win 5 matches in under 10 minutes each.',   icon: Flame,  gradient: 'from-red-500 to-orange-600',     glow: 'red' },
-    { id: 'time_lord',       category: 'Speed',       name: 'Time Lord',        desc: 'Win a match with 20+ minutes remaining.',   icon: Timer,  gradient: 'from-indigo-500 to-purple-700',  glow: 'indigo' },
-    { id: 'instant_kill',    category: 'Speed',       name: 'Instant Kill',     desc: 'Solve first before opponent submits once.', icon: Swords, gradient: 'from-rose-500 to-red-700',       glow: 'rose' },
+    { id: 'flash',           category: 'Speed',       name: 'Flash',            desc: 'Win a match in under 5 minutes.',           icon: Zap,    gradient: 'from-yellow-400 to-amber-600',   glow: 'yellow', isExclusive: false },
+    { id: 'sub_minute',      category: 'Speed',       name: 'Sub-Minute',       desc: 'Solve a problem in under 60 seconds.',      icon: Timer,  gradient: 'from-cyan-400 to-blue-600',      glow: 'cyan', isExclusive: true },
+    { id: 'lightning_round', category: 'Speed',       name: 'Lightning Round',  desc: 'Complete all rounds in under 10 minutes.',  icon: Zap,    gradient: 'from-amber-400 to-orange-600',   glow: 'amber', isExclusive: true },
+    { id: 'speed_demon',     category: 'Speed',       name: 'Speed Demon',      desc: 'Win 5 matches in under 10 minutes each.',   icon: Flame,  gradient: 'from-red-500 to-orange-600',     glow: 'red', isExclusive: true },
+    { id: 'time_lord',       category: 'Speed',       name: 'Time Lord',        desc: 'Win a match with 20+ minutes remaining.',   icon: Timer,  gradient: 'from-indigo-500 to-purple-700',  glow: 'indigo', isExclusive: true },
+    { id: 'instant_kill',    category: 'Speed',       name: 'Instant Kill',     desc: 'Solve first before opponent submits once.', icon: Swords, gradient: 'from-rose-500 to-red-700',       glow: 'rose', isExclusive: true },
 
     // ── Consistency (6) ───────────────────────────────────────────
-    { id: 'streak_3',        category: 'Consistency',  name: 'Getting Started',  desc: 'Maintain a 3-day activity streak.',         icon: Flame,  gradient: 'from-green-500 to-emerald-700',  glow: 'green' },
-    { id: 'streak_7',        category: 'Consistency',  name: 'Unstoppable',      desc: 'Maintain a 7-day consistency streak.',      icon: Flame,  gradient: 'from-orange-500 to-red-600',     glow: 'orange' },
-    { id: 'streak_14',       category: 'Consistency',  name: 'Iron Will',        desc: 'Maintain a 14-day consistency streak.',     icon: Shield, gradient: 'from-slate-500 to-zinc-700',     glow: 'slate' },
-    { id: 'streak_30',       category: 'Consistency',  name: 'Marathon Runner',  desc: 'Maintain a 30-day consistency streak.',     icon: Crown,  gradient: 'from-yellow-500 to-amber-700',   glow: 'yellow' },
-    { id: 'weekend_warrior', category: 'Consistency',  name: 'Weekend Warrior',  desc: 'Play on 4 consecutive weekends.',           icon: Swords, gradient: 'from-sky-500 to-blue-700',      glow: 'sky' },
-    { id: 'night_owl',       category: 'Consistency',  name: 'Night Owl',        desc: 'Win 10 matches played after midnight.',     icon: Moon,   gradient: 'from-violet-600 to-indigo-800',  glow: 'violet' },
+    { id: 'streak_3',        category: 'Consistency',  name: 'Getting Started',  desc: 'Maintain a 3-day activity streak.',         icon: Flame,  gradient: 'from-green-500 to-emerald-700',  glow: 'green', isExclusive: false },
+    { id: 'streak_7',        category: 'Consistency',  name: 'Unstoppable',      desc: 'Maintain a 7-day consistency streak.',      icon: Flame,  gradient: 'from-orange-500 to-red-600',     glow: 'orange', isExclusive: true },
+    { id: 'streak_14',       category: 'Consistency',  name: 'Iron Will',        desc: 'Maintain a 14-day consistency streak.',     icon: Shield, gradient: 'from-slate-500 to-zinc-700',     glow: 'slate', isExclusive: true },
+    { id: 'streak_30',       category: 'Consistency',  name: 'Marathon Runner',  desc: 'Maintain a 30-day consistency streak.',     icon: Crown,  gradient: 'from-yellow-500 to-amber-700',   glow: 'yellow', isExclusive: true },
+    { id: 'weekend_warrior', category: 'Consistency',  name: 'Weekend Warrior',  desc: 'Play on 4 consecutive weekends.',           icon: Swords, gradient: 'from-sky-500 to-blue-700',      glow: 'sky', isExclusive: true },
+    { id: 'night_owl',       category: 'Consistency',  name: 'Night Owl',        desc: 'Win 10 matches played after midnight.',     icon: Moon,   gradient: 'from-violet-600 to-indigo-800',  glow: 'violet', isExclusive: true },
 
     // ── Combat (9) ────────────────────────────────────────────────
-    { id: 'first_blood',     category: 'Combat',      name: 'First Blood',      desc: 'Win your very first 1v1 battle.',           icon: Swords, gradient: 'from-cyan-500 to-blue-600',     glow: 'cyan' },
-    { id: 'hat_trick',       category: 'Combat',      name: 'Hat Trick',        desc: 'Win 3 matches in a row.',                   icon: Trophy, gradient: 'from-amber-500 to-yellow-600',  glow: 'amber' },
-    { id: 'arena_gladiator', category: 'Combat',      name: 'Arena Gladiator',  desc: 'Win 25 battles in the Arena.',              icon: Shield, gradient: 'from-emerald-500 to-green-700', glow: 'emerald' },
-    { id: 'centurion',       category: 'Combat',      name: 'Centurion',        desc: 'Play 100 matches in total.',                icon: Award,  gradient: 'from-teal-500 to-cyan-700',     glow: 'teal' },
-    { id: 'perfect_round',   category: 'Combat',      name: 'Perfect Round',    desc: 'Solve all problems in a single match.',     icon: Target, gradient: 'from-lime-500 to-green-600',    glow: 'lime' },
-    { id: 'flawless_victory',category: 'Combat',      name: 'Flawless Victory', desc: 'Win a best-of-3 match 3-0.',                icon: Star,   gradient: 'from-pink-500 to-rose-700',     glow: 'pink' },
-    { id: 'dominator',       category: 'Combat',      name: 'Dominator',        desc: 'Achieve a 10-match win streak.',            icon: Crown,  gradient: 'from-red-600 to-rose-800',      glow: 'red' },
-    { id: 'underdog',        category: 'Combat',      name: 'Underdog',         desc: 'Beat an opponent 200+ ELO above you.',      icon: Eye,    gradient: 'from-blue-500 to-indigo-700',   glow: 'blue' },
-    { id: 'survivor',        category: 'Combat',      name: 'Survivor',         desc: 'Win a match with <1 minute remaining.',     icon: Timer,  gradient: 'from-orange-600 to-red-700',    glow: 'orange' },
+    { id: 'first_blood',     category: 'Combat',      name: 'First Blood',      desc: 'Win your very first 1v1 battle.',           icon: Swords, gradient: 'from-cyan-500 to-blue-600',     glow: 'cyan', isExclusive: false },
+    { id: 'hat_trick',       category: 'Combat',      name: 'Hat Trick',        desc: 'Win 3 matches in a row.',                   icon: Trophy, gradient: 'from-amber-500 to-yellow-600',  glow: 'amber', isExclusive: true },
+    { id: 'arena_gladiator', category: 'Combat',      name: 'Arena Gladiator',  desc: 'Win 25 battles in the Arena.',              icon: Shield, gradient: 'from-emerald-500 to-green-700', glow: 'emerald', isExclusive: true },
+    { id: 'centurion',       category: 'Combat',      name: 'Centurion',        desc: 'Play 100 matches in total.',                icon: Award,  gradient: 'from-teal-500 to-cyan-700',     glow: 'teal', isExclusive: true },
+    { id: 'perfect_round',   category: 'Combat',      name: 'Perfect Round',    desc: 'Solve all problems in a single match.',     icon: Target, gradient: 'from-lime-500 to-green-600',    glow: 'lime', isExclusive: true },
+    { id: 'flawless_victory',category: 'Combat',      name: 'Flawless Victory', desc: 'Win a best-of-3 match 3-0.',                icon: Star,   gradient: 'from-pink-500 to-rose-700',     glow: 'pink', isExclusive: true },
+    { id: 'dominator',       category: 'Combat',      name: 'Dominator',        desc: 'Achieve a 10-match win streak.',            icon: Crown,  gradient: 'from-red-600 to-rose-800',      glow: 'red', isExclusive: true },
+    { id: 'underdog',        category: 'Combat',      name: 'Underdog',         desc: 'Beat an opponent 200+ ELO above you.',      icon: Eye,    gradient: 'from-blue-500 to-indigo-700',   glow: 'blue', isExclusive: true },
+    { id: 'survivor',        category: 'Combat',      name: 'Survivor',         desc: 'Win a match with <1 minute remaining.',     icon: Timer,  gradient: 'from-orange-600 to-red-700',    glow: 'orange', isExclusive: true },
 
     // ── Mastery (9) ───────────────────────────────────────────────
-    { id: 'array_ace',       category: 'Mastery',     name: 'Array Ace',        desc: 'Solve 10 Array problems.',                  icon: Layers,      gradient: 'from-blue-500 to-cyan-600',     glow: 'blue' },
-    { id: 'string_slicer',   category: 'Mastery',     name: 'String Slicer',    desc: 'Solve 10 String problems.',                 icon: Award,       gradient: 'from-fuchsia-500 to-pink-700',  glow: 'fuchsia' },
-    { id: 'tree_hugger',     category: 'Mastery',     name: 'Tree Hugger',      desc: 'Solve 10 Tree problems.',                   icon: GitBranch,   gradient: 'from-green-500 to-emerald-700', glow: 'green' },
-    { id: 'graph_guru',      category: 'Mastery',     name: 'Graph Guru',       desc: 'Solve 10 Graph problems.',                  icon: Brain,       gradient: 'from-purple-500 to-violet-700', glow: 'purple' },
-    { id: 'dp_dynamo',       category: 'Mastery',     name: 'DP Dynamo',        desc: 'Solve 10 Dynamic Programming problems.',    icon: Brain,       gradient: 'from-orange-500 to-amber-700',  glow: 'orange' },
-    { id: 'sort_king',       category: 'Mastery',     name: 'Sort King',        desc: 'Solve 10 Sorting problems.',                icon: ArrowUpDown, gradient: 'from-teal-500 to-green-600',    glow: 'teal' },
-    { id: 'binary_boss',     category: 'Mastery',     name: 'Binary Boss',      desc: 'Solve 10 Binary Search problems.',          icon: Search,      gradient: 'from-indigo-500 to-blue-700',   glow: 'indigo' },
-    { id: 'hash_master',     category: 'Mastery',     name: 'Hash Master',      desc: 'Solve 10 Hash Table problems.',             icon: Hash,        gradient: 'from-rose-500 to-pink-700',     glow: 'rose' },
-    { id: 'diamond_ranked',  category: 'Mastery',     name: 'Diamond Ranked',   desc: 'Reach a rating of 1500 ELO or higher.',     icon: Star,        gradient: 'from-violet-500 to-purple-700', glow: 'violet' },
+    { id: 'array_ace',       category: 'Mastery',     name: 'Array Ace',        desc: 'Solve 10 Array problems.',                  icon: Layers,      gradient: 'from-blue-500 to-cyan-600',     glow: 'blue', isExclusive: true },
+    { id: 'string_slicer',   category: 'Mastery',     name: 'String Slicer',    desc: 'Solve 10 String problems.',                 icon: Award,       gradient: 'from-fuchsia-500 to-pink-700',  glow: 'fuchsia', isExclusive: true },
+    { id: 'tree_hugger',     category: 'Mastery',     name: 'Tree Hugger',      desc: 'Solve 10 Tree problems.',                   icon: GitBranch,   gradient: 'from-green-500 to-emerald-700', glow: 'green', isExclusive: true },
+    { id: 'graph_guru',      category: 'Mastery',     name: 'Graph Guru',       desc: 'Solve 10 Graph problems.',                  icon: Brain,       gradient: 'from-purple-500 to-violet-700', glow: 'purple', isExclusive: true },
+    { id: 'dp_dynamo',       category: 'Mastery',     name: 'DP Dynamo',        desc: 'Solve 10 Dynamic Programming problems.',    icon: Brain,       gradient: 'from-orange-500 to-amber-700',  glow: 'orange', isExclusive: true },
+    { id: 'sort_king',       category: 'Mastery',     name: 'Sort King',        desc: 'Solve 10 Sorting problems.',                icon: ArrowUpDown, gradient: 'from-teal-500 to-green-600',    glow: 'teal', isExclusive: true },
+    { id: 'binary_boss',     category: 'Mastery',     name: 'Binary Boss',      desc: 'Solve 10 Binary Search problems.',          icon: Search,      gradient: 'from-indigo-500 to-blue-700',   glow: 'indigo', isExclusive: true },
+    { id: 'hash_master',     category: 'Mastery',     name: 'Hash Master',      desc: 'Solve 10 Hash Table problems.',             icon: Hash,        gradient: 'from-rose-500 to-pink-700',     glow: 'rose', isExclusive: true },
+    { id: 'diamond_ranked',  category: 'Mastery',     name: 'Diamond Ranked',   desc: 'Reach a rating of 1500 ELO or higher.',     icon: Star,        gradient: 'from-violet-500 to-purple-700', glow: 'violet', isExclusive: true },
 ];
 
 const GLOW_MAP = {
@@ -59,6 +59,10 @@ const BadgesTab = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('all');
+
+    const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+    const plan = storedUser?.subscriptionPlan || 'free';
+    const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
 
     useEffect(() => {
         const fetchBadges = async () => {
@@ -93,8 +97,7 @@ const BadgesTab = () => {
         : BADGE_DEFINITIONS.filter(b => b.category === activeCategory);
 
     return (
-        <PremiumGate requiredTier="pro">
-            <div className="space-y-8">
+        <div className="space-y-8">
                 {/* Header Stats */}
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
@@ -143,16 +146,27 @@ const BadgesTab = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredBadges.map((badge) => {
                         const isEarned = earnedBadges?.includes(badge.id);
+                        const isLockedByTier = badge.isExclusive && userTier < 2;
                         const Icon = badge.icon;
                         const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
 
                         return (
                             <div
                                 key={badge.id}
+                                onClick={() => {
+                                    if (isLockedByTier) {
+                                        toast.error(`${badge.name} is a Pro tier exclusive achievement.`, {
+                                            icon: '🔒',
+                                            style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                        });
+                                    }
+                                }}
                                 className={`relative group rounded-2xl border p-6 transition-all duration-300 ease-out
                                     ${isEarned
                                         ? `bg-[var(--bg-secondary)] backdrop-blur-md border-[var(--border-color)] ring-1 ring-white/10 shadow-2xl ${glowClass} hover:-translate-y-2 hover:scale-105 cursor-default`
-                                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] grayscale opacity-60 cursor-not-allowed'
+                                        : isLockedByTier
+                                            ? 'bg-[var(--bg-tertiary)] border-[var(--border-color)] grayscale opacity-40 cursor-pointer'
+                                            : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] grayscale opacity-60 cursor-not-allowed'
                                     }`}
                             >
                                 {/* Category Tag */}
@@ -173,6 +187,8 @@ const BadgesTab = () => {
                                 >
                                     {isEarned ? (
                                         <Icon className="text-[var(--text-primary)]" size={26} />
+                                    ) : isLockedByTier ? (
+                                        <Lock className="text-amber-500/60" size={22} />
                                     ) : (
                                         <Lock className="text-[var(--text-secondary)]" size={22} />
                                     )}
@@ -183,14 +199,13 @@ const BadgesTab = () => {
                                     {badge.name}
                                 </h3>
                                 <p className={`text-sm ${isEarned ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>
-                                    {badge.desc}
+                                    {isLockedByTier ? "Pro Tier Exclusive Achievement" : badge.desc}
                                 </p>
                             </div>
                         );
                     })}
                 </div>
             </div>
-        </PremiumGate>
     );
 };
 

@@ -5,21 +5,21 @@ import api from '../../api';
 import toast from 'react-hot-toast';
 
 const AVATAR_FRAMES = [
-    { id: 'none', name: 'Default', preview: 'border-[var(--border-color)]', ring: '' },
-    { id: 'neon-cyan', name: 'Neon Cyan', preview: 'border-cyan-400', ring: 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)]' },
-    { id: 'gold-hexagon', name: 'Gold Hexagon', preview: 'border-amber-400', ring: 'ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.4)]' },
-    { id: 'pulse-ring', name: 'Pulse Ring', preview: 'border-purple-400', ring: 'ring-2 ring-purple-400 animate-pulse shadow-[0_0_15px_rgba(192,132,252,0.4)]' },
-    { id: 'emerald-glow', name: 'Emerald Glow', preview: 'border-emerald-400', ring: 'ring-2 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.4)]' },
-    { id: 'crimson-edge', name: 'Crimson Edge', preview: 'border-red-400', ring: 'ring-2 ring-red-400 shadow-[0_0_15px_rgba(248,113,113,0.4)]' },
+    { id: 'none', name: 'Default', preview: 'border-[var(--border-color)]', ring: '', isExclusive: false },
+    { id: 'neon-cyan', name: 'Neon Cyan', preview: 'border-cyan-400', ring: 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)]', isExclusive: true },
+    { id: 'gold-hexagon', name: 'Gold Hexagon', preview: 'border-amber-400', ring: 'ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.4)]', isExclusive: true },
+    { id: 'pulse-ring', name: 'Pulse Ring', preview: 'border-purple-400', ring: 'ring-2 ring-purple-400 animate-pulse shadow-[0_0_15px_rgba(192,132,252,0.4)]', isExclusive: true },
+    { id: 'emerald-glow', name: 'Emerald Glow', preview: 'border-emerald-400', ring: 'ring-2 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.4)]', isExclusive: true },
+    { id: 'crimson-edge', name: 'Crimson Edge', preview: 'border-red-400', ring: 'ring-2 ring-red-400 shadow-[0_0_15px_rgba(248,113,113,0.4)]', isExclusive: true },
 ];
 
 const ENTRANCE_BANNERS = [
-    { id: 'default-dark', name: 'Dark Void', gradient: 'from-gray-900 to-black' },
-    { id: 'aurora-borealis', name: 'Aurora', gradient: 'from-emerald-600 via-cyan-700 to-blue-800' },
-    { id: 'cyber-grid', name: 'Cyber Grid', gradient: 'from-violet-700 via-purple-800 to-indigo-900' },
-    { id: 'gradient-sunset', name: 'Sunset', gradient: 'from-orange-600 via-rose-700 to-pink-800' },
-    { id: 'deep-ocean', name: 'Deep Ocean', gradient: 'from-blue-800 via-sky-900 to-teal-900' },
-    { id: 'neon-tokyo', name: 'Neon Tokyo', gradient: 'from-pink-600 via-fuchsia-800 to-violet-900' },
+    { id: 'default-dark', name: 'Dark Void', gradient: 'from-gray-900 to-black', isExclusive: false },
+    { id: 'aurora-borealis', name: 'Aurora', gradient: 'from-emerald-600 via-cyan-700 to-blue-800', isExclusive: true },
+    { id: 'cyber-grid', name: 'Cyber Grid', gradient: 'from-violet-700 via-purple-800 to-indigo-900', isExclusive: true },
+    { id: 'gradient-sunset', name: 'Sunset', gradient: 'from-orange-600 via-rose-700 to-pink-800', isExclusive: true },
+    { id: 'deep-ocean', name: 'Deep Ocean', gradient: 'from-blue-800 via-sky-900 to-teal-900', isExclusive: true },
+    { id: 'neon-tokyo', name: 'Neon Tokyo', gradient: 'from-pink-600 via-fuchsia-800 to-violet-900', isExclusive: true },
 ];
 
 const STACK_LANGUAGES = [
@@ -44,6 +44,21 @@ const CustomizationTab = () => {
     const [tagline, setTagline] = useState('Novice');
     const [signatureStack, setSignatureStack] = useState([]);
     const [entranceBanner, setEntranceBanner] = useState('default-dark');
+
+    const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+    const plan = storedUser?.subscriptionPlan || 'free';
+    const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+
+    const handleExclusiveClick = (item, setter) => {
+        if (item.isExclusive && userTier < 2) {
+            toast.error(`${item.name} is a Pro tier customization.`, {
+                icon: '🔒',
+                style: { borderRadius: '10px', background: '#333', color: '#fff' }
+            });
+            return;
+        }
+        setter(item.id);
+    };
 
     useEffect(() => {
         const fetchCustomization = async () => {
@@ -115,8 +130,7 @@ const CustomizationTab = () => {
     }
 
     return (
-        <PremiumGate requiredTier="pro">
-            <div className="space-y-10">
+        <div className="space-y-10">
                 {/* Section 1: Avatar Frames */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
@@ -126,21 +140,27 @@ const CustomizationTab = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                         {AVATAR_FRAMES.map(frame => {
                             const isActive = avatarFrame === frame.id;
+                            const isLocked = frame.isExclusive && userTier < 2;
                             return (
                                 <button
                                     key={frame.id}
-                                    onClick={() => setAvatarFrame(frame.id)}
+                                    onClick={() => handleExclusiveClick(frame, setAvatarFrame)}
                                     className={`relative p-4 rounded-2xl border transition-all duration-200 flex flex-col items-center gap-3
                                         ${isActive
                                             ? 'bg-[var(--bg-secondary)] border-accent ring-1 ring-accent/50 scale-105'
                                             : 'bg-[var(--surface-elevated)] border-[var(--border-color)] hover:border-gray-600 hover:scale-102'
-                                        }`}
+                                        } ${isLocked ? 'opacity-50 grayscale' : ''}`}
                                 >
                                     <div className={`w-12 h-12 rounded-full border-2 ${frame.preview} ${isActive ? frame.ring : ''} transition-all`} />
                                     <span className="text-xs font-bold text-[var(--text-secondary)]">{frame.name}</span>
-                                    {isActive && (
+                                    {isActive && !isLocked && (
                                         <div className="absolute top-2 right-2">
                                             <Check size={14} className="text-accent" />
+                                        </div>
+                                    )}
+                                    {isLocked && (
+                                        <div className="absolute top-2 right-2">
+                                            <Lock size={12} className="text-[var(--text-secondary)]" />
                                         </div>
                                     )}
                                 </button>
@@ -203,22 +223,28 @@ const CustomizationTab = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {ENTRANCE_BANNERS.map(banner => {
                             const isActive = entranceBanner === banner.id;
+                            const isLocked = banner.isExclusive && userTier < 2;
                             return (
                                 <button
                                     key={banner.id}
-                                    onClick={() => setEntranceBanner(banner.id)}
+                                    onClick={() => handleExclusiveClick(banner, setEntranceBanner)}
                                     className={`relative h-24 rounded-2xl bg-gradient-to-r ${banner.gradient} border-2 transition-all duration-200 overflow-hidden
                                         ${isActive
                                             ? 'border-accent ring-2 ring-accent/40 scale-105'
                                             : 'border-transparent hover:border-gray-600 hover:scale-102'
-                                        }`}
+                                        } ${isLocked ? 'opacity-50 grayscale' : ''}`}
                                 >
                                     <div className="absolute inset-0 flex items-end p-3">
                                         <span className="text-xs font-bold text-[var(--text-primary)]/80 drop-shadow">{banner.name}</span>
                                     </div>
-                                    {isActive && (
+                                    {isActive && !isLocked && (
                                         <div className="absolute top-2 right-2 w-5 h-5 bg-accent rounded-full flex items-center justify-center">
                                             <Check size={12} className="text-black" />
+                                        </div>
+                                    )}
+                                    {isLocked && (
+                                        <div className="absolute top-2 right-2 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center">
+                                            <Lock size={12} className="text-white/60" />
                                         </div>
                                     )}
                                 </button>
@@ -239,7 +265,6 @@ const CustomizationTab = () => {
                     </button>
                 </div>
             </div>
-        </PremiumGate>
     );
 };
 

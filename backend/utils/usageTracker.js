@@ -17,7 +17,8 @@ export const checkAndResetDailyUsage = async (user) => {
     if (isNewDay) {
         user.usageStats.chatQueriesToday = 0;
         user.usageStats.matchesToday = 0;
-        user.usageStats.customMatchesToday = 0; // Reset custom matches too
+        user.usageStats.customMatchesToday = 0;
+        user.usageStats.visualizationsToday = 0; // Reset visualizations
         user.usageStats.lastResetDate = now;
         
         // Also reset customMatchesPlayedToday if it exists for legacy consistency
@@ -36,25 +37,29 @@ export const getUsageLimits = (plan) => {
             return { 
                 chat: 10, 
                 matches: 5, 
-                customMatches: 3 
+                customMatches: 3,
+                visualizations: 0 // Plus users still use the 1-time trial logic
             };
         case 'pro':
             return { 
                 chat: 50, 
                 matches: 100, 
-                customMatches: Infinity 
+                customMatches: Infinity,
+                visualizations: 10 
             };
         case 'premium':
             return { 
                 chat: 100, 
                 matches: Infinity, 
-                customMatches: Infinity 
+                customMatches: Infinity,
+                visualizations: Infinity
             };
         default: // Novice / Free
             return { 
                 chat: 7, 
                 matches: 3, 
-                customMatches: 0 
+                customMatches: 0,
+                visualizations: 0 // Free users use the 1-time trial logic
             };
     }
 };

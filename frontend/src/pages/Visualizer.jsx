@@ -294,22 +294,22 @@ const Visualizer = () => {
             if (data.success && data.trace?.length > 0) {
                 setTrace(data.trace);
 
-                // ✅ ONE-TIME TRIAL CONSUMPTION
-                // Only mark as used if the user is on Free plan and they haven't used it yet.
-                // We do it after success so they don't lose the trial on a syntax error.
-                if (user?.subscriptionPlan === 'free' && !user?.usageStats?.visualizerTrialUsed) {
-                    api.post('/visualize/consume-trial').catch(() => {});
-                    
-                    // Sync local state to prevent immediate re-runs without refresh
-                    const updatedUser = { 
-                        ...user, 
-                        usageStats: { 
-                            ...(user.usageStats || {}), 
-                            visualizerTrialUsed: true 
-                        } 
-                    };
-                    localStorage.setItem('codearena_user', JSON.stringify(updatedUser));
-                    setUser(updatedUser);
+                // ✅ TIERED USAGE CONSUMPTION
+                // Only mark as used if the user is not Premium
+                if (user?.subscriptionPlan !== 'premium') {
+                    api.post('/visualize/consume').then(res => {
+                        // Sync local state if Pro/Plus
+                        const updatedUser = { ...user };
+                        if (user?.subscriptionPlan === 'free' || user?.subscriptionPlan === 'plus') {
+                            if (!updatedUser.usageStats) updatedUser.usageStats = {};
+                            updatedUser.usageStats.visualizerTrialUsed = true;
+                        } else if (user?.subscriptionPlan === 'pro') {
+                            if (!updatedUser.usageStats) updatedUser.usageStats = {};
+                            updatedUser.usageStats.visualizationsToday = res.data.visualizationsToday;
+                        }
+                        localStorage.setItem('codearena_user', JSON.stringify(updatedUser));
+                        setUser(updatedUser);
+                    }).catch(() => {});
                 }
                 
                 // If the backend sent an error inside the trace, jump to it

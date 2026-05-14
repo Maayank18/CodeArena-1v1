@@ -1,5 +1,6 @@
 import { traceJavaScript } from '../utils/tracers/jsTracer.js';
 import User from '../models/User.js';
+import { checkAndResetDailyUsage } from '../utils/usageTracker.js';
 
 export const executeVisualization = async (req, res) => {
     const { code, language } = req.body;
@@ -8,20 +9,38 @@ export const executeVisualization = async (req, res) => {
         return res.status(400).json({ success: false, message: "Code cannot be empty" });
     }
 
+    const user = req.user;
+    if (user) {
+        await checkAndResetDailyUsage(user);
+    }
+
     const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
     const userPlan = req.user?.subscriptionPlan || 'free';
-    const hasProAccess = tiers[userPlan] >= 2;
+    const userTier = tiers[userPlan];
     const isAdmin = req.user?.role === 'admin';
 
-    // Trial enforcement for non-pro
-    if (!hasProAccess && !isAdmin) {
-        if (req.user.usageStats?.visualizerTrialUsed) {
-            return res.status(403).json({ 
-                success: false, 
-                message: "Trial Expired: You've used your free visualization. Upgrade to Pro to unlock unlimited visualizations!",
-                code: 'TRIAL_EXPIRED'
-            });
+    // ── Tiered Quota Enforcement ─────────────────────────────────────────
+    if (!isAdmin) {
+        if (userTier < 2) {
+            // Free & Plus use the one-time trial
+            if (req.user.usageStats?.visualizerTrialUsed) {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: "Visualizer trial consumed. Upgrade to Pro to unlock 10 visualizations per day!",
+                    code: 'TRIAL_EXPIRED'
+                });
+            }
+        } else if (userTier === 2) {
+            // Pro tier: 10/day
+            if (req.user.usageStats?.visualizationsToday >= 10) {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: "Daily visualizer limit reached (10/day). Upgrade to Premium for unlimited access!",
+                    code: 'LIMIT_REACHED'
+                });
+            }
         }
+        // Premium (Tier 3) is unlimited
     }
 
     try {
@@ -70,19 +89,35 @@ export const executeVisualization = async (req, res) => {
  * Marks the one-time trial for the visualizer as used for free users.
  * Triggered by frontend after successful visualization.
  */
-export const consumeVisualizationTrial = async (req, res) => {
+/**
+ * Consumes a visualization credit (either marks trial as used or increments daily count).
+ * Triggered by frontend after successful visualization.
+ */
+export const consumeVisualization = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (user.subscriptionPlan === 'free') {
-            user.usageStats.visualizerTrialUsed = true;
-            await user.save();
-        }
+        const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+        const userTier = tiers[user.subscriptionPlan || 'free'];
 
-        res.json({ success: true, message: 'Trial consumed' });
+        if (userTier < 2) {
+            // Free/Plus: Mark trial as used
+            user.usageStats.visualizerTrialUsed = true;
+        } else if (userTier === 2) {
+            // Pro: Increment daily count
+            user.usageStats.visualizationsToday = (user.usageStats.visualizationsToday || 0) + 1;
+        }
+        // Premium: No action needed
+
+        await user.save();
+        res.json({ 
+            success: true, 
+            message: 'Usage recorded',
+            visualizationsToday: user.usageStats.visualizationsToday 
+        });
     } catch (error) {
-        console.error('[VISUALIZER] Consume trial error:', error);
+        console.error('[VISUALIZER] Usage recording error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
