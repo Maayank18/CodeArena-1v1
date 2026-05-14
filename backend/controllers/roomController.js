@@ -8,7 +8,6 @@ import { checkAndResetDailyUsage, getUsageLimits } from '../utils/usageTracker.j
 
 let roomIdPool = [];
 const POOL_SIZE = 20;
-const CUSTOM_MATCH_LIMITS = { free: 0, plus: 2, pro: 10, premium: Infinity };
 
 function refillRoomIdPool() {
     while (roomIdPool.length < POOL_SIZE) {
@@ -31,93 +30,14 @@ const sanitizeCustomTopics = (topics) => {
     )];
 };
 
-const isSameCalendarDay = (left, right) => (
-    left instanceof Date &&
-    right instanceof Date &&
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-);
-
-const getAllowedCustomLimit = (user) => {
-    if (user?.role === 'admin') {
-        return Infinity;
-    }
-
-    const plan = user?.subscriptionPlan || 'free';
-    return CUSTOM_MATCH_LIMITS[plan] ?? 0;
-};
-
-const loadQuotaUser = async (userId) => {
-    const user = await User.findById(userId)
-        .select('username role subscriptionPlan customMatchesPlayedToday lastCustomMatchDate')
-        .lean();
-
-    if (!user) {
-        throw new Error('User not found');
-    }
-
-    return user;
-};
-
-const getFreshQuotaState = async (userId) => {
-    const user = await loadQuotaUser(userId);
-    const now = new Date();
-    const lastDate = user.lastCustomMatchDate ? new Date(user.lastCustomMatchDate) : null;
-
-    if (!lastDate || !isSameCalendarDay(lastDate, now)) {
-        await User.findByIdAndUpdate(userId, {
-            $set: {
-                customMatchesPlayedToday: 0,
-                lastCustomMatchDate: now,
-            }
-        });
-        user.customMatchesPlayedToday = 0;
-        user.lastCustomMatchDate = now;
-    }
-
-    const limit = getAllowedCustomLimit(user);
-    const used = user.customMatchesPlayedToday || 0;
-    const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
-
-    return {
-        user,
-        allowed: limit === Infinity || used < limit,
-        used,
-        remaining,
-        limit,
-    };
-};
-
-const buildQuotaPayload = (quotaState) => ({
-    used: quotaState.limit === Infinity ? 0 : quotaState.used,
-    remaining: quotaState.remaining === Infinity ? 'unlimited' : quotaState.remaining,
-    limit: quotaState.limit === Infinity ? 'unlimited' : quotaState.limit,
-    plan: quotaState.user.subscriptionPlan || 'free',
-});
-
 const generateUniqueRoomId = async (prefix = '') => {
     let roomId;
     let isUnique = false;
-    let attempts = 0;
-
-    while (!isUnique && attempts < 10) {
-        roomId = `${prefix}${(roomIdPool.shift() || uuidv4().split('-')[0]).toUpperCase()}`;
-        const existing = await Room.findOne({ roomId }).select('_id').lean();
-        if (!existing) {
-            isUnique = true;
-        }
-        attempts += 1;
+    while (!isUnique) {
+        roomId = prefix + uuidv4().split('-')[0].toUpperCase();
+        const existingRoom = await Room.findOne({ roomId });
+        if (!existingRoom) isUnique = true;
     }
-
-    if (roomIdPool.length < 5) {
-        setImmediate(refillRoomIdPool);
-    }
-
-    if (!isUnique) {
-        throw new Error('Failed to generate unique room ID');
-    }
-
     return roomId;
 };
 
@@ -127,12 +47,16 @@ export const createRoom = async (req, res) => {
     try {
         const user = req.user;
         if (user) {
-            await checkAndResetDailyUsage(user);
-            const limits = getUsageLimits(user.subscriptionPlan);
-            if (user.subscriptionPlan === 'free' && user.usageStats.matchesToday >= limits.matches) {
+            const userDoc = await User.findById(user._id);
+            if (!userDoc) return res.status(404).json({ message: 'User not found' });
+
+            await checkAndResetDailyUsage(userDoc);
+            const limits = getUsageLimits(userDoc.subscriptionPlan);
+            
+            if (userDoc.usageStats.matchesToday >= limits.matches) {
                 return res.status(403).json({ 
                     success: false,
-                    message: 'Daily match limit reached (3/day). Upgrade to Premium for unlimited battles!',
+                    message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
                     code: 'LIMIT_REACHED'
                 });
             }
@@ -190,12 +114,25 @@ export const createCustomRoom = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Authentication required' });
         }
 
-        const quotaState = await getFreshQuotaState(req.user._id);
-        if (!quotaState.allowed) {
+        const userDoc = await User.findById(req.user._id);
+        if (!userDoc) return res.status(404).json({ message: 'User not found' });
+
+        await checkAndResetDailyUsage(userDoc);
+        const limits = getUsageLimits(userDoc.subscriptionPlan);
+
+        if (userDoc.subscriptionPlan === 'free') {
             return res.status(403).json({
                 success: false,
-                message: 'Daily custom match quota reached. Upgrade for more.',
-                quota: buildQuotaPayload(quotaState),
+                message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
+                code: 'PREMIUM_REQUIRED'
+            });
+        }
+
+        if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
+            return res.status(403).json({
+                success: false,
+                message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
+                code: 'LIMIT_REACHED'
             });
         }
 
@@ -246,8 +183,7 @@ export const createCustomRoom = async (req, res) => {
                 timeLimit,
                 numQuestions,
                 topics,
-            },
-            quota: buildQuotaPayload(quotaState),
+            }
         });
     } catch (error) {
         console.error('[CUSTOM ROOM] Create error:', error);
@@ -261,12 +197,25 @@ export const joinCustomRoom = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Authentication required' });
         }
 
-        const quotaState = await getFreshQuotaState(req.user._id);
-        if (!quotaState.allowed) {
+        const userDoc = await User.findById(req.user._id);
+        if (!userDoc) return res.status(404).json({ message: 'User not found' });
+
+        await checkAndResetDailyUsage(userDoc);
+        const limits = getUsageLimits(userDoc.subscriptionPlan);
+
+        if (userDoc.subscriptionPlan === 'free') {
             return res.status(403).json({
                 success: false,
-                message: 'Daily custom match quota reached. Upgrade for more.',
-                quota: buildQuotaPayload(quotaState),
+                message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
+                code: 'PREMIUM_REQUIRED'
+            });
+        }
+
+        if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
+            return res.status(403).json({
+                success: false,
+                message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
+                code: 'LIMIT_REACHED'
             });
         }
 

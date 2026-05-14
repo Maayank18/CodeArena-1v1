@@ -307,6 +307,7 @@ const userSchema = new mongoose.Schema({
     usageStats: {
         chatQueriesToday: { type: Number, default: 0 },
         matchesToday: { type: Number, default: 0 },
+        customMatchesToday: { type: Number, default: 0 },
         visualizerTrialUsed: { type: Boolean, default: false },
         lastResetDate: { type: Date, default: Date.now }
     },

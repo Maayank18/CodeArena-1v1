@@ -680,7 +680,19 @@ const EditorPage = () => {
                         <div className="flex items-center gap-2">
                             <div className="flex p-1 bg-black/20 rounded-lg mr-2">
                                 <button 
-                                    onClick={() => setIsNotesOpen(true)}
+                                    onClick={() => {
+                                        const plan = storedUser?.subscriptionPlan || 'free';
+                                        const tier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+                                        
+                                        if (tier >= 1) {
+                                            setIsNotesOpen(true);
+                                        } else {
+                                            toast.error("In-editor notes are a Plus tier feature.", {
+                                                icon: '🔒',
+                                                style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                            });
+                                        }
+                                    }}
                                     className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isNotesOpen ? 'bg-accent text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
                                     Notes
@@ -747,14 +759,16 @@ const EditorPage = () => {
                 <button onClick={() => setActiveTab('right')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'right' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Terminal size={18} /><span className="text-[10px] font-bold">Right</span></button>
             </div>
 
-            <SpiralNotebookWidget 
-                isOpen={isNotesOpen} 
-                onClose={() => setIsNotesOpen(false)} 
-                type="battle_arena" 
-                contextKey={roomId}
-                contextTitle={sessionNoteTitle}
-                desktopSide={notebookSide}
-            />
+            {((storedUser?.subscriptionPlan || 'free') !== 'free') && (
+                <SpiralNotebookWidget 
+                    isOpen={isNotesOpen} 
+                    onClose={() => setIsNotesOpen(false)} 
+                    type="battle_arena" 
+                    contextKey={roomId}
+                    contextTitle={sessionNoteTitle}
+                    desktopSide={notebookSide}
+                />
+            )}
         </div>
     );
 

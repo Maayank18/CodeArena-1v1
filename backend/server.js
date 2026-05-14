@@ -1309,23 +1309,37 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      // ✅ DAILY MATCH LIMIT CHECK (only for normal matches)
-      // Custom matches have their own quota system in roomController.js
+      // ✅ DAILY MATCH LIMIT CHECK
       const isActuallyCustom = rooms.has(roomId) ? rooms.get(roomId).isCustom : (await Room.exists({ roomId, isCustom: true }));
+      const userDoc = await User.findById(authUser._id);
       
-      if (!isActuallyCustom) {
-          const userDoc = await User.findById(authUser._id);
-          if (userDoc) {
-              await checkAndResetDailyUsage(userDoc);
-              const limits = getUsageLimits(userDoc.subscriptionPlan);
-              if (userDoc.subscriptionPlan === 'free' && userDoc.usageStats.matchesToday >= limits.matches) {
+      if (userDoc) {
+          await checkAndResetDailyUsage(userDoc);
+          const limits = getUsageLimits(userDoc.subscriptionPlan);
+          
+          if (isActuallyCustom) {
+              if (userDoc.subscriptionPlan === 'free') {
                   socket.emit('error', { 
-                      message: 'Daily match limit reached (3/day). Upgrade to Premium for unlimited battles!',
+                      message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
+                      code: 'PREMIUM_REQUIRED'
+                  });
+                  return;
+              }
+              if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
+                  socket.emit('error', { 
+                      message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
                       code: 'LIMIT_REACHED'
                   });
                   return;
               }
-              // We'll increment matchesToday later when we're sure they've joined
+          } else {
+              if (userDoc.usageStats.matchesToday >= limits.matches) {
+                  socket.emit('error', { 
+                      message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
+                      code: 'LIMIT_REACHED'
+                  });
+                  return;
+              }
           }
       }
 
@@ -1453,13 +1467,22 @@ io.on('connection', async (socket) => {
             return; 
         }
 
-        // ✅ INCREMENT MATCH COUNT FOR NORMAL MATCHES
-        if (!room.isCustom) {
-            const userDoc = await User.findById(authUser._id);
-            if (userDoc && userDoc.subscriptionPlan === 'free') {
-                userDoc.usageStats.matchesToday += 1;
-                await userDoc.save();
-                console.log(`[USAGE] Incremented match count for ${username}: ${userDoc.usageStats.matchesToday}/3`);
+        // ✅ INCREMENT MATCH COUNT
+        const userDoc = await User.findById(authUser._id);
+        if (userDoc) {
+            const limits = getUsageLimits(userDoc.subscriptionPlan);
+            if (room.isCustom) {
+                if (userDoc.usageStats.customMatchesToday < limits.customMatches) {
+                    userDoc.usageStats.customMatchesToday += 1;
+                    await userDoc.save();
+                    console.log(`[USAGE] Incremented custom match count for ${username}: ${userDoc.usageStats.customMatchesToday}/${limits.customMatches}`);
+                }
+            } else {
+                if (userDoc.usageStats.matchesToday < limits.matches) {
+                    userDoc.usageStats.matchesToday += 1;
+                    await userDoc.save();
+                    console.log(`[USAGE] Incremented normal match count for ${username}: ${userDoc.usageStats.matchesToday}/${limits.matches}`);
+                }
             }
         }
 

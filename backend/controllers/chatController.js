@@ -79,9 +79,10 @@ export const chat = async (req, res) => {
     await checkAndResetDailyUsage(user);
     
     const limits = getUsageLimits(user.subscriptionPlan);
-    if (user.subscriptionPlan === 'free' && user.usageStats.chatQueriesToday >= limits.chat) {
+    if (user.usageStats.chatQueriesToday >= limits.chat) {
         return res.status(403).json({ 
-            message: 'Daily chat limit reached (7/day). Upgrade to Premium for more queries!',
+            success: false, 
+            message: `Daily chat limit reached (${limits.chat}/day). Upgrade for more AI assistance!`,
             code: 'LIMIT_REACHED'
         });
     }

@@ -17,9 +17,10 @@ export const checkAndResetDailyUsage = async (user) => {
     if (isNewDay) {
         user.usageStats.chatQueriesToday = 0;
         user.usageStats.matchesToday = 0;
+        user.usageStats.customMatchesToday = 0; // Reset custom matches too
         user.usageStats.lastResetDate = now;
         
-        // Also reset customMatchesPlayedToday if it exists for consistency
+        // Also reset customMatchesPlayedToday if it exists for legacy consistency
         if (typeof user.customMatchesPlayedToday === 'number') {
             user.customMatchesPlayedToday = 0;
         }
@@ -32,12 +33,28 @@ export const checkAndResetDailyUsage = async (user) => {
 export const getUsageLimits = (plan) => {
     switch (plan) {
         case 'plus':
-            return { chat: 50, matches: 20 };
+            return { 
+                chat: 10, 
+                matches: 5, 
+                customMatches: 3 
+            };
         case 'pro':
-            return { chat: 200, matches: 100 };
+            return { 
+                chat: 50, 
+                matches: 100, 
+                customMatches: Infinity 
+            };
         case 'premium':
-            return { chat: Infinity, matches: Infinity };
-        default:
-            return { chat: 7, matches: 3 }; // Novice / Free
+            return { 
+                chat: 100, 
+                matches: Infinity, 
+                customMatches: Infinity 
+            };
+        default: // Novice / Free
+            return { 
+                chat: 7, 
+                matches: 3, 
+                customMatches: 0 
+            };
     }
 };
