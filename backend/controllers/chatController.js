@@ -67,9 +67,26 @@ setInterval(() => {
 }, IP_WINDOW_MS);
 
 // ─── Controller ───────────────────────────────────────────────────────────────
+import { checkAndResetDailyUsage, getUsageLimits } from '../utils/usageTracker.js';
+
 export const chat = async (req, res) => {
+    const user = req.user;
+    if (!user) {
+        return res.status(401).json({ message: 'Authentication required.' });
+    }
+
+    // ✅ DAILY RESET & LIMIT CHECK
+    await checkAndResetDailyUsage(user);
+    
+    const limits = getUsageLimits(user.subscriptionPlan);
+    if (user.subscriptionPlan === 'free' && user.usageStats.chatQueriesToday >= limits.chat) {
+        return res.status(403).json({ 
+            message: 'Daily chat limit reached (7/day). Upgrade to Premium for more queries!',
+            code: 'LIMIT_REACHED'
+        });
+    }
+
     console.log('[CHAT] Key exists:', !!process.env.GROQ_API_KEY);
-    console.log('[CHAT] Key value:', process.env.GROQ_API_KEY?.slice(0, 10) + '...');
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
 
     // IP-level rate limit (server protection)
@@ -77,7 +94,7 @@ export const chat = async (req, res) => {
         return res.status(429).json({ message: 'Too many requests. Please try again later.' });
     }
 
-    const { message, conversationHistory = [], userContext } = req.body;
+    const { message, conversationHistory = [] } = req.body;
 
     // Validation
     if (!message || typeof message !== 'string' || !message.trim()) {
@@ -95,9 +112,8 @@ export const chat = async (req, res) => {
 
     try {
         // Build message array: system + last 4 history messages + current user message
-        // Keeping history short (4 msgs = 2 turns) to manage token usage
         const messages = [
-            { role: 'system', content: buildSystemPrompt(userContext) },
+            { role: 'system', content: buildSystemPrompt(user) },
             ...conversationHistory
                 .slice(-4)
                 .filter(m => m.role && m.content && typeof m.content === 'string')
@@ -110,7 +126,7 @@ export const chat = async (req, res) => {
             {
                 model: 'llama-3.3-70b-versatile',
                 messages,
-                max_tokens: 250,      // keep responses concise
+                max_tokens: 250,
                 temperature: 0.65,
                 stream: false,
             },
@@ -128,6 +144,10 @@ export const chat = async (req, res) => {
         if (!reply) {
             return res.status(500).json({ message: 'Received an empty response. Please try again.' });
         }
+
+        // ✅ INCREMENT USAGE
+        user.usageStats.chatQueriesToday += 1;
+        await user.save();
 
         return res.json({ reply: reply.trim() });
 

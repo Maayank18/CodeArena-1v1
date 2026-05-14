@@ -15,19 +15,12 @@ export const executeVisualization = async (req, res) => {
 
     // Trial enforcement for non-pro
     if (!hasProAccess && !isAdmin) {
-        if (req.user.hasUsedVisualizerTrial) {
+        if (req.user.usageStats?.visualizerTrialUsed) {
             return res.status(403).json({ 
                 success: false, 
                 message: "Trial Expired: You've used your free visualization. Upgrade to Pro to unlock unlimited visualizations!",
                 code: 'TRIAL_EXPIRED'
             });
-        }
-        
-        // First time use -> flag it
-        try {
-            await User.findByIdAndUpdate(req.user._id, { hasUsedVisualizerTrial: true });
-        } catch (err) {
-            console.error("[VISUALIZER] Failed to update trial flag:", err);
         }
     }
 
@@ -70,6 +63,27 @@ export const executeVisualization = async (req, res) => {
             message: isUserError ? ("Code Error: " + error.message) : "Internal System Error", 
             error: error.message 
         });
+    }
+};
+
+/**
+ * Marks the one-time trial for the visualizer as used for free users.
+ * Triggered by frontend after successful visualization.
+ */
+export const consumeVisualizationTrial = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (user.subscriptionPlan === 'free') {
+            user.usageStats.visualizerTrialUsed = true;
+            await user.save();
+        }
+
+        res.json({ success: true, message: 'Trial consumed' });
+    } catch (error) {
+        console.error('[VISUALIZER] Consume trial error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 

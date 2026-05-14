@@ -538,6 +538,7 @@ import { ensurePaymentTransactionIndexes } from './models/PaymentTransaction.js'
 
 // ✅ UTILS
 import { calculateMatchOutcome } from './utils/elo.js';
+import { checkAndResetDailyUsage, getUsageLimits } from './utils/usageTracker.js';
 
 // ✅ CRITICAL: Cache invalidation imports
 import { clearLeaderboardCache } from './controllers/userController.js';
@@ -1308,6 +1309,26 @@ io.on('connection', async (socket) => {
         return;
       }
 
+      // ✅ DAILY MATCH LIMIT CHECK (only for normal matches)
+      // Custom matches have their own quota system in roomController.js
+      const isActuallyCustom = rooms.has(roomId) ? rooms.get(roomId).isCustom : (await Room.exists({ roomId, isCustom: true }));
+      
+      if (!isActuallyCustom) {
+          const userDoc = await User.findById(authUser._id);
+          if (userDoc) {
+              await checkAndResetDailyUsage(userDoc);
+              const limits = getUsageLimits(userDoc.subscriptionPlan);
+              if (userDoc.subscriptionPlan === 'free' && userDoc.usageStats.matchesToday >= limits.matches) {
+                  socket.emit('error', { 
+                      message: 'Daily match limit reached (3/day). Upgrade to Premium for unlimited battles!',
+                      code: 'LIMIT_REACHED'
+                  });
+                  return;
+              }
+              // We'll increment matchesToday later when we're sure they've joined
+          }
+      }
+
       let persistentCustomRoom = null;
       if (!rooms.has(roomId)) {
         persistentCustomRoom = await Room.findOne({ roomId, isCustom: true })
@@ -1431,6 +1452,17 @@ io.on('connection', async (socket) => {
             socket.emit('room_full'); 
             return; 
         }
+
+        // ✅ INCREMENT MATCH COUNT FOR NORMAL MATCHES
+        if (!room.isCustom) {
+            const userDoc = await User.findById(authUser._id);
+            if (userDoc && userDoc.subscriptionPlan === 'free') {
+                userDoc.usageStats.matchesToday += 1;
+                await userDoc.save();
+                console.log(`[USAGE] Incremented match count for ${username}: ${userDoc.usageStats.matchesToday}/3`);
+            }
+        }
+
         side = reservedSide || (room.players.length === 0 ? 'left' : 'right');
         room.players.push({ id: socket.id, username, side, avatar: authUser.avatar || '', customization: authUser.customization, userId: authUser._id });
         room.scores[username] = room.scores[username] || 0;

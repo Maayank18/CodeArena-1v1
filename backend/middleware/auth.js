@@ -62,7 +62,7 @@ export const verifyToken = async (req, res, next) => {
         }
 
         const user = await User.findById(decoded.id)
-            .select('_id username passwordChangedAt subscriptionPlan role hasUsedVisualizerTrial')
+            .select('_id username passwordChangedAt subscriptionPlan role usageStats')
             .lean();
         if (!user) {
             return sendAuthFailure(req, res, 401, 'AUTH_USER_NOT_FOUND', 'Invalid token', token, {
@@ -96,7 +96,7 @@ export const verifyToken = async (req, res, next) => {
             username: user.username,
             subscriptionPlan: user.subscriptionPlan || 'free',
             role: user.role || 'user',
-            hasUsedVisualizerTrial: !!user.hasUsedVisualizerTrial
+            usageStats: user.usageStats || {}
         };
         return next();
     } catch (err) {
@@ -127,7 +127,7 @@ export const optionalAuth = async (req, res, next) => {
             return next();
         }
 
-        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role hasUsedVisualizerTrial').lean();
+        const user = await User.findById(decoded.id).select('_id passwordChangedAt subscriptionPlan role usageStats').lean();
         if (!user) {
             req.user = null;
             return next();
@@ -138,7 +138,7 @@ export const optionalAuth = async (req, res, next) => {
             _id: decoded.id,
             subscriptionPlan: user.subscriptionPlan || 'free',
             role: user.role || 'user',
-            hasUsedVisualizerTrial: !!user.hasUsedVisualizerTrial
+            usageStats: user.usageStats || {}
         };
         return next();
     } catch (err) {

@@ -304,9 +304,11 @@ const userSchema = new mongoose.Schema({
         enum: ['free', 'plus', 'pro', 'premium'], 
         default: 'free' 
     },
-    hasUsedVisualizerTrial: {
-        type: Boolean,
-        default: false
+    usageStats: {
+        chatQueriesToday: { type: Number, default: 0 },
+        matchesToday: { type: Number, default: 0 },
+        visualizerTrialUsed: { type: Boolean, default: false },
+        lastResetDate: { type: Date, default: Date.now }
     },
     proActivatedAt: {
         type: Date,

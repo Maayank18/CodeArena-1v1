@@ -293,6 +293,24 @@ const Visualizer = () => {
 
             if (data.success && data.trace?.length > 0) {
                 setTrace(data.trace);
+
+                // ✅ ONE-TIME TRIAL CONSUMPTION
+                // Only mark as used if the user is on Free plan and they haven't used it yet.
+                // We do it after success so they don't lose the trial on a syntax error.
+                if (user?.subscriptionPlan === 'free' && !user?.usageStats?.visualizerTrialUsed) {
+                    api.post('/visualize/consume-trial').catch(() => {});
+                    
+                    // Sync local state to prevent immediate re-runs without refresh
+                    const updatedUser = { 
+                        ...user, 
+                        usageStats: { 
+                            ...(user.usageStats || {}), 
+                            visualizerTrialUsed: true 
+                        } 
+                    };
+                    localStorage.setItem('codearena_user', JSON.stringify(updatedUser));
+                    setUser(updatedUser);
+                }
                 
                 // If the backend sent an error inside the trace, jump to it
                 const errorStep = data.trace.findIndex(s => s.type === 'error');
@@ -307,7 +325,7 @@ const Visualizer = () => {
             console.error('[VISUALIZER]', error);
             
             // Handle Trial Expired specifically
-            if (error.response?.status === 403 && error.response?.data?.code === 'TRIAL_EXPIRED') {
+            if (error.response?.status === 403 && (error.response?.data?.code === 'TRIAL_EXPIRED' || error.response?.data?.code === 'LIMIT_REACHED')) {
                 setShowTeaserModal(true);
                 return;
             }

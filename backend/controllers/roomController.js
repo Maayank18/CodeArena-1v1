@@ -4,6 +4,7 @@ import Problem from '../models/Problem.js';
 import User from '../models/User.js';
 import { v4 as uuidv4 } from 'uuid';
 import { signCustomRoomJoinToken } from '../utils/customRoomAuth.js';
+import { checkAndResetDailyUsage, getUsageLimits } from '../utils/usageTracker.js';
 
 let roomIdPool = [];
 const POOL_SIZE = 20;
@@ -124,6 +125,19 @@ const generateUniqueRoomId = async (prefix = '') => {
 // @route   POST /api/rooms
 export const createRoom = async (req, res) => {
     try {
+        const user = req.user;
+        if (user) {
+            await checkAndResetDailyUsage(user);
+            const limits = getUsageLimits(user.subscriptionPlan);
+            if (user.subscriptionPlan === 'free' && user.usageStats.matchesToday >= limits.matches) {
+                return res.status(403).json({ 
+                    success: false,
+                    message: 'Daily match limit reached (3/day). Upgrade to Premium for unlimited battles!',
+                    code: 'LIMIT_REACHED'
+                });
+            }
+        }
+
         const battleProblemCount = await Problem.countDocuments({ type: 'battle' });
         if (battleProblemCount === 0) {
             return res.status(404).json({
