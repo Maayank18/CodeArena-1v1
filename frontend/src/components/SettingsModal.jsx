@@ -609,26 +609,38 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
             <aside className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 lg:w-64 lg:border-b-0 lg:border-r">
               <div className="flex gap-2 overflow-x-auto lg:flex-col">
                 {tabs.map((tab) => {
-                  // ✅ TIERED VISIBILITY CHECK
                   const plan = user?.subscriptionPlan || 'free';
                   const tier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
 
-                  if (tab.id === 'analytics' && tier < 2) return null;
+                  // Define tier requirements
+                  const tierRequirements = {
+                    analytics: 2,
+                    badges: 2,
+                    customization: 2,
+                    notes: 1
+                  };
 
+                  const isLocked = tierRequirements[tab.id] ? tier < tierRequirements[tab.id] : false;
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
+
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex min-w-max items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all lg:min-w-0 ${
+                      className={`flex min-w-max items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all lg:min-w-0 ${
                         isActive
                           ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/10'
                           : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
-                      <Icon size={18} />
-                      <span className="hidden lg:inline">{tab.label}</span>
+                      <div className="flex items-center gap-3">
+                        <Icon size={18} />
+                        <span className="hidden lg:inline">{tab.label}</span>
+                      </div>
+                      {isLocked && (
+                        <Lock size={14} className={isActive ? 'text-black/60' : 'text-emerald-500/60'} />
+                      )}
                     </button>
                   );
                 })}
@@ -729,7 +741,11 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                     </div>
                   )}
 
-                  {activeTab === 'analytics' && <AnalyticsTab />}
+                  {activeTab === 'analytics' && (
+                    <PremiumGate requiredTier="pro" message="Upgrade to Pro to unlock advanced analytics and performance insights.">
+                      <AnalyticsTab />
+                    </PremiumGate>
+                  )}
 
                   {activeTab === 'security' && (
                     <div className="space-y-8 animate-fade-in">
@@ -858,8 +874,18 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                     </div>
                   )}
 
-                  {activeTab === 'badges' && <BadgesTab />}
-                  {activeTab === 'customization' && <CustomizationTab />}
+                  {activeTab === 'badges' && (
+                    <PremiumGate requiredTier="pro" message="Upgrade to Pro to unlock and showcase your achievement badges.">
+                      <BadgesTab />
+                    </PremiumGate>
+                  )}
+
+                  {activeTab === 'customization' && (
+                    <PremiumGate requiredTier="pro" message="Upgrade to Pro to unlock exclusive profile frames, banners, and advanced themes.">
+                      <CustomizationTab />
+                    </PremiumGate>
+                  )}
+
                   {activeTab === 'notes' && (
                     <PremiumGate requiredTier="plus" message="Upgrade to Plus to unlock the Spiral Notebook and persistent note-taking.">
                       <NotesTab />
