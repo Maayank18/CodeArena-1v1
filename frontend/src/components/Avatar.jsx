@@ -35,7 +35,6 @@
 
 
 // RESPONSIVE 
-import React from 'react';
 import { resolveBackendOrigin } from '../api.js';
 
 const FRAME_STYLES = {
@@ -53,15 +52,12 @@ const Avatar = ({ username, src, className, avatarFrame }) => {
     
     // Resolve relative paths (like 'uploads/...') to absolute backend URLs
     let resolvedSrc = src;
-    if (src && typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')) {
+    if (src && !src.startsWith('http') && !src.startsWith('data:')) {
         const backendOrigin = resolveBackendOrigin();
         resolvedSrc = `${backendOrigin}/${src.replace(/^\//, '')}`;
     }
 
-    // Defensive fallback: Use DiceBear if resolvedSrc is falsy or not a string
-    const avatarUrl = (typeof resolvedSrc === 'string' && resolvedSrc) 
-        ? resolvedSrc 
-        : `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+    const avatarUrl = resolvedSrc || `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
     const frameClass = FRAME_STYLES[avatarFrame] || '';
 
     return (

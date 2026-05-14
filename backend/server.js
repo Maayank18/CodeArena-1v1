@@ -1291,30 +1291,14 @@ io.on('connection', async (socket) => {
   // ✅ JOIN ROOM EVENT
   socket.on('join_room', async (data) => {
     try {
-      const socketUser = socket.data.user;
-      if (!socketUser?._id) {
-        socket.emit('error', { message: 'Authentication required' });
-        return;
-      }
-
-      // ✅ SENIOR DEV FIX: Fetch FRESH user data from DB to ensure latest avatar/customization
-      // This solves the issue of stale socket.data.user when profile is updated in another tab/session
-      const authUser = await User.findById(socketUser._id)
-        .select('_id username avatar customization')
-        .lean();
-
-      if (!authUser) {
-        socket.emit('error', { message: 'User not found' });
-        return;
-      }
-
+      const authUser = socket.data.user;
       const roomId = typeof data?.roomId === 'string' ? data.roomId.trim() : '';
       const joinToken = typeof data?.joinToken === 'string' ? data.joinToken.trim() : '';
-      const username = authUser.username;
+      const username = authUser?.username;
       
       // Validation
       if (!roomId || !username) {
-        socket.emit('error', { message: 'Room ID is required' });
+        socket.emit('error', { message: 'Authentication and room ID are required' });
         return;
       }
 
