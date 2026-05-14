@@ -79,46 +79,53 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, message, children 
     }
 
     return (
-        <div className="relative w-full h-full min-h-[400px] overflow-hidden rounded-xl border border-gray-800 bg-[#060810]">
-            {/* Blurred Content */}
-            <div className="absolute inset-0 blur-md pointer-events-none opacity-50 select-none overflow-hidden">
+        <div className="relative w-full h-full min-h-[580px] flex items-center justify-center overflow-hidden rounded-2xl bg-transparent">
+            {/* Blurred Background Content */}
+            <div className="absolute inset-0 blur-[6px] saturate-[1.2] brightness-[0.7] pointer-events-none select-none overflow-hidden transition-all duration-700">
                 {children}
             </div>
 
-            {/* Lock Overlay */}
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(245,158,11,0.4)] relative">
-                    <div className="absolute inset-1 bg-[#060810] rounded-full flex items-center justify-center">
-                        <Crown className="w-10 h-10 text-amber-400" />
-                    </div>
-                </div>
-
-                <h3 className="text-3xl font-bold text-white mb-3">
-                    Unlock <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">Pro Features</span>
-                </h3>
-                
-                <p className="text-gray-400 mb-8 max-w-md mx-auto text-lg">
-                    {requiredTier === 'pro' 
-                        ? 'Upgrade to Pro to unlock advanced Analytics, exclusive Contests, full AI assistance, and more.'
-                        : 'Upgrade to Plus to unlock Full Language Access, advanced Match History, and more.'}
-                </p>
-
-                <button 
-                    onClick={() => navigate('/pricing?source=settings')}
-                    className="group relative px-8 py-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 font-bold text-[#060810] text-lg transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] active:scale-95"
+            {/* Modal Overlay */}
+            <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-6 bg-black/10 backdrop-blur-[1px]">
+                {/* Floating Glass Card */}
+                <div 
+                    className="relative max-w-[320px] w-full px-6 pb-8 pt-12 rounded-[2rem] border border-white/10 bg-[#161618] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] flex flex-col items-center text-center mt-8"
                 >
-                    <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                    <span className="flex items-center gap-2">
-                        <Lock size={18} className="text-[#060810]" />
+                    {/* Top Center Overlapping Icon */}
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2">
+                        <div className="absolute inset-[-10px] bg-amber-500/20 blur-[15px] rounded-full pointer-events-none" />
+                        <div className="relative w-16 h-16 rounded-full border border-amber-500/50 bg-[#161618] flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.3)]">
+                            {requiredTier === 'pro' ? <Crown className="w-8 h-8 text-amber-400" /> : <Lock className="w-8 h-8 text-amber-400" />}
+                        </div>
+                    </div>
+
+                    <h3 className="text-[22px] font-black text-white mb-2 tracking-tight">
+                        Unlock <span className="text-amber-400">Pro Features</span>
+                    </h3>
+                    
+                    <p className="text-gray-400 text-[12px] font-medium leading-relaxed mb-8 px-2">
+                        {requiredTier === 'pro' 
+                            ? 'Upgrade to Pro to unlock advanced Analytics, exclusive Contests, full AI assistance, and more.'
+                            : 'Upgrade to Plus to unlock Full Language Access, advanced Match History, and more.'}
+                    </p>
+
+                    <button 
+                        onClick={() => navigate('/pricing?source=settings')}
+                        className="group relative flex items-center justify-center gap-2 w-[85%] py-3 rounded-full bg-[#f5a623] hover:bg-[#e09612] font-bold text-black text-[13px] transition-all hover:scale-105 active:scale-95 shadow-[0_10px_20px_-5px_rgba(245,166,35,0.4)]"
+                    >
+                        <Lock size={15} className="text-black/80" />
                         Upgrade Now
-                    </span>
-                </button>
+                    </button>
+                </div>
             </div>
-            
-            {/* Dark gradient overlay to make text pop */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060810] via-transparent to-transparent pointer-events-none"></div>
         </div>
     );
 };
 
 export default PremiumGate;
+
+
+
+
+
+

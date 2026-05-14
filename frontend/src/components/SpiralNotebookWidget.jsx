@@ -552,3 +552,4 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
 };
 
 export default SpiralNotebookWidget;
+

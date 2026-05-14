@@ -576,7 +576,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   <Loader2 className="animate-spin text-emerald-500" size={32} />
                 </div>
               ) : (
-                <div className="mx-auto max-w-2xl">
+                <div className="mx-auto max-w-2xl h-full flex flex-col">
                   {activeTab === 'profile' && (
                     <div className="space-y-8 animate-fade-in">
                       <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -795,7 +795,11 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
 
                   {activeTab === 'badges' && <BadgesTab />}
                   {activeTab === 'customization' && <CustomizationTab />}
-                  {activeTab === 'notes' && <NotesTab />}
+                  {activeTab === 'notes' && (
+                    <PremiumGate requiredTier="plus" message="Upgrade to Plus to unlock the Spiral Notebook and persistent note-taking.">
+                      <NotesTab />
+                    </PremiumGate>
+                  )}
                   {activeTab === 'community' && <CommunityTab />}
                 </div>
               )}
