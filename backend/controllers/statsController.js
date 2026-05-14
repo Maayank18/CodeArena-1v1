@@ -89,9 +89,9 @@ export const getUserAnalytics = async (req, res) => {
         const isMini = req.query.mini === 'true';
 
         // 1. Fetch User data (Always needed)
-        // PERFORMANCE: Included missing activityLog and currentStreak fields
+        // PERFORMANCE: Included missing activityLog, currentStreak, and lastActiveDate fields
         const user = await User.findById(userId)
-            .select('stats totalTimeSpent totalSolved activityLog currentStreak')
+            .select('stats totalTimeSpent totalSolved activityLog currentStreak lastActiveDate')
             .lean();
 
         if (!user) {
@@ -115,12 +115,25 @@ export const getUserAnalytics = async (req, res) => {
                 });
             }
 
+            // CLASSIC STREAK VALIDATION: Reset to 0 if last activity was before yesterday
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const yesterday = new Date(now);
+            yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const lastActiveStr = user.lastActiveDate ? new Date(user.lastActiveDate).toISOString().split('T')[0] : null;
+
+            let validatedStreak = user.currentStreak || 0;
+            if (lastActiveStr && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
+                validatedStreak = 0;
+            }
+
             return res.json({
                 success: true,
                 data: {
                     summary: {
                         totalSolved: user.totalSolved || 0,
-                        currentStreak: user.currentStreak || 0,
+                        currentStreak: validatedStreak,
                         totalAttempts: user.stats?.matchesPlayed || 0, // Approx for mini mode
                     },
                     activity: [...activityMap.values()]
@@ -253,7 +266,19 @@ export const getUserAnalytics = async (req, res) => {
         }
 
         const activity = [...activityMap.values()];
-        const currentStreak = user.currentStreak || 0;
+        
+        // CLASSIC STREAK VALIDATION: Reset to 0 if last activity was before yesterday
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const yesterday = new Date(now);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const lastActiveStr = user.lastActiveDate ? new Date(user.lastActiveDate).toISOString().split('T')[0] : null;
+
+        let currentStreak = user.currentStreak || 0;
+        if (lastActiveStr && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
+            currentStreak = 0;
+        }
 
         return res.json({
             success: true,
