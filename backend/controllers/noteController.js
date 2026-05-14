@@ -26,13 +26,17 @@ export const getNoteByContext = async (req, res) => {
         }
 
         const userId = req.user?._id;
-        const note = await Note.findOne({
+        const lookup = {
             user: userId,
             type,
-            ...(contextKey
-                ? { $or: [{ contextKey }, { contextTitle }] }
-                : { contextTitle }),
-        });
+        };
+        if (contextKey) {
+            lookup.contextKey = contextKey;
+        } else {
+            lookup.contextTitle = contextTitle;
+        }
+
+        const note = await Note.findOne(lookup);
         
         res.status(200).json({ success: true, note });
     } catch (error) {
@@ -54,10 +58,12 @@ export const saveNote = async (req, res) => {
         const lookup = {
             user: userId,
             type,
-            ...(contextKey
-                ? { $or: [{ contextKey }, { contextTitle }] }
-                : { contextTitle }),
         };
+        if (contextKey) {
+            lookup.contextKey = contextKey;
+        } else {
+            lookup.contextTitle = contextTitle;
+        }
         const existingNote = await Note.findOne(lookup);
 
         const note = existingNote

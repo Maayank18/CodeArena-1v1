@@ -29,9 +29,9 @@ const noteSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Ensure a user can only have one note per specific context title
-noteSchema.index({ user: 1, type: 1, contextTitle: 1 }, { unique: true });
-noteSchema.index({ user: 1, type: 1, contextKey: 1 });
+// Ensure a user can only have one note per specific context key (e.g. roomId)
+noteSchema.index({ user: 1, type: 1, contextKey: 1 }, { unique: true });
+noteSchema.index({ user: 1, type: 1, contextTitle: 1 });
 
 const Note = mongoose.model('Note', noteSchema);
 export default Note;
