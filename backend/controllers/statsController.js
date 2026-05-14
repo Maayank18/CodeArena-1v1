@@ -300,3 +300,55 @@ export const getUserAnalytics = async (req, res) => {
     }
 };
 
+// @desc    Generate weekly performance report (Premium Only)
+// @route   GET /api/stats/weekly-report
+export const getWeeklyReport = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+        const userTier = tiers[req.user.subscriptionPlan || 'free'];
+
+        if (userTier < 3) {
+            return res.status(403).json({ success: false, message: "Premium tier required" });
+        }
+
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const [matches, campaignProgress] = await Promise.all([
+            Match.find({ 
+                'players.userId': userId,
+                createdAt: { $gte: oneWeekAgo }
+            }).select('players winner createdAt').lean(),
+            CampaignProgress.findOne({ userId }).select('completedNodes').lean()
+        ]);
+
+        const weeklyMatches = matches.length;
+        const weeklyWins = matches.filter(m => {
+            const me = m.players?.find(p => String(p.userId) === String(userId));
+            return me?.isWinner;
+        }).length;
+
+        const winRate = weeklyMatches > 0 ? Math.round((weeklyWins / weeklyMatches) * 100) : 0;
+        
+        const weeklyCampaignNodes = (campaignProgress?.completedNodes || []).filter(n => 
+            n.completedAt && new Date(n.completedAt) >= oneWeekAgo
+        ).length;
+
+        return res.json({
+            success: true,
+            report: {
+                period: "Last 7 Days",
+                matchesPlayed: weeklyMatches,
+                wins: weeklyWins,
+                winRate: `${winRate}%`,
+                campaignNodesCompleted: weeklyCampaignNodes,
+                generatedAt: new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Weekly Report Error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to generate weekly report' });
+    }
+};
+

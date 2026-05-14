@@ -166,6 +166,27 @@ const AnalyticsTab = () => {
   const activity = analyticsData.activity || [];
   const topics = analyticsData.topicBreakdown || [];
 
+  const downloadWeeklyReport = async () => {
+    try {
+      const { data } = await api.get('/stats/weekly-report');
+      if (data.success) {
+        const report = data.report;
+        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CodeArena_Weekly_Report_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        toast.success('Weekly report generated!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to generate report');
+    }
+  };
+
+  const plan = JSON.parse(localStorage.getItem('codearena_user') || '{}')?.subscriptionPlan || 'free';
+  const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+
   return (
     <PremiumGate requiredTier="pro">
       <div className="space-y-8 animate-fade-in">
@@ -263,6 +284,44 @@ const AnalyticsTab = () => {
                       ? `You've completed ${summary.totalSolved || 0} problems across ${summary.totalAttempts || 0} tracked attempts with ${summary.accuracyPercent || 0}% accuracy. Keep pushing your strongest topics while lifting the lower-volume areas in the chart.`
                       : 'Your analytics will appear here after your first tracked battles or campaign clears. For now, the charts stay intentionally empty and stable.'}
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Premium Weekly Report Section */}
+            <div className="pt-4 border-t border-[var(--border-color)]">
+              <div className={`relative p-6 rounded-2xl border-2 transition-all duration-300 overflow-hidden
+                ${userTier >= 3 
+                  ? 'bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border-emerald-500/20' 
+                  : 'bg-gray-500/5 border-gray-500/10 opacity-60 grayscale'}
+              `}>
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      <BarChart3 size={16} className="text-emerald-400" />
+                      Weekly Performance Report
+                    </h4>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      Get a detailed breakdown of your progress, win rates, and campaign efficiency for the last 7 days.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (userTier < 3) {
+                        toast.error('Weekly Reports require Premium tier.', { icon: '🔒' });
+                        return;
+                      }
+                      downloadWeeklyReport();
+                    }}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all
+                      ${userTier >= 3 
+                        ? 'bg-emerald-500 text-black hover:scale-105 shadow-lg shadow-emerald-500/20' 
+                        : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-color)] cursor-not-allowed'}
+                    `}
+                  >
+                    {userTier >= 3 ? <Save size={14} /> : <Lock size={14} />}
+                    Download Report
+                  </button>
                 </div>
               </div>
             </div>

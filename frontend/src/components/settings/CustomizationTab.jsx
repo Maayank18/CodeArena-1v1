@@ -22,6 +22,13 @@ const ENTRANCE_BANNERS = [
     { id: 'neon-tokyo', name: 'Neon Tokyo', gradient: 'from-pink-600 via-fuchsia-800 to-violet-900', isExclusive: true },
 ];
 
+const ADVANCED_THEMES = [
+    { id: 'glassmorphism', name: 'Glassmorphism', gradient: 'from-white/20 to-white/5 backdrop-blur-md border border-white/20', isPremium: true },
+    { id: 'cyberpunk', name: 'Cyberpunk Neon', gradient: 'from-fuchsia-600 via-purple-700 to-pink-600 border border-pink-500/50', isPremium: true },
+    { id: 'monochrome', name: 'Sleek Monochrome', gradient: 'from-gray-800 via-gray-900 to-black border border-gray-700', isPremium: true },
+    { id: 'deep-space', name: 'Deep Space', gradient: 'from-slate-900 via-indigo-950 to-black border border-indigo-500/30', isPremium: true },
+];
+
 const STACK_LANGUAGES = [
     { id: 'javascript', name: 'JavaScript', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' },
     { id: 'typescript', name: 'TypeScript', color: 'text-blue-400 bg-blue-400/10 border-blue-400/30' },
@@ -245,6 +252,50 @@ const CustomizationTab = () => {
                                     {isLocked && (
                                         <div className="absolute top-2 right-2 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center">
                                             <Lock size={12} className="text-white/60" />
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                {/* Section 5: Advanced Themes (Premium Only) */}
+                <section>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Palette size={18} className="text-rose-400" />
+                        <h3 className="text-lg font-bold">Advanced UI Themes</h3>
+                        <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Premium</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {ADVANCED_THEMES.map(theme => {
+                            const isLocked = userTier < 3;
+                            return (
+                                <button
+                                    key={theme.id}
+                                    onClick={() => {
+                                        if (isLocked) {
+                                            toast.error(`${theme.name} is a Premium tier exclusive.`, {
+                                                icon: '🔒',
+                                                style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                            });
+                                            return;
+                                        }
+                                        toast.success(`${theme.name} applied!`);
+                                    }}
+                                    className={`relative h-28 rounded-2xl bg-gradient-to-br ${theme.gradient} border-2 border-transparent transition-all duration-300 overflow-hidden group
+                                        ${isLocked ? 'opacity-50 grayscale scale-[0.98]' : 'hover:scale-105 hover:border-white/30'}
+                                    `}
+                                >
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-white/90 text-center leading-tight drop-shadow-lg">{theme.name}</span>
+                                    </div>
+                                    {isLocked && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                            <div className="p-2 bg-black/60 rounded-full border border-white/10">
+                                                <Lock size={16} className="text-white/70" />
+                                            </div>
                                         </div>
                                     )}
                                 </button>

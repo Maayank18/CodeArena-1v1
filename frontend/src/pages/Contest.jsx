@@ -35,7 +35,7 @@ const Contest = () => {
                         <div className="mb-8 flex justify-between items-end">
                             <div>
                                 <h1 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
-                                    Pro Contests
+                                    Premium Contests
                                 </h1>
                                 <p className="text-[var(--text-secondary)]">
                                     Compete in exclusive weekly tournaments for cash prizes and badges.
@@ -44,7 +44,7 @@ const Contest = () => {
                         </div>
 
                         <div className="flex-1">
-                            <PremiumGate requiredTier="pro">
+                            <PremiumGate requiredTier="premium" featureName="Live Contests">
                                 <div className="space-y-6">
                                     {/* Upcoming Contest */}
                                     <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20 p-8 rounded-2xl relative overflow-hidden">

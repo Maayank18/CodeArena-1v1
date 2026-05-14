@@ -359,8 +359,13 @@ export const submitCampaignSolution = async (req, res) => {
 
         const allTestCases = node.testCases ?? [];
 
-        // 3. Increment attempt count BEFORE execution
-        progress.totalAttempts = (progress.totalAttempts ?? 0) + 1;
+        const userPlan = req.user?.subscriptionPlan || 'free';
+        const userTier = userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3;
+
+        // 3. Increment attempt count BEFORE execution (Skip for Premium)
+        if (userTier < 3) {
+            progress.totalAttempts = (progress.totalAttempts ?? 0) + 1;
+        }
 
         // 4. Execute against ALL test cases via Piston
         const executionResult = await executeForCampaign(code, language, allTestCases);
@@ -368,23 +373,26 @@ export const submitCampaignSolution = async (req, res) => {
         // 5. If failed, return feedback without updating progress
         if (!executionResult.allPassed) {
 
-            // Update sage failure counter for this node
-            if (!progress.sageUsage) progress.sageUsage = [];
-            let sageEntry = progress.sageUsage.find(s => s.nodeId === nodeId);
-            if (!sageEntry) {
-                progress.sageUsage.push({ nodeId, failCount: 1 });
-            } else {
-                sageEntry.failCount += 1;
-            }
+            // Update sage failure counter for this node (Skip for Premium)
+            let sageEntry = null;
+            if (userTier < 3) {
+                if (!progress.sageUsage) progress.sageUsage = [];
+                sageEntry = progress.sageUsage.find(s => s.nodeId === nodeId);
+                if (!sageEntry) {
+                    progress.sageUsage.push({ nodeId, failCount: 1 });
+                } else {
+                    sageEntry.failCount += 1;
+                }
 
-            progress.markModified('sageUsage');
-            await progress.save();
+                progress.markModified('sageUsage');
+                await progress.save();
+            }
 
             return res.json({
                 success: false,
                 allPassed: false,
                 results: executionResult.results,
-                sageShouldTrigger: (sageEntry?.failCount || 1) >= 3,
+                sageShouldTrigger: userTier >= 3 || (sageEntry?.failCount || 0) >= 3,
                 message: 'Some test cases failed. Keep trying!'
             });
         }

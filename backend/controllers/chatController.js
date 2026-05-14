@@ -79,12 +79,17 @@ export const chat = async (req, res) => {
     await checkAndResetDailyUsage(user);
     
     const limits = getUsageLimits(user.subscriptionPlan);
-    if (user.usageStats.chatQueriesToday >= limits.chat) {
-        return res.status(403).json({ 
-            success: false, 
-            message: `Daily chat limit reached (${limits.chat}/day). Upgrade for more AI assistance!`,
-            code: 'LIMIT_REACHED'
-        });
+    const userTier = user.subscriptionPlan === 'free' ? 0 : user.subscriptionPlan === 'plus' ? 1 : user.subscriptionPlan === 'pro' ? 2 : 3;
+
+    // ✅ PREMIUM BYPASS: Unlimited chat, no increment
+    if (userTier < 3) {
+        if (user.usageStats.chatQueriesToday >= limits.chat) {
+            return res.status(403).json({ 
+                success: false, 
+                message: `Daily chat limit reached (${limits.chat}/day). Upgrade for more AI assistance!`,
+                code: 'LIMIT_REACHED'
+            });
+        }
     }
 
     console.log('[CHAT] Key exists:', !!process.env.GROQ_API_KEY);

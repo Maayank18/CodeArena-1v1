@@ -51,14 +51,19 @@ export const createRoom = async (req, res) => {
             if (!userDoc) return res.status(404).json({ message: 'User not found' });
 
             await checkAndResetDailyUsage(userDoc);
-            const limits = getUsageLimits(userDoc.subscriptionPlan);
+            const plan = userDoc.subscriptionPlan || 'free';
+            const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+            const limits = getUsageLimits(plan);
             
-            if (userDoc.usageStats.matchesToday >= limits.matches) {
-                return res.status(403).json({ 
-                    success: false,
-                    message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
-                    code: 'LIMIT_REACHED'
-                });
+            // ✅ PREMIUM BYPASS: Unlimited normal matches
+            if (userTier < 3) {
+                if (userDoc.usageStats.matchesToday >= limits.matches) {
+                    return res.status(403).json({ 
+                        success: false,
+                        message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
+                        code: 'LIMIT_REACHED'
+                    });
+                }
             }
         }
 
@@ -118,22 +123,31 @@ export const createCustomRoom = async (req, res) => {
         if (!userDoc) return res.status(404).json({ message: 'User not found' });
 
         await checkAndResetDailyUsage(userDoc);
-        const limits = getUsageLimits(userDoc.subscriptionPlan);
+        const plan = userDoc.subscriptionPlan || 'free';
+        const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+        const limits = getUsageLimits(plan);
 
-        if (userDoc.subscriptionPlan === 'free') {
-            return res.status(403).json({
-                success: false,
-                message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
-                code: 'PREMIUM_REQUIRED'
-            });
-        }
+        // ✅ PREMIUM BYPASS: Unlimited matches
+        if (userTier < 3) {
+            if (plan === 'free' && req.route.path.includes('custom')) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
+                    code: 'PREMIUM_REQUIRED'
+                });
+            }
 
-        if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
-            return res.status(403).json({
-                success: false,
-                message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
-                code: 'LIMIT_REACHED'
-            });
+            const currentUsage = req.route.path.includes('custom') ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
+            const limit = req.route.path.includes('custom') ? limits.customMatches : limits.matches;
+            const matchType = req.route.path.includes('custom') ? 'custom ' : 'normal ';
+
+            if (currentUsage >= limit) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Daily ${matchType}match limit reached (${limit}/day). Upgrade for more!`,
+                    code: 'LIMIT_REACHED'
+                });
+            }
         }
 
         const timeLimit = Math.min(Math.max(Number(req.body.timeLimit) || 1800, 600), 1800);
@@ -201,22 +215,31 @@ export const joinCustomRoom = async (req, res) => {
         if (!userDoc) return res.status(404).json({ message: 'User not found' });
 
         await checkAndResetDailyUsage(userDoc);
-        const limits = getUsageLimits(userDoc.subscriptionPlan);
+        const plan = userDoc.subscriptionPlan || 'free';
+        const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+        const limits = getUsageLimits(plan);
 
-        if (userDoc.subscriptionPlan === 'free') {
-            return res.status(403).json({
-                success: false,
-                message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
-                code: 'PREMIUM_REQUIRED'
-            });
-        }
+        // ✅ PREMIUM BYPASS: Unlimited matches
+        if (userTier < 3) {
+            if (plan === 'free' && req.route.path.includes('custom')) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
+                    code: 'PREMIUM_REQUIRED'
+                });
+            }
 
-        if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
-            return res.status(403).json({
-                success: false,
-                message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
-                code: 'LIMIT_REACHED'
-            });
+            const currentUsage = req.route.path.includes('custom') ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
+            const limit = req.route.path.includes('custom') ? limits.customMatches : limits.matches;
+            const matchType = req.route.path.includes('custom') ? 'custom ' : 'normal ';
+
+            if (currentUsage >= limit) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Daily ${matchType}match limit reached (${limit}/day). Upgrade for more!`,
+                    code: 'LIMIT_REACHED'
+                });
+            }
         }
 
         const { roomId } = req.params;
@@ -280,6 +303,33 @@ export const joinCustomRoom = async (req, res) => {
     } catch (error) {
         console.error('[CUSTOM ROOM] Join error:', error);
         return res.status(500).json({ success: false, message: 'Failed to join custom room' });
+    }
+};
+
+// @desc    Register for a live contest (Premium Only)
+// @route   POST /api/rooms/contest/register
+export const registerForContest = async (req, res) => {
+    try {
+        const userPlan = req.user?.subscriptionPlan || 'free';
+        const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
+        const userTier = tiers[userPlan];
+
+        if (userTier < 3) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Contest registration requires Premium tier." 
+            });
+        }
+
+        // Logic for contest registration would go here
+        // For now, return success
+        return res.json({
+            success: true,
+            message: "Successfully registered for the upcoming contest!"
+        });
+    } catch (error) {
+        console.error('Contest Registration Error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to register for contest' });
     }
 };
 

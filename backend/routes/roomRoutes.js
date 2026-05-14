@@ -1,7 +1,7 @@
 import express from 'express';
-import { createRoom, getRoom, createCustomRoom, joinCustomRoom, getCustomQuota } from '../controllers/roomController.js';
+import { createRoom, getRoom, createCustomRoom, joinCustomRoom, getCustomQuota, registerForContest } from '../controllers/roomController.js';
 import { verifyToken } from '../middleware/auth.js';
-import { requirePlus } from '../middleware/subscriptionAuth.js';
+import { requirePlus, requirePremium } from '../middleware/subscriptionAuth.js';
 
 const router = express.Router();
 
@@ -13,6 +13,9 @@ router.get('/:roomId', getRoom);
 router.post('/custom', verifyToken, requirePlus, createCustomRoom);
 router.post('/custom/:roomId/join', verifyToken, requirePlus, joinCustomRoom);
 router.get('/custom/quota', verifyToken, requirePlus, getCustomQuota);
+
+// Contest endpoints (Premium required)
+router.post('/contest/register', verifyToken, requirePremium, registerForContest);
 
 export default router;
 // V 2.0

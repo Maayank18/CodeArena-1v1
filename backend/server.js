@@ -1315,30 +1315,35 @@ io.on('connection', async (socket) => {
       
       if (userDoc) {
           await checkAndResetDailyUsage(userDoc);
-          const limits = getUsageLimits(userDoc.subscriptionPlan);
+          const plan = userDoc.subscriptionPlan || 'free';
+          const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+          const limits = getUsageLimits(plan);
           
-          if (isActuallyCustom) {
-              if (userDoc.subscriptionPlan === 'free') {
-                  socket.emit('error', { 
-                      message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
-                      code: 'PREMIUM_REQUIRED'
-                  });
-                  return;
-              }
-              if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
-                  socket.emit('error', { 
-                      message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
-                      code: 'LIMIT_REACHED'
-                  });
-                  return;
-              }
-          } else {
-              if (userDoc.usageStats.matchesToday >= limits.matches) {
-                  socket.emit('error', { 
-                      message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
-                      code: 'LIMIT_REACHED'
-                  });
-                  return;
+          // ✅ PREMIUM BYPASS: Unlimited matches
+          if (userTier < 3) {
+              if (isActuallyCustom) {
+                  if (plan === 'free') {
+                      socket.emit('error', { 
+                          message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
+                          code: 'PREMIUM_REQUIRED'
+                      });
+                      return;
+                  }
+                  if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
+                      socket.emit('error', { 
+                          message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
+                          code: 'LIMIT_REACHED'
+                      });
+                      return;
+                  }
+              } else {
+                  if (userDoc.usageStats.matchesToday >= limits.matches) {
+                      socket.emit('error', { 
+                          message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
+                          code: 'LIMIT_REACHED'
+                      });
+                      return;
+                  }
               }
           }
       }
@@ -1467,21 +1472,26 @@ io.on('connection', async (socket) => {
             return; 
         }
 
-        // ✅ INCREMENT MATCH COUNT
+        // ✅ INCREMENT MATCH COUNT (Skip for Premium)
         const userDoc = await User.findById(authUser._id);
         if (userDoc) {
-            const limits = getUsageLimits(userDoc.subscriptionPlan);
-            if (room.isCustom) {
-                if (userDoc.usageStats.customMatchesToday < limits.customMatches) {
-                    userDoc.usageStats.customMatchesToday += 1;
-                    await userDoc.save();
-                    console.log(`[USAGE] Incremented custom match count for ${username}: ${userDoc.usageStats.customMatchesToday}/${limits.customMatches}`);
-                }
-            } else {
-                if (userDoc.usageStats.matchesToday < limits.matches) {
-                    userDoc.usageStats.matchesToday += 1;
-                    await userDoc.save();
-                    console.log(`[USAGE] Incremented normal match count for ${username}: ${userDoc.usageStats.matchesToday}/${limits.matches}`);
+            const plan = userDoc.subscriptionPlan || 'free';
+            const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+            const limits = getUsageLimits(plan);
+
+            if (userTier < 3) {
+                if (room.isCustom) {
+                    if (userDoc.usageStats.customMatchesToday < limits.customMatches) {
+                        userDoc.usageStats.customMatchesToday += 1;
+                        await userDoc.save();
+                        console.log(`[USAGE] Incremented custom match count for ${username}: ${userDoc.usageStats.customMatchesToday}/${limits.customMatches}`);
+                    }
+                } else {
+                    if (userDoc.usageStats.matchesToday < limits.matches) {
+                        userDoc.usageStats.matchesToday += 1;
+                        await userDoc.save();
+                        console.log(`[USAGE] Incremented normal match count for ${username}: ${userDoc.usageStats.matchesToday}/${limits.matches}`);
+                    }
                 }
             }
         }

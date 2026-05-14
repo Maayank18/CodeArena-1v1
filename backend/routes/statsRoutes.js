@@ -11,9 +11,9 @@
 
 // routes/statsRoutes.js
 import express from 'express';
-import { getStats, getUserAnalytics } from '../controllers/statsController.js';
+import { getStats, getUserAnalytics, getWeeklyReport } from '../controllers/statsController.js';
 import { verifyToken } from '../middleware/auth.js';
-import { requirePro } from '../middleware/subscriptionAuth.js';
+import { requirePro, requirePremium } from '../middleware/subscriptionAuth.js';
 
 const router = express.Router();
 
@@ -23,6 +23,9 @@ router.get('/', getStats);
 
 // Analytics Route (Public for consistency tracking)
 router.get('/analytics', verifyToken, getUserAnalytics);
+
+// Weekly Report Route (Premium Only)
+router.get('/weekly-report', verifyToken, requirePremium, getWeeklyReport);
 
 export default router;
 // V 1.5

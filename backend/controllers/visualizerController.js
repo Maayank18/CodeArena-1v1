@@ -20,7 +20,7 @@ export const executeVisualization = async (req, res) => {
     const isAdmin = req.user?.role === 'admin';
 
     // ── Tiered Quota Enforcement ─────────────────────────────────────────
-    if (!isAdmin) {
+    if (!isAdmin && userTier < 3) {
         if (userTier < 2) {
             // Free & Plus use the one-time trial
             if (req.user.usageStats?.visualizerTrialUsed) {
@@ -40,7 +40,6 @@ export const executeVisualization = async (req, res) => {
                 });
             }
         }
-        // Premium (Tier 3) is unlimited
     }
 
     try {
@@ -101,6 +100,11 @@ export const consumeVisualization = async (req, res) => {
         const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
         const userTier = tiers[user.subscriptionPlan || 'free'];
 
+        // ✅ PREMIUM BYPASS: No increment needed for Tier 3
+        if (userTier >= 3) {
+            return res.json({ success: true, message: 'Unlimited usage recorded' });
+        }
+
         if (userTier < 2) {
             // Free/Plus: Mark trial as used
             user.usageStats.visualizerTrialUsed = true;
@@ -108,7 +112,6 @@ export const consumeVisualization = async (req, res) => {
             // Pro: Increment daily count
             user.usageStats.visualizationsToday = (user.usageStats.visualizationsToday || 0) + 1;
         }
-        // Premium: No action needed
 
         await user.save();
         res.json({ 
