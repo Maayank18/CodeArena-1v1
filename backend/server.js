@@ -1479,14 +1479,18 @@ io.on('connection', async (socket) => {
             const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
             const limits = getUsageLimits(plan);
 
-            if (userTier < 3) {
-                if (room.isCustom) {
+            if (room.isCustom) {
+                // ✅ Custom matches are limited for Pro (Tier 2), unlimited only for Premium (Tier 3)
+                if (userTier < 3) {
                     if (userDoc.usageStats.customMatchesToday < limits.customMatches) {
                         userDoc.usageStats.customMatchesToday += 1;
                         await userDoc.save();
                         console.log(`[USAGE] Incremented custom match count for ${username}: ${userDoc.usageStats.customMatchesToday}/${limits.customMatches}`);
                     }
-                } else {
+                }
+            } else {
+                // ✅ Normal matches are unlimited for Pro (Tier 2) and Premium (Tier 3)
+                if (userTier < 2) {
                     if (userDoc.usageStats.matchesToday < limits.matches) {
                         userDoc.usageStats.matchesToday += 1;
                         await userDoc.save();

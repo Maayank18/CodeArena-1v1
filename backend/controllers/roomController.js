@@ -55,8 +55,8 @@ export const createRoom = async (req, res) => {
             const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
             const limits = getUsageLimits(plan);
             
-            // ✅ PREMIUM BYPASS: Unlimited normal matches
-            if (userTier < 3) {
+            // ✅ PRO/PREMIUM BYPASS: Unlimited normal matches
+            if (userTier < 2) {
                 if (userDoc.usageStats.matchesToday >= limits.matches) {
                     return res.status(403).json({ 
                         success: false,
@@ -127,9 +127,14 @@ export const createCustomRoom = async (req, res) => {
         const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
         const limits = getUsageLimits(plan);
 
-        // ✅ PREMIUM BYPASS: Unlimited matches
-        if (userTier < 3) {
-            if (plan === 'free' && req.route.path.includes('custom')) {
+        // ✅ TIERED BYPASS: 
+        // - Normal matches: unlimited for Pro+ (Tier 2+)
+        // - Custom matches: limited for Pro (Tier 2), unlimited for Premium (Tier 3)
+        const isCustomReq = req.route.path.includes('custom');
+        const bypassTier = isCustomReq ? 3 : 2;
+
+        if (userTier < bypassTier) {
+            if (plan === 'free' && isCustomReq) {
                 return res.status(403).json({
                     success: false,
                     message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
@@ -137,9 +142,9 @@ export const createCustomRoom = async (req, res) => {
                 });
             }
 
-            const currentUsage = req.route.path.includes('custom') ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
-            const limit = req.route.path.includes('custom') ? limits.customMatches : limits.matches;
-            const matchType = req.route.path.includes('custom') ? 'custom ' : 'normal ';
+            const currentUsage = isCustomReq ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
+            const limit = isCustomReq ? limits.customMatches : limits.matches;
+            const matchType = isCustomReq ? 'custom ' : 'normal ';
 
             if (currentUsage >= limit) {
                 return res.status(403).json({
@@ -219,9 +224,14 @@ export const joinCustomRoom = async (req, res) => {
         const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
         const limits = getUsageLimits(plan);
 
-        // ✅ PREMIUM BYPASS: Unlimited matches
-        if (userTier < 3) {
-            if (plan === 'free' && req.route.path.includes('custom')) {
+        // ✅ TIERED BYPASS: 
+        // - Normal matches: unlimited for Pro+ (Tier 2+)
+        // - Custom matches: limited for Pro (Tier 2), unlimited for Premium (Tier 3)
+        const isCustomReq = req.route.path.includes('custom');
+        const bypassTier = isCustomReq ? 3 : 2;
+
+        if (userTier < bypassTier) {
+            if (plan === 'free' && isCustomReq) {
                 return res.status(403).json({
                     success: false,
                     message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
@@ -229,9 +239,9 @@ export const joinCustomRoom = async (req, res) => {
                 });
             }
 
-            const currentUsage = req.route.path.includes('custom') ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
-            const limit = req.route.path.includes('custom') ? limits.customMatches : limits.matches;
-            const matchType = req.route.path.includes('custom') ? 'custom ' : 'normal ';
+            const currentUsage = isCustomReq ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
+            const limit = isCustomReq ? limits.customMatches : limits.matches;
+            const matchType = isCustomReq ? 'custom ' : 'normal ';
 
             if (currentUsage >= limit) {
                 return res.status(403).json({

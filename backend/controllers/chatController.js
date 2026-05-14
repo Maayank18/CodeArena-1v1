@@ -151,9 +151,11 @@ export const chat = async (req, res) => {
             return res.status(500).json({ message: 'Received an empty response. Please try again.' });
         }
 
-        // ✅ INCREMENT USAGE
-        user.usageStats.chatQueriesToday += 1;
-        await user.save();
+        // ✅ INCREMENT USAGE (Skip for Premium)
+        if (userTier < 3) {
+            user.usageStats.chatQueriesToday += 1;
+            await user.save();
+        }
 
         return res.json({ reply: reply.trim() });
 

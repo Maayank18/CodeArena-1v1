@@ -43,13 +43,13 @@ export const getUsageLimits = (plan) => {
         case 'pro':
             return { 
                 chat: 50, 
-                matches: 100, 
-                customMatches: Infinity,
+                matches: Infinity, 
+                customMatches: 15,
                 visualizations: 10 
             };
         case 'premium':
             return { 
-                chat: 100, 
+                chat: Infinity, 
                 matches: Infinity, 
                 customMatches: Infinity,
                 visualizations: Infinity
