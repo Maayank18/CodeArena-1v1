@@ -158,18 +158,18 @@ const NotesTab = () => {
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
                     <BookOpen size={20} className="text-emerald-400" />
                     My Notes
                 </h3>
                 <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
                     <input
                         type="text"
                         placeholder="Search notes..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 pr-4 py-2 bg-[#1a1a1a] border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors w-64"
+                        className="pl-9 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl text-sm text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 transition-colors w-64"
                     />
                 </div>
             </div>
@@ -181,10 +181,10 @@ const NotesTab = () => {
             )}
 
             {notes.length === 0 ? (
-                <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-12 text-center">
-                    <BookOpen size={48} className="mx-auto mb-4 text-gray-700" />
-                    <h4 className="text-base font-bold text-white">No notes yet</h4>
-                    <p className="mt-2 text-sm text-gray-400 max-w-md mx-auto">
+                <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-12 text-center">
+                    <BookOpen size={48} className="mx-auto mb-4 text-[var(--text-secondary)]" />
+                    <h4 className="text-base font-bold text-[var(--text-primary)]">No notes yet</h4>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)] max-w-md mx-auto">
                         Your spiral notebook is empty! Open a problem in the Battle Arena or Campaign Mode and click "Add Notes" to start writing.
                     </p>
                 </div>
@@ -195,7 +195,7 @@ const NotesTab = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             key={note._id}
-                            className="group rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5 hover:border-gray-700 transition-all hover:shadow-lg hover:shadow-black/20 flex flex-col h-48"
+                            className="group rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 hover:border-[var(--border-color)] transition-all hover:shadow-lg hover:shadow-black/20 flex flex-col h-48"
                         >
                             <div className="flex justify-between items-start mb-3">
                                 <div>
@@ -211,25 +211,25 @@ const NotesTab = () => {
                                             Local draft
                                         </span>
                                     )}
-                                    <h4 className="font-bold text-white mt-2 text-base truncate pr-2">
+                                    <h4 className="font-bold text-[var(--text-primary)] mt-2 text-base truncate pr-2">
                                         {note.contextTitle}
                                     </h4>
                                 </div>
                                 <button 
                                     onClick={() => handleDelete(note._id)}
-                                    className="p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    className="p-1.5 text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                                 >
                                     <Trash2 size={16} />
                                 </button>
                             </div>
                             
                             <div className="flex-1 overflow-hidden">
-                                <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed whitespace-pre-wrap font-mono">
-                                    {htmlToPlainText(note.content, { collapseWhitespace: true }) || <span className="italic text-gray-600">Empty note...</span>}
+                                <p className="text-sm text-[var(--text-secondary)] line-clamp-3 leading-relaxed whitespace-pre-wrap font-mono">
+                                    {htmlToPlainText(note.content, { collapseWhitespace: true }) || <span className="italic text-[var(--text-secondary)]">Empty note...</span>}
                                 </p>
                             </div>
 
-                            <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-xs text-gray-500">
+                            <div className="mt-4 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-xs text-[var(--text-secondary)]">
                                 <span>Updated: {new Date(note.updatedAt).toLocaleDateString()}</span>
                                 <button
                                     type="button"
@@ -242,7 +242,7 @@ const NotesTab = () => {
                         </motion.div>
                     ))}
                     {filteredNotes.length === 0 && notes.length > 0 && (
-                        <div className="col-span-full py-8 text-center text-gray-500">
+                        <div className="col-span-full py-8 text-center text-[var(--text-secondary)]">
                             No notes match your search.
                         </div>
                     )}
@@ -259,9 +259,9 @@ const NotesTab = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 16, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-gray-800 bg-[#121212] shadow-2xl"
+                        className="relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--bg-primary)] shadow-2xl"
                     >
-                        <div className="flex items-start justify-between gap-4 border-b border-gray-800 px-5 py-4">
+                        <div className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-4">
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${
@@ -277,22 +277,22 @@ const NotesTab = () => {
                                         </span>
                                     )}
                                 </div>
-                                <h4 className="mt-3 text-lg font-bold text-white">{selectedNote.contextTitle}</h4>
-                                <p className="mt-1 text-xs text-gray-500">
+                                <h4 className="mt-3 text-lg font-bold text-[var(--text-primary)]">{selectedNote.contextTitle}</h4>
+                                <p className="mt-1 text-xs text-[var(--text-secondary)]">
                                     Updated {new Date(selectedNote.updatedAt).toLocaleString()}
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setSelectedNote(null)}
-                                className="rounded-full border border-gray-800 bg-[#191919] p-2 text-gray-400 transition-colors hover:border-gray-700 hover:text-white"
+                                className="rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--border-color)] hover:text-[var(--text-primary)]"
                             >
                                 <X size={16} />
                             </button>
                         </div>
 
                         <div className="overflow-y-auto px-5 py-5 custom-scrollbar">
-                            <pre className="whitespace-pre-wrap break-words text-sm leading-7 text-gray-200 font-mono">
+                            <pre className="whitespace-pre-wrap break-words text-sm leading-7 text-[var(--text-primary)] font-mono">
                                 {htmlToPlainText(selectedNote.content) || 'Empty note...'}
                             </pre>
                         </div>

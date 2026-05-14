@@ -151,8 +151,8 @@ const BadgesTab = () => {
                                 key={badge.id}
                                 className={`relative group rounded-2xl border p-6 transition-all duration-300 ease-out
                                     ${isEarned
-                                        ? `bg-white/[0.03] backdrop-blur-md border-white/10 ring-1 ring-white/10 shadow-2xl ${glowClass} hover:-translate-y-2 hover:scale-105 cursor-default`
-                                        : 'bg-gray-900/40 border-gray-800/50 grayscale opacity-60 cursor-not-allowed'
+                                        ? `bg-[var(--bg-secondary)] backdrop-blur-md border-[var(--border-color)] ring-1 ring-white/10 shadow-2xl ${glowClass} hover:-translate-y-2 hover:scale-105 cursor-default`
+                                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] grayscale opacity-60 cursor-not-allowed'
                                     }`}
                             >
                                 {/* Category Tag */}
@@ -160,7 +160,7 @@ const BadgesTab = () => {
                                     {isEarned ? (
                                         <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${badge.gradient} shadow-lg`} />
                                     ) : (
-                                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">{badge.category}</span>
+                                        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">{badge.category}</span>
                                     )}
                                 </div>
 
@@ -168,21 +168,21 @@ const BadgesTab = () => {
                                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300
                                     ${isEarned
                                         ? `bg-gradient-to-br ${badge.gradient} shadow-lg group-hover:scale-110 group-hover:rotate-3`
-                                        : 'bg-gray-800'
+                                        : 'bg-[var(--bg-secondary)]'
                                     }`}
                                 >
                                     {isEarned ? (
-                                        <Icon className="text-white" size={26} />
+                                        <Icon className="text-[var(--text-primary)]" size={26} />
                                     ) : (
-                                        <Lock className="text-gray-600" size={22} />
+                                        <Lock className="text-[var(--text-secondary)]" size={22} />
                                     )}
                                 </div>
 
                                 {/* Badge Info */}
-                                <h3 className={`text-lg font-bold mb-1 ${isEarned ? 'text-white' : 'text-gray-600'}`}>
+                                <h3 className={`text-lg font-bold mb-1 ${isEarned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
                                     {badge.name}
                                 </h3>
-                                <p className={`text-sm ${isEarned ? 'text-gray-400' : 'text-gray-700'}`}>
+                                <p className={`text-sm ${isEarned ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>
                                     {badge.desc}
                                 </p>
                             </div>

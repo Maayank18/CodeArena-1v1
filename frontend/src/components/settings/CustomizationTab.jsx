@@ -5,7 +5,7 @@ import api from '../../api';
 import toast from 'react-hot-toast';
 
 const AVATAR_FRAMES = [
-    { id: 'none', name: 'Default', preview: 'border-gray-700', ring: '' },
+    { id: 'none', name: 'Default', preview: 'border-[var(--border-color)]', ring: '' },
     { id: 'neon-cyan', name: 'Neon Cyan', preview: 'border-cyan-400', ring: 'ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.4)]' },
     { id: 'gold-hexagon', name: 'Gold Hexagon', preview: 'border-amber-400', ring: 'ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.4)]' },
     { id: 'pulse-ring', name: 'Pulse Ring', preview: 'border-purple-400', ring: 'ring-2 ring-purple-400 animate-pulse shadow-[0_0_15px_rgba(192,132,252,0.4)]' },
@@ -132,7 +132,7 @@ const CustomizationTab = () => {
                                     onClick={() => setAvatarFrame(frame.id)}
                                     className={`relative p-4 rounded-2xl border transition-all duration-200 flex flex-col items-center gap-3
                                         ${isActive
-                                            ? 'bg-white/[0.05] border-accent ring-1 ring-accent/50 scale-105'
+                                            ? 'bg-[var(--bg-secondary)] border-accent ring-1 ring-accent/50 scale-105'
                                             : 'bg-[var(--surface-elevated)] border-[var(--border-color)] hover:border-gray-600 hover:scale-102'
                                         }`}
                                 >
@@ -214,7 +214,7 @@ const CustomizationTab = () => {
                                         }`}
                                 >
                                     <div className="absolute inset-0 flex items-end p-3">
-                                        <span className="text-xs font-bold text-white/80 drop-shadow">{banner.name}</span>
+                                        <span className="text-xs font-bold text-[var(--text-primary)]/80 drop-shadow">{banner.name}</span>
                                     </div>
                                     {isActive && (
                                         <div className="absolute top-2 right-2 w-5 h-5 bg-accent rounded-full flex items-center justify-center">

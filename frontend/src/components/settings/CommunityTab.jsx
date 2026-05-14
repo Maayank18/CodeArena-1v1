@@ -91,13 +91,13 @@ const CommunityTab = () => {
                             return (
                                 <div
                                     key={link.name}
-                                    className={`relative bg-white/[0.03] backdrop-blur-md border border-white/10 ring-1 ring-white/10 rounded-2xl p-6 shadow-2xl ${link.glow} transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
+                                    className={`relative bg-[var(--bg-secondary)] backdrop-blur-md border border-[var(--border-color)] ring-1 ring-white/10 rounded-2xl p-6 shadow-2xl ${link.glow} transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
                                 >
                                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${link.gradient} flex items-center justify-center mb-4 shadow-lg`}>
-                                        <Icon className="text-white" size={22} />
+                                        <Icon className="text-[var(--text-primary)]" size={22} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-white mb-2">{link.name}</h3>
-                                    <p className="text-sm text-gray-400 mb-5 leading-relaxed">{link.desc}</p>
+                                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{link.name}</h3>
+                                    <p className="text-sm text-[var(--text-secondary)] mb-5 leading-relaxed">{link.desc}</p>
                                     <a
                                         href={link.url}
                                         target="_blank"

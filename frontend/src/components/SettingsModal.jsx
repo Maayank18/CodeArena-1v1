@@ -103,13 +103,13 @@ const getPasswordError = (password) => {
 };
 
 const ToggleCard = ({ title, description, checked, onChange }) => (
-  <label className="flex items-center justify-between gap-4 rounded-2xl border border-gray-800 bg-[#171717] px-4 py-4 transition-colors hover:border-gray-700">
+  <label className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4 py-4 transition-colors hover:border-[var(--border-color)]">
     <div>
-      <p className="text-sm font-semibold text-white">{title}</p>
-      <p className="text-xs text-gray-400">{description}</p>
+      <p className="text-sm font-semibold text-[var(--text-primary)]">{title}</p>
+      <p className="text-xs text-[var(--text-secondary)]">{description}</p>
     </div>
     <span
-      className={`relative h-7 w-12 rounded-full transition-colors ${checked ? 'bg-emerald-500' : 'bg-[#232323]'}`}
+      className={`relative h-7 w-12 rounded-full transition-colors ${checked ? 'bg-emerald-500' : 'bg-[var(--bg-tertiary)]'}`}
     >
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
       <span
@@ -182,21 +182,21 @@ const AnalyticsTab = () => {
                 { label: 'Total Time Spent (mins)', value: summary.timeSpentMinutes || 0, color: 'text-yellow-400' },
                 { label: 'Current Streak (days)', value: summary.currentStreak || 0, color: 'text-orange-400' },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-4 shadow-sm transition-colors hover:border-gray-700">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{stat.label}</p>
+                <div key={stat.label} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 shadow-sm transition-colors hover:border-[var(--border-color)]">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">{stat.label}</p>
                   <p className={`mt-2 text-2xl font-black ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
+              <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h4 className="flex items-center gap-2 text-sm font-bold text-white">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
                     <Activity size={16} className="text-emerald-400" />
                     Activity Over Time
                   </h4>
-                  <span className="text-[10px] font-medium text-gray-500">Last 7 Days</span>
+                  <span className="text-[10px] font-medium text-[var(--text-secondary)]">Last 7 Days</span>
                 </div>
                 <div className="h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -220,9 +220,9 @@ const AnalyticsTab = () => {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5">
+              <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
                 <div className="mb-4 flex items-center justify-between">
-                  <h4 className="flex items-center gap-2 text-sm font-bold text-white">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
                     <BarChart3 size={16} className="text-blue-400" />
                     Topic Distribution
                   </h4>
@@ -257,8 +257,8 @@ const AnalyticsTab = () => {
                   <Info size={20} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Performance Analysis</h4>
-                  <p className="mt-2 text-xs leading-relaxed text-gray-300">
+                  <h4 className="text-sm font-bold text-[var(--text-primary)]">Performance Analysis</h4>
+                  <p className="mt-2 text-xs leading-relaxed text-[var(--text-primary)]">
                     {summary.totalAttempts > 0
                       ? `You've completed ${summary.totalSolved || 0} problems across ${summary.totalAttempts || 0} tracked attempts with ${summary.accuracyPercent || 0}% accuracy. Keep pushing your strongest topics while lifting the lower-volume areas in the chart.`
                       : 'Your analytics will appear here after your first tracked battles or campaign clears. For now, the charts stay intentionally empty and stable.'}
@@ -284,7 +284,7 @@ const StatusBadge = ({ verified }) => (
   verified ? (
     <VerifiedBadge label="Verified" />
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full border border-gray-700 bg-[#1a1a1a] px-2.5 py-1 text-[11px] font-semibold text-gray-400">
+    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)]">
       <Info size={13} />
       Unverified
     </span>
@@ -529,25 +529,25 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.98 }}
           transition={{ duration: 0.2 }}
-          className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-gray-800 bg-[#121212] shadow-[0_24px_80px_rgba(0,0,0,0.45)] h-[650px]"
+          className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--bg-primary)] shadow-[0_24px_80px_rgba(0,0,0,0.45)] h-[650px]"
         >
-          <div className="flex items-start justify-between gap-4 border-b border-gray-800 px-5 py-5 sm:px-7">
+          <div className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-400">Account Center</p>
-              <h2 className="mt-1 text-2xl font-black text-white">Settings</h2>
-              <p className="mt-1 text-sm text-gray-400">Manage your profile, security, and notification preferences.</p>
+              <h2 className="mt-1 text-2xl font-black text-[var(--text-primary)]">Settings</h2>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">Manage your profile, security, and notification preferences.</p>
             </div>
             <button
               type="button"
               onClick={closeModal}
-              className="rounded-full border border-gray-800 bg-[#191919] p-2 text-gray-400 transition-colors hover:border-gray-700 hover:text-white"
+              className="rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--border-color)] hover:text-[var(--text-primary)]"
             >
               <X size={18} />
             </button>
           </div>
 
           <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
-            <aside className="border-b border-gray-800 bg-[#151515] p-3 lg:w-64 lg:border-b-0 lg:border-r">
+            <aside className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 lg:w-64 lg:border-b-0 lg:border-r">
               <div className="flex gap-2 overflow-x-auto lg:flex-col">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -559,7 +559,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                       className={`flex min-w-max items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all lg:min-w-0 ${
                         isActive
                           ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/10'
-                          : 'text-gray-400 hover:bg-[#191919] hover:text-white'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       <Icon size={18} />
@@ -570,7 +570,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
               </div>
             </aside>
 
-            <main className="flex-1 overflow-y-auto bg-[#121212] p-5 custom-scrollbar sm:p-7">
+            <main className="flex-1 overflow-y-auto bg-[var(--bg-primary)] p-5 custom-scrollbar sm:p-7">
               {loadingProfile ? (
                 <div className="flex h-64 items-center justify-center">
                   <Loader2 className="animate-spin text-emerald-500" size={32} />
@@ -581,7 +581,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                     <div className="space-y-8 animate-fade-in">
                       <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
                         <div className="group relative">
-                          <div className="h-24 w-24 overflow-hidden rounded-3xl bg-[#191919]">
+                          <div className="h-24 w-24 overflow-hidden rounded-3xl bg-[var(--bg-tertiary)]">
                             {profileForm.avatar ? (
                               <img src={profileForm.avatar} alt="Avatar" className="h-full w-full object-cover" />
                             ) : (
@@ -594,13 +594,13 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                           </label>
                         </div>
                         <div className="flex-1">
-                          <h4 className="text-lg font-bold text-white">{user?.username}</h4>
-                          <p className="text-xs text-gray-500">
+                          <h4 className="text-lg font-bold text-[var(--text-primary)]">{user?.username}</h4>
+                          <p className="text-xs text-[var(--text-secondary)]">
                             Member since {new Date(user?.createdAt).toLocaleDateString()}
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             <VerifiedBadge label={user?.subscriptionPlan?.toUpperCase() || 'FREE'} />
-                            <span className="inline-flex items-center gap-1 rounded-full border border-gray-800 bg-[#191919] px-2.5 py-1 text-[11px] font-semibold text-gray-400">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)]">
                               Rank #{user?.stats?.rank || '---'}
                             </span>
                           </div>
@@ -609,26 +609,26 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
 
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name</label>
+                          <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Full Name</label>
                           <div className="relative">
-                            <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={profileForm.fullName}
                               onChange={(e) => setProfileForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                              className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                               placeholder="Your full name"
                             />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
+                          <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Username</label>
                           <div className="relative">
-                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={profileForm.username}
                               onChange={(e) => setProfileForm((prev) => ({ ...prev, username: e.target.value }))}
-                              className={`w-full rounded-2xl border bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors ${
-                                usernameError ? 'border-red-500/50' : 'border-gray-800 focus:border-emerald-500'
+                              className={`w-full rounded-2xl border bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none transition-colors ${
+                                usernameError ? 'border-red-500/50' : 'border-[var(--border-color)] focus:border-emerald-500'
                               }`}
                               placeholder="username"
                             />
@@ -637,12 +637,12 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Bio</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Bio</label>
                         <textarea
                           value={profileForm.bio}
                           onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
                           rows={3}
-                          className="w-full rounded-2xl border border-gray-800 bg-[#171717] p-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                          className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-4 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                           placeholder="Tell us about yourself..."
                         />
                       </div>
@@ -668,64 +668,64 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
 
                   {activeTab === 'security' && (
                     <div className="space-y-8 animate-fade-in">
-                      <div className="rounded-2xl border border-gray-800 bg-[#191919] p-5">
+                      <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-5">
                           <div className="flex items-center gap-3">
                             <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
                               <Shield size={20} />
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold text-white">Security Controls</h4>
-                              <p className="text-xs text-gray-500">Password changes require OTP verification via your current email address.</p>
+                              <h4 className="text-sm font-bold text-[var(--text-primary)]">Security Controls</h4>
+                              <p className="text-xs text-[var(--text-secondary)]">Password changes require OTP verification via your current email address.</p>
                             </div>
                           </div>
                       </div>
 
                       <div className="grid gap-6">
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Email Address</label>
+                          <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Email Address</label>
                           <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={securityForm.email}
                               readOnly
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none"
+                              className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none"
                               placeholder="email@example.com"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                               <StatusBadge verified={user?.emailVerified} />
                             </div>
                           </div>
-                          <p className="px-2 text-[10px] text-gray-500">Email changes are currently not handled from this screen.</p>
+                          <p className="px-2 text-[10px] text-[var(--text-secondary)]">Email changes are currently not handled from this screen.</p>
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Phone Number</label>
+                          <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Phone Number</label>
                           <div className="relative">
-                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={securityForm.phone}
                               readOnly
-                              className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none"
+                              className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none"
                               placeholder="+1 234 567 890"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                               <StatusBadge verified={user?.phoneVerified} />
                             </div>
                           </div>
-                          <p className="px-2 text-[10px] text-gray-500">Phone number updates are currently not handled from this screen.</p>
+                          <p className="px-2 text-[10px] text-[var(--text-secondary)]">Phone number updates are currently not handled from this screen.</p>
                         </div>
 
                         <div className="grid gap-6 sm:grid-cols-2">
                           <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">New Password</label>
+                            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">New Password</label>
                             <div className="relative">
-                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                               <input
                                 type="password"
                                 value={securityForm.password}
                                 onChange={(e) => setSecurityForm((prev) => ({ ...prev, password: e.target.value }))}
-                                className={`w-full rounded-2xl border bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors ${
-                                  passwordError ? 'border-red-500/50' : 'border-gray-800 focus:border-emerald-500'
+                                className={`w-full rounded-2xl border bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none transition-colors ${
+                                  passwordError ? 'border-red-500/50' : 'border-[var(--border-color)] focus:border-emerald-500'
                                 }`}
                                 placeholder="••••••••"
                               />
@@ -733,14 +733,14 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                             {passwordError && <p className="text-[10px] text-red-400 px-2">{passwordError}</p>}
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Confirm Password</label>
+                            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Confirm Password</label>
                             <div className="relative">
-                              <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+                              <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                               <input
                                 type="password"
                                 value={securityForm.confirmPassword}
                                 onChange={(e) => setSecurityForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                                className="w-full rounded-2xl border border-gray-800 bg-[#171717] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition-colors focus:border-emerald-500"
+                                className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                                 placeholder="••••••••"
                               />
                             </div>
@@ -752,7 +752,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                         <button
                           onClick={requestOtp}
                           disabled={requestingOtp}
-                          className="flex items-center gap-2 rounded-2xl bg-[#191919] border border-gray-800 px-8 py-3 text-sm font-bold text-white transition-all hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
+                          className="flex items-center gap-2 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-8 py-3 text-sm font-bold text-[var(--text-primary)] transition-all hover:bg-[#222] disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           {requestingOtp ? <Loader2 size={18} className="animate-spin" /> : 'Update Security'}
                         </button>
@@ -821,19 +821,19 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   initial={{ opacity: 0, y: 16, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 16, scale: 0.98 }}
-                  className="relative z-10 w-full max-w-md rounded-3xl border border-gray-800 bg-[#121212] p-6 shadow-2xl"
+                  className="relative z-10 w-full max-w-md rounded-3xl border border-[var(--border-color)] bg-[var(--bg-primary)] p-6 shadow-2xl"
                 >
                   <div className="mb-4 inline-flex rounded-2xl bg-emerald-500/10 p-3 text-emerald-300">
                     <Settings2 size={22} />
                   </div>
-                  <h3 className="text-xl font-black text-white">Verify Password Change</h3>
-                  <p className="mt-2 text-sm text-gray-400">Enter the 6 digit code sent to your current email address to update your password.</p>
+                  <h3 className="text-xl font-black text-[var(--text-primary)]">Verify Password Change</h3>
+                  <p className="mt-2 text-sm text-[var(--text-secondary)]">Enter the 6 digit code sent to your current email address to update your password.</p>
                   <input
                     value={otpCode}
                     onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
                     inputMode="numeric"
                     maxLength={6}
-                    className="mt-5 w-full rounded-2xl border border-gray-800 bg-[#171717] px-4 py-4 text-center text-xl font-bold tracking-[0.4em] text-white outline-none transition-colors focus:border-emerald-500"
+                    className="mt-5 w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4 py-4 text-center text-xl font-bold tracking-[0.4em] text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                     placeholder="000000"
                   />
                   {devOtp && (
@@ -849,7 +849,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                         setOtpCode('');
                         setDevOtp('');
                       }}
-                      className="rounded-2xl border border-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-700 hover:text-white"
+                      className="rounded-2xl border border-[var(--border-color)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--border-color)] hover:text-[var(--text-primary)]"
                     >
                       Cancel
                     </button>
