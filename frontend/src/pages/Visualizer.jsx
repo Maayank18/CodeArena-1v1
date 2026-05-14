@@ -448,6 +448,34 @@ const Visualizer = () => {
                     from { opacity: 0; transform: translateY(-8px) scale(0.97); }
                     to   { opacity: 1; transform: translateY(0)   scale(1);    }
                 }
+                
+                .vz-segmented-control {
+                    display: flex;
+                    padding: 3px;
+                    border-radius: 10px;
+                    background: var(--vz-bg-primary);
+                    border: 1px solid var(--vz-border);
+                }
+                .vz-segmented-control button {
+                    padding: 5px 12px;
+                    border-radius: 7px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    transition: all 0.2s ease;
+                }
+                .vz-segmented-control button.active {
+                    background: var(--vz-accent);
+                    color: #fff;
+                    box-shadow: 0 2px 8px var(--vz-accent-glow);
+                }
+                .vz-segmented-control button:not(.active) {
+                    color: var(--vz-text-muted);
+                }
+                .vz-segmented-control button:not(.active):hover {
+                    color: var(--vz-text-primary);
+                    background: var(--vz-bg-hover);
+                }
+                
                 .anim-dropdown { animation: fadeSlideIn 0.18s ease forwards; }
             `}</style>
 
@@ -565,19 +593,19 @@ const TopBar = ({
                 size={17}
                 className="group-hover:-translate-x-0.5 transition-transform"
             />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden md:inline">Back</span>
         </button>
 
         {/* Center — branding */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
                         flex items-center gap-2 pointer-events-none select-none">
             <Sparkles size={18} style={{ color: 'var(--vz-accent)' }} />
-            <span className="font-extrabold text-base sm:text-lg tracking-tight vz-text">
-                <span className="hidden sm:inline">Algorithm </span>
+            <span className="font-extrabold text-sm sm:text-lg tracking-tight vz-text">
+                <span className="hidden xs:inline">Algorithm </span>
                 <span style={{ color: 'var(--vz-accent)' }}>Visualizer</span>
             </span>
             <span
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-widest"
+                className="text-[8px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded border uppercase tracking-widest shrink-0"
                 style={{
                     background: 'var(--vz-badge-bg)',
                     color: 'var(--vz-accent)',
@@ -591,20 +619,13 @@ const TopBar = ({
         {/* Right — controls */}
         <div className="flex items-center gap-1.5 sm:gap-2">
 
-            {/* Mobile tab switcher */}
-            <div
-                className="flex lg:hidden p-1 rounded-lg border vz-border vz-bg-p"
-            >
+            {/* Mobile tab switcher (Segmented Control) */}
+            <div className="flex lg:hidden vz-segmented-control">
                 {['editor', 'visualizer'].map(tab => (
                     <button
                         key={tab}
                         onClick={() => setMobileTab(tab)}
-                        className="px-2.5 py-1 rounded-md text-xs font-bold transition-all capitalize"
-                        style={
-                            mobileTab === tab
-                                ? { background: 'var(--vz-accent)', color: '#fff' }
-                                : { color: 'var(--vz-text-muted)' }
-                        }
+                        className={mobileTab === tab ? 'active' : ''}
                     >
                         {tab === 'editor' ? 'Code' : 'View'}
                     </button>
@@ -720,7 +741,7 @@ const PanelHeader = ({ title, right, dot }) => (
 const LoadingOverlay = () => (
     <div
         className="absolute inset-0 z-30 flex flex-col items-center justify-center
-                   vz-bg-p backdrop-blur-sm"
+                   vz-bg-p/95 backdrop-blur-md"
         style={{ background: 'color-mix(in srgb, var(--vz-bg-primary) 88%, transparent)' }}
     >
         <Loader2

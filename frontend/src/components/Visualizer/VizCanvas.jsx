@@ -115,7 +115,7 @@ const VizCanvas = memo(({ variables }) => {
             style={{ background: isLight ? 'linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%)' : 'var(--vz-bg-primary, #0d1117)' }}
         >
             {/* Complex vars (arrays, trees, linked lists, graphs…) */}
-            <div className="flex-1 overflow-auto relative z-10" style={{ padding: 'clamp(12px, 3vw, 32px)' }}>
+            <div className="flex-1 overflow-auto relative z-10" style={{ padding: 'clamp(8px, 2.5vw, 24px)' }}>
                 <div className="flex flex-wrap justify-center items-start gap-8 content-start min-h-full">
                     <AnimatePresence mode="popLayout">
                         {complexVars.map(([name, value]) => (

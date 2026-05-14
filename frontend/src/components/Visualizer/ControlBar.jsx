@@ -95,36 +95,22 @@ const ControlBar = ({
 
                 {/* Speed selector — only visible when trace exists */}
                 {hasTrace && speedOptions.length > 0 && (
-                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0 bg-[var(--vz-bg-secondary)] p-1 rounded-lg border vz-border">
                         <Gauge
-                            size={13}
-                            className="shrink-0"
-                            style={{ color: 'var(--vz-text-muted)' }}
+                            size={12}
+                            className="shrink-0 ml-1"
+                            style={{ color: 'var(--vz-accent)' }}
                         />
-                        <div
-                            className="flex rounded-lg border overflow-hidden"
-                            style={{ borderColor: 'var(--vz-border)' }}
-                        >
+                        <div className="flex">
                             {speedOptions.map((opt, idx) => (
                                 <button
                                     key={opt.label}
                                     onClick={() => onSpeedChange(idx)}
-                                    className="px-2.5 py-1 text-[11px] font-bold font-mono
-                                               transition-colors"
-                                    style={{
-                                        background: speedIndex === idx
-                                            ? 'var(--vz-accent)'
-                                            : 'var(--vz-bg-secondary)',
-                                        color: speedIndex === idx
-                                            ? '#fff'
-                                            : 'var(--vz-text-muted)',
-                                        borderRight: idx < speedOptions.length - 1
-                                            ? '1px solid var(--vz-border)'
-                                            : 'none',
-                                    }}
-                                    title={`Playback speed: ${opt.label} (${opt.ms}ms/step)`}
+                                    className={`px-2 py-0.5 text-[10px] font-bold font-mono transition-all rounded-md ${
+                                        speedIndex === idx ? 'bg-[var(--vz-accent)] text-white shadow-sm' : 'text-[var(--vz-text-muted)] hover:text-[var(--vz-text-primary)]'
+                                    }`}
                                 >
-                                    {opt.label}
+                                    {opt.label.replace('x', '')}
                                 </button>
                             ))}
                         </div>
@@ -148,20 +134,22 @@ const ControlBar = ({
 
                     {/* Step control group */}
                     <div
-                        className="flex items-center gap-0.5 rounded-lg border p-0.5 shrink-0"
+                        className="flex items-center gap-0 sm:gap-0.5 rounded-xl border p-1 shrink-0 shadow-sm"
                         style={{
                             background: 'var(--vz-bg-secondary)',
                             borderColor: 'var(--vz-border)',
                         }}
                     >
                         {/* Jump to start */}
-                        <StepBtn
-                            onClick={() => { onPause(); setCurrentStep(0); }}
-                            disabled={isAtStart}
-                            title="Jump to Start  (Home)"
-                        >
-                            <ChevronFirst size={16} />
-                        </StepBtn>
+                        <div className="hidden xs:block">
+                            <StepBtn
+                                onClick={() => { onPause(); setCurrentStep(0); }}
+                                disabled={isAtStart}
+                                title="Jump to Start  (Home)"
+                            >
+                                <ChevronFirst size={16} />
+                            </StepBtn>
+                        </div>
 
                         {/* Step back */}
                         <StepBtn
@@ -176,22 +164,22 @@ const ControlBar = ({
                         <button
                             onClick={onPlayPause}
                             disabled={isAtEnd && !isPlaying}
-                            className="w-9 h-8 flex items-center justify-center rounded-md
+                            className="w-10 h-9 flex items-center justify-center rounded-lg
                                        text-white transition-all active:scale-90
-                                       disabled:opacity-40 disabled:cursor-not-allowed"
+                                       disabled:opacity-40 disabled:cursor-not-allowed shadow-md mx-1"
                             style={{
                                 background: isAtEnd && !isPlaying
                                     ? 'var(--vz-bg-hover)'
-                                    : 'var(--vz-accent)',
+                                    : 'linear-gradient(135deg, var(--vz-accent), var(--vz-accent-glow))',
                                 boxShadow: isPlaying
-                                    ? '0 0 10px var(--vz-accent-glow)'
-                                    : 'none',
+                                    ? '0 4px 12px var(--vz-accent-glow)'
+                                    : '0 2px 8px rgba(0,0,0,0.1)',
                             }}
                             title={isPlaying ? 'Pause  (Space)' : 'Play  (Space)'}
                         >
                             {isPlaying
-                                ? <Pause  size={16} fill="currentColor" />
-                                : <Play   size={16} fill="currentColor" />
+                                ? <Pause  size={18} fill="currentColor" />
+                                : <Play   size={18} fill="currentColor" className="ml-0.5" />
                             }
                         </button>
 
@@ -205,13 +193,15 @@ const ControlBar = ({
                         </StepBtn>
 
                         {/* Jump to end */}
-                        <StepBtn
-                            onClick={() => { onPause(); setCurrentStep(totalSteps - 1); }}
-                            disabled={isAtEnd}
-                            title="Jump to End"
-                        >
-                            <ChevronLast size={16} />
-                        </StepBtn>
+                        <div className="hidden xs:block">
+                            <StepBtn
+                                onClick={() => { onPause(); setCurrentStep(totalSteps - 1); }}
+                                disabled={isAtEnd}
+                                title="Jump to End"
+                            >
+                                <ChevronLast size={16} />
+                            </StepBtn>
+                        </div>
                     </div>
 
                     {/* ── Scrubber ──────────────────────────────────────── */}
