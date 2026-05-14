@@ -3,7 +3,19 @@
  */
 
 export const checkAndResetDailyUsage = async (user) => {
-    if (!user || !user.usageStats) return;
+    if (!user) return;
+    
+    // Ensure usageStats exists
+    if (!user.usageStats) {
+        user.usageStats = {
+            chatQueriesToday: 0,
+            matchesToday: 0,
+            customMatchesToday: 0,
+            visualizationsToday: 0,
+            visualizerTrialUsed: false,
+            lastResetDate: new Date()
+        };
+    }
 
     // ✅ ADMIN BYPASS: Admins don't need their usage stats tracked/reset
     if (user.role === 'admin') return;

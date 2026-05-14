@@ -20,10 +20,12 @@ export const executeVisualization = async (req, res) => {
     const isAdmin = req.user?.role === 'admin';
 
     // ── Tiered Quota Enforcement ─────────────────────────────────────────
+    const usage = user.usageStats || {};
+    
     if (!isAdmin && userTier < 3) {
         if (userTier < 2) {
             // Free & Plus use the one-time trial
-            if (req.user.usageStats?.visualizerTrialUsed) {
+            if (usage.visualizerTrialUsed) {
                 return res.status(403).json({ 
                     success: false, 
                     message: "Visualizer trial consumed. Upgrade to Pro to unlock 10 visualizations per day!",
@@ -32,7 +34,7 @@ export const executeVisualization = async (req, res) => {
             }
         } else if (userTier === 2) {
             // Pro tier: 10/day
-            if (req.user.usageStats?.visualizationsToday >= 10) {
+            if (usage.visualizationsToday >= 10) {
                 return res.status(403).json({ 
                     success: false, 
                     message: "Daily visualizer limit reached (10/day). Upgrade to Premium for unlimited access!",

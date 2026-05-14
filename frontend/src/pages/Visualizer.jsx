@@ -338,10 +338,10 @@ const Visualizer = () => {
         }
     }, [pause]);
 
-    // Auto-run on mount
+    // No auto-run on mount — wait for user interaction to avoid accidental trial consumption
     useEffect(() => {
-        executeCode(EXAMPLES.bubbleSort.code);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        // Just show default state
+    }, []); 
 
     const handleRun = useCallback(() => {
         if (!code.trim()) return toast.error('Please write some code first!');
