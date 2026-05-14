@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { LogOut, Moon, Settings, Sun, Zap, Trophy } from 'lucide-react';
 import { Logo } from './Logo';
@@ -10,10 +10,28 @@ import { getLevelInfo } from '../utils/levelSystem';
 
 const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(user);
+
+  // ✅ SYNC MODAL WITH URL
+  useEffect(() => {
+    if (location.pathname === '/settings') {
+      setIsSettingsOpen(true);
+    } else {
+      setIsSettingsOpen(false);
+    }
+  }, [location.pathname]);
+
+  const handleCloseSettings = useCallback(() => {
+    setIsSettingsOpen(false);
+    // If we are currently on /settings, go back to previous page
+    if (location.pathname === '/settings') {
+      navigate(-1);
+    }
+  }, [navigate, location.pathname]);
 
   useEffect(() => {
     setDisplayUser(user);
@@ -178,7 +196,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
-                  setIsSettingsOpen(true);
+                  navigate('/settings');
                 }}
                 className="
                   flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm transition-colors
@@ -211,7 +229,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
       <SettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={handleCloseSettings}
         user={displayUser}
         onUserUpdate={handleUserUpdate}
         onRequireReauth={handleRequireReauth}

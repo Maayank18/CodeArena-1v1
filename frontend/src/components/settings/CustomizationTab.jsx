@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PremiumGate from '../PremiumGate';
-import { Loader2, Check, Save, Palette, Code2, Type, ImageIcon } from 'lucide-react';
+import { Loader2, Check, Save, Palette, Code2, Type, ImageIcon, Lock } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
 

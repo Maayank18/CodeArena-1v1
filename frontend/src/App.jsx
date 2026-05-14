@@ -38,6 +38,7 @@ function App() {
         <Route path="/learn" element={<Learn />} />
         <Route path="/contest" element={<Contest />} />
         <Route path="/editor/:roomId" element={<EditorPage />} />
+        <Route path="/settings" element={<Dashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </div>

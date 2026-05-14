@@ -62,7 +62,7 @@ export const verifyToken = async (req, res, next) => {
         }
 
         const user = await User.findById(decoded.id)
-            .select('_id username email passwordChangedAt subscriptionPlan role usageStats');
+            .select('_id username email passwordChangedAt subscriptionPlan role usageStats createdAt stats');
         if (!user) {
             return sendAuthFailure(req, res, 401, 'AUTH_USER_NOT_FOUND', 'Invalid token', token, {
                 decodedUserId: decoded.id,
