@@ -98,6 +98,9 @@ const TreeNode = memo(({ node, label, depth, visited, sizing, isLight }) => {
 });
 
 function extractNodeProperties(node) {
+    if (node === '[Circular]') {
+        return { value: 'LOOP', children: [], metadata: {}, isLeaf: true };
+    }
     const VALUE_FIELDS = ['val', 'value', 'data', 'key', 'item'];
 
     let value = '?';

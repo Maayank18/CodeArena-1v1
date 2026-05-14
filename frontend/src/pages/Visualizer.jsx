@@ -293,16 +293,26 @@ const Visualizer = () => {
 
             if (data.success && data.trace?.length > 0) {
                 setTrace(data.trace);
+                
+                // If the backend sent an error inside the trace, jump to it
+                const errorStep = data.trace.findIndex(s => s.type === 'error');
+                if (errorStep !== -1) {
+                    setCurrentStep(errorStep);
+                    toast.error(data.trace[errorStep].error || 'Runtime error');
+                }
             } else {
-                toast.error('No steps generated. Check your code.');
+                toast.error(data.message || 'No steps generated. Check your code.');
             }
         } catch (error) {
             console.error('[VISUALIZER]', error);
-            const msg = error.response?.data?.message || 'Execution failed';
+            
+            // Handle Trial Expired specifically
             if (error.response?.status === 403 && error.response?.data?.code === 'TRIAL_EXPIRED') {
                 setShowTeaserModal(true);
                 return;
             }
+
+            const msg = error.response?.data?.message || error.message || 'Execution failed';
             setTrace([{ line: 0, error: msg, type: 'error', variables: {} }]);
             toast.error(msg);
         } finally {
@@ -338,6 +348,8 @@ const Visualizer = () => {
     const currentLine      = useMemo(() => currentFrame?.line || 0,              [currentFrame]);
     const executionError   = useMemo(() =>
         currentFrame?.type === 'error' ? currentFrame.error : null,             [currentFrame]);
+    const executionWarning = useMemo(() =>
+        trace.find(s => s.type === 'warning')?.output,                          [trace]);
 
     const groupedExamples = useMemo(() => {
         const groups = {};
@@ -520,7 +532,16 @@ const Visualizer = () => {
                     {!loading && executionError ? (
                         <ErrorDisplay error={executionError} onReset={() => loadExample('bubbleSort')} />
                     ) : (
-                        <VizCanvas variables={currentVariables} />
+                        <>
+                            {executionWarning && (
+                                <div className="mx-4 mt-2 px-3 py-1.5 rounded-lg border flex items-center gap-2"
+                                     style={{ background: 'rgba(234,179,8,0.08)', borderColor: 'rgba(234,179,8,0.3)', color: '#ca8a04' }}>
+                                    <AlertTriangle size={14} />
+                                    <span className="text-[10px] font-medium">{executionWarning}</span>
+                                </div>
+                            )}
+                            <VizCanvas variables={currentVariables} />
+                        </>
                     )}
                 </div>
             </div>

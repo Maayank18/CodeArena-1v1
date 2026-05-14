@@ -40,20 +40,34 @@ export const executeVisualization = async (req, res) => {
             return res.status(400).json({ success: false, message: "Unsupported language" });
         }
 
-        res.json({ success: true, trace: traceData });
+        // Check for hard errors in the trace itself (runtime errors)
+        const runtimeError = traceData.find(step => step.type === 'error');
+        
+        res.json({ 
+            success: true, 
+            trace: traceData,
+            stats: {
+                totalSteps: traceData.length,
+                hasError: !!runtimeError,
+                error: runtimeError?.error
+            }
+        });
 
     } catch (error) {
         console.error(`[VISUALIZER ERROR] ${language}:`, error);
         
         // Categorize errors for the frontend
         const isUserError = 
+            error.isUserError ||
             error.name === 'SyntaxError' || 
             error.message.includes("Compilation") || 
-            error.message.includes("is not defined");
+            error.message.includes("is not defined") ||
+            error.message.includes("is not a function") ||
+            error.message.includes("Cannot read property");
 
         res.status(isUserError ? 400 : 500).json({ 
             success: false, 
-            message: isUserError ? "Execution Error" : "Internal System Error", 
+            message: isUserError ? ("Code Error: " + error.message) : "Internal System Error", 
             error: error.message 
         });
     }
