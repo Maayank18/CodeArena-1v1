@@ -574,6 +574,15 @@ const EditorPage = () => {
         );
     };
 
+    // Session-persistent note title
+    const [sessionNoteTitle, setSessionNoteTitle] = useState("Arena Battle Match");
+
+    useEffect(() => {
+        if (problem && sessionNoteTitle === "Arena Battle Match") {
+            setSessionNoteTitle(`Battle Arena - ${problem.title}`);
+        }
+    }, [problem, sessionNoteTitle]);
+
     return (
         <div className="arena-shell relative h-screen w-screen overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]" data-theme={theme}>
             
@@ -742,12 +751,13 @@ const EditorPage = () => {
                 isOpen={isNotesOpen} 
                 onClose={() => setIsNotesOpen(false)} 
                 type="battle_arena" 
-                contextKey={problem?._id || roomId}
-                contextTitle={problem ? `Battle Arena - ${problem.title}` : "Battle Arena"}
+                contextKey={roomId}
+                contextTitle={sessionNoteTitle}
                 desktopSide={notebookSide}
             />
         </div>
     );
+
 };
 
 export default EditorPage;
