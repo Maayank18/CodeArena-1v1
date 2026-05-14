@@ -55,8 +55,10 @@ export const createRoom = async (req, res) => {
             const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
             const limits = getUsageLimits(plan);
             
-            // ✅ PRO/PREMIUM BYPASS: Unlimited normal matches
-            if (userTier < 2) {
+            const isAdmin = userDoc.role === 'admin';
+
+            // ✅ PRO/PREMIUM/ADMIN BYPASS: Unlimited normal matches
+            if (!isAdmin && userTier < 2) {
                 if (userDoc.usageStats.matchesToday >= limits.matches) {
                     return res.status(403).json({ 
                         success: false,
@@ -128,12 +130,14 @@ export const createCustomRoom = async (req, res) => {
         const limits = getUsageLimits(plan);
 
         // ✅ TIERED BYPASS: 
+        // - Admins: unlimited everything
         // - Normal matches: unlimited for Pro+ (Tier 2+)
         // - Custom matches: limited for Pro (Tier 2), unlimited for Premium (Tier 3)
+        const isAdmin = userDoc.role === 'admin';
         const isCustomReq = req.route.path.includes('custom');
         const bypassTier = isCustomReq ? 3 : 2;
 
-        if (userTier < bypassTier) {
+        if (!isAdmin && userTier < bypassTier) {
             if (plan === 'free' && isCustomReq) {
                 return res.status(403).json({
                     success: false,
@@ -225,12 +229,14 @@ export const joinCustomRoom = async (req, res) => {
         const limits = getUsageLimits(plan);
 
         // ✅ TIERED BYPASS: 
+        // - Admins: unlimited everything
         // - Normal matches: unlimited for Pro+ (Tier 2+)
         // - Custom matches: limited for Pro (Tier 2), unlimited for Premium (Tier 3)
+        const isAdmin = userDoc.role === 'admin';
         const isCustomReq = req.route.path.includes('custom');
         const bypassTier = isCustomReq ? 3 : 2;
 
-        if (userTier < bypassTier) {
+        if (!isAdmin && userTier < bypassTier) {
             if (plan === 'free' && isCustomReq) {
                 return res.status(403).json({
                     success: false,

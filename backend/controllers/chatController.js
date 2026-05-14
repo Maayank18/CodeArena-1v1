@@ -81,8 +81,10 @@ export const chat = async (req, res) => {
     const limits = getUsageLimits(user.subscriptionPlan);
     const userTier = user.subscriptionPlan === 'free' ? 0 : user.subscriptionPlan === 'plus' ? 1 : user.subscriptionPlan === 'pro' ? 2 : 3;
 
-    // ✅ PREMIUM BYPASS: Unlimited chat, no increment
-    if (userTier < 3) {
+    const isAdmin = user.role === 'admin';
+
+    // ✅ PREMIUM/ADMIN BYPASS: Unlimited chat, no increment
+    if (!isAdmin && userTier < 3) {
         if (user.usageStats.chatQueriesToday >= limits.chat) {
             return res.status(403).json({ 
                 success: false, 
@@ -151,8 +153,8 @@ export const chat = async (req, res) => {
             return res.status(500).json({ message: 'Received an empty response. Please try again.' });
         }
 
-        // ✅ INCREMENT USAGE (Skip for Premium)
-        if (userTier < 3) {
+        // ✅ INCREMENT USAGE (Skip for Premium/Admin)
+        if (!isAdmin && userTier < 3) {
             user.usageStats.chatQueriesToday += 1;
             await user.save();
         }

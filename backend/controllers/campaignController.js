@@ -361,9 +361,10 @@ export const submitCampaignSolution = async (req, res) => {
 
         const userPlan = req.user?.subscriptionPlan || 'free';
         const userTier = userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3;
+        const isAdmin = req.user?.role === 'admin';
 
-        // 3. Increment attempt count BEFORE execution (Skip for Premium)
-        if (userTier < 3) {
+        // 3. Increment attempt count BEFORE execution (Skip for Premium/Admin)
+        if (!isAdmin && userTier < 3) {
             progress.totalAttempts = (progress.totalAttempts ?? 0) + 1;
         }
 
@@ -375,7 +376,7 @@ export const submitCampaignSolution = async (req, res) => {
 
             // Update sage failure counter for this node (Skip for Premium)
             let sageEntry = null;
-            if (userTier < 3) {
+            if (!isAdmin && userTier < 3) {
                 if (!progress.sageUsage) progress.sageUsage = [];
                 sageEntry = progress.sageUsage.find(s => s.nodeId === nodeId);
                 if (!sageEntry) {
@@ -392,7 +393,7 @@ export const submitCampaignSolution = async (req, res) => {
                 success: false,
                 allPassed: false,
                 results: executionResult.results,
-                sageShouldTrigger: userTier >= 3 || (sageEntry?.failCount || 0) >= 3,
+                sageShouldTrigger: isAdmin || userTier >= 3 || (sageEntry?.failCount || 0) >= 3,
                 message: 'Some test cases failed. Keep trying!'
             });
         }

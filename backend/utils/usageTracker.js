@@ -5,6 +5,9 @@
 export const checkAndResetDailyUsage = async (user) => {
     if (!user || !user.usageStats) return;
 
+    // ✅ ADMIN BYPASS: Admins don't need their usage stats tracked/reset
+    if (user.role === 'admin') return;
+
     const now = new Date();
     const lastReset = new Date(user.usageStats.lastResetDate);
 
@@ -18,16 +21,20 @@ export const checkAndResetDailyUsage = async (user) => {
         user.usageStats.chatQueriesToday = 0;
         user.usageStats.matchesToday = 0;
         user.usageStats.customMatchesToday = 0;
-        user.usageStats.visualizationsToday = 0; // Reset visualizations
+        user.usageStats.visualizationsToday = 0;
         user.usageStats.lastResetDate = now;
         
-        // Also reset customMatchesPlayedToday if it exists for legacy consistency
         if (typeof user.customMatchesPlayedToday === 'number') {
             user.customMatchesPlayedToday = 0;
         }
 
-        await user.save();
-        console.log(`[USAGE] Reset daily stats for user: ${user.username}`);
+        // ✅ SAFETY: Ensure we have a real Mongoose document before saving
+        if (typeof user.save === 'function') {
+            await user.save();
+            console.log(`[USAGE] Reset daily stats for user: ${user.username}`);
+        } else {
+            console.warn(`[USAGE] Cannot save daily reset: user object for ${user.username} is not a Mongoose document.`);
+        }
     }
 };
 

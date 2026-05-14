@@ -100,8 +100,10 @@ export const consumeVisualization = async (req, res) => {
         const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
         const userTier = tiers[user.subscriptionPlan || 'free'];
 
-        // ✅ PREMIUM BYPASS: No increment needed for Tier 3
-        if (userTier >= 3) {
+        const isAdmin = user.role === 'admin';
+
+        // ✅ PREMIUM/ADMIN BYPASS: No increment needed
+        if (isAdmin || userTier >= 3) {
             return res.json({ success: true, message: 'Unlimited usage recorded' });
         }
 
