@@ -104,11 +104,16 @@ const StackViz = memo(({ data, pointers, capacity = null, isFull = false }) => {
                             return (
                                 <motion.div
                                     layout
-                                    key={id}
-                                    initial={{ opacity: 0, y: -100, scale: 0.8 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: -100, scale: 0.5 }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                    key={`cell-${idx}`}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.5 }}
+                                    transition={{ 
+                                        type: 'spring', 
+                                        stiffness: 400, 
+                                        damping: 30,
+                                        mass: 0.8
+                                    }}
                                     className="relative w-full flex justify-center z-10"
                                 >
                                     <motion.div
@@ -125,8 +130,11 @@ const StackViz = memo(({ data, pointers, capacity = null, isFull = false }) => {
                                         className="flex items-center justify-center border-2 rounded-md relative backdrop-blur-sm" style={{ width: "var(--vz-stack-width)", height: "var(--vz-cell-size)" }}
                                     >
                                         <span
-                                            className="font-mono font-bold" style={{ fontSize: "var(--vz-cell-font)" }}
-                                            style={{ color: isOverCapacity ? '#f87171' : isActive ? colors.activeText : colors.textPrimary }}
+                                            className="font-mono font-bold" 
+                                            style={{ 
+                                                fontSize: "var(--vz-cell-font)",
+                                                color: isOverCapacity ? '#f87171' : isActive ? colors.activeText : colors.textPrimary 
+                                            }}
                                         >
                                             {val}
                                         </span>

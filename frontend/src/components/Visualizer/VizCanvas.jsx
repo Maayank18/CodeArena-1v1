@@ -120,11 +120,12 @@ const VizCanvas = memo(({ variables }) => {
                     <AnimatePresence mode="popLayout">
                         {complexVars.map(([name, value]) => (
                             <motion.div
-                                key={name} layout
-                                initial={{ opacity: 0, scale: 0.92, y: 10 }}
-                                animate={{ opacity: 1, scale: 1,    y: 0  }}
-                                exit={{    opacity: 0, scale: 0.88, y: -8 }}
-                                transition={{ duration: 0.22 }}
+                                key={name} 
+                                layout
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{    opacity: 0 }}
+                                transition={{ duration: 0.2 }}
                                 style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                             >
                                 <div style={{ maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -426,4 +427,4 @@ const NoVarsState = () => (
 );
 
 export default VizCanvas;
-// V 1.5
+// V 1.6

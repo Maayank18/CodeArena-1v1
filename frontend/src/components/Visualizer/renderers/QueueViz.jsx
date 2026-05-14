@@ -133,11 +133,16 @@ const QueueViz = memo(({ data, pointers, capacity = null, front = null, rear = n
                             return (
                                 <motion.div
                                     layout
-                                    key={id}
-                                    initial={{ opacity: 0, x: 50, scale: 0.5 }}
-                                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                                    exit={{ opacity: 0, x: -50, scale: 0.5 }}
-                                    transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                                    key={`cell-${idx}`}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.5 }}
+                                    transition={{ 
+                                        type: 'spring', 
+                                        stiffness: 400, 
+                                        damping: 30,
+                                        mass: 0.8
+                                    }}
                                     className="relative flex flex-col items-center shrink-0"
                                 >
                                     <AnimatePresence>
@@ -172,8 +177,11 @@ const QueueViz = memo(({ data, pointers, capacity = null, front = null, rear = n
                                         className="flex items-center justify-center border-2 rounded-xl relative backdrop-blur-sm" style={{ width: "var(--vz-cell-size)", height: "var(--vz-cell-size)" }}
                                     >
                                         <span
-                                            className="font-mono font-bold" style={{ fontSize: "var(--vz-cell-font)" }}
-                                            style={{ color: isOverCapacity ? '#f87171' : isActive ? colors.activeText : colors.textPrimary }}
+                                            className="font-mono font-bold" 
+                                            style={{ 
+                                                fontSize: "var(--vz-cell-font)",
+                                                color: isOverCapacity ? '#f87171' : isActive ? colors.activeText : colors.textPrimary 
+                                            }}
                                         >
                                             {val}
                                         </span>

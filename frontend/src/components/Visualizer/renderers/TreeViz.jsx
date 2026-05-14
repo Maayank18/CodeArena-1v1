@@ -141,9 +141,9 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLigh
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{
                     type: 'spring',
-                    stiffness: 300,
-                    damping: 25,
-                    delay: depth * 0.05,
+                    stiffness: 400,
+                    damping: 30,
+                    mass: 0.8
                 }}
                 className={`rounded-full flex items-center justify-center border-[2px] shadow-lg relative backdrop-blur-sm transition-colors bg-gradient-to-br ${style.gradient} ${style.border}`}
                 style={{ width: 'var(--vz-cell-size)', height: 'var(--vz-cell-size)' }}
@@ -221,14 +221,16 @@ const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) =
     const containerWidth = children.length * sizing.gap * horizontalMultiplier;
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center mt-1">
+        <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center mt-1">
             <div className="relative" style={{ height: sizing.gap, minWidth: `${containerWidth}px` }}>
                 <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
-                    {children.map((child, idx) => {
+                    {children.map((child) => {
+                        const idx = children.indexOf(child);
                         const xPos = ((idx + 1) / (children.length + 1)) * 100;
                         return (
                             <motion.path
-                                key={idx}
+                                key={`line-${child.label}`}
+                                layout
                                 d={`M 50% 0 C 50% 50%, ${xPos}% 50%, ${xPos}% 100%`}
                                 fill="none"
                                 stroke={child.node ? (isLight ? '#6366f1' : '#818cf8') : (isLight ? '#94a3b8' : '#4b5563')}
@@ -236,7 +238,7 @@ const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) =
                                 strokeOpacity={child.node ? (isLight ? '0.55' : '0.4') : '0.2'}
                                 initial={{ pathLength: 0 }}
                                 animate={{ pathLength: 1 }}
-                                transition={{ duration: 0.4, delay: depth * 0.05 }}
+                                transition={{ duration: 0.4 }}
                             />
                         );
                     })}
@@ -244,8 +246,8 @@ const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) =
             </div>
 
             <div className="flex items-start" style={{ gap: `${sizing.gap * 0.2}px` }}>
-                {children.map((child, idx) => (
-                    <div key={idx} style={{ padding: '0 2px' }}>
+                {children.map((child) => (
+                    <div key={`node-${child.label}`} style={{ padding: '0 2px' }}>
                         <TreeNode node={child.node} label={child.label} depth={depth + 1} visited={visited} sizing={sizing} isLight={isLight} />
                     </div>
                 ))}

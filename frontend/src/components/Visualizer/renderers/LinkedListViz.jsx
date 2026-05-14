@@ -86,7 +86,12 @@ const LinkedListViz = memo(({ data, name }) => {
 
                     <AnimatePresence mode="popLayout">
                         {nodes.map((node, i) => (
-                            <div key={node.id} className="relative flex items-center" style={{ marginRight: i === nodes.length - 1 ? 0 : `${GAP_WIDTH}px` }}>
+                            <motion.div 
+                                layout
+                                key={node.id} 
+                                className="relative flex items-center" 
+                                style={{ marginRight: i === nodes.length - 1 ? 0 : `${GAP_WIDTH}px` }}
+                            >
                                 {i === 0 && (
                                     <motion.div
                                         initial={{ opacity: 0, y: -20 }}
@@ -116,7 +121,7 @@ const LinkedListViz = memo(({ data, name }) => {
                                         <ArrowRight size={20} />
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         ))}
                     </AnimatePresence>
 

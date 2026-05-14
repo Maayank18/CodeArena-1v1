@@ -45,30 +45,30 @@ const ArrayViz = memo(({ data, pointers }) => {
             />
 
             <div className="flex items-end justify-center min-w-max gap-3 pb-2">
-                <AnimatePresence mode="popLayout">
-                    {uniqueData.map(({ val, id }, idx) => {
-                        const activePointers = Object.entries(pointers || {})
-                            .filter(([, index]) => index === idx)
-                            .map(([name]) => name);
+                    <AnimatePresence mode="popLayout">
+                        {uniqueData.map(({ val, id }, idx) => {
+                            const activePointers = Object.entries(pointers || {})
+                                .filter(([, index]) => index === idx)
+                                .map(([name]) => name);
 
-                        const isActive = activePointers.length > 0;
+                            const isActive = activePointers.length > 0;
 
-                        return (
-                            <motion.div
-                                layout
-                                key={id}
-                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-                                transition={{
-                                    type: 'spring',
-                                    stiffness: 350,
-                                    damping: 25,
-                                    mass: 1,
-                                }}
-                                className="relative flex flex-col items-center"
-                                style={{ zIndex: isActive ? 10 : 0 }}
-                            >
+                            return (
+                                <motion.div
+                                    layout
+                                    key={`cell-${idx}`}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.5 }}
+                                    transition={{
+                                        type: 'spring',
+                                        stiffness: 400,
+                                        damping: 30,
+                                        mass: 0.8
+                                    }}
+                                    className="relative flex flex-col items-center"
+                                    style={{ zIndex: isActive ? 10 : 0 }}
+                                >
                                 <motion.div
                                     layout
                                     animate={{
