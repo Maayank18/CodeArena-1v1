@@ -378,8 +378,36 @@ const Visualizer = () => {
                     from { opacity: 0; transform: translateY(-8px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
-                .vz-bg-p { background: #0d1117; }
-                .vz-bg-s { background: #161b22; }
+                
+                /* Theme Variables */
+                .viz-root[data-theme='dark'] {
+                    --vz-bg-primary: #0d1117;
+                    --vz-bg-secondary: #161b22;
+                    --vz-bg-hover: #1f2937;
+                    --vz-border: #30363d;
+                    --vz-text-primary: #f0f6fc;
+                    --vz-text-muted: #8b949e;
+                    --vz-accent: #2f81f7;
+                    --vz-accent-glow: rgba(47, 129, 247, 0.4);
+                    --vz-badge-bg: rgba(47, 129, 247, 0.1);
+                    --vz-slider-track: rgba(255, 255, 255, 0.2);
+                }
+                .viz-root[data-theme='light'] {
+                    --vz-bg-primary: #ffffff;
+                    --vz-bg-secondary: #f6f8fa;
+                    --vz-bg-hover: #eff2f5;
+                    --vz-border: #d0d7de;
+                    --vz-text-primary: #24292f;
+                    --vz-text-muted: #57606a;
+                    --vz-accent: #0969da;
+                    --vz-accent-glow: rgba(9, 105, 218, 0.3);
+                    --vz-badge-bg: rgba(9, 105, 218, 0.1);
+                    --vz-slider-track: rgba(0, 0, 0, 0.1);
+                }
+
+                .vz-bg-p { background: var(--vz-bg-primary); }
+                .vz-bg-s { background: var(--vz-bg-secondary); }
+
                 .vz-border { border-color: var(--vz-border); }
                 .vz-text { color: var(--vz-text-primary); }
                 .vz-muted { color: var(--vz-text-muted); }
@@ -502,7 +530,7 @@ const Visualizer = () => {
                 className="border-t vz-border vz-bg-s px-3 sm:px-5 py-3 shrink-0 z-20"
                 style={{ boxShadow: '0 -4px 24px rgba(0,0,0,0.18)' }}
             >
-                <ControlBar
+                <ControlBar theme={theme}
                     totalSteps={trace.length}
                     currentStep={currentStep}
                     setCurrentStep={setCurrentStep}

@@ -21,7 +21,7 @@ import {
  *  onSpeedChange  {function} - (index) => void
  *  speedOptions   {array}    - [{ label, ms }]
  */
-const ControlBar = ({
+const ControlBar = ({ theme,
     currentStep,
     totalSteps,
     setCurrentStep,
@@ -55,8 +55,8 @@ const ControlBar = ({
         '--slider-bg': `linear-gradient(to right, 
             var(--vz-accent) 0%, 
             var(--vz-accent) ${progressPct}%, 
-            rgba(255, 255, 255, 0.2) ${progressPct}%, 
-            rgba(255, 255, 255, 0.2) 100%)`
+            var(--vz-slider-track) ${progressPct}%, 
+            var(--vz-slider-track) 100%)`
     };
 
     return (
@@ -137,7 +137,7 @@ const ControlBar = ({
                         className="flex items-center gap-0 sm:gap-0.5 rounded-xl border p-1 shrink-0 shadow-sm"
                         style={{
                             background: 'var(--vz-bg-secondary)',
-                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderColor: 'var(--vz-slider-track)',
                         }}
                     >
                         {/* Jump to start */}
@@ -244,7 +244,7 @@ const ControlBar = ({
                                     style={{
                                         background: 'var(--vz-bg-hover)',
                                         color: 'var(--vz-text-primary)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        border: '1px solid var(--vz-slider-track)',
                                     }}
                                 >
                                     {progressPct}% · step {currentStep + 1}
@@ -276,7 +276,7 @@ const ControlBar = ({
                                    hover:text-red-400"
                         style={{
                             color: 'var(--vz-text-muted)',
-                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderColor: 'var(--vz-slider-track)',
                             background: 'var(--vz-bg-secondary)',
                         }}
                         title="Reset to Start"

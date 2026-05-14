@@ -106,7 +106,7 @@ const Leaderboard = () => {
             />
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <span className={`font-bold text-sm sm:text-base truncate ${rank <= 3 ? 'text-white' : 'text-[var(--text-primary)]'}`}>
+                <span className={`font-bold text-sm sm:text-base truncate text-[var(--text-primary)]`}>
                   {player.username}
                 </span>
                 {isCurrentUser && <span className="text-[9px] bg-accent text-black px-1.5 py-0.5 rounded font-black shrink-0">YOU</span>}

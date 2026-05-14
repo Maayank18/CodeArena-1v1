@@ -714,12 +714,12 @@ const WorldMapScene = React.memo(function WorldMapScene({
           className="relative mx-auto"
           style={{
             width: ZONE_W,
-            height: canvasH,
+            height: scaledCanvasHeight,
             transform: `translate3d(0,0,0) scale(${mapScale})`,
             transformOrigin: 'top center',
             willChange: 'transform',
             backfaceVisibility: 'hidden',
-            marginBottom: scaledCanvasHeight * (1 / mapScale - 1),
+            
           }}
         >
           <svg
