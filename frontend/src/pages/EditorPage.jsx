@@ -536,13 +536,27 @@ const EditorPage = () => {
     }
 
     const PaneHeader = ({ side }) => {
+        const isMe = mySide === side;
         const p = clients.find(c => c.side === side);
+        
+        // ✅ SENIOR DEV OPTIMIZATION: 
+        // For the current user, prioritize local 'user' state (which is fresh from Dashboard)
+        // over the socket 'clients' data to ensure zero-latency avatar updates.
+        const displayAvatar = isMe ? (user?.avatar || p?.avatar) : p?.avatar;
+        const displayFrame = isMe ? (user?.customization?.avatarFrame || p?.customization?.avatarFrame) : p?.customization?.avatarFrame;
+        const displayTagline = isMe ? (user?.customization?.tagline || p?.customization?.tagline) : p?.customization?.tagline;
+
         return (
             <div className={`arena-pane-header p-3 flex justify-between items-center border-b shrink-0 h-16 ${
                 isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
             }`}>
                 <div className="flex items-center gap-3 overflow-hidden">
-                    <Avatar username={p?.username} src={p?.avatar} avatarFrame={p?.customization?.avatarFrame} className="h-8 w-8 flex-shrink-0" />
+                    <Avatar 
+                        username={p?.username || username} 
+                        src={displayAvatar} 
+                        avatarFrame={displayFrame} 
+                        className="h-8 w-8 flex-shrink-0" 
+                    />
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
                             <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>
@@ -550,9 +564,9 @@ const EditorPage = () => {
                                 isDark ? 'bg-black/50 text-green-400' : 'bg-white text-emerald-600 border border-emerald-200'
                             }`}>{scores[p?.username] || 0} pts</span>
                         </div>
-                        <span className={`text-[9px] truncate italic ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>{p?.customization?.tagline || 'Coding...'}</span>
+                        <span className={`text-[9px] truncate italic ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>{displayTagline || 'Coding...'}</span>
                     </div>
-                    {mySide === side && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
+                    {isMe && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
                 </div>
                 {mySide === side && (
                     <select 
