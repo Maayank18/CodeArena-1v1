@@ -14,10 +14,7 @@ const CodePanel = ({ code, setCode, activeLine, theme = 'dark' }) => {
     monacoRef.current.editor.setTheme(activeTheme === 'dark' ? 'codearena-dark' : 'codearena-soft-light');
   };
 
-  const handleEditorDidMount = (editor, monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-
+  const handleEditorBeforeMount = (monaco) => {
     monaco.editor.defineTheme('codearena-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -43,6 +40,11 @@ const CodePanel = ({ code, setCode, activeLine, theme = 'dark' }) => {
         'editor.inactiveSelectionBackground': '#e2e8f0',
       },
     });
+  };
+
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
 
     applyEditorTheme(theme);
   };
@@ -83,6 +85,7 @@ const CodePanel = ({ code, setCode, activeLine, theme = 'dark' }) => {
         value={code}
         onChange={(val) => setCode(val || '')}
         onMount={handleEditorDidMount}
+        beforeMount={handleEditorBeforeMount}
         options={{
           minimap: { enabled: false },
           fontSize: 14,

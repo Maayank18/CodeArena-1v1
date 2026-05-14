@@ -210,7 +210,7 @@ const ProblemPanel = ({ node, existingBest, isDark }) => {
 // --- EditorPane ---------------------------------------------------------------
 
 const EditorPane = ({
-  code, setCode, language, handleEditorMount, nodeId,
+  code, setCode, language, handleEditorMount, handleEditorBeforeMount, nodeId,
   showResults, setShowResults, runResults, execType,
   passedCount, totalCount, allPassed,
   sageShouldShow, showSage, setShowSage,
@@ -230,6 +230,7 @@ const EditorPane = ({
           localStorage.setItem(getStorageKey(nodeId, language), newCode);
         }}
         onMount={handleEditorMount}
+        beforeMount={handleEditorBeforeMount}
         options={{
           minimap: { enabled: false },
           fontSize: 13.5,
@@ -383,8 +384,7 @@ const CampaignEditor = () => {
     return () => window.clearTimeout(timer);
   }, [existingBest, nodeId]);
 
-  const handleEditorMount = useCallback((editor, monaco) => {
-    editorRef.current = editor;
+  const handleEditorBeforeMount = useCallback((monaco) => {
     monaco.editor.defineTheme('ca-dark', {
       base: 'vs-dark', inherit: true, rules: [],
       colors: {
@@ -399,6 +399,10 @@ const CampaignEditor = () => {
         'editor.lineHighlightBackground': '#f3f4f6',
       },
     });
+  }, []);
+
+  const handleEditorMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
   }, []);
 
   // -- Language switch (PERSISTENCE FIX) ----------------------------------
@@ -587,7 +591,10 @@ const CampaignEditor = () => {
         
         <div className={`${mobileTab === 'editor' ? 'flex-1' : 'hidden sm:block sm:flex-1'} h-full`}>
             <EditorPane 
-              code={code} setCode={setCode} language={language} handleEditorMount={handleEditorMount} nodeId={nodeId} 
+              code={code} setCode={setCode} language={language} 
+              handleEditorMount={handleEditorMount} 
+              handleEditorBeforeMount={handleEditorBeforeMount}
+              nodeId={nodeId} 
               showResults={showResults} setShowResults={setShowResults} runResults={runResults} execType={execType} 
               passedCount={passedCount} totalCount={totalCount} allPassed={allPassed} 
               sageShouldShow={sageShouldShow} showSage={showSage} setShowSage={setShowSage} 
