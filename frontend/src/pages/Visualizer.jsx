@@ -184,6 +184,33 @@ const DEFAULT_SPEED_INDEX = 1; // 1× = 800ms
 const Visualizer = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
+    
+    // Auth state
+    const [user, setUser] = useState(() => {
+        try {
+            const stored = localStorage.getItem('codearena_user');
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    // Logout handler
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem('codearena_user');
+        toast.success('Logged out successfully');
+        navigate('/');
+    }, [navigate]);
+
+    // Auth check
+    useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
+        if (!storedUser) {
+            navigate('/login');
+        } else {
+            setUser(storedUser);
+        }
+    }, [navigate]);
 
     // ── Core state ────────────────────────────────────────────────────────────
     const [code, setCode]               = useState(EXAMPLES.bubbleSort.code);
@@ -425,7 +452,7 @@ const Visualizer = () => {
             `}</style>
 
             {/* ── NAVBAR (from parent project) ───────────────────────────── */}
-            <Navbar />
+            <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
 
             {/* ── TOP BAR ────────────────────────────────────────────────── */}
             <TopBar
