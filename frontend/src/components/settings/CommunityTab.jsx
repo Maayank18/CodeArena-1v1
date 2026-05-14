@@ -1,31 +1,34 @@
 import React, { useState } from 'react';
-import PremiumGate from '../PremiumGate';
+
 import { MessageCircle, HelpCircle, ChevronDown, ExternalLink, Users, Sparkles } from 'lucide-react';
 
 const COMMUNITY_LINKS = [
     {
         name: 'VIP Discord Server',
-        desc: 'Join 500+ Pro members in real-time chat, pair programming, and weekly challenges.',
+        desc: 'Join 500+ members in real-time chat, pair programming, and weekly challenges.',
         url: '#',
         icon: MessageCircle,
         gradient: 'from-indigo-500 to-purple-600',
         glow: 'shadow-indigo-500/30',
+        status: 'coming_soon'
     },
     {
         name: 'WhatsApp Community',
         desc: 'Get notified about contests, updates, and connect with fellow competitive coders.',
-        url: '#',
+        url: 'https://chat.whatsapp.com/HPnSvhGyEemK7qjEkq8iWb',
         icon: Users,
         gradient: 'from-emerald-500 to-green-600',
         glow: 'shadow-emerald-500/30',
+        status: 'active'
     },
     {
-        name: 'Pro Exclusive Events',
+        name: 'Exclusive Events',
         desc: 'Access invite-only hackathons, AMAs with industry engineers, and mock interviews.',
         url: '#',
         icon: Sparkles,
         gradient: 'from-amber-500 to-orange-600',
         glow: 'shadow-amber-500/30',
+        status: 'coming_soon'
     },
 ];
 
@@ -78,12 +81,12 @@ const CommunityTab = () => {
     const [openFaq, setOpenFaq] = useState(null);
 
     return (
-        <PremiumGate requiredTier="pro">
+        <div className="animate-fade-in">
             <div className="space-y-10">
                 {/* Social Cards */}
                 <section>
-                    <h2 className="text-2xl font-black mb-2">Pro Community</h2>
-                    <p className="text-[var(--text-secondary)] text-sm mb-6">Exclusive channels for Pro members.</p>
+                    <h2 className="text-2xl font-black mb-2">CodeArena Community</h2>
+                    <p className="text-[var(--text-secondary)] text-sm mb-6">Connect with coders across the globe.</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {COMMUNITY_LINKS.map(link => {
@@ -98,14 +101,20 @@ const CommunityTab = () => {
                                     </div>
                                     <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{link.name}</h3>
                                     <p className="text-sm text-[var(--text-secondary)] mb-5 leading-relaxed">{link.desc}</p>
-                                    <a
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:text-[#3bd175] transition-colors"
-                                    >
-                                        Join Now <ExternalLink size={14} />
-                                    </a>
+                                    {link.status === 'active' ? (
+                                        <a
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-sm font-bold text-accent hover:text-[#3bd175] transition-colors"
+                                        >
+                                            Join Now <ExternalLink size={14} />
+                                        </a>
+                                    ) : (
+                                        <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] opacity-50 cursor-default">
+                                            Coming Soon
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -130,7 +139,7 @@ const CommunityTab = () => {
                     </div>
                 </section>
             </div>
-        </PremiumGate>
+        </div>
     );
 };
 
