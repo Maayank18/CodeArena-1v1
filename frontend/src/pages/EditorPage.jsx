@@ -542,7 +542,7 @@ const EditorPage = () => {
                 isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
             }`}>
                 <div className="flex items-center gap-3 overflow-hidden">
-                    <Avatar username={p?.username} avatarFrame={p?.customization?.avatarFrame} className="h-8 w-8 flex-shrink-0" />
+                    <Avatar username={p?.username} src={p?.avatar} avatarFrame={p?.customization?.avatarFrame} className="h-8 w-8 flex-shrink-0" />
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
                             <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>

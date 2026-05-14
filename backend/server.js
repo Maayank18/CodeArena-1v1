@@ -764,7 +764,7 @@ io.use(async (socket, next) => {
     }
 
     const user = await User.findById(decoded.id)
-      .select('_id username subscriptionPlan role customization passwordChangedAt')
+      .select('_id username avatar subscriptionPlan role customization passwordChangedAt')
       .lean();
 
     if (!user) {
@@ -788,6 +788,7 @@ io.use(async (socket, next) => {
       username: user.username,
       subscriptionPlan: user.subscriptionPlan || 'free',
       role: user.role || 'user',
+      avatar: user.avatar || '',
       customization: user.customization || {
         entranceBanner: 'default-dark',
         tagline: 'Novice',
@@ -1419,6 +1420,7 @@ io.on('connection', async (socket) => {
       if (playerIndex !== -1) {
         // Reconnecting player
         room.players[playerIndex].id = socket.id;
+        room.players[playerIndex].avatar = authUser.avatar || '';
         room.players[playerIndex].customization = authUser.customization;
         side = room.players[playerIndex].side;
         isReconnect = true;
@@ -1430,7 +1432,7 @@ io.on('connection', async (socket) => {
             return; 
         }
         side = reservedSide || (room.players.length === 0 ? 'left' : 'right');
-        room.players.push({ id: socket.id, username, side, customization: authUser.customization, userId: authUser._id });
+        room.players.push({ id: socket.id, username, side, avatar: authUser.avatar || '', customization: authUser.customization, userId: authUser._id });
         room.scores[username] = room.scores[username] || 0;
         room.submissionCountByUser[username] = room.submissionCountByUser[username] || 0;
         console.log(`[ROOM] ➕ ${username} joined ${roomId} as ${side}`);

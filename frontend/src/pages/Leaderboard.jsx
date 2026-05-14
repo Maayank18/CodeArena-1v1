@@ -100,6 +100,7 @@ const Leaderboard = () => {
           <div className="col-span-7 sm:col-span-5 flex items-center gap-3 pl-2 overflow-hidden">
             <Avatar 
               username={player.username} 
+              src={player.avatar}
               avatarFrame={player.customization?.avatarFrame}
               className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 border-2 border-transparent group-hover:border-accent transition-all" 
             />
