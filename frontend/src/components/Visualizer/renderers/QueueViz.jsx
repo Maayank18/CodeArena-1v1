@@ -169,10 +169,10 @@ const QueueViz = memo(({ data, pointers, capacity = null, front = null, rear = n
                                                     : '0 4px 12px rgba(245, 158, 11, 0.2)')
                                                 : (isLight ? '0 10px 24px rgba(15, 23, 42, 0.08)' : 'none'),
                                         }}
-                                        className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center border-2 rounded-xl relative backdrop-blur-sm"
+                                        className="flex items-center justify-center border-2 rounded-xl relative backdrop-blur-sm" style={{ width: "var(--vz-cell-size)", height: "var(--vz-cell-size)" }}
                                     >
                                         <span
-                                            className="text-sm font-mono font-bold"
+                                            className="font-mono font-bold" style={{ fontSize: "var(--vz-cell-font)" }}
                                             style={{ color: isOverCapacity ? '#f87171' : isActive ? colors.activeText : colors.textPrimary }}
                                         >
                                             {val}

@@ -374,110 +374,62 @@ const Visualizer = () => {
             />
             {/* Inject scoped CSS variables for both themes */}
             <style>{`
-                .viz-root[data-theme="dark"] {
-                    --vz-bg-primary:   #0d1117;
-                    --vz-bg-secondary: #161b22;
-                    --vz-bg-hover:     #1f2937;
-                    --vz-border:       #30363d;
-                    --vz-text-primary: #e6edf3;
-                    --vz-text-muted:   #8b949e;
-                    --vz-accent:       #58a6ff;
-                    --vz-accent-glow:  rgba(88,166,255,0.15);
-                    --vz-green:        #3fb950;
-                    --vz-red:          #f85149;
-                    --vz-badge-bg:     rgba(88,166,255,0.1);
-                }
-                .viz-root[data-theme="light"] {
-                    /* Legacy Bright Theme Visualizer Tokens (for quick reversal)
-                    --vz-bg-primary:   #ffffff;
-                    --vz-bg-secondary: #f6f8fa;
-                    --vz-bg-hover:     #eaeef2;
-                    --vz-border:       #d0d7de;
-                    */
-                    --vz-bg-primary:   #fafaf9;
-                    --vz-bg-secondary: #ffffff;
-                    --vz-bg-hover:     #f1f5f9;
-                    --vz-border:       #e5e7eb;
-                    --vz-text-primary: #1f2328;
-                    --vz-text-muted:   #64748b;
-                    --vz-accent:       #0969da;
-                    --vz-accent-glow:  rgba(9,105,218,0.1);
-                    --vz-green:        #166534;
-                    --vz-red:          #cf222e;
-                    --vz-badge-bg:     rgba(9,105,218,0.08);
-                }
-                /* Utility classes bound to vz tokens */
-                .vz-bg-p  { background-color: var(--vz-bg-primary); }
-                .vz-bg-s  { background-color: var(--vz-bg-secondary); }
-                .vz-border { border-color: var(--vz-border); }
-                .vz-text  { color: var(--vz-text-primary); }
-                .vz-muted { color: var(--vz-text-muted); }
-                .vz-accent { color: var(--vz-accent); }
-
-                /* Smooth line-highlight fade */
-                .active-line-highlight {
-                    background: rgba(88,166,255,0.12) !important;
-                    border-left: 3px solid var(--vz-accent) !important;
-                    transition: background 0.2s ease;
-                }
-                .active-line-glyph {
-                    background: var(--vz-accent) !important;
-                    width: 4px !important;
-                    margin-left: 2px !important;
-                }
-                .active-line-decoration::before {
-                    content: '▶';
-                    color: var(--vz-accent);
-                    font-size: 10px;
-                    position: absolute;
-                    left: -12px;
-                }
-
-                /* Custom scrollbar */
-                .vz-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-                .vz-scroll::-webkit-scrollbar-track { background: transparent; }
-                .vz-scroll::-webkit-scrollbar-thumb {
-                    background: var(--vz-border);
-                    border-radius: 3px;
-                }
-                .vz-scroll::-webkit-scrollbar-thumb:hover {
-                    background: var(--vz-text-muted);
-                }
-
                 @keyframes fadeSlideIn {
-                    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-                    to   { opacity: 1; transform: translateY(0)   scale(1);    }
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
+                .vz-bg-p { background: #0d1117; }
+                .vz-bg-s { background: #161b22; }
+                .vz-border { border-color: var(--vz-border); }
+                .vz-text { color: var(--vz-text-primary); }
+                .vz-muted { color: var(--vz-text-muted); }
                 
                 .vz-segmented-control {
                     display: flex;
-                    padding: 3px;
-                    border-radius: 10px;
+                    padding: 2px;
+                    border-radius: 8px;
                     background: var(--vz-bg-primary);
                     border: 1px solid var(--vz-border);
                 }
                 .vz-segmented-control button {
-                    padding: 5px 12px;
-                    border-radius: 7px;
-                    font-size: 11px;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    font-size: 10px;
                     font-weight: 700;
                     transition: all 0.2s ease;
                 }
                 .vz-segmented-control button.active {
                     background: var(--vz-accent);
                     color: #fff;
-                    box-shadow: 0 2px 8px var(--vz-accent-glow);
+                    box-shadow: 0 2px 6px var(--vz-accent-glow);
                 }
                 .vz-segmented-control button:not(.active) {
                     color: var(--vz-text-muted);
                 }
-                .vz-segmented-control button:not(.active):hover {
-                    color: var(--vz-text-primary);
-                    background: var(--vz-bg-hover);
+                
+                /* Responsive Visualization Cell Sizes */
+                :root {
+                    --vz-cell-size: 56px;
+                    --vz-cell-font: 1.1rem;
+                    --vz-stack-width: 96px;
+                }
+                @media (max-width: 640px) {
+                    :root {
+                        --vz-cell-size: 42px;
+                        --vz-cell-font: 0.85rem;
+                        --vz-stack-width: 80px;
+                    }
+                }
+                @media (max-width: 400px) {
+                    :root {
+                        --vz-cell-size: 36px;
+                        --vz-cell-font: 0.75rem;
+                        --vz-stack-width: 70px;
+                    }
                 }
                 
                 .anim-dropdown { animation: fadeSlideIn 0.18s ease forwards; }
-            `}</style>
+    `}</style>
 
             {/* ── NAVBAR (from parent project) ───────────────────────────── */}
             <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
@@ -577,35 +529,32 @@ const TopBar = ({
     groupedExamples, loadExample, navigate,
 }) => (
     <div
-        className="h-14 sm:h-16 border-b vz-border vz-bg-s flex items-center
-                   justify-between px-3 sm:px-5 shrink-0 z-20 relative"
+        className="h-14 sm:h-16 border-b vz-border vz-bg-s flex items-center px-2 sm:px-5 shrink-0 z-[100] relative gap-2 sm:gap-4"
         style={{ boxShadow: '0 1px 0 var(--vz-border)' }}
     >
         {/* Left — back */}
-        <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 vz-muted
-                       hover:vz-text rounded-lg transition-colors group
-                       hover:bg-[var(--vz-bg-hover)] text-sm font-medium"
-            aria-label="Back to Dashboard"
-        >
-            <ArrowLeft
-                size={17}
-                className="group-hover:-translate-x-0.5 transition-transform"
-            />
-            <span className="hidden md:inline">Back</span>
-        </button>
+        <div className="flex-1 flex items-center">
+            <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-1.5 px-2 py-1.5 vz-muted
+                           hover:vz-text rounded-lg transition-colors group
+                           hover:bg-[var(--vz-bg-hover)] text-xs sm:text-sm font-medium"
+                aria-label="Back to Dashboard"
+            >
+                <ArrowLeft size={17} className="group-hover:-translate-x-0.5 transition-transform" />
+                <span className="hidden sm:inline">Back</span>
+            </button>
+        </div>
 
         {/* Center — branding */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                        flex items-center gap-2 pointer-events-none select-none">
-            <Sparkles size={18} style={{ color: 'var(--vz-accent)' }} />
-            <span className="font-extrabold text-sm sm:text-lg tracking-tight vz-text">
-                <span className="hidden xs:inline">Algorithm </span>
+        <div className="flex-[2] flex justify-center items-center gap-1.5 sm:gap-2 select-none overflow-hidden">
+            <Sparkles size={16} className="shrink-0" style={{ color: 'var(--vz-accent)' }} />
+            <span className="font-extrabold text-[11px] sm:text-lg tracking-tight vz-text truncate">
+                <span className="hidden xs:inline">Algo </span>
                 <span style={{ color: 'var(--vz-accent)' }}>Visualizer</span>
             </span>
             <span
-                className="text-[8px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded border uppercase tracking-widest shrink-0"
+                className="hidden md:inline-block text-[8px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded border uppercase tracking-widest shrink-0"
                 style={{
                     background: 'var(--vz-badge-bg)',
                     color: 'var(--vz-accent)',
@@ -617,41 +566,15 @@ const TopBar = ({
         </div>
 
         {/* Right — controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-
-            {/* Mobile tab switcher (Segmented Control) */}
-            <div className="flex lg:hidden vz-segmented-control">
-                {['editor', 'visualizer'].map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setMobileTab(tab)}
-                        className={mobileTab === tab ? 'active' : ''}
-                    >
-                        {tab === 'editor' ? 'Code' : 'View'}
-                    </button>
-                ))}
-            </div>
-
-            {/* Theme toggle */}
-            <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg border vz-border vz-bg-p vz-muted
-                           hover:vz-text transition-colors hover:bg-[var(--vz-bg-hover)]"
-                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-                {theme === 'dark'
-                    ? <Sun size={16} />
-                    : <Moon size={16} />
-                }
-            </button>
-
+        <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-3">
+            
             {/* Examples dropdown */}
             <div className="relative">
                 <button
                     onClick={() => setShowExamples(v => !v)}
-                    className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-2
+                    className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-2
                                rounded-lg border vz-border vz-bg-p vz-muted
-                               hover:vz-text hover:bg-[var(--vz-bg-hover)] transition-all"
+                               hover:vz-text hover:bg-[var(--vz-bg-hover)] transition-all shrink-0"
                 >
                     <Code2 size={15} style={{ color: 'var(--vz-accent)' }} />
                     <span className="hidden sm:inline">Examples</span>
@@ -663,51 +586,52 @@ const TopBar = ({
 
                 {showExamples && (
                     <>
-                        {/* Backdrop */}
-                        <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setShowExamples(false)}
-                        />
-                        {/* Dropdown */}
-                        <div
-                            className="absolute right-0 top-12 w-72 sm:w-80 rounded-xl border
-                                       vz-border vz-bg-s z-50 overflow-hidden anim-dropdown"
-                            style={{ boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}
-                        >
-                            <div className="px-4 py-2.5 border-b vz-border vz-bg-p">
-                                <p className="text-[10px] font-bold vz-muted uppercase tracking-wider">
-                                    Algorithm Examples
-                                </p>
-                            </div>
-                            <div className="max-h-[360px] overflow-y-auto vz-scroll">
-                                {Object.entries(groupedExamples).map(([cat, items]) => (
-                                    <div key={cat}>
-                                        <div className="px-4 py-1.5 border-b vz-border sticky top-0 vz-bg-s z-10">
-                                            <span className="text-[9px] font-bold vz-muted uppercase tracking-wider">
-                                                {cat}
-                                            </span>
-                                        </div>
-                                        {items.map(({ key, name, icon }) => (
+                        <div className="fixed inset-0 z-40" onClick={() => setShowExamples(false)} />
+                        <div className="absolute right-0 mt-2 w-64 max-h-[70vh] overflow-y-auto 
+                                      rounded-xl border vz-border vz-bg-s shadow-2xl z-50 p-2 anim-dropdown custom-scrollbar">
+                            {Object.entries(groupedExamples).map(([cat, items]) => (
+                                <div key={cat} className="mb-3 last:mb-0">
+                                    <div className="px-2 py-1 text-[9px] font-bold uppercase tracking-widest vz-muted mb-1 opacity-50">
+                                        {cat}
+                                    </div>
+                                    <div className="space-y-1">
+                                        {items.map(ex => (
                                             <button
-                                                key={key}
-                                                onClick={() => loadExample(key)}
-                                                className="w-full text-left px-4 py-2.5 text-sm vz-text
-                                                           flex items-center gap-3 border-b vz-border last:border-0
-                                                           hover:bg-[var(--vz-accent-glow)] group transition-colors"
+                                                key={ex.key}
+                                                onClick={() => { loadExample(ex.key); setShowExamples(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
+                                                         vz-text hover:bg-[var(--vz-bg-hover)] transition-colors text-left"
                                             >
-                                                <span className="text-lg group-hover:scale-110 transition-transform shrink-0">
-                                                    {icon}
-                                                </span>
-                                                <span className="font-medium">{name}</span>
+                                                <span className="text-lg shrink-0">{ex.icon}</span>
+                                                <span className="text-xs font-medium truncate">{ex.name}</span>
                                             </button>
                                         ))}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
                     </>
                 )}
             </div>
+
+            <div className="flex lg:hidden vz-segmented-control shrink-0">
+                {['editor', 'visualizer'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setMobileTab(tab)}
+                        className={mobileTab === tab ? 'active' : ''}
+                    >
+                        {tab === 'editor' ? 'Code' : 'View'}
+                    </button>
+                ))}
+            </div>
+            <button
+                onClick={toggleTheme}
+                className="p-1.5 sm:p-2 rounded-lg border vz-border vz-bg-p vz-muted
+                           hover:vz-text transition-colors hover:bg-[var(--vz-bg-hover)] shrink-0"
+            >
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
         </div>
     </div>
 );

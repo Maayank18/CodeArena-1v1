@@ -316,7 +316,7 @@ const MatrixCell = memo(({
             }}
             transition={{ duration: 0.2, type: 'spring', stiffness: 300, damping: 25 }}
             className={`flex items-center justify-center border-2 rounded-lg relative ${fontSize} font-mono font-bold`}
-            style={{ width: cellSize, height: cellSize, color: style.text }}
+            style={{ width: 'var(--vz-cell-size)', height: 'var(--vz-cell-size)', color: style.text }}
         >
             <span className="z-10 truncate px-0.5">
                 {displayValue === null ? 'null'

@@ -144,7 +144,7 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLigh
                     delay: depth * 0.05,
                 }}
                 className={`rounded-full flex items-center justify-center border-[2px] shadow-lg relative backdrop-blur-sm transition-colors bg-gradient-to-br ${style.gradient} ${style.border}`}
-                style={{ width: sizing.nodeSize, height: sizing.nodeSize }}
+                style={{ width: 'var(--vz-cell-size)', height: 'var(--vz-cell-size)' }}
             >
                 <span className={`${sizing.fontSize} font-mono font-bold drop-shadow-md ${style.text}`}>
                     {value}
@@ -215,14 +215,14 @@ function getNodeStyle(isLeaf, metadata, isLight) {
 
 const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
-        <div className="w-full relative" style={{ height: sizing.gap, minWidth: `${children.length * sizing.gap * 1.5}px` }}>
+        <div className="w-full relative" style={{ height: 'var(--vz-tree-gap)', minWidth: `calc(${children.length} * var(--vz-tree-gap) * 1.5)` }}>
             <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
                 {children.map((child, idx) => {
                     const xPos = ((idx + 1) / (children.length + 1)) * 100;
                     return (
                         <motion.path
                             key={idx}
-                            d={`M 50% 0 C 50% ${sizing.gap / 2}, ${xPos}% ${sizing.gap / 2}, ${xPos}% 100%`}
+                            d={`M 50% 0 C 50% 50%, ${xPos}% 50%, ${xPos}% 100%`}
                             fill="none"
                             stroke={child.node ? (isLight ? '#6366f1' : '#818cf8') : (isLight ? '#94a3b8' : '#4b5563')}
                             strokeWidth="1.5"
@@ -236,7 +236,7 @@ const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) =
             </svg>
         </div>
 
-        <div className="flex items-start pt-1" style={{ gap: sizing.gap }}>
+        <div className="flex items-start pt-1" style={{ gap: 'var(--vz-tree-gap)' }}>
             {children.map((child, idx) => (
                 <div key={idx}>
                     <TreeNode node={child.node} label={child.label} depth={depth + 1} visited={visited} sizing={sizing} isLight={isLight} />

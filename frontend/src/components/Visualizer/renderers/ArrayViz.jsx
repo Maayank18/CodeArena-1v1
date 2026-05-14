@@ -81,7 +81,11 @@ const ArrayViz = memo(({ data, pointers }) => {
                                             : (isLight ? '0 10px 24px rgba(15, 23, 42, 0.08)' : 'none'),
                                         y: isActive ? -8 : 0,
                                     }}
-                                    className="w-14 h-14 flex items-center justify-center border-2 rounded-xl relative overflow-hidden backdrop-blur-sm transition-colors duration-200"
+                                    className="flex items-center justify-center border-2 rounded-xl relative overflow-hidden backdrop-blur-sm transition-colors duration-200"
+                                    style={{
+                                        width: 'var(--vz-cell-size)',
+                                        height: 'var(--vz-cell-size)',
+                                    }}
                                 >
                                     <div
                                         className="absolute inset-x-2 top-1 h-3 rounded-full opacity-50"
@@ -92,8 +96,11 @@ const ArrayViz = memo(({ data, pointers }) => {
                                         }}
                                     />
                                     <span
-                                        className="text-lg font-mono font-bold z-10"
-                                        style={{ color: isActive ? colors.activeText : colors.textPrimary }}
+                                        className="font-mono font-bold z-10"
+                                        style={{ 
+                                            color: isActive ? colors.activeText : colors.textPrimary,
+                                            fontSize: 'var(--vz-cell-font)'
+                                        }}
                                     >
                                         {val === null ? '∅' : String(val)}
                                     </span>

@@ -122,10 +122,10 @@ const StackViz = memo(({ data, pointers, capacity = null, isFull = false }) => {
                                                     : '0 0 15px rgba(245, 158, 11, 0.2)')
                                                 : (isLight ? '0 10px 24px rgba(15, 23, 42, 0.08)' : 'none'),
                                         }}
-                                        className="w-24 h-10 flex items-center justify-center border-2 rounded-md relative backdrop-blur-sm"
+                                        className="flex items-center justify-center border-2 rounded-md relative backdrop-blur-sm" style={{ width: "var(--vz-stack-width)", height: "var(--vz-cell-size)" }}
                                     >
                                         <span
-                                            className="text-sm font-mono font-bold"
+                                            className="font-mono font-bold" style={{ fontSize: "var(--vz-cell-font)" }}
                                             style={{ color: isOverCapacity ? '#f87171' : isActive ? colors.activeText : colors.textPrimary }}
                                         >
                                             {val}
