@@ -52,11 +52,11 @@ const ControlBar = ({
 
     // Slider fill style — safe from NaN
     const sliderStyle = {
-        background: `linear-gradient(to right,
-            var(--vz-accent) 0%,
-            var(--vz-accent) ${progressPct}%,
-            var(--vz-border) ${progressPct}%,
-            var(--vz-border) 100%)`,
+        '--slider-bg': `linear-gradient(to right, 
+            var(--vz-accent) 0%, 
+            var(--vz-accent) ${progressPct}%, 
+            rgba(255, 255, 255, 0.2) ${progressPct}%, 
+            rgba(255, 255, 255, 0.2) 100%)`
     };
 
     return (
@@ -66,16 +66,16 @@ const ControlBar = ({
          *   Tablet  (sm):  Two rows — Row1: run+speed, Row2: step controls + scrubber
          *   Desktop (lg):  Single row, everything inline
          */
-        <div className="w-full flex flex-col gap-2 sm:gap-2.5">
+        <div className="w-full flex flex-col md:flex-row items-center justify-center gap-2 sm:gap-4 py-1.5">
 
             {/* ── ROW 1: Run button + Speed selector ──────────────────────── */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
                 {/* Run & Visualize */}
                 <button
                     onClick={onRun}
                     disabled={loading}
-                    className="run-btn flex items-center justify-center gap-2 px-5 py-2
+                    className="run-btn flex items-center justify-center gap-2 px-4 py-1.5
                                rounded-full font-bold text-sm text-white transition-all
                                active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
                                disabled:scale-100 shadow-md w-full sm:w-auto"
@@ -130,14 +130,14 @@ const ControlBar = ({
 
             {/* ── ROW 2: Step controls + Scrubber (only when trace exists) ── */}
             {hasTrace && (
-                <div className="flex items-center gap-2 sm:gap-3 w-full">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
 
                     {/* Step control group */}
                     <div
                         className="flex items-center gap-0 sm:gap-0.5 rounded-xl border p-1 shrink-0 shadow-sm"
                         style={{
                             background: 'var(--vz-bg-secondary)',
-                            borderColor: 'var(--vz-border)',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
                         }}
                     >
                         {/* Jump to start */}
@@ -164,7 +164,7 @@ const ControlBar = ({
                         <button
                             onClick={onPlayPause}
                             disabled={isAtEnd && !isPlaying}
-                            className="w-10 h-9 flex items-center justify-center rounded-lg
+                            className="w-9 h-8 flex items-center justify-center rounded-lg
                                        text-white transition-all active:scale-90
                                        disabled:opacity-40 disabled:cursor-not-allowed shadow-md mx-1"
                             style={{
@@ -205,7 +205,7 @@ const ControlBar = ({
                     </div>
 
                     {/* ── Scrubber ──────────────────────────────────────── */}
-                    <div className="flex-1 flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="flex-1 flex items-center gap-2 sm:gap-3 self-center min-w-0">
 
                         {/* Step counter */}
                         <span
@@ -223,9 +223,9 @@ const ControlBar = ({
                                 max={Math.max(0, totalSteps - 1)}
                                 value={currentStep}
                                 onChange={handleSliderChange}
-                                className="vz-slider w-full h-1.5 rounded-full appearance-none
+                                className="vz-slider w-full h-2 rounded-full appearance-none
                                            cursor-pointer outline-none"
-                                style={sliderStyle}
+                                style={{ ...sliderStyle, transform: "translateY(-1.5px)" }}
                                 aria-label="Playback position"
                             />
 
@@ -244,7 +244,7 @@ const ControlBar = ({
                                     style={{
                                         background: 'var(--vz-bg-hover)',
                                         color: 'var(--vz-text-primary)',
-                                        border: '1px solid var(--vz-border)',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
                                     }}
                                 >
                                     {progressPct}% · step {currentStep + 1}
@@ -276,7 +276,7 @@ const ControlBar = ({
                                    hover:text-red-400"
                         style={{
                             color: 'var(--vz-text-muted)',
-                            borderColor: 'var(--vz-border)',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
                             background: 'var(--vz-bg-secondary)',
                         }}
                         title="Reset to Start"
@@ -288,14 +288,28 @@ const ControlBar = ({
 
             {/* Slider thumb CSS — can't do with Tailwind alone */}
             <style>{`
+                
+                .vz-slider {
+                    background: var(--slider-bg) !important;
+                }
+                .vz-slider::-webkit-slider-runnable-track {
+                    background: transparent; /* Let the input background show through */
+                    height: 6px;
+                }
+                .vz-slider::-moz-range-track {
+                    background: var(--slider-bg);
+                    height: 6px;
+                    border-radius: 3px;
+                }
                 .vz-slider::-webkit-slider-thumb {
+                    margin-top: -5px; /* Center thumb on 6px track */
                     appearance: none;
                     width: 14px;
                     height: 14px;
                     border-radius: 50%;
                     background: var(--vz-accent);
                     cursor: pointer;
-                    border: 2px solid var(--vz-bg-primary);
+                    border: 3px solid #0d1117;
                     box-shadow: 0 0 0 1px var(--vz-accent);
                     transition: transform 0.15s ease, box-shadow 0.15s ease;
                 }

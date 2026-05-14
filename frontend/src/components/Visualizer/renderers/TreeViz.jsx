@@ -17,10 +17,9 @@ function calculateTreeDimensions(node, visited = new Set()) {
 }
 
 function getOptimalSizing(maxDepth, maxWidth) {
-    if (maxDepth <= 3 && maxWidth <= 4) return { nodeSize: 56, gap: 32, fontSize: 'text-base' };
-    if (maxDepth <= 5 && maxWidth <= 8) return { nodeSize: 44, gap: 24, fontSize: 'text-sm' };
-    if (maxDepth <= 7 && maxWidth <= 16) return { nodeSize: 36, gap: 16, fontSize: 'text-xs' };
-    return { nodeSize: 28, gap: 12, fontSize: 'text-[10px]' };
+    if (maxDepth <= 3) return { nodeSize: 40, gap: 44, fontSize: 'text-sm' };
+    if (maxDepth <= 5) return { nodeSize: 34, gap: 38, fontSize: 'text-xs' };
+    return { nodeSize: 28, gap: 32, fontSize: 'text-[10px]' };
 }
 
 const TreeViz = memo(({ data, name }) => {
@@ -213,38 +212,44 @@ function getNodeStyle(isLeaf, metadata, isLight) {
     };
 }
 
-const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) => (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
-        <div className="w-full relative" style={{ height: 'var(--vz-tree-gap)', minWidth: `calc(${children.length} * var(--vz-tree-gap) * 1.5)` }}>
-            <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
-                {children.map((child, idx) => {
-                    const xPos = ((idx + 1) / (children.length + 1)) * 100;
-                    return (
-                        <motion.path
-                            key={idx}
-                            d={`M 50% 0 C 50% 50%, ${xPos}% 50%, ${xPos}% 100%`}
-                            fill="none"
-                            stroke={child.node ? (isLight ? '#6366f1' : '#818cf8') : (isLight ? '#94a3b8' : '#4b5563')}
-                            strokeWidth="1.5"
-                            strokeOpacity={child.node ? (isLight ? '0.55' : '0.4') : '0.2'}
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{ duration: 0.4, delay: depth * 0.05 }}
-                        />
-                    );
-                })}
-            </svg>
-        </div>
+const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) => {
+    // Ultra-compact, elegant horizontal spacing
+    const horizontalMultiplier = 0.9 + Math.max(0, (2 - depth) * 0.25);
+    const containerWidth = children.length * sizing.gap * horizontalMultiplier;
 
-        <div className="flex items-start pt-1" style={{ gap: 'var(--vz-tree-gap)' }}>
-            {children.map((child, idx) => (
-                <div key={idx}>
-                    <TreeNode node={child.node} label={child.label} depth={depth + 1} visited={visited} sizing={sizing} isLight={isLight} />
-                </div>
-            ))}
-        </div>
-    </motion.div>
-));
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center mt-1">
+            <div className="relative" style={{ height: sizing.gap, minWidth: `${containerWidth}px` }}>
+                <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
+                    {children.map((child, idx) => {
+                        const xPos = ((idx + 1) / (children.length + 1)) * 100;
+                        return (
+                            <motion.path
+                                key={idx}
+                                d={`M 50% 0 C 50% 50%, ${xPos}% 50%, ${xPos}% 100%`}
+                                fill="none"
+                                stroke={child.node ? (isLight ? '#6366f1' : '#818cf8') : (isLight ? '#94a3b8' : '#4b5563')}
+                                strokeWidth="1.5"
+                                strokeOpacity={child.node ? (isLight ? '0.55' : '0.4') : '0.2'}
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{ duration: 0.4, delay: depth * 0.05 }}
+                            />
+                        );
+                    })}
+                </svg>
+            </div>
+
+            <div className="flex items-start" style={{ gap: `${sizing.gap * 0.2}px` }}>
+                {children.map((child, idx) => (
+                    <div key={idx} style={{ padding: '0 2px' }}>
+                        <TreeNode node={child.node} label={child.label} depth={depth + 1} visited={visited} sizing={sizing} isLight={isLight} />
+                    </div>
+                ))}
+            </div>
+        </motion.div>
+    );
+});
 
 const CircularRefNode = memo(({ sizing, isLight }) => (
     <div
