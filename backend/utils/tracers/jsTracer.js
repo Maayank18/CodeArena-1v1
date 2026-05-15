@@ -58,6 +58,8 @@ export const traceJavaScript = async (userCode) => {
     }
 
     const trace = [];
+    const objectIdMap = new WeakMap();
+    let nextObjectId = 1;
 
     try {
         // 2. Instrument
@@ -75,7 +77,7 @@ export const traceJavaScript = async (userCode) => {
                     trace.push({
                         line: 0,
                         type: 'log',
-                        output: args.map(a => safeSerialize(a, new WeakMap(), 0)).join(' '),
+                        output: args.map(a => safeSerialize(a, objectIdMap, (id) => nextObjectId = id, nextObjectId, 0)).join(' '),
                     });
                 },
                 error: (...args) => {},
@@ -102,7 +104,7 @@ export const traceJavaScript = async (userCode) => {
                         // Skip internal instrumentation variables
                         if (key.startsWith('__')) continue;
 
-                        safeVars[key] = safeSerialize(val, new WeakMap(), 0);
+                        safeVars[key] = safeSerialize(val, objectIdMap, (id) => nextObjectId = id, nextObjectId, 0);
                     }
 
                     if (Object.keys(safeVars).length === 0) return;
@@ -156,7 +158,7 @@ export const traceJavaScript = async (userCode) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // SAFE SERIALIZER — depth-limited, cycle-safe, handles all JS types
 // ─────────────────────────────────────────────────────────────────────────────
-function safeSerialize(value, seen = new WeakMap(), depth = 0) {
+function safeSerialize(value, objectIdMap, setNextId, nextId, depth = 0) {
     // Primitives
     if (value === null)      return null;
     if (value === undefined) return undefined;
@@ -179,15 +181,21 @@ function safeSerialize(value, seen = new WeakMap(), depth = 0) {
     // Depth guard — prevents stack overflow on deep trees/graphs
     if (depth >= MAX_DEPTH) return '[MaxDepth]';
 
-    // Cycle guard
-    if (seen.has(value)) return '[Circular]';
-    seen.set(value, true);
+    // Stable ID generation for objects
+    let id = objectIdMap.get(value);
+    if (!id) {
+        id = `obj_${nextId}`;
+        objectIdMap.set(value, id);
+        setNextId(nextId + 1);
+    }
 
-    const next = (v) => safeSerialize(v, seen, depth + 1);
+    // Recursion helper
+    const next = (v) => safeSerialize(v, objectIdMap, setNextId, nextId, depth + 1);
 
     // Map
     if (value instanceof Map) {
         return {
+            __id: id,
             type: 'Map',
             entries: Array.from(value.entries()).map(([k, v]) => [next(k), next(v)]),
         };
@@ -196,6 +204,7 @@ function safeSerialize(value, seen = new WeakMap(), depth = 0) {
     // Set
     if (value instanceof Set) {
         return {
+            __id: id,
             type: 'Set',
             values: Array.from(value.values()).map(next),
         };
@@ -203,7 +212,6 @@ function safeSerialize(value, seen = new WeakMap(), depth = 0) {
 
     // Array
     if (Array.isArray(value)) {
-        // Truncate massive arrays
         const arr = value.length > 500
             ? [...value.slice(0, 500).map(next), `[...${value.length - 500} more]`]
             : value.map(next);
@@ -214,10 +222,10 @@ function safeSerialize(value, seen = new WeakMap(), depth = 0) {
     if (value instanceof Date) return value.toISOString();
 
     // Generic Object
-    const copy = {};
+    const copy = { __id: id };
     let count = 0;
     for (const key of Object.keys(value)) {
-        if (count++ > 100) { copy['[...truncated]'] = true; break; } // Cap object keys
+        if (count++ > 100) { copy['[...truncated]'] = true; break; }
         try {
             copy[key] = next(value[key]);
         } catch (_) {
@@ -226,6 +234,7 @@ function safeSerialize(value, seen = new WeakMap(), depth = 0) {
     }
     return copy;
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AST INSTRUMENTATION — scope-aware, smart injection
@@ -245,13 +254,32 @@ function instrumentJs(code) {
         );
     }
 
+    // ── PHASE 0: Pre-pass to collect top-level declarations ───────────────
+    // This handles hoisting and ensures global variables are visible 
+    // even to functions defined at the top of the file.
+    const globalDecls = new Set();
+    const collectTopLevel = (body) => {
+        body.forEach(node => {
+            if (node.type === 'VariableDeclaration') {
+                node.declarations.forEach(d => {
+                    if (d.id.type === 'Identifier') globalDecls.add(d.id.name);
+                    if (d.id.type === 'ObjectPattern') d.id.properties.forEach(p => globalDecls.add(p.value?.name || p.key?.name));
+                    if (d.id.type === 'ArrayPattern') d.id.elements.forEach(e => e && globalDecls.add(e.name));
+                });
+            } else if (node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') {
+                if (node.id) globalDecls.add(node.id.name);
+            }
+        });
+    };
+    if (ast.body) collectTopLevel(ast.body);
+
     // ── PHASE 1: Scope-aware variable collection ──────────────────────────
     // Build a map: injection_position → Set<variable_names_in_scope_at_that_point>
     
     const inserts = []; // { pos, line, scopeVars: string[] }
 
     // Scope stack: each frame tracks vars declared in that lexical scope
-    const scopeStack = [new Set()]; // index 0 = module/global scope
+    const scopeStack = [globalDecls]; // index 0 = module/global scope (populated by pre-pass)
 
     const pushScope = () => scopeStack.push(new Set());
     const popScope  = () => scopeStack.pop();

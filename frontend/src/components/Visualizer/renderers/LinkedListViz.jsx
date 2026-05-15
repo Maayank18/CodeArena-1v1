@@ -17,7 +17,7 @@ const LinkedListViz = memo(({ data, name }) => {
         let cycleTarget = -1;
 
         while (current && count < VISUAL_LIMIT) {
-            const currentId = current.id || `auto-id-${count}`;
+            const currentId = current.__id || current.id || `auto-id-${count}`;
 
             if (current === '[Circular]') {
                 cycleTarget = 0;
@@ -157,7 +157,7 @@ const NodeBlock = memo(({ val, address }) => {
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
             className="group relative flex w-24 h-12 rounded-md overflow-hidden shadow-xl transition-transform hover:-translate-y-1"
         >

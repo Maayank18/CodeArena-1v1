@@ -9,14 +9,15 @@ const ArrayViz = memo(({ data, pointers }) => {
         if (!Array.isArray(data)) return [];
 
         const counts = new Map();
-        return data.map((val) => {
-            const safeKey = val === null ? 'null' : (val === undefined ? 'undefined' : String(val));
+        return data.map((val, idx) => {
+            const hasId = val && typeof val === 'object' && val.__id;
+            const safeKey = hasId ? val.__id : (val === null ? 'null' : (val === undefined ? 'undef' : String(val)));
             const count = (counts.get(safeKey) || 0) + 1;
             counts.set(safeKey, count);
 
             return {
                 val,
-                id: `${safeKey}_${count}`,
+                id: hasId ? val.__id : `${safeKey}_${count}_${idx}`,
             };
         });
     }, [data]);
@@ -56,8 +57,8 @@ const ArrayViz = memo(({ data, pointers }) => {
                             return (
                                 <motion.div
                                     layout
-                                    key={`cell-${idx}`}
-                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    key={id}
+                                    initial={false}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.5 }}
                                     transition={{

@@ -67,13 +67,13 @@ const TreeViz = memo(({ data, name }) => {
             </div>
 
             <div className="relative z-10 scale-95">
-                <TreeNode node={data} label="root" depth={0} visited={new Set()} sizing={sizing} isLight={isLight} />
+                <TreeNode node={data} label="root" depth={0} visited={new Set()} sizing={sizing} isLight={isLight} path="root" />
             </div>
         </div>
     );
 });
 
-const TreeNode = memo(({ node, label, depth, visited, sizing, isLight }) => {
+const TreeNode = memo(({ node, label, depth, visited, sizing, isLight, path }) => {
     if (visited.has(node)) return <CircularRefNode sizing={sizing} isLight={isLight} />;
     if (depth >= 8) return <MaxDepthNode sizing={sizing} isLight={isLight} />;
     if (!node) return null;
@@ -85,15 +85,15 @@ const TreeNode = memo(({ node, label, depth, visited, sizing, isLight }) => {
     newVisited.add(node);
 
     return (
-        <div className="flex flex-col items-center">
-            <NodeCircle value={value} label={label} depth={depth} isLeaf={isLeaf} metadata={metadata} sizing={sizing} isLight={isLight} />
+        <motion.div layout className="flex flex-col items-center">
+            <NodeCircle value={value} label={label} depth={depth} isLeaf={isLeaf} metadata={metadata} sizing={sizing} isLight={isLight} id={node.__id || path} />
 
             <AnimatePresence>
                 {children.length > 0 && (
-                    <ChildrenContainer children={children} depth={depth} visited={newVisited} sizing={sizing} isLight={isLight} />
+                    <ChildrenContainer children={children} depth={depth} visited={newVisited} sizing={sizing} isLight={isLight} parentPath={path} />
                 )}
             </AnimatePresence>
-        </div>
+        </motion.div>
     );
 });
 
@@ -130,14 +130,14 @@ function extractNodeProperties(node) {
     return { value, children, metadata, isLeaf: children.length === 0 };
 }
 
-const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLight }) => {
+const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLight, id }) => {
     const style = getNodeStyle(isLeaf, metadata, isLight);
 
     return (
-        <div className="relative z-20">
+        <motion.div layout="position" className="relative z-20">
             <motion.div
                 layout
-                initial={{ scale: 0, opacity: 0 }}
+                initial={false}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{
                     type: 'spring',
@@ -154,7 +154,8 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLigh
 
                 {label && (
                     <motion.div
-                        initial={{ opacity: 0, y: 3 }}
+                        layout
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
                         className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold px-1 py-0.5 rounded border shadow-sm uppercase ${style.badge}`}
                     >
@@ -163,7 +164,8 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLigh
                 )}
 
                 {metadata.weight !== null && (
-                    <div
+                    <motion.div
+                        layout
                         className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[7px] font-bold px-1 py-0.5 rounded border"
                         style={{
                             background: isLight ? 'rgba(255,255,255,0.94)' : '#111827',
@@ -172,10 +174,10 @@ const NodeCircle = memo(({ value, label, depth, isLeaf, metadata, sizing, isLigh
                         }}
                     >
                         {metadata.weight}
-                    </div>
+                    </motion.div>
                 )}
             </motion.div>
-        </div>
+        </motion.div>
     );
 });
 
@@ -215,7 +217,7 @@ function getNodeStyle(isLeaf, metadata, isLight) {
     };
 }
 
-const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) => {
+const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight, parentPath }) => {
     // Ultra-compact, elegant horizontal spacing
     const horizontalMultiplier = 0.9 + Math.max(0, (2 - depth) * 0.25);
     const containerWidth = children.length * sizing.gap * horizontalMultiplier;
@@ -227,9 +229,10 @@ const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) =
                     {children.map((child) => {
                         const idx = children.indexOf(child);
                         const xPos = ((idx + 1) / (children.length + 1)) * 100;
+                        const lineKey = child.node?.__id ? `line-${child.node.__id}` : `line-${parentPath}-${child.label}`;
                         return (
                             <motion.path
-                                key={`line-${child.label}`}
+                                key={lineKey}
                                 layout
                                 d={`M 50% 0 C 50% 50%, ${xPos}% 50%, ${xPos}% 100%`}
                                 fill="none"
@@ -246,11 +249,15 @@ const ChildrenContainer = memo(({ children, depth, visited, sizing, isLight }) =
             </div>
 
             <div className="flex items-start" style={{ gap: `${sizing.gap * 0.2}px` }}>
-                {children.map((child) => (
-                    <div key={`node-${child.label}`} style={{ padding: '0 2px' }}>
-                        <TreeNode node={child.node} label={child.label} depth={depth + 1} visited={visited} sizing={sizing} isLight={isLight} />
-                    </div>
-                ))}
+                {children.map((child) => {
+                    const nodePath = `${parentPath}-${child.label}`;
+                    const nodeKey = child.node?.__id || nodePath;
+                    return (
+                        <div key={nodeKey} style={{ padding: '0 2px' }}>
+                            <TreeNode node={child.node} label={child.label} depth={depth + 1} visited={visited} sizing={sizing} isLight={isLight} path={nodePath} />
+                        </div>
+                    );
+                })}
             </div>
         </motion.div>
     );

@@ -24,7 +24,7 @@ const DoublyLinkedListViz = memo(({ data, name }) => {
             const val = rawVal === undefined ? '?' : String(rawVal);
 
             list.push({
-                id: `node-${count}`,
+                id: current.__id || `node-${count}`,
                 index: count,
                 val: val,
             });
@@ -81,7 +81,7 @@ const DoublyLinkedListViz = memo(({ data, name }) => {
                         <motion.div 
                             key={node.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                            initial={false}
                             animate={{ opacity: 1, scale: 1, x: 0 }}
                             transition={{ type: "spring", stiffness: 300, damping: 25 }}
                             className="flex items-center"
