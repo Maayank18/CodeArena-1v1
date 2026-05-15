@@ -79,9 +79,9 @@ const RETRY_POLICY = {
 
 // Per-send timeouts (ms) — aggressive but fair for Render
 const TRANSPORT_TIMEOUTS = {
-    connectionTimeout: 10000,   // TCP connect
-    greetingTimeout:   10000,   // SMTP banner
-    socketTimeout:     15000,   // idle socket
+    connectionTimeout: 30000,   // TCP connect (increased for diagnostic)
+    greetingTimeout:   30000,   // SMTP banner
+    socketTimeout:     45000,   // idle socket
 };
 
 // ─── Diagnostics (exposed via /health) ───────────────────────────────────────
@@ -177,6 +177,9 @@ const getTransporter = async () => {
         maxMessages: 100,
         rateDelta: 1000,
         rateLimit: 5,
+        // CRITICAL DIAGNOSTIC: See every byte of the SMTP conversation in Render logs
+        debug: true,
+        logger: true,
         // Security & Stability
         disableFileAccess: true,
         disableNTLM: true,
@@ -413,12 +416,28 @@ export const verifySmtpConnection = async () => {
     }
 
     try {
+        // TCP REACHABILITY TEST: Raw socket test to bypass SMTP logic
+        console.log(`[SMTP-DIAG] Testing TCP reachability to ${config.host}:${config.port}...`);
+        const tcpTest = await new Promise((resolve) => {
+            const socket = net.connect(config.port, config.host);
+            socket.setTimeout(5000);
+            socket.on('connect', () => { socket.destroy(); resolve({ success: true }); });
+            socket.on('error', (err) => { socket.destroy(); resolve({ success: false, error: err.message }); });
+            socket.on('timeout', () => { socket.destroy(); resolve({ success: false, error: 'TCP Timeout' }); });
+        });
+        
+        if (!tcpTest.success) {
+            console.error(`[SMTP-DIAG] ❌ TCP connection failed: ${tcpTest.error}. This confirms Render is blocking outbound traffic to this port.`);
+        } else {
+            console.log(`[SMTP-DIAG] ✅ TCP port is reachable. Issue is likely at the SMTP/TLS handshake level.`);
+        }
+
         const transporter = await getTransporter();
         
         // Wrap verify in a promise race to prevent startup hanging forever
         await Promise.race([
             transporter.verify(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP Verification timed out after 15s')), 15000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error(`SMTP Verification timed out after ${TRANSPORT_TIMEOUTS.connectionTimeout/1000}s`)), TRANSPORT_TIMEOUTS.connectionTimeout))
         ]);
         
         // Do NOT close the transporter — it is a singleton now
