@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { validatePasswordStrength } from '../utils/authSecurity.js';
+import { AUTH_LIMITS, validatePasswordStrength } from '../utils/authSecurity.js';
 import { buildAuthUserPayload, createAuthTrace, normalizeEmail } from '../utils/authFlow.js';
 
 const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;

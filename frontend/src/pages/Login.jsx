@@ -33,7 +33,6 @@ const initialRecoveryData = {
     confirmPassword: '',
     resetToken: '',
     resendAvailableIn: 0,
-    devOtp: '',
 };
 
 const getResetPasswordError = (password) => {
@@ -296,7 +295,6 @@ const Login = () => {
             setRecoveryData((prev) => ({
                 ...prev,
                 resendAvailableIn: data.resendAvailableIn || 0,
-                devOtp: data.devOtp || '',
             }));
             setRecoveryStep('verify');
             toast.success(data.message || 'Verification code sent');
@@ -405,7 +403,6 @@ const Login = () => {
             setRecoveryData((prev) => ({
                 ...prev,
                 resendAvailableIn: data.resendAvailableIn || 0,
-                devOtp: data.devOtp || prev.devOtp,
             }));
             toast.success(data.message || 'Verification code resent');
         } catch (error) {
@@ -663,11 +660,7 @@ const Login = () => {
                             />
                         </div>
 
-                        {recoveryData.devOtp && (
-                            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-xs text-emerald-300">
-                                Development OTP: <span className="font-semibold tracking-[0.2em]">{recoveryData.devOtp}</span>
-                            </div>
-                        )}
+
 
                         <div className="flex items-center justify-between text-sm">
                             <button

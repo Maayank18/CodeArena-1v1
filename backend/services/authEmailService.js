@@ -21,15 +21,16 @@ dns.setDefaultResultOrder('ipv4first');
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const SMTP_CONFIG = {
+// ─── Config Helper ───────────────────────────────────────────────────────────
+const getSmtpConfig = () => ({
     host:    process.env.EMAIL_HOST     || 'smtp.gmail.com',
     port:    parseInt(process.env.EMAIL_PORT || '587', 10),
     secure:  process.env.EMAIL_SECURE   === 'true' || parseInt(process.env.EMAIL_PORT || '587', 10) === 465,
     user:    process.env.EMAIL_USER     || '',
     pass:    process.env.EMAIL_PASS     || '',
     fromName:  process.env.EMAIL_FROM_NAME  || 'CodeArena 1v1',
-    fromEmail: process.env.EMAIL_FROM       || process.env.EMAIL_USER || '',
-};
+    fromEmail: (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').replace(/^["']|["']$/g, ''),
+});
 
 // Retry policy
 const RETRY_POLICY = {
@@ -40,9 +41,9 @@ const RETRY_POLICY = {
 
 // Per-send timeouts (ms) — aggressive but fair for Render
 const TRANSPORT_TIMEOUTS = {
-    connectionTimeout: 8000,   // TCP connect
-    greetingTimeout:   8000,   // SMTP banner
-    socketTimeout:    12000,   // idle socket
+    connectionTimeout: 10000,   // TCP connect
+    greetingTimeout:   10000,   // SMTP banner
+    socketTimeout:     15000,   // idle socket
 };
 
 // ─── Diagnostics (exposed via /health) ───────────────────────────────────────
@@ -65,7 +66,8 @@ export const getSmtpDiagnostics = () => ({ ..._smtpDiag });
 // dormant for >15 min; any cached TCP connection will be dead.
 
 const createTransporter = () => {
-    if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
+    const config = getSmtpConfig();
+    if (!config.user || !config.pass) {
         throw makeSmtpError(
             'SMTP credentials are not configured. Set EMAIL_USER and EMAIL_PASS in your environment variables.',
             'SMTP_NOT_CONFIGURED',
@@ -75,23 +77,24 @@ const createTransporter = () => {
     }
 
     return nodemailer.createTransport({
-        host:   SMTP_CONFIG.host,
-        port:   SMTP_CONFIG.port,
-        secure: SMTP_CONFIG.secure,
+        host:   config.host,
+        port:   config.port,
+        secure: config.secure,
+        family: 4, // Force IPv4 to avoid ENETUNREACH on Render
         auth: {
-            user: SMTP_CONFIG.user,
-            pass: SMTP_CONFIG.pass,
+            user: config.user,
+            pass: config.pass,
         },
-        // Per-call timeouts — prevents the 15s hang you were seeing
+        // Per-call timeouts — prevents hangs
         connectionTimeout: TRANSPORT_TIMEOUTS.connectionTimeout,
         greetingTimeout:   TRANSPORT_TIMEOUTS.greetingTimeout,
         socketTimeout:     TRANSPORT_TIMEOUTS.socketTimeout,
         // Disable connection pooling — we create fresh transporters deliberately
         pool: false,
-        // TLS options: accept self-signed certs in dev, strict in prod
+        // TLS options: stable across cloud hosts
         tls: {
-            rejectUnauthorized: process.env.NODE_ENV === 'production',
-            servername: SMTP_CONFIG.host // Help with SNI
+            rejectUnauthorized: false,
+            servername: config.host // Help with SNI
         },
     });
 };
@@ -125,7 +128,7 @@ const classifySmtpError = (rawError) => {
     // Network unreachable / refused — likely port blocked or wrong host
     if (code === 'ECONNREFUSED' || errno === 'ECONNREFUSED' || code === 'ENETUNREACH' || errno === 'ENETUNREACH') {
         return makeSmtpError(
-            `SMTP connection refused/unreachable on ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}. ` +
+            `SMTP connection refused/unreachable on ${getSmtpConfig().host}:${getSmtpConfig().port}. ` +
             'If using Render, port 25 is blocked — use port 587 (EMAIL_PORT=587) or 465.',
             'SMTP_CONNECTION_REFUSED', 502, false
         );
@@ -134,7 +137,7 @@ const classifySmtpError = (rawError) => {
     // DNS resolution failure — wrong EMAIL_HOST
     if (code === 'ENOTFOUND' || errno === 'ENOTFOUND') {
         return makeSmtpError(
-            `SMTP host not found: "${SMTP_CONFIG.host}". Check your EMAIL_HOST environment variable.`,
+            `SMTP host not found: "${getSmtpConfig().host}". Check your EMAIL_HOST environment variable.`,
             'SMTP_HOST_NOT_FOUND', 502, false
         );
     }
@@ -228,7 +231,14 @@ const sendEmail = async ({ to, subject, html, text }) => {
             throw classifySmtpError(verifyError);
         }
 
-        const from = SMTP_CONFIG.fromEmail;
+        // Structure the 'from' field as an object to prevent header injection/mangling
+        const config = getSmtpConfig();
+        const from = {
+            name: config.fromName,
+            address: config.fromEmail.includes('<') 
+                ? config.fromEmail.split('<')[1].replace('>', '').trim() 
+                : config.fromEmail
+        };
 
         const info = await transporter.sendMail({ from, to, subject, html, text });
 
@@ -254,12 +264,13 @@ const sendEmail = async ({ to, subject, html, text }) => {
 // server — email is important but not worth killing startup over.
 
 export const verifySmtpConnection = async () => {
+    const config = getSmtpConfig();
     _smtpDiag = {
-        configured: Boolean(SMTP_CONFIG.user && SMTP_CONFIG.pass),
-        host:       SMTP_CONFIG.host,
-        port:       SMTP_CONFIG.port,
-        secure:     SMTP_CONFIG.secure,
-        user:       SMTP_CONFIG.user ? `${SMTP_CONFIG.user.slice(0, 4)}***` : null,
+        configured: Boolean(config.user && config.pass),
+        host:       config.host,
+        port:       config.port,
+        secure:     config.secure,
+        user:       config.user ? `${config.user.slice(0, 4)}***` : null,
         verifiedAt: null,
         lastError:  null,
     };
@@ -281,7 +292,7 @@ export const verifySmtpConnection = async () => {
         transporter.close();
 
         _smtpDiag.verifiedAt = new Date().toISOString();
-        console.log(`[SMTP] ✅ Connection verified → ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}`);
+        console.log(`[SMTP] ✅ Connection verified → ${config.host}:${config.port}`);
         return true;
     } catch (error) {
         const structured = classifySmtpError(error);
@@ -298,13 +309,16 @@ export const verifySmtpConnection = async () => {
     }
 };
 
-const getHint = (code) => ({
-    SMTP_NOT_CONFIGURED:     'Set EMAIL_USER and EMAIL_PASS in Render → Environment',
-    SMTP_AUTH_FAILED:        'Gmail requires an App Password. Go to myaccount.google.com/apppasswords',
-    SMTP_CONNECTION_REFUSED: 'Change EMAIL_PORT to 587 and EMAIL_SECURE to false in Render env vars',
-    SMTP_HOST_NOT_FOUND:     'Check EMAIL_HOST — should be smtp.gmail.com for Gmail',
-    SMTP_TIMEOUT:            'Transient. Will retry on next send. Check Render network settings if persistent.',
-}[code] || 'Check EMAIL_* environment variables');
+const getHint = (code) => {
+    const config = getSmtpConfig();
+    return {
+        SMTP_NOT_CONFIGURED:     'Set EMAIL_USER and EMAIL_PASS in Render → Environment',
+        SMTP_AUTH_FAILED:        'Gmail requires an App Password. Go to myaccount.google.com/apppasswords',
+        SMTP_CONNECTION_REFUSED: 'Change EMAIL_PORT to 587 and EMAIL_SECURE to false in Render env vars',
+        SMTP_HOST_NOT_FOUND:     `Check EMAIL_HOST — should be smtp.gmail.com for Gmail (current: ${config.host})`,
+        SMTP_TIMEOUT:            'Transient. Will retry on next send. Check Render network settings if persistent.',
+    }[code] || 'Check EMAIL_* environment variables';
+};
 
 // ─── Email templates ──────────────────────────────────────────────────────────
 

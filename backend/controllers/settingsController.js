@@ -262,7 +262,7 @@ export const requestSettingsOtp = async (req, res) => {
             success: true,
             message: 'Verification code sent to your registered email address.',
             expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
-            ...(emailResult.debug && process.env.NODE_ENV !== 'production' ? { devOtp: otp } : {}),
+
         });
     } catch (error) {
         console.error('REQUEST SETTINGS OTP ERROR:', error);

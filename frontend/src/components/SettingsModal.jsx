@@ -357,7 +357,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
   const [preferencesForm, setPreferencesForm] = useState(() => buildInitialPreferencesForm(user));
   const [otpCode, setOtpCode] = useState('');
   const [otpPending, setOtpPending] = useState(null);
-  const [devOtp, setDevOtp] = useState('');
+
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
@@ -393,7 +393,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
       setActiveTab('profile');
       setOtpPending(null);
       setOtpCode('');
-      setDevOtp('');
+
       setProfileForm(buildInitialProfileForm(user));
       setSecurityForm(buildInitialSecurityForm(user));
       setPreferencesForm(buildInitialPreferencesForm(user));
@@ -412,7 +412,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
   const closeModal = () => {
     setOtpPending(null);
     setOtpCode('');
-    setDevOtp('');
+
     onClose();
   };
 
@@ -524,7 +524,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
       });
       setOtpPending({ password: true });
       setOtpCode('');
-      setDevOtp(data.devOtp || '');
+
       toast.success(data.message || 'Verification code sent');
     } catch (error) {
       if (error?.message === 'Duplicate request') return;
@@ -556,7 +556,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
       }
       setOtpPending(null);
       setOtpCode('');
-      setDevOtp('');
+
       toast.success(data.message || 'Security settings updated');
 
       if (data.requiresReauth) {
@@ -908,7 +908,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   onClick={() => {
                     setOtpPending(null);
                     setOtpCode('');
-                    setDevOtp('');
+
                   }}
                   className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 />
@@ -931,18 +931,14 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                     className="mt-5 w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4 py-4 text-center text-xl font-bold tracking-[0.4em] text-[var(--text-primary)] outline-none transition-colors focus:border-emerald-500"
                     placeholder="000000"
                   />
-                  {devOtp && (
-                    <p className="mt-3 text-xs text-emerald-300">
-                      Development OTP: <span className="font-semibold tracking-[0.25em]">{devOtp}</span>
-                    </p>
-                  )}
+
                   <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <button
                       type="button"
                       onClick={() => {
                         setOtpPending(null);
                         setOtpCode('');
-                        setDevOtp('');
+
                       }}
                       className="rounded-2xl border border-[var(--border-color)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--border-color)] hover:text-[var(--text-primary)]"
                     >

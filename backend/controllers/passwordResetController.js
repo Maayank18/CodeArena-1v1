@@ -143,9 +143,7 @@ export const forgotPassword = async (req, res) => {
 
             return res.json(genericForgotPasswordResponse({
                 resendAvailableIn: AUTH_LIMITS.otpResendCooldownSeconds,
-                ...(emailResult.debug && process.env.NODE_ENV !== 'production'
-                    ? { devOtp: otp, devHint: 'OTP logged in backend console for local development.' }
-                    : {}),
+
                 requestId: otpRequest._id,
             }));
         } catch (emailError) {
