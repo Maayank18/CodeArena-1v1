@@ -417,7 +417,7 @@ export const verifySmtpConnection = async () => {
 
     try {
         // TCP REACHABILITY TEST: Raw socket test to bypass SMTP logic
-        console.log(`[SMTP-DIAG] Testing TCP reachability to ${config.host}:${config.port}...`);
+        console.log(`[SMTP-DIAG] 🔍 Testing TCP reachability to ${config.host}:${config.port}...`);
         const tcpTest = await new Promise((resolve) => {
             const socket = net.connect(config.port, config.host);
             socket.setTimeout(5000);
@@ -427,9 +427,12 @@ export const verifySmtpConnection = async () => {
         });
         
         if (!tcpTest.success) {
-            console.error(`[SMTP-DIAG] ❌ TCP connection failed: ${tcpTest.error}. This confirms Render is blocking outbound traffic to this port.`);
+            console.error(`[SMTP-DIAG] ❌ TCP port ${config.port} is BLOCKED by Render.`);
+            if (config.port === 587) {
+                console.error('[SMTP-DIAG] 💡 ACTION REQUIRED: Render often blocks port 587. Please change EMAIL_PORT to 465 and EMAIL_SECURE to true in your Render dashboard.');
+            }
         } else {
-            console.log(`[SMTP-DIAG] ✅ TCP port is reachable. Issue is likely at the SMTP/TLS handshake level.`);
+            console.log(`[SMTP-DIAG] ✅ TCP port ${config.port} is OPEN. Any further failures are protocol/auth related.`);
         }
 
         const transporter = await getTransporter();
