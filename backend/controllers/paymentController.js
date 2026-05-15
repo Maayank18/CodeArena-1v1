@@ -2,10 +2,11 @@ import mongoose from 'mongoose';
 import PaymentTransaction from '../models/PaymentTransaction.js';
 import User from '../models/User.js';
 import {
-    sendPaymentApprovedEmail,
     sendPaymentRejectedEmail,
     sendPaymentSubmissionEmail,
+    sendPurchaseReceiptEmail,
 } from '../services/authEmailService.js';
+import { getOrCreateInvoice } from './invoiceController.js';
 
 const UTR_REGEX = /^\d{12}$/;
 const PLAN_CATALOG = {
@@ -217,11 +218,18 @@ export const verifyPaymentUtr = async (req, res) => {
             }
 
             transactionPayload = buildTransactionPayload(transaction);
+            
+            // Generate invoice record immediately upon approval
+            const invoice = await getOrCreateInvoice(transaction, user);
+
             emailPayload = {
                 to: user.email,
                 name: user.fullName || user.username,
                 planName: transaction.planName,
                 amount: transaction.amount,
+                invoiceId: invoice.invoiceId,
+                date: new Date(invoice.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                expiryDate: new Date(user.subscriptionExpiry).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
                 adminNotes: sanitizedNotes,
             };
         });
@@ -247,9 +255,14 @@ export const verifyPaymentUtr = async (req, res) => {
     let emailDelivered = false;
 
     try {
-        const emailResult = normalizedDecision === 'approved'
-            ? await sendPaymentApprovedEmail(emailPayload)
-            : await sendPaymentRejectedEmail(emailPayload);
+        let emailResult;
+        if (normalizedDecision === 'approved') {
+            // Send the professional purchase receipt for approvals
+            emailResult = await sendPurchaseReceiptEmail(emailPayload);
+        } else {
+            // Send standard rejection email
+            emailResult = await sendPaymentRejectedEmail(emailPayload);
+        }
 
         emailDelivered = Boolean(emailResult?.delivered);
     } catch (emailError) {

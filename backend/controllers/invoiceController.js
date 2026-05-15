@@ -15,6 +15,29 @@ const ASSETS_DIR = path.join(__dirname, '../../frontend/src/assets');
 const LOGO_PATH = path.join(ASSETS_DIR, 'CodeArenaLogo.png');
 const SIGNATURE_PATH = path.join(ASSETS_DIR, 'Signature.png');
 
+/**
+ * Internal helper to find or create an invoice record for a transaction.
+ */
+export const getOrCreateInvoice = async (transaction, user) => {
+    let invoice = await Invoice.findOne({ transactionId: transaction._id });
+    
+    if (!invoice) {
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const invoiceId = `CA-INV-${dateStr}-${randomStr}`;
+
+        invoice = await Invoice.create({
+            invoiceId,
+            transactionId: transaction._id,
+            userId: user._id,
+            amount: transaction.amount,
+            planName: transaction.planName,
+            issuedAt: transaction.reviewedAt || new Date()
+        });
+    }
+    return invoice;
+};
+
 export const generateInvoicePDF = async (req, res) => {
     try {
         const { transactionId } = req.params;
@@ -38,24 +61,8 @@ export const generateInvoicePDF = async (req, res) => {
 
         const user = await User.findById(req.user._id).select('fullName username email phone').lean();
 
-        // Find or create Invoice record
-        let invoice = await Invoice.findOne({ transactionId });
-        
-        if (!invoice) {
-            // Generate a unique invoice ID: CA-INV-YYYYMMDD-XXXX
-            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-            const invoiceId = `CA-INV-${dateStr}-${randomStr}`;
-
-            invoice = await Invoice.create({
-                invoiceId,
-                transactionId: transaction._id,
-                userId: user._id,
-                amount: transaction.amount,
-                planName: transaction.planName,
-                issuedAt: transaction.reviewedAt || new Date()
-            });
-        }
+        // Use helper to get or create invoice
+        const invoice = await getOrCreateInvoice(transaction, user);
 
         // Generate PDF
         const doc = new PDFDocument({ margin: 50, size: 'A4' });

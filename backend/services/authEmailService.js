@@ -263,7 +263,7 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
                     <tr>
                         <td align="center" style="padding:48px 40px 24px 40px;">
                             <div style="background-color:#0d0d0d;padding:14px 28px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
-                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:-1px;text-transform:uppercase;">CodeArena</span>
+                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:-1px;text-transform:uppercase;">${appName}</span>
                             </div>
                         </td>
                     </tr>
@@ -306,6 +306,156 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
 </body>
 </html>
 `;
+
+/**
+ * Builds a professional HTML receipt for plan purchases.
+ */
+const buildReceiptEmailHtml = ({ name, planName, amount, invoiceId, date, expiryDate }) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#0d0d0d;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;background-color:#0d0d0d;">
+        <tr>
+            <td align="center" style="padding:40px 20px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background-color:#161616;border:1px solid #2a2a2a;border-radius:24px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                    <!-- Header -->
+                    <tr>
+                        <td align="center" style="padding:48px 40px;background-color:#0d0d0d;border-bottom:1px solid #2a2a2a;">
+                            <div style="background-color:#161616;padding:14px 28px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
+                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:-1px;text-transform:uppercase;">CodeArena</span>
+                            </div>
+                            <h1 style="margin:24px 0 0 0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Purchase Successful!</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:40px;">
+                            <p style="margin:0 0 24px 0;color:#a3a3a3;font-size:16px;line-height:1.6;">
+                                Hi ${name},<br><br>
+                                Great news! Your payment for the <strong style="color:#ffffff;">${planName}</strong> membership has been verified and approved. Your account has been upgraded successfully.
+                            </p>
+
+                            <!-- Receipt Box -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#0d0d0d;border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:24px;border-bottom:1px solid #2a2a2a;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td style="color:#6b7280;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Invoice ID</td>
+                                                <td align="right" style="color:#ffffff;font-family:monospace;font-size:13px;font-weight:700;">${invoiceId}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:24px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr style="margin-bottom:12px;">
+                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;">Membership Plan</td>
+                                                <td align="right" style="color:#ffffff;font-size:14px;font-weight:700;padding-bottom:10px;">${planName}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;">Amount Paid</td>
+                                                <td align="right" style="color:#4ade80;font-size:20px;font-weight:800;padding-bottom:10px;">Rs. ${amount}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;">Date Issued</td>
+                                                <td align="right" style="color:#ffffff;font-size:14px;padding-bottom:10px;">${date}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color:#a3a3a3;font-size:14px;">Validity Period</td>
+                                                <td align="right" style="color:#ffffff;font-size:14px;font-weight:700;">30 Days (Until ${expiryDate})</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What's Next -->
+                            <div style="margin-top:36px;">
+                                <h3 style="color:#ffffff;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Premium Benefits Unlocked:</h3>
+                                <ul style="margin:0;padding:0;list-style:none;">
+                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;">
+                                        <span style="position:absolute;left:0;color:#4ade80;font-weight:bold;">✔</span> Access to all Pro Battle Arenas & Visualizers
+                                    </li>
+                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;">
+                                        <span style="position:absolute;left:0;color:#4ade80;font-weight:bold;">✔</span> Custom Battle Rooms with advanced features
+                                    </li>
+                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;">
+                                        <span style="position:absolute;left:0;color:#4ade80;font-weight:bold;">✔</span> Exclusive Badges and Profile Customizations
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div style="margin-top:40px;text-align:center;">
+                                <a href="https://codearena1v1.com/dashboard" style="background-color:#4ade80;color:#000000;padding:18px 36px;border-radius:14px;text-decoration:none;font-weight:900;font-size:14px;display:inline-block;text-transform:uppercase;letter-spacing:1px;box-shadow:0 10px 20px rgba(74,222,128,0.2);">Launch Arena</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:40px;background-color:#0d0d0d;text-align:center;border-top:1px solid #2a2a2a;">
+                            <p style="margin:0;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;line-height:1.5;">
+                                A PDF copy of this invoice is available for download in your <br>Account Settings > Subscription History.
+                            </p>
+                            <div style="margin-top:24px;font-size:11px;color:#374151;">
+                                &copy; 2026 CodeArena 1v1. The Ultimate Battleground for Developers.
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`;
+
+/**
+ * Builds a clean plain-text fallback for receipts.
+ */
+const buildReceiptEmailText = ({ name, planName, amount, invoiceId, date, expiryDate }) => `
+CodeArena 1v1 - Purchase Receipt
+-----------------------------------------
+
+Hi ${name},
+
+Your purchase of the ${planName} membership was successful!
+
+ORDER DETAILS:
+- Invoice ID: ${invoiceId}
+- Plan: ${planName}
+- Amount Paid: Rs. ${amount}
+- Date: ${date}
+- Valid Until: ${expiryDate}
+
+Your account has been upgraded to Pro status. You now have full access to premium arenas, visualizers, and custom room features.
+
+You can download your PDF invoice anytime from your account settings.
+
+Keep coding and climbing the ranks!
+
+--
+CodeArena 1v1
+The Ultimate Battleground for Developers
+(c) 2026 CodeArena
+`;
+
+export const sendPurchaseReceiptEmail = async (args) => {
+    const { to, name, planName, amount, invoiceId, date, expiryDate } = args;
+    const title = 'Your CodeArena 1v1 Purchase Receipt / Invoice';
+    
+    return sendEmail({
+        to,
+        subject: title,
+        html: buildReceiptEmailHtml({ name, planName, amount, invoiceId, date, expiryDate }),
+        text: buildReceiptEmailText({ name, planName, amount, invoiceId, date, expiryDate })
+    });
+};
 
 /**
  * Builds a clean plain-text fallback for OTP emails.
