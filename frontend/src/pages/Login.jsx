@@ -120,8 +120,8 @@ const Login = () => {
             if (formData.username.trim().length < 3) {
                 errors.push('Username must be at least 3 characters');
             }
-            if (formData.phone.trim().length < 10) {
-                errors.push('Phone number must be at least 10 digits');
+            if (formData.phone.trim() && formData.phone.trim().length < 10) {
+                errors.push('Phone number must be at least 10 digits if provided');
             }
         }
 
@@ -222,8 +222,8 @@ const Login = () => {
             return;
         }
 
-        if (isRegister && (!formData.username || !formData.fullName || !formData.phone)) {
-            toast.error('All fields are required for registration');
+        if (isRegister && (!formData.username || !formData.fullName)) {
+            toast.error('Name and Username are required for registration');
             return;
         }
 

@@ -134,7 +134,6 @@ export const buildAuthUserPayload = (user, token, extra = {}) => ({
     bio: user.bio || '',
     preferences: user.preferences || { emailNotifications: true, marketingUpdates: false },
     emailVerified: Boolean(user.emailVerified),
-    phoneVerified: Boolean(user.phoneVerified),
     isPro: Boolean(user.isPro),
     role: user.role || 'user',
     planId: user.planId || null,

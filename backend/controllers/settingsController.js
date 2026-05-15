@@ -60,7 +60,7 @@ const buildSettingsPayload = (user) => ({
     badges: user.badges || [],
     customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
     emailVerified: Boolean(user.emailVerified),
-    phoneVerified: Boolean(user.phoneVerified),
+    emailVerifiedAt: user.emailVerifiedAt || null,
 });
 
 const validateUsername = (username) => {
@@ -99,7 +99,7 @@ const validateProfileInput = ({ fullName, username, bio, avatar }) => {
 export const getSettingsProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified phoneVerified')
+            .select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt')
             .lean();
 
         if (!user) {
@@ -156,7 +156,7 @@ export const updateProfileSettings = async (req, res) => {
                 },
             },
             { new: true, runValidators: true }
-        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified phoneVerified');
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt');
 
         return res.json({
             success: true,
@@ -288,7 +288,7 @@ export const verifySettingsOtp = async (req, res) => {
         }
 
         const user = await User.findById(req.user._id).select(
-            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats passwordChangedAt failedLoginAttempts lockUntil emailVerified phoneVerified'
+            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats passwordChangedAt failedLoginAttempts lockUntil emailVerified emailVerifiedAt'
         );
 
         if (!user) {
@@ -360,12 +360,96 @@ export const verifySettingsOtp = async (req, res) => {
         });
     } catch (error) {
         console.error('VERIFY SETTINGS OTP ERROR:', error.message);
+        return res.status(500).json({ success: false, message: 'Unable to verify your code right now.' });
+    }
+};
 
-        if (error.code === 11000) {
-            return res.status(400).json({ success: false, message: 'That email is already registered' });
+export const requestEmailVerificationOtp = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('+otpCode +otpExpiry +otpAttemptCount username fullName email');
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        return res.status(500).json({ success: false, message: 'Unable to verify your code right now.' });
+        if (user.emailVerified) {
+            return res.status(400).json({ success: false, message: 'Email is already verified' });
+        }
+
+        const otp = generateOtp();
+        user.otpCode = hashOtp(otp);
+        user.otpExpiry = minutesFromNow(AUTH_LIMITS.otpExpiryMinutes);
+        user.otpAttemptCount = 0;
+        user.pendingUpdates = {
+            type: 'email_verification',
+            requestedAt: new Date(),
+        };
+        await user.save();
+
+        await sendSettingsOtpEmail({
+            to: user.email,
+            otp,
+            name: user.fullName || user.username,
+            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+        });
+
+        return res.json({
+            success: true,
+            message: 'Verification code sent to your email.',
+            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
+        });
+    } catch (error) {
+        console.error('REQUEST EMAIL VERIFICATION ERROR:', error);
+        return res.status(500).json({ success: false, message: 'Unable to send verification code.' });
+    }
+};
+
+export const verifyEmailAddress = async (req, res) => {
+    try {
+        const otp = sanitizeString(req.body.otp);
+        if (!otp || otp.length !== 6) {
+            return res.status(400).json({ success: false, message: 'Enter the 6 digit verification code' });
+        }
+
+        const user = await User.findById(req.user._id).select(
+            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt'
+        );
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (user.pendingUpdates?.type !== 'email_verification' && !user.otpCode) {
+            return res.status(400).json({ success: false, message: 'No pending verification request found' });
+        }
+
+        if (user.otpExpiry <= new Date()) {
+            return res.status(400).json({ success: false, message: 'Code expired. Request a new one.' });
+        }
+
+        const otpMatches = safeEqualHex(hashOtp(otp), user.otpCode);
+        if (!otpMatches) {
+            user.otpAttemptCount = (user.otpAttemptCount || 0) + 1;
+            await user.save();
+            return res.status(400).json({ success: false, message: 'Invalid verification code' });
+        }
+
+        user.emailVerified = true;
+        user.emailVerifiedAt = new Date();
+        user.otpCode = null;
+        user.otpExpiry = null;
+        user.otpAttemptCount = 0;
+        user.pendingUpdates = {};
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Email verified successfully.',
+            user: buildSettingsPayload(user),
+        });
+    } catch (error) {
+        console.error('VERIFY EMAIL ERROR:', error);
+        return res.status(500).json({ success: false, message: 'Unable to verify email.' });
     }
 };
 
@@ -420,7 +504,7 @@ export const updateCustomization = async (req, res) => {
             userId,
             { $set: update },
             { new: true, runValidators: true }
-        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified phoneVerified').lean();
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt').lean();
 
         if (!updatedUser) {
             return res.status(404).json({ success: false, message: 'User not found' });

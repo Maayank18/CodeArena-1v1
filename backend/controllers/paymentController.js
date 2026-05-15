@@ -67,7 +67,7 @@ export const submitPaymentUtr = async (req, res) => {
         }
 
         const user = await User.findById(req.user?._id)
-            .select('_id username fullName email emailVerified phoneVerified')
+            .select('_id username fullName email emailVerified')
             .lean();
 
         if (!user) {
@@ -77,10 +77,10 @@ export const submitPaymentUtr = async (req, res) => {
             });
         }
 
-        if (!user.emailVerified || !user.phoneVerified) {
+        if (!user.emailVerified) {
             return res.status(403).json({
                 success: false,
-                message: 'Please verify your email and phone number in settings before purchasing a plan',
+                message: 'Please verify your email address in settings before purchasing a plan',
             });
         }
 

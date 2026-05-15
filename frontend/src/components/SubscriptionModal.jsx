@@ -94,7 +94,6 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
   const isFormValid = (
     orderData.fullName.trim() !== ''
     && orderData.college.trim() !== ''
-    && orderData.phone.trim().length >= 10
     && orderData.agreedToTC
   );
 
@@ -426,14 +425,14 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                     </div>
 
                     <div className="flex flex-col gap-4">
-                      {!user?.emailVerified || !user?.phoneVerified ? (
+                      {!user?.emailVerified ? (
                         <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 mb-2">
                           <div className="flex items-start gap-3">
                             <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
                             <div>
                               <p className="text-[10px] font-bold text-white uppercase tracking-widest">Verification Required</p>
                               <p className="mt-1 text-[10px] text-gray-400 leading-relaxed">
-                                Please verify your email and phone in settings to purchase a plan.
+                                Please verify your email in settings before purchasing a plan.
                               </p>
                               <button
                                 onClick={() => {

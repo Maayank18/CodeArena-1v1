@@ -357,6 +357,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
   const [preferencesForm, setPreferencesForm] = useState(() => buildInitialPreferencesForm(user));
   const [otpCode, setOtpCode] = useState('');
   const [otpPending, setOtpPending] = useState(null);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -539,6 +540,20 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
     }
   };
 
+  const requestEmailVerification = async () => {
+    setRequestingOtp(true);
+    try {
+      const { data } = await api.post('/settings/request-email-verification');
+      setOtpPending({ email: true });
+      setOtpCode('');
+      toast.success(data.message || 'Verification code sent');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Unable to send verification code'));
+    } finally {
+      setRequestingOtp(false);
+    }
+  };
+
   const verifyOtp = async () => {
     if (!otpCode.trim()) {
       toast.error('Enter the 6 digit verification code');
@@ -547,7 +562,9 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
 
     setVerifyingOtp(true);
     try {
-      const { data } = await api.post('/settings/verify-otp', { otp: otpCode.trim() });
+      const endpoint = otpPending?.email ? '/settings/verify-email' : '/settings/verify-otp';
+      const { data } = await api.post(endpoint, { otp: otpCode.trim() });
+      
       if (data.user) {
         persistUser(data.user);
         setProfileForm(buildInitialProfileForm(data.user));
@@ -557,7 +574,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
       setOtpPending(null);
       setOtpCode('');
 
-      toast.success(data.message || 'Security settings updated');
+      toast.success(data.message || 'Updated successfully');
 
       if (data.requiresReauth) {
         onRequireReauth?.();
@@ -773,27 +790,36 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                               placeholder="email@example.com"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                              <StatusBadge verified={user?.emailVerified} />
+                              {user?.emailVerified ? (
+                                <StatusBadge verified={true} />
+                              ) : (
+                                <button
+                                  onClick={requestEmailVerification}
+                                  disabled={requestingOtp}
+                                  className="text-[10px] font-black uppercase tracking-tighter bg-emerald-500 text-black px-2 py-1 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                                >
+                                  {requestingOtp ? '...' : 'Verify Now'}
+                                </button>
+                              )}
                             </div>
                           </div>
-                          <p className="px-2 text-[10px] text-[var(--text-secondary)]">Email changes are currently not handled from this screen.</p>
+                          {!user?.emailVerified && (
+                            <p className="px-2 text-[10px] text-emerald-400 font-bold">Email verification is required to upgrade your plan.</p>
+                          )}
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 opacity-60">
                           <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Phone Number</label>
                           <div className="relative">
                             <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={securityForm.phone}
                               readOnly
-                              className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none"
-                              placeholder="+1 234 567 890"
+                              disabled
+                              className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-secondary)] outline-none cursor-not-allowed"
+                              placeholder="Not provided"
                             />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                              <StatusBadge verified={user?.phoneVerified} />
-                            </div>
                           </div>
-                          <p className="px-2 text-[10px] text-[var(--text-secondary)]">Phone number updates are currently not handled from this screen.</p>
                         </div>
 
                         <div className="grid gap-6 sm:grid-cols-2">
@@ -921,8 +947,14 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                   <div className="mb-4 inline-flex rounded-2xl bg-emerald-500/10 p-3 text-emerald-300">
                     <Settings2 size={22} />
                   </div>
-                  <h3 className="text-xl font-black text-[var(--text-primary)]">Verify Password Change</h3>
-                  <p className="mt-2 text-sm text-[var(--text-secondary)]">Enter the 6 digit code sent to your current email address to update your password.</p>
+                  <h3 className="text-xl font-black text-[var(--text-primary)]">
+                    {otpPending?.email ? 'Verify Email Address' : 'Verify Password Change'}
+                  </h3>
+                  <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    {otpPending?.email 
+                      ? 'Enter the 6 digit code sent to your email to verify your account.' 
+                      : 'Enter the 6 digit code sent to your current email address to update your password.'}
+                  </p>
                   <input
                     value={otpCode}
                     onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}

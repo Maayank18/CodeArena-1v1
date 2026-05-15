@@ -70,17 +70,17 @@ export const registerUser = async (req, res) => {
             hasPassword: Boolean(password),
         });
 
-        if (!fullName || !username || !email || !phone || !password) {
+        if (!fullName || !username || !email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please fill in all fields (Name, User, Email, Phone, Password)',
+                message: 'Please fill in required fields (Name, Username, Email, Password)',
             });
         }
 
         const trimmedFullName = fullName.trim();
         const trimmedUsername = username.trim();
         const trimmedEmail = normalizeEmail(email);
-        const trimmedPhone = phone.trim();
+        const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
 
         const passwordValidationError = validatePasswordStrength(password);
         if (passwordValidationError) {
@@ -115,14 +115,12 @@ export const registerUser = async (req, res) => {
             phone: trimmedPhone,
             password,
             avatar,
-            emailVerified: true, 
-            phoneVerified: true, 
+            emailVerified: false, 
         });
 
         trace.info('user.created', {
             userId: user._id,
             emailVerified: user.emailVerified,
-            phoneVerified: user.phoneVerified,
         });
 
         // Seamless Auto-login after registration
@@ -167,7 +165,7 @@ export const loginUser = async (req, res) => {
 
         const trimmedEmail = normalizeEmail(email);
         const user = await User.findOne({ email: trimmedEmail })
-            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil emailVerified phoneVerified createdAt');
+            .select('+password username fullName email phone avatar bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry rating seasonScore stats badges customization usernameLower failedLoginAttempts lockUntil emailVerified createdAt');
 
         if (!user) {
             trace.warn('lookup.user_not_found');

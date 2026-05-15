@@ -216,16 +216,16 @@ const userSchema = new mongoose.Schema({
     },
     phone: { 
         type: String, 
-        required: true, 
+        required: false, // Make phone optional as per requirements
         trim: true 
     },
     emailVerified: {
         type: Boolean,
         default: false,
     },
-    phoneVerified: {
-        type: Boolean,
-        default: false,
+    emailVerifiedAt: {
+        type: Date,
+        default: null,
     },
     password: { 
         type: String, 
@@ -444,7 +444,13 @@ userSchema.pre('save', async function () {
         this.usernameLower = this.username.toLowerCase();
     }
 
-    // 2. Hash password if modified
+    // 2. Handle email verification invalidation
+    if (this.isModified('email')) {
+        this.emailVerified = false;
+        this.emailVerifiedAt = null;
+    }
+
+    // 3. Hash password if modified
     if (this.isModified('password') && !BCRYPT_HASH_REGEX.test(this.password || '')) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);

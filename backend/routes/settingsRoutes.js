@@ -7,6 +7,8 @@ import {
     requestSettingsOtp,
     updateProfileSettings,
     verifySettingsOtp,
+    requestEmailVerificationOtp,
+    verifyEmailAddress,
     updateCustomization,
     getUserBadges,
     getUserCustomization,
@@ -27,6 +29,8 @@ router.get('/profile', getSettingsProfile);
 router.put('/profile', updateProfileSettings);
 router.post('/request-otp', settingsOtpRateLimiter, requestSettingsOtp);
 router.post('/verify-otp', verifySettingsOtp);
+router.post('/request-email-verification', settingsOtpRateLimiter, requestEmailVerificationOtp);
+router.post('/verify-email', verifyEmailAddress);
 
 // ── Pro Feature Routes (requirePro enforced) ──────────────────
 router.get('/badges', requirePro, getUserBadges);
