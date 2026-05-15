@@ -13,12 +13,26 @@ const sweepExpiredBuckets = () => {
 setInterval(sweepExpiredBuckets, 60 * 1000).unref();
 
 const getClientIp = (req) => {
+    // Priority 1: x-forwarded-for (set by proxies like Vercel, Render, etc.)
+    // Multiple IPs can appear as "client, proxy1, proxy2" - take the first (client)
     const forwarded = req.headers['x-forwarded-for'];
     if (typeof forwarded === 'string' && forwarded.length > 0) {
         return forwarded.split(',')[0].trim();
     }
 
-    return req.ip || req.socket?.remoteAddress || 'unknown';
+    // Priority 2: CF-Connecting-IP (Cloudflare)
+    const cfIp = req.headers['cf-connecting-ip'];
+    if (typeof cfIp === 'string' && cfIp.length > 0) {
+        return cfIp.trim();
+    }
+
+    // Priority 3: req.ip (populated by Express when 'trust proxy' is set)
+    if (req.ip && req.ip !== 'unknown') {
+        return req.ip;
+    }
+
+    // Fallback: socket remote address
+    return req.socket?.remoteAddress || 'unknown';
 };
 
 export const createRateLimiter = ({ keyPrefix, limit, windowMs, message, getKey }) => {

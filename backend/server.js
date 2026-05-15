@@ -581,6 +581,11 @@ const waitForDatabase = async () => {
 // ✅ EXPRESS APP SETUP
 const app = express();
 
+// ✅ CRITICAL: Trust proxy in production (Vercel, Render, etc.)
+// This allows Express to read x-forwarded-for header and correctly identify the real client IP.
+// Without this, rate limiting groups all users under the proxy's IP in production.
+app.set('trust proxy', 1);
+
 const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/+$/, '');
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
