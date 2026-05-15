@@ -17,7 +17,9 @@ import dns from 'dns';
 
 // ── CRITICAL FIX: Force Node.js to use IPv4 first ──
 // This prevents the 'ENETUNREACH' error when trying to connect via IPv6 on Render/cloud hosts.
-dns.setDefaultResultOrder('ipv4first');
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -95,12 +97,15 @@ let _smtpDiag = {
 
 export const getSmtpDiagnostics = () => ({ ..._smtpDiag });
 
-// ─── Transporter factory ──────────────────────────────────────────────────────
-// Returns a FRESH transporter every call.
-// This is intentional: on Render's free tier the process may have been
-// dormant for >15 min; any cached TCP connection will be dead.
+// ─── Transporter Singleton ──────────────────────────────────────────────────
+// We use a singleton transporter with connection pooling for production stability.
+// This avoids the overhead of creating a new TCP connection/handshake for every email.
 
-const createTransporter = () => {
+let _transporter = null;
+
+const getTransporter = () => {
+    if (_transporter) return _transporter;
+
     const config = getSmtpConfig();
     if (!config.user || !config.pass) {
         throw makeSmtpError(
@@ -111,11 +116,28 @@ const createTransporter = () => {
         );
     }
 
-    return nodemailer.createTransport({
+    console.log('[EMAIL] ⚙️ Initializing singleton SMTP transporter', {
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        user: `${config.user.slice(0, 4)}***`,
+        forcingIPv4: true
+    });
+
+    _transporter = nodemailer.createTransport({
         host:   config.host,
         port:   config.port,
         secure: config.secure,
-        family: 4, // Force IPv4 to avoid ENETUNREACH on Render
+        // CRITICAL: Custom DNS lookup to FORCE IPv4 resolution.
+        // This is the most reliable way to prevent ENETUNREACH IPv6 errors on Render.
+        lookup: (hostname, options, callback) => {
+            dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+                if (err) {
+                    console.error(`[EMAIL-DNS] ❌ Failed to resolve ${hostname}:`, err.message);
+                }
+                callback(err, address, family);
+            });
+        },
         auth: {
             user: config.user,
             pass: config.pass,
@@ -124,14 +146,18 @@ const createTransporter = () => {
         connectionTimeout: TRANSPORT_TIMEOUTS.connectionTimeout,
         greetingTimeout:   TRANSPORT_TIMEOUTS.greetingTimeout,
         socketTimeout:     TRANSPORT_TIMEOUTS.socketTimeout,
-        // Disable connection pooling — we create fresh transporters deliberately
-        pool: false,
+        // Enable pooling for efficiency
+        pool: true,
+        maxConnections: 3,
+        maxMessages: 100,
         // TLS options: stable across cloud hosts
         tls: {
             rejectUnauthorized: false,
             servername: config.host // Help with SNI
         },
     });
+
+    return _transporter;
 };
 
 // ─── Structured error factory ─────────────────────────────────────────────────
@@ -267,24 +293,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
             );
         }
         
-        const transporter = createTransporter();
-
-        // Verify the connection BEFORE trying to send.
-        // This surfaces auth/host/port problems immediately with a clear error
-        // rather than letting them manifest as a cryptic timeout.
-        try {
-            await transporter.verify();
-        } catch (verifyError) {
-            const classified = classifySmtpError(verifyError);
-            console.error('[EMAIL] SMTP verification failed before sending', {
-                code: classified.code,
-                message: classified.message,
-                host: config.host,
-                port: config.port,
-                user: config.user ? `${config.user.slice(0, 4)}***` : 'not-set',
-            });
-            throw classified;
-        }
+        const transporter = getTransporter();
 
         // Construct the 'from' field as an object to prevent header injection/mangling
         const from = {
@@ -301,8 +310,11 @@ const sendEmail = async ({ to, subject, html, text }) => {
 
         const info = await transporter.sendMail({ from, to, subject, html, text });
 
-        // Close transport immediately — no lingering TCP connections
-        transporter.close();
+        console.log('[EMAIL] ✅ Email sent successfully', {
+            to,
+            messageId: info.messageId,
+            response: info.response
+        });
 
         _smtpDiag.verifiedAt = new Date().toISOString();
         _smtpDiag.lastError  = null;
@@ -369,7 +381,7 @@ export const verifySmtpConnection = async () => {
     }
 
     try {
-        const transporter = createTransporter();
+        const transporter = getTransporter();
         
         // Wrap verify in a promise race to prevent startup hanging forever
         await Promise.race([
@@ -377,7 +389,7 @@ export const verifySmtpConnection = async () => {
             new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP Verification timed out after 15s')), 15000))
         ]);
         
-        transporter.close();
+        // Do NOT close the transporter — it is a singleton now
 
         _smtpDiag.verifiedAt = new Date().toISOString();
         console.log(`[SMTP] ✅ Connection verified and authenticated`, {
