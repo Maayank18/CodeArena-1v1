@@ -148,6 +148,18 @@ export const forgotPassword = async (req, res) => {
             }));
         } catch (emailError) {
             await restoreOtpRequestState(otpRequest?._id, previousSnapshot);
+            
+            // Log detailed error for debugging
+            console.error('[PASSWORD_RESET] Email sending failed', {
+                userId: user._id,
+                otpRequestId: otpRequest?._id,
+                errorCode: emailError?.code,
+                errorMessage: emailError?.message,
+                errorStatus: emailError?.status,
+                isRetryable: emailError?.retryable,
+                errorStack: process.env.NODE_ENV === 'development' ? emailError?.stack : undefined,
+            });
+            
             trace.error('email.failed_state_restored', emailError, {
                 userId: user._id,
                 otpRequestId: otpRequest?._id,
@@ -157,6 +169,11 @@ export const forgotPassword = async (req, res) => {
                 success: false,
                 message: 'Unable to send verification code right now.',
                 code: emailError?.code || 'PASSWORD_RESET_EMAIL_FAILED',
+                // In development, expose the actual error for debugging
+                ...(process.env.NODE_ENV === 'development' && {
+                    debugError: emailError?.message,
+                    debugCode: emailError?.code,
+                }),
             });
         }
     } catch (error) {

@@ -22,15 +22,50 @@ dns.setDefaultResultOrder('ipv4first');
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 // ─── Config Helper ───────────────────────────────────────────────────────────
-const getSmtpConfig = () => ({
-    host:    process.env.EMAIL_HOST     || 'smtp.gmail.com',
-    port:    parseInt(process.env.EMAIL_PORT || '587', 10),
-    secure:  process.env.EMAIL_SECURE   === 'true' || parseInt(process.env.EMAIL_PORT || '587', 10) === 465,
-    user:    process.env.EMAIL_USER     || '',
-    pass:    process.env.EMAIL_PASS     || '',
-    fromName:  process.env.EMAIL_FROM_NAME  || 'CodeArena 1v1',
-    fromEmail: (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').replace(/^["']|["']$/g, ''),
-});
+const parseEmailAddress = (email) => {
+    if (!email || typeof email !== 'string') return null;
+    
+    email = email.trim();
+    
+    // Format: "Name <email@example.com>" or "Name <email@example.com"
+    const angleMatch = email.match(/<?([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?/);
+    if (angleMatch && angleMatch[1]) {
+        return angleMatch[1].trim();
+    }
+    
+    // Plain email address
+    if (email.includes('@')) {
+        return email;
+    }
+    
+    return null;
+};
+
+const getSmtpConfig = () => {
+    const user = (process.env.EMAIL_USER || '').trim();
+    const pass = (process.env.EMAIL_PASS || '').trim();
+    const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
+    const port = parseInt(process.env.EMAIL_PORT || '587', 10);
+    const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
+    
+    // Parse EMAIL_FROM or fallback to EMAIL_USER
+    let fromEmail = (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
+    if (fromEmail.startsWith('"') && fromEmail.endsWith('"')) {
+        fromEmail = fromEmail.slice(1, -1).trim();
+    }
+    
+    const parsedFromEmail = parseEmailAddress(fromEmail) || user;
+    
+    return {
+        host,
+        port,
+        secure,
+        user,
+        pass,
+        fromName: (process.env.EMAIL_FROM_NAME || 'CodeArena 1v1').trim(),
+        fromEmail: parsedFromEmail,  // Always a valid email or empty
+    };
+};
 
 // Retry policy
 const RETRY_POLICY = {
@@ -220,6 +255,18 @@ const withRetry = async (fn, context = 'email') => {
 
 const sendEmail = async ({ to, subject, html, text }) => {
     return withRetry(async () => {
+        const config = getSmtpConfig();
+        
+        // Validate from address before attempting to send
+        if (!config.fromEmail || !config.fromEmail.includes('@')) {
+            throw makeSmtpError(
+                `Invalid sender email address: "${config.fromEmail}". Set EMAIL_FROM or EMAIL_USER environment variable to a valid email address.`,
+                'SMTP_INVALID_FROM_ADDRESS',
+                500,
+                false
+            );
+        }
+        
         const transporter = createTransporter();
 
         // Verify the connection BEFORE trying to send.
@@ -228,17 +275,29 @@ const sendEmail = async ({ to, subject, html, text }) => {
         try {
             await transporter.verify();
         } catch (verifyError) {
-            throw classifySmtpError(verifyError);
+            const classified = classifySmtpError(verifyError);
+            console.error('[EMAIL] SMTP verification failed before sending', {
+                code: classified.code,
+                message: classified.message,
+                host: config.host,
+                port: config.port,
+                user: config.user ? `${config.user.slice(0, 4)}***` : 'not-set',
+            });
+            throw classified;
         }
 
-        // Structure the 'from' field as an object to prevent header injection/mangling
-        const config = getSmtpConfig();
+        // Construct the 'from' field as an object to prevent header injection/mangling
         const from = {
             name: config.fromName,
-            address: config.fromEmail.includes('<') 
-                ? config.fromEmail.split('<')[1].replace('>', '').trim() 
-                : config.fromEmail
+            address: config.fromEmail
         };
+
+        console.log('[EMAIL] Sending email', {
+            to,
+            subject: subject.substring(0, 60),
+            from: from.address,
+            fromName: from.name,
+        });
 
         const info = await transporter.sendMail({ from, to, subject, html, text });
 
@@ -265,18 +324,47 @@ const sendEmail = async ({ to, subject, html, text }) => {
 
 export const verifySmtpConnection = async () => {
     const config = getSmtpConfig();
+    
+    // Check if credentials are present
+    const hasUser = Boolean(config.user && config.user.length > 0);
+    const hasPass = Boolean(config.pass && config.pass.length > 0);
+    const hasFromEmail = Boolean(config.fromEmail && config.fromEmail.includes('@'));
+    
     _smtpDiag = {
-        configured: Boolean(config.user && config.pass),
+        configured: hasUser && hasPass && hasFromEmail,
         host:       config.host,
         port:       config.port,
         secure:     config.secure,
         user:       config.user ? `${config.user.slice(0, 4)}***` : null,
+        fromEmail:  config.fromEmail || null,
         verifiedAt: null,
         lastError:  null,
     };
 
-    if (!_smtpDiag.configured) {
-        console.warn('[SMTP] ⚠️  EMAIL_USER or EMAIL_PASS is not set. Email delivery will fail until these are configured.');
+    // Early exit if credentials missing
+    if (!hasUser || !hasPass) {
+        console.warn('[SMTP] ⚠️  SMTP Authentication credentials missing', {
+            hasEmailUser: hasUser,
+            hasEmailPass: hasPass,
+            hint: 'Set EMAIL_USER and EMAIL_PASS in your environment variables (e.g., Render → Environment tab)'
+        });
+        _smtpDiag.lastError = { 
+            code: 'SMTP_NOT_CONFIGURED', 
+            message: 'EMAIL_USER and/or EMAIL_PASS not set' 
+        };
+        return false;
+    }
+    
+    if (!hasFromEmail) {
+        console.warn('[SMTP] ⚠️  Sender email address invalid', {
+            emailFrom: process.env.EMAIL_FROM || 'not-set',
+            emailUser: config.user ? `${config.user.slice(0, 4)}***` : 'not-set',
+            hint: 'Set EMAIL_FROM or EMAIL_USER to a valid email address'
+        });
+        _smtpDiag.lastError = { 
+            code: 'SMTP_INVALID_FROM_ADDRESS', 
+            message: `Invalid from address: "${config.fromEmail}"` 
+        };
         return false;
     }
 
@@ -286,13 +374,19 @@ export const verifySmtpConnection = async () => {
         // Wrap verify in a promise race to prevent startup hanging forever
         await Promise.race([
             transporter.verify(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP Verification timed out')), 15000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP Verification timed out after 15s')), 15000))
         ]);
         
         transporter.close();
 
         _smtpDiag.verifiedAt = new Date().toISOString();
-        console.log(`[SMTP] ✅ Connection verified → ${config.host}:${config.port}`);
+        console.log(`[SMTP] ✅ Connection verified and authenticated`, {
+            host: config.host,
+            port: config.port,
+            secure: config.secure,
+            user: `${config.user.slice(0, 4)}***`,
+            fromEmail: config.fromEmail,
+        });
         return true;
     } catch (error) {
         const structured = classifySmtpError(error);
@@ -301,7 +395,11 @@ export const verifySmtpConnection = async () => {
         console.error('[SMTP] ❌ Startup verification failed', {
             code:    structured.code,
             message: structured.message,
+            host: config.host,
+            port: config.port,
+            user: `${config.user.slice(0, 4)}***`,
             hint:    getHint(structured.code),
+            rawError: error.message,
         });
 
         // Not fatal — server continues, but emails will fail until fixed
