@@ -117,53 +117,25 @@ const getTransporter = async () => {
         );
     }
 
-    // CRITICAL: Robust IPv4 enforcement via multiple resolution strategies.
-    // Cloud hosts like Render often have broken IPv6 routes to Gmail.
-    let resolvedHost = config.host;
-    let resolutionMethod = 'default';
-
-    if (net.isIP(config.host)) {
-        resolutionMethod = 'direct-ip';
-    } else {
-        try {
-            // Strategy A: Direct DNS resolution (bypasses OS getaddrinfo)
-            const addresses = await dns.promises.resolve4(config.host);
-            if (addresses && addresses.length > 0) {
-                resolvedHost = addresses[0];
-                resolutionMethod = 'resolve4';
-            }
-        } catch (resolveErr) {
-            try {
-                // Strategy B: Lookup with family hint
-                const lookupResult = await dns.promises.lookup(config.host, { family: 4 });
-                if (lookupResult?.address) {
-                    resolvedHost = lookupResult.address;
-                    resolutionMethod = 'lookup-v4-hint';
-                }
-            } catch (lookupErr) {
-                console.warn(`[EMAIL] ⚠️ DNS resolution failed for ${config.host} via all IPv4 strategies. Falling back to default OS resolution.`, {
-                    resolve4Error: resolveErr.message,
-                    lookupV4Error: lookupErr.message
-                });
-            }
-        }
-    }
-
     console.log('[EMAIL] ⚙️ Initializing singleton SMTP transporter', {
-        host: resolvedHost,
-        originalHost: config.host,
+        host: config.host,
         port: config.port,
         secure: config.secure,
-        resolutionMethod,
         user: `${config.user.slice(0, 4)}***`,
+        forcingIPv4: true
     });
 
     _transporter = nodemailer.createTransport({
-        host:   resolvedHost,
+        host:   config.host, // Use hostname to help protocol-aware firewalls
         port:   config.port,
         secure: config.secure,
-        family: 4,               // Force IPv4 in connection
-        localAddress: '0.0.0.0', // Force IPv4 in local bind (prevents 'Local (:::0)' errors)
+        // CRITICAL: Force IPv4 lookup while maintaining host-based connection
+        lookup: (hostname, options, callback) => {
+            dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+                if (!err) console.log(`[SMTP-DNS] Resolved ${hostname} -> ${address} (IPv${family})`);
+                callback(err, address, family);
+            });
+        },
         auth: {
             user: config.user,
             pass: config.pass,
