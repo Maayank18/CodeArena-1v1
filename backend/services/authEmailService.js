@@ -241,57 +241,137 @@ export const getSmtpDiagnostics = () => {
 
 // ─── Templates (Preserved) ────────────────────────────────────────────────────
 
+// ─── Templates ────────────────────────────────────────────────────────────
+
+/**
+ * Builds a professional, clean HTML template for OTP emails.
+ */
 const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena' }) => `
 <!DOCTYPE html>
-<html lang="en">
-<body style="margin:0;padding:40px;background:#0d0d0d;font-family:sans-serif;color:#f5f5f5;">
-    <div style="max-width:500px;margin:auto;background:#161616;padding:32px;border:1px solid #2a2a2a;border-radius:16px;">
-        <h1 style="color:#4ade80;">${appName}</h1>
-        <h2>${title}</h2>
-        <p style="color:#a3a3a3;line-height:1.6;">${bodyText}</p>
-        <div style="background:#0d0d0d;padding:24px;text-align:center;border-radius:12px;margin:28px 0;border:1px solid #2a2a2a;">
-            <p style="margin:0;font-size:40px;letter-spacing:12px;color:#4ade80;font-weight:800;font-family:monospace;">${otp}</p>
-        </div>
-        <p style="color:#6b7280;font-size:13px;">⏱ Expires in ${expiresInMinutes} minutes.</p>
-    </div>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0d0d0d;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;background-color:#0d0d0d;">
+        <tr>
+            <td align="center" style="padding:40px 20px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:500px;background-color:#161616;border:1px solid #2a2a2a;border-radius:24px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                    <!-- Header/Branding -->
+                    <tr>
+                        <td align="center" style="padding:48px 40px 24px 40px;">
+                            <div style="background-color:#0d0d0d;padding:14px 28px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
+                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:-1px;text-transform:uppercase;">CodeArena</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding:0 40px 40px 40px;text-align:center;">
+                            <h2 style="margin:0 0 16px 0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">${title}</h2>
+                            <p style="margin:0;color:#a3a3a3;font-size:16px;line-height:1.6;">
+                                ${bodyText}
+                            </p>
+                            
+                            <!-- Verification Code Display -->
+                            <div style="margin:36px 0;padding:36px 20px;background-color:#0d0d0d;border:1px solid #2a2a2a;border-radius:20px;text-align:center;">
+                                <p style="margin:0 0 10px 0;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:2px;">Security Code</p>
+                                <div style="font-family:'Monaco','Consolas','Courier New',monospace;font-size:48px;font-weight:800;color:#4ade80;letter-spacing:10px;line-height:1;">${otp}</div>
+                            </div>
+
+                            <p style="margin:0 0 12px 0;color:#6b7280;font-size:14px;line-height:1.6;">
+                                This code expires in <strong style="color:#ffffff;">${expiresInMinutes} minutes</strong>.
+                            </p>
+                            <p style="margin:0;color:#4b5563;font-size:12px;font-style:italic;">
+                                If you didn't request this, please ignore this email or contact support if you have concerns.
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Branded Footer -->
+                    <tr>
+                        <td style="padding:40px;background-color:#0d0d0d;text-align:center;border-top:1px solid #2a2a2a;">
+                            <p style="margin:0 0 6px 0;color:#ffffff;font-size:15px;font-weight:800;">CodeArena 1v1</p>
+                            <p style="margin:0;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">The Ultimate Battleground for Developers</p>
+                            <div style="margin-top:24px;padding-top:24px;border-top:1px solid #1a1a1a;font-size:11px;color:#374151;">
+                                &copy; 2026 CodeArena. All rights reserved.
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
 `;
 
+/**
+ * Builds a clean plain-text fallback for OTP emails.
+ */
+const buildOtpEmailText = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena' }) => `
+${appName} - ${title}
+-----------------------------------------
+
+${bodyText}
+
+Verification Code: ${otp}
+
+This code will expire in ${expiresInMinutes} minutes.
+
+If you didn't request this, you can safely ignore this email.
+
+--
+CodeArena 1v1
+The Ultimate Battleground for Developers
+(c) 2026 CodeArena
+`;
+
+// ─── Public API ─────────────────────────────────────────────────────────────
+
 export const sendAccountVerificationEmail = async (args) => {
+    const title = 'Verify Your Email';
+    const bodyText = `Hi ${args.name}, welcome to the arena! Use the code below to complete your registration.`;
+    
     return sendEmail({
         to: args.to,
-        subject: `${args.otp} — Your Verification Code`,
-        html: buildOtpEmailHtml({ title: 'Verify Email', otp: args.otp, bodyText: `Hi ${args.name}, welcome!`, expiresInMinutes: args.expiresInMinutes }),
-        text: `Your code is ${args.otp}`
+        subject: `${args.otp} - ${title}`, // Fixed: Hyphen instead of em-dash
+        html: buildOtpEmailHtml({ title, otp: args.otp, bodyText, expiresInMinutes: args.expiresInMinutes }),
+        text: buildOtpEmailText({ title, otp: args.otp, bodyText, expiresInMinutes: args.expiresInMinutes })
     });
 };
 
 export const sendPasswordResetOtpEmail = async (args) => {
+    const title = 'Reset Your Password';
+    const bodyText = `Hi ${args.name}, we received a request to reset your password. Use the code below to proceed.`;
+    
     return sendEmail({
         to: args.to,
-        subject: `${args.otp} — Password Reset Code`,
-        html: buildOtpEmailHtml({ title: 'Reset Password', otp: args.otp, bodyText: `Hi ${args.name}, reset your password.`, expiresInMinutes: args.expiresInMinutes }),
-        text: `Your reset code is ${args.otp}`
+        subject: `${args.otp} - ${title}`, // Fixed: Hyphen instead of em-dash
+        html: buildOtpEmailHtml({ title, otp: args.otp, bodyText, expiresInMinutes: args.expiresInMinutes }),
+        text: buildOtpEmailText({ title, otp: args.otp, bodyText, expiresInMinutes: args.expiresInMinutes })
     });
 };
 
 export const sendSettingsOtpEmail = async (args) => {
+    const title = 'Security Verification';
+    const bodyText = `Hi ${args.name}, please use the code below to confirm your security settings change.`;
+    
     return sendEmail({
         to: args.to,
-        subject: `${args.otp} — Security Verification`,
-        html: buildOtpEmailHtml({ title: 'Security Change', otp: args.otp, bodyText: `Hi ${args.name}, confirm your change.`, expiresInMinutes: args.expiresInMinutes }),
-        text: `Your security code is ${args.otp}`
+        subject: `${args.otp} - ${title}`, // Fixed: Hyphen instead of em-dash
+        html: buildOtpEmailHtml({ title, otp: args.otp, bodyText, expiresInMinutes: args.expiresInMinutes }),
+        text: buildOtpEmailText({ title, otp: args.otp, bodyText, expiresInMinutes: args.expiresInMinutes })
     });
 };
 
-// Simplified payment exports for brevity, following the same pattern
 export const sendPaymentSubmissionEmail = async (args) => {
     return sendEmail({
         to: args.to,
         subject: `Payment Received - ${args.planName}`,
-        html: `<p>Payment received for Rs. ${args.amount}</p>`,
-        text: 'Payment received'
+        html: `<p>Hi ${args.name}, we've received your payment of Rs. ${args.amount} for the <strong>${args.planName}</strong> plan. We are currently verifying your UTR.</p>`,
+        text: `Hi ${args.name}, we've received your payment of Rs. ${args.amount} for the ${args.planName} plan. We are currently verifying your UTR.`
     });
 };
 
@@ -299,8 +379,8 @@ export const sendPaymentApprovedEmail = async (args) => {
     return sendEmail({
         to: args.to,
         subject: `Payment Approved - ${args.planName}`,
-        html: `<p>Payment approved!</p>`,
-        text: 'Payment approved'
+        html: `<p>Congratulations ${args.name}! Your payment for <strong>${args.planName}</strong> has been approved. Your account has been upgraded.</p>`,
+        text: `Congratulations ${args.name}! Your payment for ${args.planName} has been approved. Your account has been upgraded.`
     });
 };
 
@@ -308,7 +388,7 @@ export const sendPaymentRejectedEmail = async (args) => {
     return sendEmail({
         to: args.to,
         subject: `Payment Rejected - ${args.planName}`,
-        html: `<p>Payment rejected: ${args.adminNotes}</p>`,
-        text: 'Payment rejected'
+        html: `<p>Hi ${args.name}, your payment for <strong>${args.planName}</strong> was rejected. Reason: ${args.adminNotes}</p>`,
+        text: `Hi ${args.name}, your payment for ${args.planName} was rejected. Reason: ${args.adminNotes}`
     });
 };
