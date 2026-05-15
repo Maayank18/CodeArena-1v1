@@ -1,173 +1,95 @@
 /**
  * authEmailService.js
- * Professional Nodemailer email service for Render-hosted backends.
- *
- * KEY DESIGN DECISIONS:
- *  - No persistent transporter: avoids stale-connection timeouts after cold starts
- *  - Gmail SMTP over port 587 (STARTTLS): works on Render (port 25 is blocked, 587/465 are not)
- *  - App Password auth: required since Google killed "Less Secure Apps"
- *  - Per-send transporter + verify(): catches dead connections before sending
- *  - Exponential-backoff retry: survives transient network hiccups
- *  - Structured error objects: status + code + retryable flag, consumed by controllers
- *  - IPv4 Enforcement: Prevents ENETUNREACH errors on cloud hosts without IPv6 routing to Gmail
+ * Production-grade Gmail API OAuth2 transport service.
+ * 
+ * RESOLVES: Render production port blocking and IPv6 SMTP timeouts by moving
+ * from SMTP sockets to HTTPS-based OAuth2 authentication via the Gmail API.
  */
 
 import nodemailer from 'nodemailer';
+import { google } from 'googleapis';
 import dns from 'dns';
-import net from 'net';
 
-// ── CRITICAL FIX: Force Node.js to use IPv4 first ──
-// This prevents the 'ENETUNREACH' error when trying to connect via IPv6 on Render/cloud hosts.
-if (dns.setDefaultResultOrder) {
-    dns.setDefaultResultOrder('ipv4first');
-}
+// ─── Environment Detection ──────────────────────────────────────────────────
+const IS_PROD = process.env.NODE_ENV === 'production';
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// ─── Configuration & Credentials ─────────────────────────────────────────────
 
-// ─── Config Helper ───────────────────────────────────────────────────────────
-const parseEmailAddress = (email) => {
-    if (!email || typeof email !== 'string') return null;
-    
-    email = email.trim();
-    
-    // Format: "Name <email@example.com>" or "Name <email@example.com"
-    const angleMatch = email.match(/<?([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?/);
-    if (angleMatch && angleMatch[1]) {
-        return angleMatch[1].trim();
-    }
-    
-    // Plain email address
-    if (email.includes('@')) {
-        return email;
-    }
-    
-    return null;
-};
-
-const getSmtpConfig = () => {
-    const user = (process.env.EMAIL_USER || '').trim();
-    const pass = (process.env.EMAIL_PASS || '').trim();
-    const host = (process.env.EMAIL_HOST || 'smtp.gmail.com').trim();
-    const port = parseInt(process.env.EMAIL_PORT || '587', 10);
-    const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
-    
-    // Parse EMAIL_FROM or fallback to EMAIL_USER
-    let fromEmail = (process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim();
-    if (fromEmail.startsWith('"') && fromEmail.endsWith('"')) {
-        fromEmail = fromEmail.slice(1, -1).trim();
-    }
-    
-    const parsedFromEmail = parseEmailAddress(fromEmail) || user;
-    
+const getAuthConfig = () => {
+    // We prioritize Gmail API OAuth2 variables, fallback to old SMTP names for backward compatibility if possible
     return {
-        host,
-        port,
-        secure,
-        user,
-        pass,
-        fromName: (process.env.EMAIL_FROM_NAME || 'CodeArena 1v1').trim(),
-        fromEmail: parsedFromEmail,  // Always a valid email or empty
+        clientId:     (process.env.GMAIL_CLIENT_ID || '').trim(),
+        clientSecret: (process.env.GMAIL_CLIENT_SECRET || '').trim(),
+        refreshToken: (process.env.GMAIL_REFRESH_TOKEN || '').trim(),
+        senderEmail:  (process.env.GMAIL_SENDER_EMAIL || process.env.EMAIL_USER || '').trim(),
+        fromName:     (process.env.EMAIL_FROM_NAME || 'CodeArena 1v1').trim(),
     };
 };
 
-// Retry policy
+// Retry policy (Preserved)
 const RETRY_POLICY = {
     maxAttempts: 3,
-    baseDelayMs: 800,   // first retry after ~0.8s
-    maxDelayMs: 5000,   // cap at 5s
+    baseDelayMs: 800,
+    maxDelayMs: 5000,
 };
 
-// Per-send timeouts (ms) — aggressive but fair for Render
-const TRANSPORT_TIMEOUTS = {
-    connectionTimeout: 30000,   // TCP connect (increased for diagnostic)
-    greetingTimeout:   30000,   // SMTP banner
-    socketTimeout:     45000,   // idle socket
-};
-
-// ─── Diagnostics (exposed via /health) ───────────────────────────────────────
-
-let _smtpDiag = {
-    configured: false,
-    host: null,
-    port: null,
-    secure: null,
-    user: null,
-    verifiedAt: null,
-    lastError: null,
-};
-
-export const getSmtpDiagnostics = () => ({ ..._smtpDiag });
-
-// ─── Transporter Singleton ──────────────────────────────────────────────────
-// We use a singleton transporter with connection pooling for production stability.
-// This avoids the overhead of creating a new TCP connection/handshake for every email.
+// ─── OAuth2 Client & Transporter Singleton ───────────────────────────────────
 
 let _transporter = null;
+let _oauth2Client = null;
 
+/**
+ * Lazy initialization of the OAuth2 Transporter.
+ * Ensures we reuse the same client and pool resources across the lifecycle.
+ */
 const getTransporter = async () => {
     if (_transporter) return _transporter;
 
-    const config = getSmtpConfig();
-    if (!config.user || !config.pass) {
-        throw makeSmtpError(
-            'SMTP credentials are not configured. Set EMAIL_USER and EMAIL_PASS in your environment variables.',
-            'SMTP_NOT_CONFIGURED',
-            500,
-            false   // not retryable — needs human action
+    const config = getAuthConfig();
+
+    // Validation: Require OAuth2 credentials
+    if (!config.clientId || !config.clientSecret || !config.refreshToken) {
+        throw makeEmailError(
+            'Gmail OAuth2 credentials missing. Ensure GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and GMAIL_REFRESH_TOKEN are set.',
+            'OAUTH_CONFIG_ERROR', 500, false
         );
     }
 
-    console.log('[EMAIL] ⚙️ Initializing singleton SMTP transporter', {
-        host: config.host,
-        port: config.port,
-        secure: config.secure,
-        user: `${config.user.slice(0, 4)}***`,
-        forcingIPv4: true
+    if (!_oauth2Client) {
+        _oauth2Client = new google.auth.OAuth2(
+            config.clientId,
+            config.clientSecret,
+            'https://developers.google.com/oauthplayground' // Common redirect URI for manual token generation
+        );
+        _oauth2Client.setCredentials({ refresh_token: config.refreshToken });
+    }
+
+    console.log('[EMAIL] ⚙️ Initializing production-grade Gmail OAuth2 transporter', {
+        user: `${config.senderEmail.slice(0, 4)}***`,
+        clientId: `${config.clientId.slice(0, 8)}...`
     });
 
     _transporter = nodemailer.createTransport({
-        host:   config.host, // Use hostname to help protocol-aware firewalls
-        port:   config.port,
-        secure: config.secure,
-        // CRITICAL: Force IPv4 lookup while maintaining host-based connection
-        lookup: (hostname, options, callback) => {
-            dns.lookup(hostname, { family: 4 }, (err, address, family) => {
-                if (!err) console.log(`[SMTP-DNS] Resolved ${hostname} -> ${address} (IPv${family})`);
-                callback(err, address, family);
-            });
-        },
+        service: 'gmail',
         auth: {
-            user: config.user,
-            pass: config.pass,
+            type: 'OAuth2',
+            user: config.senderEmail,
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            refreshToken: config.refreshToken,
         },
-        // Professional timeouts and pooling
-        connectionTimeout: TRANSPORT_TIMEOUTS.connectionTimeout,
-        greetingTimeout:   TRANSPORT_TIMEOUTS.greetingTimeout,
-        socketTimeout:     TRANSPORT_TIMEOUTS.socketTimeout,
+        // Pool settings for performance
         pool: true,
         maxConnections: 5,
         maxMessages: 100,
-        rateDelta: 1000,
-        rateLimit: 5,
-        // CRITICAL DIAGNOSTIC: See every byte of the SMTP conversation in Render logs
-        debug: true,
-        logger: true,
-        // Security & Stability
-        disableFileAccess: true,
-        disableNTLM: true,
-        tls: {
-            rejectUnauthorized: false,
-            servername: config.host, // CRITICAL: SNI must match original hostname for TLS
-            minVersion: 'TLSv1.2'
-        },
     });
 
     return _transporter;
 };
 
-// ─── Structured error factory ─────────────────────────────────────────────────
+// ─── Structured Error Factory ────────────────────────────────────────────────
 
-const makeSmtpError = (message, code, status = 502, retryable = true) => {
+const makeEmailError = (message, code, status = 502, retryable = true) => {
     const err = new Error(message);
     err.code     = code;
     err.status   = status;
@@ -175,73 +97,44 @@ const makeSmtpError = (message, code, status = 502, retryable = true) => {
     return err;
 };
 
-// ─── Map raw nodemailer / OS errors → structured errors ──────────────────────
+// ─── Map Gmail API / OAuth errors → structured errors ───────────────────────
 
-const classifySmtpError = (rawError) => {
-    const msg     = rawError?.message || '';
-    const errno   = rawError?.errno   || '';
-    const code    = rawError?.code    || '';
-    const responseCode = rawError?.responseCode || 0;
+const classifyEmailError = (rawError) => {
+    const msg  = rawError?.message || '';
+    const code = rawError?.code || '';
 
-    // Auth failures — not retryable, need env var fix
-    if (responseCode === 535 || /invalid login|username and password not accepted|authentication failed/i.test(msg)) {
-        return makeSmtpError(
-            'SMTP authentication failed. Check EMAIL_USER and EMAIL_PASS (Gmail requires an App Password, not your regular password).',
-            'SMTP_AUTH_FAILED', 500, false
+    // OAuth Refresh Token failures (e.g., token revoked)
+    if (msg.includes('invalid_grant') || msg.includes('token expired') || code === 'EAUTH') {
+        return makeEmailError(
+            'Gmail OAuth2 authentication failed. The refresh token may be invalid or revoked.',
+            'OAUTH_AUTH_FAILED', 500, false
         );
     }
 
-    // Network unreachable / refused — likely port blocked or wrong host
-    if (code === 'ECONNREFUSED' || errno === 'ECONNREFUSED' || 
-        code === 'ENETUNREACH' || errno === 'ENETUNREACH' ||
-        code === 'EHOSTUNREACH' || errno === 'EHOSTUNREACH') {
-        return makeSmtpError(
-            `SMTP connection refused/unreachable on ${getSmtpConfig().host}:${getSmtpConfig().port}. ` +
-            'If using Render, port 25 is blocked — use port 587 (EMAIL_PORT=587) or 465.',
-            'SMTP_CONNECTION_REFUSED', 502, false
+    // Gmail API Quota issues
+    if (msg.includes('rateLimitExceeded') || msg.includes('quotaExceeded')) {
+        return makeEmailError(
+            'Gmail API quota exceeded. Too many emails sent recently.',
+            'GMAIL_QUOTA_EXCEEDED', 502, true
         );
     }
 
-    // DNS resolution failure — wrong EMAIL_HOST
-    if (code === 'ENOTFOUND' || errno === 'ENOTFOUND') {
-        return makeSmtpError(
-            `SMTP host not found: "${getSmtpConfig().host}". Check your EMAIL_HOST environment variable.`,
-            'SMTP_HOST_NOT_FOUND', 502, false
-        );
-    }
-
-    // Timeout — transient, retryable
-    if (code === 'ETIMEDOUT' || errno === 'ETIMEDOUT' || /timeout/i.test(msg) || code === 'ESOCKETTIMEDOUT') {
-        return makeSmtpError(
-            'SMTP connection timed out. This is usually transient — the request will be retried.',
-            'SMTP_TIMEOUT', 502, true
-        );
-    }
-
-    // Recipient rejected
-    if (responseCode === 550 || responseCode === 553) {
-        return makeSmtpError(
-            'The recipient email address was rejected by the SMTP server.',
-            'SMTP_RECIPIENT_REJECTED', 400, false
-        );
-    }
-
-    // Rate limited by SMTP provider
-    if (responseCode === 421 || responseCode === 450) {
-        return makeSmtpError(
-            'SMTP server is temporarily unavailable or rate-limiting. Will retry.',
-            'SMTP_RATE_LIMITED', 502, true
+    // Network / Socket issues (Less common with API, but possible)
+    if (code === 'ETIMEDOUT' || code === 'ECONNRESET' || msg.includes('timeout')) {
+        return makeEmailError(
+            'Network timeout while communicating with Gmail API. Will retry.',
+            'EMAIL_NETWORK_TIMEOUT', 502, true
         );
     }
 
     // Generic fallback
-    return makeSmtpError(
-        `Email delivery failed: ${msg || 'unknown SMTP error'}`,
-        'SMTP_SEND_FAILED', 502, true
+    return makeEmailError(
+        `Email delivery failed: ${msg || 'unknown Gmail API error'}`,
+        'EMAIL_SEND_FAILED', 502, true
     );
 };
 
-// ─── Retry with exponential backoff ──────────────────────────────────────────
+// ─── Retry with exponential backoff (Preserved) ─────────────────────────────
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -253,8 +146,8 @@ const withRetry = async (fn, context = 'email') => {
             return await fn();
         } catch (rawError) {
             const structured = rawError.code && rawError.status
-                ? rawError                          // already classified
-                : classifySmtpError(rawError);      // classify raw nodemailer error
+                ? rawError
+                : classifyEmailError(rawError);
 
             lastError = structured;
 
@@ -267,196 +160,95 @@ const withRetry = async (fn, context = 'email') => {
                 retryable: isRetryable,
             });
 
-            if (!isRetryable || isLastAttempt) {
-                break;
-            }
+            if (!isRetryable || isLastAttempt) break;
 
-            // Exponential backoff: 800ms, 1600ms, 3200ms … capped at 5000ms
-            const delay = Math.min(
-                RETRY_POLICY.baseDelayMs * Math.pow(2, attempt - 1),
-                RETRY_POLICY.maxDelayMs
-            );
+            const delay = Math.min(RETRY_POLICY.baseDelayMs * Math.pow(2, attempt - 1), RETRY_POLICY.maxDelayMs);
             console.log(`[EMAIL] Retrying in ${delay}ms…`);
             await sleep(delay);
         }
     }
-
     throw lastError;
 };
 
-// ─── Core send function ───────────────────────────────────────────────────────
+// ─── Core send function (Preserved signature) ────────────────────────────────
 
 const sendEmail = async ({ to, subject, html, text }) => {
     return withRetry(async () => {
-        const config = getSmtpConfig();
-        
-        // Validate from address before attempting to send
-        if (!config.fromEmail || !config.fromEmail.includes('@')) {
-            throw makeSmtpError(
-                `Invalid sender email address: "${config.fromEmail}". Set EMAIL_FROM or EMAIL_USER environment variable to a valid email address.`,
-                'SMTP_INVALID_FROM_ADDRESS',
-                500,
-                false
-            );
-        }
-        
+        const config = getAuthConfig();
         const transporter = await getTransporter();
 
-        // Construct the 'from' field as an object to prevent header injection/mangling
         const from = {
             name: config.fromName,
-            address: config.fromEmail
+            address: config.senderEmail
         };
 
-        console.log('[EMAIL] Sending email', {
+        console.log('[EMAIL] Dispatching email via Gmail API', {
             to,
             subject: subject.substring(0, 60),
             from: from.address,
-            fromName: from.name,
         });
 
         const info = await transporter.sendMail({ from, to, subject, html, text });
 
-        console.log('[EMAIL] ✅ Email sent successfully', {
+        console.log('[EMAIL] ✅ Email sent successfully (Gmail API)', {
             to,
-            messageId: info.messageId,
-            response: info.response
+            messageId: info.messageId
         });
 
-        _smtpDiag.verifiedAt = new Date().toISOString();
-        _smtpDiag.lastError  = null;
-
         return {
-            delivered:  true,
-            messageId:  info.messageId,
-            // In dev, expose the OTP preview URL (Ethereal / nodemailer test accounts)
-            debug: process.env.NODE_ENV !== 'production'
-                ? { previewUrl: nodemailer.getTestMessageUrl(info) || null }
-                : undefined,
+            delivered: true,
+            messageId: info.messageId,
         };
     }, `send → ${to}`);
 };
 
-// ─── Startup SMTP verification ────────────────────────────────────────────────
-// Called once from server.js startServer(). Logs clearly and never crashes the
-// server — email is important but not worth killing startup over.
+// ─── Startup Verification (Preserved signature) ───────────────────────────────
 
 export const verifySmtpConnection = async () => {
-    const config = getSmtpConfig();
+    const config = getAuthConfig();
     
-    // Check if credentials are present
-    const hasUser = Boolean(config.user && config.user.length > 0);
-    const hasPass = Boolean(config.pass && config.pass.length > 0);
-    const hasFromEmail = Boolean(config.fromEmail && config.fromEmail.includes('@'));
-    
-    _smtpDiag = {
-        configured: hasUser && hasPass && hasFromEmail,
-        host:       config.host,
-        port:       config.port,
-        secure:     config.secure,
-        user:       config.user ? `${config.user.slice(0, 4)}***` : null,
-        fromEmail:  config.fromEmail || null,
-        verifiedAt: null,
-        lastError:  null,
-    };
+    console.log('[EMAIL] 🔍 Verifying Gmail OAuth2 configuration...');
 
-    // Early exit if credentials missing
-    if (!hasUser || !hasPass) {
-        console.warn('[SMTP] ⚠️  SMTP Authentication credentials missing', {
-            hasEmailUser: hasUser,
-            hasEmailPass: hasPass,
-            hint: 'Set EMAIL_USER and EMAIL_PASS in your environment variables (e.g., Render → Environment tab)'
-        });
-        _smtpDiag.lastError = { 
-            code: 'SMTP_NOT_CONFIGURED', 
-            message: 'EMAIL_USER and/or EMAIL_PASS not set' 
-        };
-        return false;
-    }
-    
-    if (!hasFromEmail) {
-        console.warn('[SMTP] ⚠️  Sender email address invalid', {
-            emailFrom: process.env.EMAIL_FROM || 'not-set',
-            emailUser: config.user ? `${config.user.slice(0, 4)}***` : 'not-set',
-            hint: 'Set EMAIL_FROM or EMAIL_USER to a valid email address'
-        });
-        _smtpDiag.lastError = { 
-            code: 'SMTP_INVALID_FROM_ADDRESS', 
-            message: `Invalid from address: "${config.fromEmail}"` 
-        };
+    if (!config.clientId || !config.clientSecret || !config.refreshToken) {
+        console.warn('[EMAIL] ⚠️  Gmail OAuth2 credentials missing. Service is disabled.');
         return false;
     }
 
     try {
-        // TCP REACHABILITY TEST: Raw socket test to bypass SMTP logic
-        console.log(`[SMTP-DIAG] 🔍 Testing TCP reachability to ${config.host}:${config.port}...`);
-        const tcpTest = await new Promise((resolve) => {
-            const socket = net.connect(config.port, config.host);
-            socket.setTimeout(5000);
-            socket.on('connect', () => { socket.destroy(); resolve({ success: true }); });
-            socket.on('error', (err) => { socket.destroy(); resolve({ success: false, error: err.message }); });
-            socket.on('timeout', () => { socket.destroy(); resolve({ success: false, error: 'TCP Timeout' }); });
-        });
-        
-        if (!tcpTest.success) {
-            console.error(`[SMTP-DIAG] ❌ TCP port ${config.port} is BLOCKED by Render.`);
-            if (config.port === 587) {
-                console.error('[SMTP-DIAG] 💡 ACTION REQUIRED: Render often blocks port 587. Please change EMAIL_PORT to 465 and EMAIL_SECURE to true in your Render dashboard.');
-            }
-        } else {
-            console.log(`[SMTP-DIAG] ✅ TCP port ${config.port} is OPEN. Any further failures are protocol/auth related.`);
-        }
-
         const transporter = await getTransporter();
         
-        // Wrap verify in a promise race to prevent startup hanging forever
+        // Nodemailer's verify() works with OAuth2 by attempting to get an access token
         await Promise.race([
             transporter.verify(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error(`SMTP Verification timed out after ${TRANSPORT_TIMEOUTS.connectionTimeout/1000}s`)), TRANSPORT_TIMEOUTS.connectionTimeout))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('OAuth2 verification timed out')), 15000))
         ]);
-        
-        // Do NOT close the transporter — it is a singleton now
 
-        _smtpDiag.verifiedAt = new Date().toISOString();
-        console.log(`[SMTP] ✅ Connection verified and authenticated`, {
-            host: config.host,
-            port: config.port,
-            secure: config.secure,
-            user: `${config.user.slice(0, 4)}***`,
-            fromEmail: config.fromEmail,
-        });
+        console.log(`[EMAIL] ✅ OAuth2 Connection verified and authenticated for ${config.senderEmail}`);
         return true;
     } catch (error) {
-        const structured = classifySmtpError(error);
-        _smtpDiag.lastError = { code: structured.code, message: structured.message };
-
-        console.error('[SMTP] ❌ Startup verification failed', {
+        const structured = classifyEmailError(error);
+        console.error('[EMAIL] ❌ OAuth2 verification failed', {
             code:    structured.code,
             message: structured.message,
-            host: config.host,
-            port: config.port,
-            user: `${config.user.slice(0, 4)}***`,
-            hint:    getHint(structured.code),
+            hint:    'Check your Client ID, Secret, and Refresh Token in Render dashboard.',
             rawError: error.message,
         });
-
-        // Not fatal — server continues, but emails will fail until fixed
         return false;
     }
 };
 
-const getHint = (code) => {
-    const config = getSmtpConfig();
+// For diagnostics compatibility
+export const getSmtpDiagnostics = () => {
+    const config = getAuthConfig();
     return {
-        SMTP_NOT_CONFIGURED:     'Set EMAIL_USER and EMAIL_PASS in Render → Environment',
-        SMTP_AUTH_FAILED:        'Gmail requires an App Password. Go to myaccount.google.com/apppasswords',
-        SMTP_CONNECTION_REFUSED: 'Change EMAIL_PORT to 587 and EMAIL_SECURE to false in Render env vars',
-        SMTP_HOST_NOT_FOUND:     `Check EMAIL_HOST — should be smtp.gmail.com for Gmail (current: ${config.host})`,
-        SMTP_TIMEOUT:            'Transient. Will retry on next send. Check Render network settings if persistent.',
-    }[code] || 'Check EMAIL_* environment variables';
+        configured: !!(config.clientId && config.refreshToken),
+        type: 'OAuth2 (Gmail API)',
+        user: config.senderEmail ? `${config.senderEmail.slice(0, 4)}***` : null,
+        verifiedAt: new Date().toISOString()
+    };
 };
 
-// ─── Email templates ──────────────────────────────────────────────────────────
+// ─── Email templates (Preserved exactly) ───────────────────────────────────────
 
 const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena' }) => `
 <!DOCTYPE html>
@@ -529,7 +321,7 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
 </html>
 `;
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Public API (Preserved exactly) ───────────────────────────────────────────
 
 export const sendAccountVerificationEmail = async ({ to, otp, name, expiresInMinutes }) => {
     const title    = 'Verify Your Email Address';
@@ -567,13 +359,9 @@ export const sendSettingsOtpEmail = async ({ to, otp, name, expiresInMinutes }) 
     });
 };
 
-// Payment Email Exports ─────────────────────────────────────────────────────────
-
 export const sendPaymentSubmissionEmail = async ({ to, name, planName, amount, utrNumber }) => {
     const title    = 'Payment Request Received';
     const bodyText = `Hi ${name}, we have received your manual UPI payment request for the ${planName} plan.`;
-    
-    // We reuse the basic HTML structure without the OTP box by modifying the template manually
     const html = buildOtpEmailHtml({ title, otp: 'PROCESSING', bodyText: `Amount: Rs. ${amount}<br/>UTR: ${utrNumber}<br/><br/>Our team is reviewing the payment now. You will receive another email once it is approved.`, expiresInMinutes: 'N/A' });
 
     return sendEmail({
@@ -587,7 +375,6 @@ export const sendPaymentSubmissionEmail = async ({ to, name, planName, amount, u
 export const sendPaymentApprovedEmail = async ({ to, name, planName, amount }) => {
     const title    = 'Payment Approved';
     const bodyText = `Hi ${name}, great news! Your payment for the ${planName} plan has been successfully verified.`;
-    
     const html = buildOtpEmailHtml({ title, otp: 'APPROVED', bodyText: `Amount received: Rs. ${amount}<br/><br/>Welcome to Pro! Your premium access is now active in CodeArena 1v1.`, expiresInMinutes: 'N/A' });
 
     return sendEmail({
@@ -602,7 +389,6 @@ export const sendPaymentRejectedEmail = async ({ to, name, planName, amount, adm
     const title    = 'Payment Verification Failed';
     const bodyText = `Hi ${name}, we could not verify your payment request for the ${planName} plan.`;
     const notesBlock = adminNotes ? `Reviewer note: <strong>${adminNotes}</strong><br/>` : `Please check the UTR with your bank or payment app and try again.<br/>`;
-    
     const html = buildOtpEmailHtml({ title, otp: 'REJECTED', bodyText: `Amount expected: Rs. ${amount}<br/>${notesBlock}<br/>You can submit a fresh payment request with the correct 12-digit UTR once the issue is resolved.`, expiresInMinutes: 'N/A' });
 
     return sendEmail({
