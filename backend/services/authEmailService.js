@@ -14,6 +14,7 @@
 
 import nodemailer from 'nodemailer';
 import dns from 'dns';
+import net from 'net';
 
 // ── CRITICAL FIX: Force Node.js to use IPv4 first ──
 // This prevents the 'ENETUNREACH' error when trying to connect via IPv6 on Render/cloud hosts.
@@ -103,7 +104,7 @@ export const getSmtpDiagnostics = () => ({ ..._smtpDiag });
 
 let _transporter = null;
 
-const getTransporter = () => {
+const getTransporter = async () => {
     if (_transporter) return _transporter;
 
     const config = getSmtpConfig();
@@ -116,44 +117,73 @@ const getTransporter = () => {
         );
     }
 
+    // CRITICAL: Robust IPv4 enforcement via multiple resolution strategies.
+    // Cloud hosts like Render often have broken IPv6 routes to Gmail.
+    let resolvedHost = config.host;
+    let resolutionMethod = 'default';
+
+    if (net.isIP(config.host)) {
+        resolutionMethod = 'direct-ip';
+    } else {
+        try {
+            // Strategy A: Direct DNS resolution (bypasses OS getaddrinfo)
+            const addresses = await dns.promises.resolve4(config.host);
+            if (addresses && addresses.length > 0) {
+                resolvedHost = addresses[0];
+                resolutionMethod = 'resolve4';
+            }
+        } catch (resolveErr) {
+            try {
+                // Strategy B: Lookup with family hint
+                const lookupResult = await dns.promises.lookup(config.host, { family: 4 });
+                if (lookupResult?.address) {
+                    resolvedHost = lookupResult.address;
+                    resolutionMethod = 'lookup-v4-hint';
+                }
+            } catch (lookupErr) {
+                console.warn(`[EMAIL] ⚠️ DNS resolution failed for ${config.host} via all IPv4 strategies. Falling back to default OS resolution.`, {
+                    resolve4Error: resolveErr.message,
+                    lookupV4Error: lookupErr.message
+                });
+            }
+        }
+    }
+
     console.log('[EMAIL] ⚙️ Initializing singleton SMTP transporter', {
-        host: config.host,
+        host: resolvedHost,
+        originalHost: config.host,
         port: config.port,
         secure: config.secure,
+        resolutionMethod,
         user: `${config.user.slice(0, 4)}***`,
-        forcingIPv4: true
     });
 
     _transporter = nodemailer.createTransport({
-        host:   config.host,
+        host:   resolvedHost,
         port:   config.port,
         secure: config.secure,
-        // CRITICAL: Custom DNS lookup to FORCE IPv4 resolution.
-        // This is the most reliable way to prevent ENETUNREACH IPv6 errors on Render.
-        lookup: (hostname, options, callback) => {
-            dns.lookup(hostname, { family: 4 }, (err, address, family) => {
-                if (err) {
-                    console.error(`[EMAIL-DNS] ❌ Failed to resolve ${hostname}:`, err.message);
-                }
-                callback(err, address, family);
-            });
-        },
+        family: 4,               // Force IPv4 in connection
+        localAddress: '0.0.0.0', // Force IPv4 in local bind (prevents 'Local (:::0)' errors)
         auth: {
             user: config.user,
             pass: config.pass,
         },
-        // Per-call timeouts — prevents hangs
+        // Professional timeouts and pooling
         connectionTimeout: TRANSPORT_TIMEOUTS.connectionTimeout,
         greetingTimeout:   TRANSPORT_TIMEOUTS.greetingTimeout,
         socketTimeout:     TRANSPORT_TIMEOUTS.socketTimeout,
-        // Enable pooling for efficiency
         pool: true,
-        maxConnections: 3,
+        maxConnections: 5,
         maxMessages: 100,
-        // TLS options: stable across cloud hosts
+        rateDelta: 1000,
+        rateLimit: 5,
+        // Security & Stability
+        disableFileAccess: true,
+        disableNTLM: true,
         tls: {
             rejectUnauthorized: false,
-            servername: config.host // Help with SNI
+            servername: config.host, // CRITICAL: SNI must match original hostname for TLS
+            minVersion: 'TLSv1.2'
         },
     });
 
@@ -187,7 +217,9 @@ const classifySmtpError = (rawError) => {
     }
 
     // Network unreachable / refused — likely port blocked or wrong host
-    if (code === 'ECONNREFUSED' || errno === 'ECONNREFUSED' || code === 'ENETUNREACH' || errno === 'ENETUNREACH') {
+    if (code === 'ECONNREFUSED' || errno === 'ECONNREFUSED' || 
+        code === 'ENETUNREACH' || errno === 'ENETUNREACH' ||
+        code === 'EHOSTUNREACH' || errno === 'EHOSTUNREACH') {
         return makeSmtpError(
             `SMTP connection refused/unreachable on ${getSmtpConfig().host}:${getSmtpConfig().port}. ` +
             'If using Render, port 25 is blocked — use port 587 (EMAIL_PORT=587) or 465.',
@@ -204,7 +236,7 @@ const classifySmtpError = (rawError) => {
     }
 
     // Timeout — transient, retryable
-    if (code === 'ETIMEDOUT' || errno === 'ETIMEDOUT' || /timeout/i.test(msg)) {
+    if (code === 'ETIMEDOUT' || errno === 'ETIMEDOUT' || /timeout/i.test(msg) || code === 'ESOCKETTIMEDOUT') {
         return makeSmtpError(
             'SMTP connection timed out. This is usually transient — the request will be retried.',
             'SMTP_TIMEOUT', 502, true
@@ -293,7 +325,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
             );
         }
         
-        const transporter = getTransporter();
+        const transporter = await getTransporter();
 
         // Construct the 'from' field as an object to prevent header injection/mangling
         const from = {
@@ -381,7 +413,7 @@ export const verifySmtpConnection = async () => {
     }
 
     try {
-        const transporter = getTransporter();
+        const transporter = await getTransporter();
         
         // Wrap verify in a promise race to prevent startup hanging forever
         await Promise.race([
