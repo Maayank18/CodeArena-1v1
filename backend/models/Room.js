@@ -132,6 +132,11 @@ const roomSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    aiHelpsUsed: { 
+        type: Map, 
+        of: Number, 
+        default: {} 
+    },
 
     createdAt: {
         type: Date,

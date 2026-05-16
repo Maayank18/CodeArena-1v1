@@ -29,6 +29,7 @@
     "express": "^5.1.0",
     "fs-extra": "^11.3.3",
     "googleapis": "^171.4.0",
+    "groq-sdk": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.0.0",
     "mongoose": "^9.0.0",

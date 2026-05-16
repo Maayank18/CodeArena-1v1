@@ -137,11 +137,17 @@ const getMarkdownComponents = (isDark) => ({
   ),
 });
 
+import AIHelpWidget from './AIHelpWidget';
+
 const ProblemMarkdown = ({
   problem,
   titlePrefix,
   isDark = true,
   prelude = null,
+  roomId,
+  currentCode,
+  userTier,
+  initialHelpsUsed
 }) => {
   if (!problem) return null;
 
@@ -278,6 +284,16 @@ const ProblemMarkdown = ({
             ))}
           </ul>
         </div>
+      )}
+
+      {roomId && (
+        <AIHelpWidget
+          roomId={roomId}
+          problemTitle={problem.title}
+          currentCode={currentCode}
+          userTier={userTier}
+          initialHelpsUsed={initialHelpsUsed}
+        />
       )}
 
       <div className="h-12" />

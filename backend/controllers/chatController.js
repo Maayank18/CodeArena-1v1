@@ -48,6 +48,7 @@ setInterval(() => {
 }, IP_WINDOW_MS);
 
 // ─── Controller ───────────────────────────────────────────────────────────────
+import { getGroqClient } from '../services/aiRouterService.js';
 import { checkAndResetDailyUsage, getUsageLimits } from '../utils/usageTracker.js';
 
 export const chat = async (req, res) => {
@@ -75,7 +76,6 @@ export const chat = async (req, res) => {
         }
     }
 
-    console.log('[CHAT] Key exists:', !!process.env.GROQ_API_KEY);
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
 
     // IP-level rate limit (server protection)
@@ -93,13 +93,9 @@ export const chat = async (req, res) => {
         return res.status(400).json({ message: 'Message too long (max 300 characters).' });
     }
 
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_API_KEY) {
-        console.error('[CHAT] GROQ_API_KEY not set in environment');
-        return res.status(500).json({ message: 'AI service is not configured. Please contact support.' });
-    }
-
     try {
+        const client = getGroqClient(userTier, 'chatbot');
+
         // Build message array: system + last 4 history messages + current user message
         const messages = [
             { role: 'system', content: buildSystemPrompt(user) },
@@ -110,25 +106,14 @@ export const chat = async (req, res) => {
             { role: 'user', content: message.trim() },
         ];
 
-        const response = await axios.post(
-            'https://api.groq.com/openai/v1/chat/completions',
-            {
-                model: 'llama-3.3-70b-versatile',
-                messages,
-                max_tokens: 250,
-                temperature: 0.2,
-                stream: false,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-                timeout: 15000,
-            }
-        );
+        const completion = await client.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages,
+            max_tokens: 250,
+            temperature: 0.2,
+        });
 
-        const reply = response.data?.choices?.[0]?.message?.content;
+        const reply = completion.choices?.[0]?.message?.content;
 
         if (!reply) {
             return res.status(500).json({ message: 'Received an empty response. Please try again.' });

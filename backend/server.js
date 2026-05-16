@@ -527,6 +527,7 @@ import campaignRoutes from './routes/campaignRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import { getSmtpDiagnostics, verifySmtpConnection } from './services/authEmailService.js';
 
 // ✅ MODELS
@@ -589,6 +590,7 @@ app.set('trust proxy', 1);
 const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/+$/, '');
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'http://localhost:3000',
   ...(process.env.FRONTEND_URL || '')
     .split(',')
     .map(normalizeOrigin)
@@ -652,6 +654,7 @@ app.use('/api/visualize', visualizerRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/campaign', campaignRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/uploads', express.static('uploads'));
 
 // ✅ HEALTH CHECK (Enhanced)
@@ -1400,6 +1403,7 @@ io.on('connection', async (socket) => {
             customSettings: persistentCustomRoom.customSettings || {},
             roomDocId: String(persistentCustomRoom._id),
             quotaCharged: Boolean(persistentCustomRoom.quotaChargedAt),
+            aiHelpsUsed: persistentCustomRoom.aiHelpsUsed || {},
           });
         } else {
           const problemIds = await loadBattleProblemIdsForRoom();
@@ -1434,7 +1438,8 @@ io.on('connection', async (socket) => {
             firstRoundFirstSolverUsername: null,
             firstRoundOpponentSubmissionCounts: {},
             isCustom: false,
-            durationSeconds: 30 * 60
+            durationSeconds: 30 * 60,
+            aiHelpsUsed: {}
         });
         
         startRoomTimer(roomId, 30 * 60);
@@ -1443,6 +1448,17 @@ io.on('connection', async (socket) => {
       }
 
       const room = rooms.get(roomId);
+      
+      // Sync aiHelpsUsed from DB on every join/reconnect to stay consistent with controller updates
+      try {
+        const dbRoom = await Room.findOne({ roomId }).select('aiHelpsUsed').lean();
+        if (dbRoom && dbRoom.aiHelpsUsed) {
+          room.aiHelpsUsed = dbRoom.aiHelpsUsed;
+        }
+      } catch (err) {
+        console.error('[ROOM] Failed to sync aiHelpsUsed from DB:', err.message);
+      }
+
       const remainingTime = room.startTime
         ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
         : (room.durationSeconds || (30 * 60));
@@ -1594,7 +1610,8 @@ io.on('connection', async (socket) => {
         remainingTime: room.startTime
           ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
           : (room.durationSeconds || (30 * 60)),
-        customSettings: room.isCustom ? room.customSettings : undefined
+        customSettings: room.isCustom ? room.customSettings : undefined,
+        aiHelpsUsed: room.aiHelpsUsed || {}
       });
 
       if (!isReconnect) {

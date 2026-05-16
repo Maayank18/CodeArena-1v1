@@ -36,10 +36,18 @@ const resolveBackendHttpUrl = () => {
 };
 
 const resolveYjsUrl = () => {
-    if (import.meta.env.VITE_YJS_URL && !(import.meta.env.PROD && isLocalhostLike(import.meta.env.VITE_YJS_URL))) {
-        return import.meta.env.VITE_YJS_URL;
+    // 1. Explicit environment variable (highest priority)
+    const envYjs = import.meta.env.VITE_YJS_URL;
+    if (envYjs && !(import.meta.env.PROD && isLocalhostLike(envYjs))) {
+        return envYjs;
     }
 
+    // 2. Local development fallback
+    if (!import.meta.env.PROD) {
+        return 'ws://localhost:1234';
+    }
+
+    // 3. Production dynamic resolution (fallback to backend origin)
     const backendUrl = resolveBackendHttpUrl();
     if (backendUrl.startsWith('https://')) return backendUrl.replace(/^https:\/\//, 'wss://');
     if (backendUrl.startsWith('http://')) return backendUrl.replace(/^http:\/\//, 'ws://');
@@ -180,6 +188,7 @@ const EditorPage = () => {
     const [remainingTime, setRemainingTime] = useState(null);
     const [showEntrance, setShowEntrance] = useState(false);
     const [entranceData, setEntranceData] = useState(null);
+    const [aiHelpsUsed, setAiHelpsUsed] = useState(0);
 
     const ENTRANCE_BANNERS = {
         'default-dark': 'from-gray-900 to-black',
@@ -231,13 +240,26 @@ const EditorPage = () => {
 
         if (!providerRef.current && ydocRef.current) {
             const yjsUrl = resolveYjsUrl();
-            providerRef.current = new WebsocketProvider(yjsUrl, roomId, ydocRef.current);
+            const provider = new WebsocketProvider(yjsUrl, roomId, ydocRef.current);
+            
+            // ✅ Phase 3 Fix: Graceful WebSocket Handling
+            provider.on('connection-error', (error) => {
+                console.error("[ARENA-YJS] WebSocket connection error:", error);
+                // Do NOT throw. The UI will just run in "solo" mode.
+            });
+
+            provider.on('status', (event) => {
+                console.log(`[ARENA-YJS] Connection status: ${event.status}`);
+            });
+
+            providerRef.current = provider;
         }
 
         if (socketRef.current) return;
 
         const apiUrl = resolveBackendHttpUrl();
         socketRef.current = io(apiUrl, {
+            withCredentials: true,
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 10,
@@ -310,6 +332,11 @@ const EditorPage = () => {
                 } else {
                     console.warn('[ARENA] ⚠️ No entrance banner customization found for user');
                 }
+            }
+
+            if (data.aiHelpsUsed) {
+                const myHelps = data.aiHelpsUsed[storedUser?._id] || data.aiHelpsUsed[username] || 0;
+                setAiHelpsUsed(myHelps);
             }
             
             if (data.username === username) {
@@ -725,6 +752,10 @@ const EditorPage = () => {
                                     problem={problem}
                                     titlePrefix={round}
                                     isDark={isDark}
+                                    roomId={roomId}
+                                    currentCode={ydocRef.current?.getText(`code-${mySide}`)?.toString() || ''}
+                                    userTier={userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3}
+                                    initialHelpsUsed={aiHelpsUsed}
                                 />
                                 {runResults && <div className={`mt-6 pt-4 border-t ${isDark ? 'border-[#3e3e42]' : 'border-stone-300'}`}><TestCaseResults results={runResults} /></div>}
                             </div>
