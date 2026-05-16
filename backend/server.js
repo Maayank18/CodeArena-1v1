@@ -540,6 +540,7 @@ import { ensurePaymentTransactionIndexes } from './models/PaymentTransaction.js'
 // ✅ UTILS
 import { calculateMatchOutcome } from './utils/elo.js';
 import { checkAndResetDailyUsage, getUsageLimits } from './utils/usageTracker.js';
+import { AI_DAILY_LIMITS, AI_TIER_MAP } from './config/aiConfig.js';
 
 // ✅ CRITICAL: Cache invalidation imports
 import { clearLeaderboardCache } from './controllers/userController.js';
@@ -1316,42 +1317,37 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      // ✅ DAILY MATCH LIMIT CHECK
+      // ✅ DAILY MATCH AND AI USAGE
       const isActuallyCustom = rooms.has(roomId) ? rooms.get(roomId).isCustom : (await Room.exists({ roomId, isCustom: true }));
       const userDoc = await User.findById(authUser._id);
       
       if (userDoc) {
-          await checkAndResetDailyUsage(userDoc);
+          await userDoc.checkAndResetDailyStats();
           const plan = userDoc.subscriptionPlan || 'free';
-          const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+          const userTier = AI_TIER_MAP[plan] || 0;
           const limits = getUsageLimits(plan);
-          
-          // ✅ PREMIUM BYPASS: Unlimited matches
-          if (userTier < 3) {
+
+          // We check for re-join to avoid double-charging
+          let playerAlreadyIn = false;
+          if (rooms.has(roomId)) {
+             playerAlreadyIn = rooms.get(roomId).players.some(p => p.username === username);
+          }
+
+          if (!playerAlreadyIn) {
               if (isActuallyCustom) {
-                  if (plan === 'free') {
-                      socket.emit('error', { 
-                          message: 'Custom matches require Plus tier or higher. Upgrade to unlock!',
-                          code: 'PREMIUM_REQUIRED'
-                      });
+                  if (userTier < 3 && userDoc.usageStats.customMatchesToday >= limits.customMatches) {
+                      socket.emit('error', { message: 'Daily custom match limit reached.', code: 'LIMIT_REACHED' });
                       return;
                   }
-                  if (userDoc.usageStats.customMatchesToday >= limits.customMatches) {
-                      socket.emit('error', { 
-                          message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
-                          code: 'LIMIT_REACHED'
-                      });
-                      return;
-                  }
+                  userDoc.usageStats.customMatchesToday += 1;
               } else {
-                  if (userDoc.usageStats.matchesToday >= limits.matches) {
-                      socket.emit('error', { 
-                          message: `Daily normal match limit reached (${limits.matches}/day). Upgrade for more!`,
-                          code: 'LIMIT_REACHED'
-                      });
+                  if (userTier < 2 && userDoc.usageStats.matchesToday >= limits.matches) {
+                      socket.emit('error', { message: 'Daily normal match limit reached.', code: 'LIMIT_REACHED' });
                       return;
                   }
+                  userDoc.usageStats.matchesToday += 1;
               }
+              await userDoc.save();
           }
       }
 
@@ -1413,13 +1409,6 @@ io.on('connection', async (socket) => {
             return;
           }
 
-        if (problemIds.length === 0) {
-          socket.emit('error', {
-            message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
-          });
-          return;
-        }
-        
         rooms.set(roomId, {
             players: [],
             round: 1,
@@ -1448,7 +1437,7 @@ io.on('connection', async (socket) => {
 
       const room = rooms.get(roomId);
       
-      // Sync aiHelpsUsed from DB on every join/reconnect to stay consistent with controller updates
+      // Sync aiHelpsUsed from DB on every join/reconnect to stay consistent
       try {
         const dbRoom = await Room.findOne({ roomId }).select('aiHelpsUsed').lean();
         if (dbRoom && dbRoom.aiHelpsUsed) {
@@ -1462,7 +1451,7 @@ io.on('connection', async (socket) => {
         ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
         : (room.durationSeconds || (30 * 60));
 
-      // ✅ Fetch user customization with case-insensitive lookup and robust defaults
+      // ✅ Fetch user customization
       let reservedSide = null;
       if (room.isCustom) {
         const sourceRoom = persistentCustomRoom || await Room.findOne({ roomId, isCustom: true })
@@ -1491,35 +1480,16 @@ io.on('connection', async (socket) => {
             socket.emit('room_full'); 
             return; 
         }
+      }
 
-        // ✅ INCREMENT MATCH COUNT (Skip for Premium)
-        const userDoc = await User.findById(authUser._id);
-        if (userDoc) {
-            const plan = userDoc.subscriptionPlan || 'free';
-            const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
-            const limits = getUsageLimits(plan);
+      // ✅ SYNC AI USAGE STATS TO ROOM
+      if (userDoc) {
+          // Sync daily AI usage to room data for this user
+          if (!room.aiHelpsUsed) room.aiHelpsUsed = {};
+          room.aiHelpsUsed[authUser._id.toString()] = userDoc.usageStats.aiHelpToday || 0;
+      }
 
-            if (room.isCustom) {
-                // ✅ Custom matches are limited for Pro (Tier 2), unlimited only for Premium (Tier 3)
-                if (userTier < 3) {
-                    if (userDoc.usageStats.customMatchesToday < limits.customMatches) {
-                        userDoc.usageStats.customMatchesToday += 1;
-                        await userDoc.save();
-                        console.log(`[USAGE] Incremented custom match count for ${username}: ${userDoc.usageStats.customMatchesToday}/${limits.customMatches}`);
-                    }
-                }
-            } else {
-                // ✅ Normal matches are unlimited for Pro (Tier 2) and Premium (Tier 3)
-                if (userTier < 2) {
-                    if (userDoc.usageStats.matchesToday < limits.matches) {
-                        userDoc.usageStats.matchesToday += 1;
-                        await userDoc.save();
-                        console.log(`[USAGE] Incremented normal match count for ${username}: ${userDoc.usageStats.matchesToday}/${limits.matches}`);
-                    }
-                }
-            }
-        }
-
+      if (!isReconnect) {
         side = reservedSide || (room.players.length === 0 ? 'left' : 'right');
         room.players.push({ id: socket.id, username, side, avatar: authUser.avatar || '', customization: authUser.customization, userId: authUser._id });
         room.scores[username] = room.scores[username] || 0;
@@ -1610,7 +1580,8 @@ io.on('connection', async (socket) => {
           ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
           : (room.durationSeconds || (30 * 60)),
         customSettings: room.isCustom ? room.customSettings : undefined,
-        aiHelpsUsed: room.aiHelpsUsed || {}
+        aiHelpsUsed: room.aiHelpsUsed || {},
+        dailyAIHelpLimit: AI_DAILY_LIMITS[userDoc?.subscriptionPlan || 'free'] || 1
       });
 
       if (!isReconnect) {

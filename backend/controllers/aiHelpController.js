@@ -1,19 +1,7 @@
 import Room from '../models/Room.js';
+import User from '../models/User.js';
 import { getGroqClient } from '../services/aiRouterService.js';
-
-const SESSION_LIMITS = {
-    'free': 0,
-    'plus': 1,
-    'pro': 3,
-    'premium': 7
-};
-
-const getUserTier = (plan) => {
-    if (plan === 'premium') return 3;
-    if (plan === 'pro') return 2;
-    if (plan === 'plus') return 1;
-    return 0;
-};
+import { AI_DAILY_LIMITS, AI_TIER_MAP, AI_RESPONSE_MESSAGES } from '../config/aiConfig.js';
 
 const callGroq = async (client, messages) => {
     try {
@@ -26,110 +14,131 @@ const callGroq = async (client, messages) => {
         return completion.choices[0]?.message?.content;
     } catch (error) {
         if (error.status === 429) {
-            throw new Error('RATE_LIMIT_REACHED');
+            throw new Error('GROQ_RATE_LIMIT');
         }
         throw error;
     }
 };
 
-export const getHint = async (req, res) => {
-    const { roomId, problemTitle } = req.body;
-    const user = req.user;
-
-    if (!user) return res.status(401).json({ message: 'Unauthorized' });
+/**
+ * Enterprise-grade AI Rate Limiter & Assistance Logic
+ * Implements atomic updates to prevent bypass via simultaneous requests.
+ */
+const handleAIHelpUsage = async (req, problemTitle, type, code = null) => {
+    const userId = req.user._id;
+    
+    // 1. Initial Fetch for verification and daily reset check
+    const user = await User.findById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
 
     const plan = user.subscriptionPlan || 'free';
-    const limit = SESSION_LIMITS[plan];
+    const dailyLimit = AI_DAILY_LIMITS[plan];
 
-    if (limit === 0) {
-        return res.status(403).json({ message: 'AI Hints are a Plus+ feature. Please upgrade!' });
+    // 2. Perform Daily Reset if needed (Atomic via middleware or direct check)
+    await user.checkAndResetDailyStats();
+
+    // 3. ATOMIC CHECK AND INCREMENT
+    // Using findOneAndUpdate ensures that even with rapid simultaneous requests,
+    // the count never exceeds the dailyLimit.
+    const updatedUser = await User.findOneAndUpdate(
+        { 
+            _id: userId, 
+            "usageStats.aiHelpToday": { $lt: dailyLimit } 
+        },
+        { 
+            $inc: { "usageStats.aiHelpToday": 1 } 
+        },
+        { 
+            new: true, // Return the updated document
+            runValidators: true 
+        }
+    );
+
+    if (!updatedUser) {
+        // If findOneAndUpdate returns null, it means the count already >= dailyLimit
+        const error = new Error(AI_RESPONSE_MESSAGES.LIMIT_REACHED);
+        error.statusCode = 429;
+        throw error;
     }
 
+    // 4. Generate AI Content
+    const userTier = AI_TIER_MAP[plan];
+    const client = getGroqClient(userTier, 'ai-help');
+
+    let systemPrompt = "";
+    if (type === 'hint') {
+        systemPrompt = `You are Cody AI, an elite coding mentor. The user is solving ${problemTitle}. Provide ONE conceptual hint or algorithmic approach. DO NOT write code. DO NOT give the direct answer. Maximum 3 short sentences.`;
+    } else {
+        systemPrompt = `You are Cody AI. The user is solving ${problemTitle}. Analyze their code: \n\n${code}\n\nIdentify logical flaws, syntax errors, or missed edge cases. Give a debugging suggestion. DO NOT write the corrected code for them. Guide them to find the bug themselves.`;
+    }
+
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: type === 'hint' ? "Please give me a hint for this problem." : "Please check my code for bugs." }
+    ];
+
     try {
-        const room = await Room.findOne({ roomId });
-        if (!room) return res.status(404).json({ message: 'Room not found' });
-
-        const userIdStr = user._id.toString();
-        const currentUsed = room.aiHelpsUsed?.get(userIdStr) || 0;
-
-        if (currentUsed >= limit) {
-            return res.status(403).json({ message: 'Session AI limit reached. You have used all your hints for this match.' });
-        }
-
-        const userTier = getUserTier(plan);
-        const client = getGroqClient(userTier, 'ai-help');
-
-        const systemPrompt = `You are Cody AI, an elite coding mentor. The user is solving ${problemTitle}. Provide ONE conceptual hint or algorithmic approach. DO NOT write code. DO NOT give the direct answer. Maximum 3 short sentences.`;
-
-        const messages = [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: "Please give me a hint for this problem." }
-        ];
-
         const reply = await callGroq(client, messages);
+        
+        const currentUsed = updatedUser.usageStats.aiHelpToday;
+        const remaining = Math.max(0, dailyLimit - currentUsed);
 
-        // Update usage
-        if (!room.aiHelpsUsed) room.aiHelpsUsed = new Map();
-        room.aiHelpsUsed.set(userIdStr, currentUsed + 1);
-        await room.save();
-
-        res.json({ reply, helpsUsed: currentUsed + 1 });
+        return { 
+            reply, 
+            helpsUsedToday: currentUsed, 
+            dailyLimit, 
+            remainingCount: remaining 
+        };
     } catch (error) {
-        console.error('[AI HINT] Error:', error);
-        if (error.message === 'RATE_LIMIT_REACHED') {
-            return res.status(500).json({ message: 'Cody AI is currently analyzing too many requests, please try again in a moment.' });
+        // ROLLBACK: If AI generation fails, we should ideally decrement the count
+        // to be fair to the user, although Groq failures are rare.
+        await User.findByIdAndUpdate(userId, { $inc: { "usageStats.aiHelpToday": -1 } });
+        throw error;
+    }
+};
+
+export const getHint = async (req, res) => {
+    const { problemTitle } = req.body;
+    try {
+        const result = await handleAIHelpUsage(req, problemTitle, 'hint');
+        res.json(result);
+    } catch (error) {
+        if (error.statusCode === 429) {
+            return res.status(429).json({ 
+                success: false,
+                message: error.message,
+                code: 'LIMIT_REACHED',
+                remainingCount: 0
+            });
         }
-        res.status(500).json({ message: 'Cody AI is unavailable right now.' });
+        
+        console.error('[AI HINT] Error:', error);
+        const status = error.message === 'GROQ_RATE_LIMIT' ? 429 : 500;
+        const message = error.message === 'GROQ_RATE_LIMIT' ? AI_RESPONSE_MESSAGES.RATE_LIMIT_ERROR : AI_RESPONSE_MESSAGES.UNAVAILABLE;
+        
+        res.status(status).json({ success: false, message });
     }
 };
 
 export const checkCode = async (req, res) => {
-    const { roomId, problemTitle, code } = req.body;
-    const user = req.user;
-
-    if (!user) return res.status(401).json({ message: 'Unauthorized' });
-
-    const plan = user.subscriptionPlan || 'free';
-    const limit = SESSION_LIMITS[plan];
-
-    if (limit === 0) {
-        return res.status(403).json({ message: 'AI Code Review is a Plus+ feature. Please upgrade!' });
-    }
-
+    const { problemTitle, code } = req.body;
     try {
-        const room = await Room.findOne({ roomId });
-        if (!room) return res.status(404).json({ message: 'Room not found' });
-
-        const userIdStr = user._id.toString();
-        const currentUsed = room.aiHelpsUsed?.get(userIdStr) || 0;
-
-        if (currentUsed >= limit) {
-            return res.status(403).json({ message: 'Session AI limit reached. You have used all your helps for this match.' });
-        }
-
-        const userTier = getUserTier(plan);
-        const client = getGroqClient(userTier, 'ai-help');
-
-        const systemPrompt = `You are Cody AI. The user is solving ${problemTitle}. Analyze their code: \n\n${code}\n\nIdentify logical flaws, syntax errors, or missed edge cases. Give a debugging suggestion. DO NOT write the corrected code for them. Guide them to find the bug themselves.`;
-
-        const messages = [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: "Please check my code for bugs." }
-        ];
-
-        const reply = await callGroq(client, messages);
-
-        // Update usage
-        if (!room.aiHelpsUsed) room.aiHelpsUsed = new Map();
-        room.aiHelpsUsed.set(userIdStr, currentUsed + 1);
-        await room.save();
-
-        res.json({ reply, helpsUsed: currentUsed + 1 });
+        const result = await handleAIHelpUsage(req, problemTitle, 'check', code);
+        res.json(result);
     } catch (error) {
-        console.error('[AI CHECK CODE] Error:', error);
-        if (error.message === 'RATE_LIMIT_REACHED') {
-            return res.status(500).json({ message: 'Cody AI is currently analyzing too many requests, please try again in a moment.' });
+        if (error.statusCode === 429) {
+            return res.status(429).json({ 
+                success: false,
+                message: error.message,
+                code: 'LIMIT_REACHED',
+                remainingCount: 0
+            });
         }
-        res.status(500).json({ message: 'Cody AI is unavailable right now.' });
+        
+        console.error('[AI CHECK CODE] Error:', error);
+        const status = error.message === 'GROQ_RATE_LIMIT' ? 429 : 500;
+        const message = error.message === 'GROQ_RATE_LIMIT' ? AI_RESPONSE_MESSAGES.RATE_LIMIT_ERROR : AI_RESPONSE_MESSAGES.UNAVAILABLE;
+        
+        res.status(status).json({ success: false, message });
     }
 };
