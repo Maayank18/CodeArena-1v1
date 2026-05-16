@@ -246,7 +246,7 @@ export const getSmtpDiagnostics = () => {
 /**
  * Builds a professional, clean HTML template for OTP emails.
  */
-const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena' }) => `
+const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena 1v1' }) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -262,8 +262,11 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
                     <!-- Header/Branding -->
                     <tr>
                         <td align="center" style="padding:48px 40px 24px 40px;">
-                            <div style="background-color:#0d0d0d;padding:14px 28px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
-                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:-1px;text-transform:uppercase;">${appName}</span>
+                            <div style="text-align:center; margin-bottom: 20px;">
+                                <img src="https://codearena1v1.com/logo.png" alt="CodeArena 1v1 Logo" style="width:80px;height:80px;display:block;margin:0 auto;" />
+                            </div>
+                            <div style="background-color:#0d0d0d;padding:12px 24px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
+                                <span style="font-size:22px;font-weight:900;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">${appName}</span>
                             </div>
                         </td>
                     </tr>
@@ -295,7 +298,7 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
                             <p style="margin:0 0 6px 0;color:#ffffff;font-size:15px;font-weight:800;">CodeArena 1v1</p>
                             <p style="margin:0;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">The Ultimate Battleground for Developers</p>
                             <div style="margin-top:24px;padding-top:24px;border-top:1px solid #1a1a1a;font-size:11px;color:#374151;">
-                                &copy; 2026 CodeArena. All rights reserved.
+                                &copy; 2026 CodeArena 1v1. All rights reserved.
                             </div>
                         </td>
                     </tr>
@@ -325,8 +328,11 @@ const buildReceiptEmailHtml = ({ name, planName, amount, invoiceId, date, expiry
                     <!-- Header -->
                     <tr>
                         <td align="center" style="padding:48px 40px;background-color:#0d0d0d;border-bottom:1px solid #2a2a2a;">
-                            <div style="background-color:#161616;padding:14px 28px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
-                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:-1px;text-transform:uppercase;">CodeArena</span>
+                            <div style="text-align:center; margin-bottom: 20px;">
+                                <img src="https://codearena1v1.com/logo.png" alt="CodeArena 1v1 Logo" style="width:80px;height:80px;display:block;margin:0 auto;" />
+                            </div>
+                            <div style="background-color:#161616;padding:12px 24px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
+                                <span style="font-size:22px;font-weight:900;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">CodeArena 1v1</span>
                             </div>
                             <h1 style="margin:24px 0 0 0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Purchase Successful!</h1>
                         </td>
@@ -460,7 +466,7 @@ export const sendPurchaseReceiptEmail = async (args) => {
 /**
  * Builds a clean plain-text fallback for OTP emails.
  */
-const buildOtpEmailText = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena' }) => `
+const buildOtpEmailText = ({ title, otp, bodyText, expiresInMinutes, appName = 'CodeArena 1v1' }) => `
 ${appName} - ${title}
 -----------------------------------------
 
