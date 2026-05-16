@@ -29,8 +29,8 @@ const attachAccessCookie = (res, token, options = {}) => {
 
     res.cookie('codearena_access_token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: (options.rememberMe === false ? 1 : 30) * 24 * 60 * 60 * 1000,
         path: '/',
     });

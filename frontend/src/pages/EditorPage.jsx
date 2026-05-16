@@ -36,18 +36,10 @@ const resolveBackendHttpUrl = () => {
 };
 
 const resolveYjsUrl = () => {
-    // 1. Explicit environment variable (highest priority)
-    const envYjs = import.meta.env.VITE_YJS_URL;
-    if (envYjs && !(import.meta.env.PROD && isLocalhostLike(envYjs))) {
-        return envYjs;
+    if (import.meta.env.VITE_YJS_URL && !(import.meta.env.PROD && isLocalhostLike(import.meta.env.VITE_YJS_URL))) {
+        return import.meta.env.VITE_YJS_URL;
     }
 
-    // 2. Local development fallback
-    if (!import.meta.env.PROD) {
-        return 'ws://localhost:1234';
-    }
-
-    // 3. Production dynamic resolution (fallback to backend origin)
     const backendUrl = resolveBackendHttpUrl();
     if (backendUrl.startsWith('https://')) return backendUrl.replace(/^https:\/\//, 'wss://');
     if (backendUrl.startsWith('http://')) return backendUrl.replace(/^http:\/\//, 'ws://');
@@ -240,26 +232,13 @@ const EditorPage = () => {
 
         if (!providerRef.current && ydocRef.current) {
             const yjsUrl = resolveYjsUrl();
-            const provider = new WebsocketProvider(yjsUrl, roomId, ydocRef.current);
-            
-            // ✅ Phase 3 Fix: Graceful WebSocket Handling
-            provider.on('connection-error', (error) => {
-                console.error("[ARENA-YJS] WebSocket connection error:", error);
-                // Do NOT throw. The UI will just run in "solo" mode.
-            });
-
-            provider.on('status', (event) => {
-                console.log(`[ARENA-YJS] Connection status: ${event.status}`);
-            });
-
-            providerRef.current = provider;
+            providerRef.current = new WebsocketProvider(yjsUrl, roomId, ydocRef.current);
         }
 
         if (socketRef.current) return;
 
         const apiUrl = resolveBackendHttpUrl();
         socketRef.current = io(apiUrl, {
-            withCredentials: true,
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 10,
