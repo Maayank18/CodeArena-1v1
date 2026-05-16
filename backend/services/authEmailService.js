@@ -262,11 +262,13 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
                     <!-- Header/Branding -->
                     <tr>
                         <td align="center" style="padding:48px 40px 24px 40px;">
-                            <div style="text-align:center; margin-bottom: 20px;">
-                                <img src="https://codearena1v1.com/logo.png" alt="CodeArena 1v1 Logo" style="width:80px;height:80px;display:block;margin:0 auto;" />
+                            <div style="text-align:center; margin-bottom: 24px;">
+                                <img src="${(process.env.FRONTEND_URL || 'https://codearena1v1.com').replace(/\/$/, '')}/logo.png" 
+                                     alt="CodeArena 1v1" 
+                                     style="width:84px; height:84px; display:block; margin:0 auto; border:0;" />
                             </div>
-                            <div style="background-color:#0d0d0d;padding:12px 24px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
-                                <span style="font-size:22px;font-weight:900;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">${appName}</span>
+                            <div style="background-color:#0d0d0d; padding:12px 28px; border:2px solid #4ade80; border-radius:14px; display:inline-block; box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);">
+                                <span style="font-size:24px; font-weight:900; color:#4ade80; letter-spacing:1px; text-transform:uppercase;">${appName}</span>
                             </div>
                         </td>
                     </tr>
@@ -327,14 +329,16 @@ const buildReceiptEmailHtml = ({ name, planName, amount, invoiceId, date, expiry
                 <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background-color:#161616;border:1px solid #2a2a2a;border-radius:24px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
                     <!-- Header -->
                     <tr>
-                        <td align="center" style="padding:48px 40px;background-color:#0d0d0d;border-bottom:1px solid #2a2a2a;">
-                            <div style="text-align:center; margin-bottom: 20px;">
-                                <img src="https://codearena1v1.com/logo.png" alt="CodeArena 1v1 Logo" style="width:80px;height:80px;display:block;margin:0 auto;" />
+                        <td align="center" style="padding:48px 40px; background-color:#0d0d0d; border-bottom:1px solid #2a2a2a;">
+                            <div style="text-align:center; margin-bottom: 24px;">
+                                <img src="${(process.env.FRONTEND_URL || 'https://codearena1v1.com').replace(/\/$/, '')}/logo.png" 
+                                     alt="CodeArena 1v1" 
+                                     style="width:84px; height:84px; display:block; margin:0 auto; border:0;" />
                             </div>
-                            <div style="background-color:#161616;padding:12px 24px;border:1px solid #2a2a2a;border-radius:14px;display:inline-block;">
-                                <span style="font-size:22px;font-weight:900;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">CodeArena 1v1</span>
+                            <div style="background-color:#161616; padding:12px 28px; border:2px solid #4ade80; border-radius:14px; display:inline-block; box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);">
+                                <span style="font-size:24px; font-weight:900; color:#4ade80; letter-spacing:1px; text-transform:uppercase;">CodeArena 1v1</span>
                             </div>
-                            <h1 style="margin:24px 0 0 0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Purchase Successful!</h1>
+                            <h1 style="margin:28px 0 0 0; color:#ffffff; font-size:28px; font-weight:800; letter-spacing:-0.5px;">Purchase Successful!</h1>
                         </td>
                     </tr>
                     <!-- Body -->
