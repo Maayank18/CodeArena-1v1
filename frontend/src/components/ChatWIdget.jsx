@@ -4,6 +4,8 @@ import {
     Bot, X, Send, Loader2, RotateCcw,
     ChevronRight, Zap, AlertCircle
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import CodyIcon from '../assets/CodyAI.png';
 import api from '../api.js';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
@@ -26,9 +28,11 @@ const FAQ_ITEMS = [
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const TypingIndicator = () => (
-    <div className="flex items-start gap-2.5">
-        <BotAvatar />
-        <div className="bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
+    <div className="flex items-start gap-3">
+        <div className="shrink-0">
+            <AnimatedCodyAvatar size="w-9 h-9" />
+        </div>
+        <div className="bg-[#222222] border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3">
             <div className="flex gap-1.5 items-center h-4">
                 {[0, 150, 300].map((delay) => (
                     <span
@@ -42,24 +46,44 @@ const TypingIndicator = () => (
     </div>
 );
 
+const AnimatedCodyAvatar = ({ size = "w-10 h-10" }) => (
+    <motion.img
+        src={CodyIcon}
+        alt="Cody AI"
+        className={`${size} object-contain origin-bottom`}
+        animate={{ scaleY: [1, 1, 1, 0.7, 1] }}
+        transition={{ 
+            duration: 4, 
+            repeat: Infinity, 
+            times: [0, 0.2, 0.94, 0.97, 1],
+            ease: "easeInOut"
+        }}
+    />
+);
+
 const BotAvatar = () => (
-    <div className="w-7 h-7 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
-        <Bot size={14} className="text-accent" />
+    <div className="relative shrink-0 flex items-center justify-center">
+        <AnimatedCodyAvatar size="w-12 h-12" />
+        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#121212] rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
     </div>
 );
 
 const MessageBubble = ({ msg }) => {
     const isUser = msg.role === 'user';
     return (
-        <div className={`flex items-start gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
-            {!isUser && <BotAvatar />}
+        <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+            {!isUser && (
+                <div className="shrink-0 mt-1">
+                    <AnimatedCodyAvatar size="w-9 h-9" />
+                </div>
+            )}
             <div
-                className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
+                className={`px-4 py-2.5 text-sm leading-relaxed break-words ${
                     isUser
-                        ? 'bg-accent text-black font-medium rounded-tr-sm max-w-[240px]'
+                        ? 'bg-emerald-600 text-white rounded-2xl rounded-br-sm max-w-[85%] self-end shadow-lg shadow-emerald-900/20'
                         : msg.isError
-                            ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-tl-sm max-w-[270px]'
-                            : 'bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-sm max-w-[270px]'
+                            ? 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl rounded-tl-sm max-w-[85%]'
+                            : 'bg-[#222222] border border-white/5 text-gray-200 rounded-2xl rounded-bl-sm max-w-[85%] self-start'
                 }`}
             >
                 {msg.isError && (
@@ -234,181 +258,170 @@ const ChatWidget = ({ user }) => {
             <button
                 onClick={isOpen ? handleClose : handleOpen}
                 aria-label="Toggle AI assistant"
-                className="fixed bottom-[104px] right-4 md:bottom-24 md:right-6 z-50 w-14 h-14 rounded-full bg-accent text-black shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                style={{ boxShadow: '0 8px 32px rgba(74,238,136,0.3)' }}
+                className="fixed bottom-6 right-2 md:bottom-8 md:right-4 z-50 w-20 h-20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
             >
-                <div className={`transition-all duration-200 ${isOpen ? 'rotate-90 scale-90' : 'rotate-0 scale-100'}`}>
-                    {isOpen ? <X size={22} /> : <Bot size={22} />}
+                <div className={`transition-all duration-200 ${isOpen ? 'rotate-90 scale-90' : 'rotate-0 scale-100'} w-full h-full flex items-center justify-center`}>
+                    {isOpen ? (
+                        <div className="w-14 h-14 rounded-full bg-[#121212] border border-white/10 flex items-center justify-center shadow-2xl">
+                             <X size={32} className="text-white" />
+                        </div>
+                    ) : (
+                        <AnimatedCodyAvatar size="w-full h-full" />
+                    )}
                 </div>
 
                 {/* Notification badge */}
                 {hasBadge && !isOpen && (
-                    <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[var(--bg-primary)] animate-pulse" />
+                    <span className="absolute top-2 right-2 w-4.5 h-4.5 bg-red-500 rounded-full border-2 border-[#121212] animate-pulse" />
                 )}
             </button>
 
             {/* ── Chat Panel ─────────────────────────────────────────────── */}
-            <div
-                className={`
-                    fixed bottom-[175px] right-4 md:bottom-40 md:right-6 z-50
-                    w-[calc(100vw-32px)] md:w-[380px]
-                    flex flex-col rounded-2xl overflow-hidden
-                    border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111]
-                    transition-all duration-200 origin-bottom-right
-                    ${isOpen
-                        ? 'opacity-100 scale-100 pointer-events-auto translate-y-0'
-                        : 'opacity-0 scale-95 pointer-events-none translate-y-2'
-                    }
-                `}
-                style={{
-                    maxHeight: 'min(540px, calc(100dvh - 220px))',
-                    boxShadow: '0 24px 64px rgba(0,0,0,0.55)',
-                }}
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-gray-50/80 dark:bg-[#0d0d0d] border-b border-gray-100 dark:border-gray-800 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center">
-                            <Bot size={18} className="text-accent" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-gray-800 dark:text-white leading-none">Arena AI</p>
-                            <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
-                                CodeArena Assistant
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        {/* Remaining messages pill */}
-                        {!isLimitReached && messageCount > 0 && (
-                            <span className="text-[10px] font-mono text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-800 mr-1">
-                                {remaining} / {MAX_FREE_MESSAGES}
-                            </span>
-                        )}
-                        <button
-                            onClick={handleClearChat}
-                            title="Clear conversation"
-                            className="p-1.5 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                        >
-                            <RotateCcw size={14} />
-                        </button>
-                        <button
-                            onClick={handleClose}
-                            className="p-1.5 rounded-lg text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Messages */}
-                <div
-                    className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0 chat-scroll"
-                    style={{ maxHeight: '320px' }}
-                >
-                    {showFAQ ? (
-                        /* ── Empty state: welcome + FAQ chips ── */
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-2.5">
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                        className="fixed bottom-24 right-4 md:bottom-28 md:right-6 w-[calc(100vw-32px)] sm:w-[440px] bg-[#121212]/95 backdrop-blur-xl border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.6)] rounded-[24px] flex flex-col overflow-hidden z-50 origin-bottom-right"
+                        style={{
+                            height: 'min(650px, 75dvh)',
+                            maxHeight: 'calc(100dvh - 140px)',
+                        }}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-white/5 shrink-0">
+                            <div className="flex items-center gap-3">
                                 <BotAvatar />
-                                <div className="bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[270px]">
-                                    <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
-                                        Hey{user?.username ? <span className="text-accent font-semibold"> {user.username}</span> : ''}! 👋 I'm <span className="text-accent font-semibold">Arena AI</span>. Ask me anything about CodeArena 1v1.
+                                <div className="flex flex-col">
+                                    <p className="text-white font-bold tracking-wide leading-tight">Cody AI</p>
+                                    <p className="text-xs text-green-400 font-medium mt-0.5 flex items-center gap-1">
+                                        AI Mentor
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="pl-9 space-y-2">
-                                <p className="text-[10px] text-gray-400 dark:text-gray-600 uppercase tracking-widest font-semibold">
-                                    Quick questions
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {FAQ_ITEMS.map((item) => (
-                                        <button
-                                            key={item.question}
-                                            onClick={() => sendMessage(item.question)}
-                                            disabled={isLimitReached}
-                                            className="text-xs px-3 py-1.5 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-accent/50 text-gray-600 dark:text-gray-400 hover:text-accent rounded-full transition-all flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            {item.label}
-                                            <ChevronRight size={10} />
-                                        </button>
-                                    ))}
-                                </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleClearChat}
+                                    title="Clear conversation"
+                                    className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                                >
+                                    <RotateCcw size={16} />
+                                </button>
+                                <button
+                                    onClick={handleClose}
+                                    className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
                             </div>
                         </div>
-                    ) : (
-                        /* ── Conversation ── */
-                        <>
-                            {messages.map((msg) => (
-                                <MessageBubble key={msg.id} msg={msg} />
-                            ))}
-                            {isTyping && <TypingIndicator />}
-                        </>
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
 
-                {/* Limit reached banner */}
-                {isLimitReached && (
-                    <div className="mx-3 mb-3 px-4 py-3 bg-accent/10 border border-accent/25 rounded-xl shrink-0">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Zap size={14} className="text-accent shrink-0" />
-                            <span className="text-sm font-bold text-accent">Free limit reached</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-2.5">
-                            You've used all {MAX_FREE_MESSAGES} free messages. Upgrade to Pro for unlimited AI assistance.
-                        </p>
-                        <button
-                            onClick={() => toast('Pro Plan coming soon! 🚀', { icon: '⚡', duration: 3000 })}
-                            className="w-full py-2 bg-accent text-black text-xs font-bold rounded-lg hover:bg-emerald-400 transition-all active:scale-95"
-                        >
-                            Upgrade to Pro
-                        </button>
-                    </div>
-                )}
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-[#0a0a0a]/50 min-h-0 chat-scroll">
+                            {showFAQ ? (
+                                <div className="space-y-6 py-2">
+                                    <div className="flex items-start gap-3">
+                                        <div className="shrink-0">
+                                            <AnimatedCodyAvatar size="w-12 h-12" />
+                                        </div>
+                                        <div className="bg-[#222222] border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%] shadow-lg">
+                                            <p className="text-sm text-gray-200 leading-relaxed">
+                                                Hey{user?.username ? <span className="text-emerald-400 font-semibold"> {user.username}</span> : ''}! 👋 I'm <span className="text-emerald-400 font-semibold">Cody AI</span>. Ask me anything about CodeArena 1v1.
+                                            </p>
+                                        </div>
+                                    </div>
 
-                {/* Input area */}
-                {!isLimitReached && (
-                    <form
-                        onSubmit={handleSubmit}
-                        className="px-3 pb-3 pt-2 border-t border-gray-100 dark:border-gray-800 shrink-0 flex gap-2 items-end"
-                    >
-                        <div className="flex-1 relative">
-                            <textarea
-                                ref={inputRef}
-                                value={inputValue}
-                                onChange={handleInputChange}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Ask about CodeArena…"
-                                rows={1}
-                                disabled={isTyping}
-                                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-accent/50 transition-all resize-none disabled:opacity-50 leading-relaxed"
-                                style={{ minHeight: '42px', maxHeight: '96px' }}
-                            />
-                            {/* Character counter — only show when close to limit */}
-                            {inputValue.length > 200 && (
-                                <span className={`absolute bottom-1.5 right-2.5 text-[10px] font-mono ${charsLeft < 30 ? 'text-red-400' : 'text-gray-600'}`}>
-                                    {charsLeft}
-                                </span>
+                                    <div className="pl-[52px] space-y-3">
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold opacity-60">
+                                            Quick questions
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {FAQ_ITEMS.map((item) => (
+                                                <button
+                                                    key={item.question}
+                                                    onClick={() => sendMessage(item.question)}
+                                                    disabled={isLimitReached}
+                                                    className="text-xs px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/50 text-gray-300 hover:text-emerald-400 rounded-full transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed group"
+                                                >
+                                                    {item.label}
+                                                    <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {messages.map((msg) => (
+                                        <MessageBubble key={msg.id} msg={msg} />
+                                    ))}
+                                    {isTyping && <TypingIndicator />}
+                                </>
                             )}
+                            <div ref={messagesEndRef} />
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={!inputValue.trim() || isTyping}
-                            className="w-10 h-10 rounded-xl bg-accent text-black flex items-center justify-center hover:bg-emerald-400 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                        >
-                            {isTyping
-                                ? <Loader2 size={16} className="animate-spin" />
-                                : <Send size={16} />
-                            }
-                        </button>
-                    </form>
+                        {/* Limit reached banner */}
+                        {isLimitReached && (
+                            <div className="mx-5 mb-4 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl shrink-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Zap size={14} className="text-emerald-400 shrink-0" />
+                                    <span className="text-sm font-bold text-emerald-400">Free limit reached</span>
+                                </div>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    Upgrade to Pro for unlimited AI assistance.
+                                </p>
+                                <button
+                                    onClick={() => toast('Pro Plan coming soon! 🚀', { icon: '⚡' })}
+                                    className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-[#121212] text-xs font-bold rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                                >
+                                    Upgrade to Pro
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Input area */}
+                        {!isLimitReached && (
+                            <div className="p-4 bg-[#121212] border-t border-white/10 shrink-0">
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className="flex items-center bg-[#1e1e1e] rounded-full px-2 py-1.5 border border-white/5 focus-within:border-white/20 transition-colors"
+                                >
+                                    <textarea
+                                        ref={inputRef}
+                                        value={inputValue}
+                                        onChange={handleInputChange}
+                                        onKeyDown={handleKeyDown}
+                                        placeholder="Ask about CodeArena…"
+                                        rows={1}
+                                        disabled={isTyping}
+                                        className="flex-1 bg-transparent text-white text-sm px-3 outline-none placeholder-gray-500 resize-none py-1 min-h-[32px] max-h-[100px]"
+                                    />
+                                    
+                                    <button
+                                        type="submit"
+                                        disabled={!inputValue.trim() || isTyping}
+                                        className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                    >
+                                        {isTyping
+                                            ? <Loader2 size={16} className="animate-spin" />
+                                            : <Send size={16} />
+                                        }
+                                    </button>
+                                </form>
+                                {inputValue.length > 200 && (
+                                    <div className={`mt-2 text-[10px] font-mono text-center ${charsLeft < 30 ? 'text-red-400' : 'text-gray-500'}`}>
+                                        {charsLeft} characters remaining
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
                 )}
-            </div>
+            </AnimatePresence>
 
             {/* Mobile backdrop */}
             {isOpen && (
