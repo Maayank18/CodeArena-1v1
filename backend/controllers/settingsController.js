@@ -440,13 +440,26 @@ export const verifyEmailAddress = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const pendingType = user.pendingUpdates?.type;
+        const pendingEmail = typeof user.pendingUpdates?.email === 'string'
+            ? user.pendingUpdates.email.trim().toLowerCase()
+            : '';
+        const pendingType = user.pendingUpdates?.type
+            || (pendingEmail && pendingEmail !== user.email.toLowerCase() ? 'email_change' : 'email_verification');
 
-        if (pendingType !== 'email_verification' && pendingType !== 'email_change' && !user.otpCode) {
+        if (!user.otpCode || !user.otpExpiry) {
+            return res.status(400).json({ success: false, message: 'No pending verification request found' });
+        }
+
+        if (pendingType !== 'email_verification' && pendingType !== 'email_change') {
             return res.status(400).json({ success: false, message: 'No pending verification request found' });
         }
 
         if (user.otpExpiry <= new Date()) {
+            user.otpCode = null;
+            user.otpExpiry = null;
+            user.otpAttemptCount = 0;
+            user.pendingUpdates = {};
+            await user.save();
             return res.status(400).json({ success: false, message: 'Code expired. Request a new one.' });
         }
 
@@ -462,13 +475,13 @@ export const verifyEmailAddress = async (req, res) => {
         }
 
         if (pendingType === 'email_change') {
-            const newEmail = user.pendingUpdates?.email;
+            const newEmail = pendingEmail;
             if (!newEmail || !EMAIL_REGEX.test(newEmail)) {
                 return res.status(400).json({ success: false, message: 'Invalid pending email update' });
             }
 
             const existingEmailUser = await User.findOne({ email: newEmail }).select('_id').lean();
-            if (existingEmailUser) {
+            if (existingEmailUser && existingEmailUser._id.toString() !== user._id.toString()) {
                 return res.status(400).json({ success: false, message: 'This email is already registered to another account' });
             }
 

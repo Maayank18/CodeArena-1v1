@@ -165,6 +165,11 @@ const userPreferencesSchema = new mongoose.Schema({
 }, { _id: false });
 
 const pendingUpdatesSchema = new mongoose.Schema({
+    type: {
+        type: String,
+        enum: ['email_change', 'email_verification'],
+        default: null,
+    },
     email: {
         type: String,
         lowercase: true,

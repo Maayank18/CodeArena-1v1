@@ -602,12 +602,25 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
     try {
       const endpoint = otpPending?.email ? '/settings/verify-email' : '/settings/verify-otp';
       const { data } = await api.post(endpoint, { otp: otpCode.trim() });
-      
-      if (data.user) {
-        persistUser(data.user);
-        setProfileForm(buildInitialProfileForm(data.user));
-        setSecurityForm(buildInitialSecurityForm(data.user));
-        setPreferencesForm(buildInitialPreferencesForm(data.user));
+
+      const syncUser = data.user ? { user: data.user } : null;
+      api.clearCache?.();
+
+      let freshUser = syncUser?.user || null;
+      try {
+        const { data: profileData } = await api.get('/settings/profile', {
+          params: { refresh: Date.now() },
+        });
+        freshUser = profileData?.user || freshUser;
+      } catch (profileError) {
+        console.warn('[SETTINGS OTP] Fresh profile sync failed after verification', profileError);
+      }
+
+      if (freshUser) {
+        persistUser(freshUser);
+        setProfileForm(buildInitialProfileForm(freshUser));
+        setSecurityForm(buildInitialSecurityForm(freshUser));
+        setPreferencesForm(buildInitialPreferencesForm(freshUser));
         setIsChangingEmail(false);
       }
       setOtpPending(null);
