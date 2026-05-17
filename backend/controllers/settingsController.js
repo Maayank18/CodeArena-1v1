@@ -1,7 +1,7 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import { BADGE_DEFINITIONS } from '../services/badgeEngine.js';
-import { sendSettingsOtpEmail } from '../services/authEmailService.js';
+import { sendSettingsOtpEmail, sendEmailVerificationOtp } from '../services/authEmailService.js';
 import {
     AUTH_LIMITS,
     generateOtp,
@@ -386,12 +386,11 @@ export const requestEmailVerificationOtp = async (req, res) => {
         };
         await user.save();
 
-        await sendSettingsOtpEmail({
-            to: user.email,
-            otp,
-            name: user.fullName || user.username,
-            expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
-        });
+        await sendEmailVerificationOtp(
+            user.email,
+            user.fullName || user.username,
+            otp
+        );
 
         return res.json({
             success: true,

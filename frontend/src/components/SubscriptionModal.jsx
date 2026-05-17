@@ -22,6 +22,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
   const [utrNumber, setUtrNumber] = useState('');
   const [hasPending, setHasPending] = useState(false);
   const [isLoadingPending, setIsLoadingPending] = useState(false);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [orderData, setOrderData] = useState({
     fullName: '',
     college: '',
@@ -32,6 +33,20 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
 
   const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
   const email = user.email || 'user@example.com';
+
+  const syncFreshProfile = async () => {
+    try {
+      const response = await api.get('/settings/profile');
+      if (response.data?.success && response.data?.user) {
+        const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+        const mergedUser = { ...storedUser, ...response.data.user };
+        localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
+        window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
+      }
+    } catch (error) {
+      console.error('[PROFILE SYNC ERROR]', error);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -56,7 +71,9 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
       try {
         setIsLoadingPending(true);
         const res = await api.get('/payments/mine');
-        const pending = res.data.transactions?.find((t) => t.status === 'pending');
+        const txs = res.data.transactions || [];
+        setAllTransactions(txs);
+        const pending = txs.find((t) => t.status === 'pending');
         if (pending) {
           setSubmittedTransaction(pending);
           setSubmissionComplete(true);
@@ -71,6 +88,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
     };
 
     checkPendingRequests();
+    syncFreshProfile();
   }, [isOpen, user.fullName, user.phone]);
 
   const pricing = useMemo(() => {
@@ -103,11 +121,11 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
     { id: 3, name: 'Pay' },
   ];
 
-  const closeModal = () => {
+  const closeModal = async () => {
     if (isSubmitting) {
       return;
     }
-
+    await syncFreshProfile();
     onClose();
   };
 
@@ -142,6 +160,11 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
       setSubmittedTransaction(response.data.transaction);
       setSubmissionComplete(true);
       toast.success(response.data.message || 'Payment request submitted');
+      
+      // Update allTransactions with newly submitted one
+      setAllTransactions(prev => [response.data.transaction, ...prev.filter(t => t.status !== 'pending')]);
+      
+      await syncFreshProfile();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit payment request');
     } finally {
@@ -162,6 +185,28 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `CodeArena_Invoice_${submittedTransaction.planName || name}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      toast.success('Invoice downloaded successfully', { id: 'invoice-toast' });
+    } catch (error) {
+      toast.error('Failed to download invoice. Please try again.', { id: 'invoice-toast' });
+      console.error('[INVOICE ERROR]', error);
+    }
+  };
+
+  const handleDownloadPastInvoice = async (txId, planName) => {
+    try {
+      toast.loading('Generating invoice...', { id: 'invoice-toast' });
+      const response = await api.get(`/payments/${txId}/invoice`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CodeArena_Invoice_${planName}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -303,6 +348,48 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                         ))}
                       </ul>
                     </div>
+
+                    {allTransactions.length > 0 && (
+                      <div className="w-full mb-8 rounded-3xl border border-gray-800 bg-[#161616]/40 p-6 text-left">
+                        <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center justify-between">
+                          <span>Billing & Invoice History</span>
+                          <span className="text-[9px] text-gray-600 font-bold">Secure Manual Payments</span>
+                        </h3>
+                        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                          {allTransactions.map((tx) => (
+                            <div key={tx._id} className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-900/40 border border-gray-800 hover:border-gray-700 transition-colors">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-black uppercase text-white tracking-widest">{tx.planName}</span>
+                                  <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                                    tx.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                    tx.status === 'rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                    'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                  }`}>
+                                    {tx.status}
+                                  </span>
+                                </div>
+                                <div className="text-[9px] text-gray-500 font-medium tracking-wider">
+                                  {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} • UTR: {tx.utrNumber.slice(0, 4)}...{tx.utrNumber.slice(-4)}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-black text-white whitespace-nowrap">Rs. {tx.amount}</span>
+                                {tx.status === 'approved' && (
+                                  <button
+                                    onClick={() => handleDownloadPastInvoice(tx._id, tx.planName)}
+                                    className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-black transition-all"
+                                    title="Download PDF Invoice"
+                                  >
+                                    <Download size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => setStep(2)}

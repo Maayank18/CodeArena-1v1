@@ -26,5 +26,6 @@ router.get('/mine', verifyToken, getMyPaymentTransactions);
 router.get('/admin/transactions', isAdmin, listPaymentTransactions);
 router.post('/verify-utr', isAdmin, verifyPaymentUtr);
 router.get('/:transactionId/invoice', verifyToken, generateInvoicePDF);
+router.get('/invoice/:transactionId/download', verifyToken, generateInvoicePDF);
 
 export default router;

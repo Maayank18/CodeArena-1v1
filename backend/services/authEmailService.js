@@ -317,68 +317,71 @@ const buildOtpEmailHtml = ({ title, otp, bodyText, expiresInMinutes, appName = '
  */
 const buildReceiptEmailHtml = ({ name, planName, amount, invoiceId, date, expiryDate }) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Your CodeArena 1v1 Purchase Receipt / Invoice</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0d0d0d;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout:fixed;background-color:#0d0d0d;">
+<body style="margin:0;padding:0;background-color:#121212;color:#ffffff;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#121212" style="table-layout:fixed;background-color:#121212;color:#ffffff;width:100%;">
         <tr>
-            <td align="center" style="padding:40px 20px;">
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background-color:#161616;border:1px solid #2a2a2a;border-radius:24px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <td align="center" bgcolor="#121212" style="padding:40px 20px;background-color:#121212;color:#ffffff;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#161616" style="max-width:600px;background-color:#161616;border:1px solid #2a2a2a;border-radius:24px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
                     <!-- Header -->
                     <tr>
-                        <td align="center" style="padding:48px 40px; background-color:#0d0d0d; border-bottom:1px solid #2a2a2a;">
-                            <div style="text-align:center; margin-bottom: 24px;">
-                                <img src="${(process.env.FRONTEND_URL || 'https://codearena1v1.com').replace(/\/$/, '')}/logo.png" 
+                        <td align="center" bgcolor="#121212" style="padding:48px 40px;background-color:#121212;border-bottom:1px solid #2a2a2a;">
+                            <div style="text-align:center;margin-bottom:24px;background-color:#121212;">
+                                <img src="https://code-arena-1v1.vercel.app/CodeArenaLogo.png" 
                                      alt="CodeArena 1v1" 
-                                     style="width:84px; height:84px; display:block; margin:0 auto; border:0;" />
+                                     style="width:84px;height:84px;display:block;margin:0 auto;border:0;" />
                             </div>
-                            <div style="background-color:#161616; padding:12px 28px; border:2px solid #4ade80; border-radius:14px; display:inline-block; box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);">
-                                <span style="font-size:24px; font-weight:900; color:#4ade80; letter-spacing:1px; text-transform:uppercase;">CodeArena 1v1</span>
+                            <div style="background-color:#161616;padding:12px 28px;border:2px solid #4ade80;border-radius:14px;display:inline-block;box-shadow:0 0 20px rgba(74,222,128,0.2);">
+                                <span style="font-size:24px;font-weight:900;color:#4ade80;letter-spacing:1px;text-transform:uppercase;font-family:'Segoe UI',Roboto,sans-serif;">CodeArena 1v1</span>
                             </div>
-                            <h1 style="margin:28px 0 0 0; color:#ffffff; font-size:28px; font-weight:800; letter-spacing:-0.5px;">Purchase Successful!</h1>
+                            <h1 style="margin:28px 0 0 0;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:-0.5px;font-family:'Segoe UI',Roboto,sans-serif;">Purchase Successful!</h1>
                         </td>
                     </tr>
                     <!-- Body -->
                     <tr>
-                        <td style="padding:40px;">
-                            <p style="margin:0 0 24px 0;color:#a3a3a3;font-size:16px;line-height:1.6;">
+                        <td bgcolor="#161616" style="padding:40px;background-color:#161616;">
+                            <p style="margin:0 0 24px 0;color:#a3a3a3;font-size:16px;line-height:1.6;font-family:'Segoe UI',Roboto,sans-serif;">
                                 Hi ${name},<br><br>
-                                Great news! Your payment for the <strong style="color:#ffffff;">${planName}</strong> membership has been verified and approved. Your account has been upgraded successfully.
+                                Great news! Your payment for the the <strong style="color:#ffffff;">${planName}</strong> membership has been verified and approved. Your account has been upgraded successfully.
                             </p>
 
                             <!-- Receipt Box -->
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#0d0d0d;border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#121212" style="background-color:#121212;border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;">
                                 <tr>
-                                    <td style="padding:24px;border-bottom:1px solid #2a2a2a;">
+                                    <td bgcolor="#121212" style="padding:24px;border-bottom:1px solid #2a2a2a;background-color:#121212;">
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
-                                                <td style="color:#6b7280;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Invoice ID</td>
+                                                <td style="color:#6b7280;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-family:'Segoe UI',Roboto,sans-serif;">Invoice ID</td>
                                                 <td align="right" style="color:#ffffff;font-family:monospace;font-size:13px;font-weight:700;">${invoiceId}</td>
                                             </tr>
                                         </table>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:24px;">
+                                    <td bgcolor="#121212" style="padding:24px;background-color:#121212;">
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                             <tr style="margin-bottom:12px;">
-                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;">Membership Plan</td>
-                                                <td align="right" style="color:#ffffff;font-size:14px;font-weight:700;padding-bottom:10px;">${planName}</td>
+                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;font-family:'Segoe UI',Roboto,sans-serif;">Membership Plan</td>
+                                                <td align="right" style="color:#ffffff;font-size:14px;font-weight:700;padding-bottom:10px;font-family:'Segoe UI',Roboto,sans-serif;">${planName}</td>
                                             </tr>
                                             <tr>
-                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;">Amount Paid</td>
-                                                <td align="right" style="color:#4ade80;font-size:20px;font-weight:800;padding-bottom:10px;">Rs. ${amount}</td>
+                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;font-family:'Segoe UI',Roboto,sans-serif;">Amount Paid</td>
+                                                <td align="right" style="color:#4ade80;font-size:20px;font-weight:800;padding-bottom:10px;font-family:'Segoe UI',Roboto,sans-serif;">Rs. ${amount}</td>
                                             </tr>
                                             <tr>
-                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;">Date Issued</td>
-                                                <td align="right" style="color:#ffffff;font-size:14px;padding-bottom:10px;">${date}</td>
+                                                <td style="color:#a3a3a3;font-size:14px;padding-bottom:10px;font-family:'Segoe UI',Roboto,sans-serif;">Date Issued</td>
+                                                <td align="right" style="color:#ffffff;font-size:14px;padding-bottom:10px;font-family:'Segoe UI',Roboto,sans-serif;">${date}</td>
                                             </tr>
                                             <tr>
-                                                <td style="color:#a3a3a3;font-size:14px;">Validity Period</td>
-                                                <td align="right" style="color:#ffffff;font-size:14px;font-weight:700;">30 Days (Until ${expiryDate})</td>
+                                                <td style="color:#a3a3a3;font-size:14px;font-family:'Segoe UI',Roboto,sans-serif;">Validity Period</td>
+                                                <td align="right" style="color:#ffffff;font-size:14px;font-weight:700;font-family:'Segoe UI',Roboto,sans-serif;">30 Days (Until ${expiryDate})</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -386,33 +389,33 @@ const buildReceiptEmailHtml = ({ name, planName, amount, invoiceId, date, expiry
                             </table>
 
                             <!-- What's Next -->
-                            <div style="margin-top:36px;">
-                                <h3 style="color:#ffffff;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Premium Benefits Unlocked:</h3>
+                            <div style="margin-top:36px;background-color:#161616;">
+                                <h3 style="color:#ffffff;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;font-family:'Segoe UI',Roboto,sans-serif;">Premium Benefits Unlocked:</h3>
                                 <ul style="margin:0;padding:0;list-style:none;">
-                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;">
+                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;font-family:'Segoe UI',Roboto,sans-serif;">
                                         <span style="position:absolute;left:0;color:#4ade80;font-weight:bold;">✔</span> Access to all Pro Battle Arenas & Visualizers
                                     </li>
-                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;">
+                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;font-family:'Segoe UI',Roboto,sans-serif;">
                                         <span style="position:absolute;left:0;color:#4ade80;font-weight:bold;">✔</span> Custom Battle Rooms with advanced features
                                     </li>
-                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;">
+                                    <li style="color:#a3a3a3;font-size:14px;margin-bottom:10px;padding-left:24px;position:relative;font-family:'Segoe UI',Roboto,sans-serif;">
                                         <span style="position:absolute;left:0;color:#4ade80;font-weight:bold;">✔</span> Exclusive Badges and Profile Customizations
                                     </li>
                                 </ul>
                             </div>
 
-                            <div style="margin-top:40px;text-align:center;">
-                                <a href="https://codearena1v1.com/dashboard" style="background-color:#4ade80;color:#000000;padding:18px 36px;border-radius:14px;text-decoration:none;font-weight:900;font-size:14px;display:inline-block;text-transform:uppercase;letter-spacing:1px;box-shadow:0 10px 20px rgba(74,222,128,0.2);">Launch Arena</a>
+                            <div style="margin-top:40px;text-align:center;background-color:#161616;">
+                                <a href="https://code-arena-1v1.vercel.app/" style="background-color:#4ade80;color:#000000;padding:18px 36px;border-radius:14px;text-decoration:none;font-weight:900;font-size:14px;display:inline-block;text-transform:uppercase;letter-spacing:1px;box-shadow:0 10px 20px rgba(74,222,128,0.2);font-family:'Segoe UI',Roboto,sans-serif;">Launch Arena</a>
                             </div>
                         </td>
                     </tr>
                     <!-- Footer -->
                     <tr>
-                        <td style="padding:40px;background-color:#0d0d0d;text-align:center;border-top:1px solid #2a2a2a;">
-                            <p style="margin:0;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;line-height:1.5;">
+                        <td bgcolor="#121212" style="padding:40px;background-color:#121212;text-align:center;border-top:1px solid #2a2a2a;">
+                            <p style="margin:0;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;line-height:1.5;font-family:'Segoe UI',Roboto,sans-serif;">
                                 A PDF copy of this invoice is available for download in your <br>Account Settings > Subscription History.
                             </p>
-                            <div style="margin-top:24px;font-size:11px;color:#374151;">
+                            <div style="margin-top:24px;font-size:11px;color:#374151;font-family:'Segoe UI',Roboto,sans-serif;">
                                 &copy; 2026 CodeArena 1v1. The Ultimate Battleground for Developers.
                             </div>
                         </td>
@@ -552,3 +555,16 @@ export const sendPaymentRejectedEmail = async (args) => {
         text: `Hi ${args.name}, your payment for ${args.planName} was rejected. Reason: ${args.adminNotes}`
     });
 };
+
+export const sendEmailVerificationOtp = async (email, name, otpCode) => {
+    const title = 'Verify Your Email Address';
+    const bodyText = `Hi ${name}, welcome to CodeArena 1v1! Use the verification code below to verify your email address.`;
+    
+    return sendEmail({
+        to: email,
+        subject: `${otpCode} - Verify Your Email Address`,
+        html: buildOtpEmailHtml({ title, otp: otpCode, bodyText, expiresInMinutes: 15 }),
+        text: buildOtpEmailText({ title, otp: otpCode, bodyText, expiresInMinutes: 15 })
+    });
+};
+

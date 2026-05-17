@@ -10,9 +10,9 @@ import { getOrCreateInvoice } from './invoiceController.js';
 
 const UTR_REGEX = /^\d{12}$/;
 const PLAN_CATALOG = {
-    plus: { planId: 'plus', planName: 'PLUS', baseAmount: 149 },
-    pro: { planId: 'pro', planName: 'PRO', baseAmount: 249 },
-    premium: { planId: 'premium', planName: 'PREMIUM', baseAmount: 349 },
+    plus: { planId: 'plus', planName: 'PLUS', baseAmount: 49 },
+    pro: { planId: 'pro', planName: 'PRO', baseAmount: 99 },
+    premium: { planId: 'premium', planName: 'PREMIUM', baseAmount: 149 },
 };
 
 const getPlanDetails = (planId) => {
@@ -104,6 +104,9 @@ export const submitPaymentUtr = async (req, res) => {
             });
         }
 
+        const PLAN_PRICES = { plus: 49, pro: 99, premium: 149 };
+        const amountToSave = PLAN_PRICES[plan.planId] || plan.amount || 0;
+
         let transaction;
 
         try {
@@ -111,7 +114,7 @@ export const submitPaymentUtr = async (req, res) => {
                 userId: user._id,
                 planId: plan.planId,
                 planName: plan.planName,
-                amount: plan.amount,
+                amount: amountToSave,
                 utrNumber: normalizedUtr,
             });
         } catch (error) {
@@ -298,9 +301,18 @@ export const listPaymentTransactions = async (req, res) => {
             .limit(100)
             .lean();
 
+        const PLAN_PRICES = { plus: 49, pro: 99, premium: 149 };
+        const mappedTransactions = transactions.map(tx => {
+            const planId = (tx.planId || '').toLowerCase().trim();
+            if (PLAN_PRICES[planId] !== undefined) {
+                tx.amount = PLAN_PRICES[planId];
+            }
+            return tx;
+        });
+
         return res.json({
             success: true,
-            transactions,
+            transactions: mappedTransactions,
         });
     } catch (error) {
         console.error('[PAYMENTS] listPaymentTransactions error:', error);
@@ -318,9 +330,18 @@ export const getMyPaymentTransactions = async (req, res) => {
             .limit(20)
             .lean();
 
+        const PLAN_PRICES = { plus: 49, pro: 99, premium: 149 };
+        const mappedTransactions = transactions.map(tx => {
+            const planId = (tx.planId || '').toLowerCase().trim();
+            if (PLAN_PRICES[planId] !== undefined) {
+                tx.amount = PLAN_PRICES[planId];
+            }
+            return tx;
+        });
+
         return res.json({
             success: true,
-            transactions,
+            transactions: mappedTransactions,
         });
     } catch (error) {
         console.error('[PAYMENTS] getMyPaymentTransactions error:', error);

@@ -17,6 +17,23 @@ function refillRoomIdPool() {
 
 refillRoomIdPool();
 
+const getFreshQuotaState = async (userId) => {
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+    await checkAndResetDailyUsage(user);
+    return user;
+};
+
+const buildQuotaPayload = (user) => {
+    const plan = user.subscriptionPlan || 'free';
+    const limits = getUsageLimits(plan);
+    const limit = limits.customMatches;
+    return {
+        used: user.usageStats?.customMatchesToday || 0,
+        limit: limit === Infinity ? 'unlimited' : limit,
+    };
+};
+
 const sanitizeCustomTopics = (topics) => {
     if (!Array.isArray(topics)) {
         return [];
@@ -183,7 +200,7 @@ export const createCustomRoom = async (req, res) => {
             isCustom: true,
             players: [{
                 userId: req.user._id,
-                username: quotaState.user.username,
+                username: userDoc.username,
                 side: 'left',
                 currentScore: 0,
             }],
@@ -197,6 +214,7 @@ export const createCustomRoom = async (req, res) => {
             quotaChargedAt: null,
         });
 
+        const quotaPayload = buildQuotaPayload(userDoc);
         return res.status(201).json({
             success: true,
             roomId: room.roomId,
@@ -206,7 +224,8 @@ export const createCustomRoom = async (req, res) => {
                 timeLimit,
                 numQuestions,
                 topics,
-            }
+            },
+            quota: quotaPayload
         });
     } catch (error) {
         console.error('[CUSTOM ROOM] Create error:', error);
@@ -291,7 +310,7 @@ export const joinCustomRoom = async (req, res) => {
                     $push: {
                         players: {
                             userId: req.user._id,
-                            username: quotaState.user.username,
+                            username: userDoc.username,
                             side: 'right',
                             currentScore: 0,
                         }
@@ -314,7 +333,7 @@ export const joinCustomRoom = async (req, res) => {
             roomId,
             joinToken: signCustomRoomJoinToken({ roomId, userId: req.user._id }),
             customSettings: updatedRoom.customSettings,
-            quota: buildQuotaPayload(quotaState),
+            quota: buildQuotaPayload(userDoc),
         });
     } catch (error) {
         console.error('[CUSTOM ROOM] Join error:', error);

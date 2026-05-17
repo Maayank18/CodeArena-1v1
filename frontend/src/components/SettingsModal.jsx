@@ -22,11 +22,13 @@ import {
   Users,
   Loader2,
   BookOpen,
+  CreditCard,
 } from 'lucide-react';
 import BadgesTab from './settings/BadgesTab.jsx';
 import CustomizationTab from './settings/CustomizationTab.jsx';
 import CommunityTab from './settings/CommunityTab.jsx';
 import NotesTab from './settings/NotesTab.jsx';
+import BillingTab from './settings/BillingTab.jsx';
 import PremiumGate from './PremiumGate.jsx';
 import {
   BarChart,
@@ -69,6 +71,7 @@ const tabs = [
   { id: 'badges', label: 'Badges', icon: Award },
   { id: 'customization', label: 'Customize', icon: Palette },
   { id: 'notes', label: 'Notes', icon: BookOpen },
+  { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'community', label: 'Community', icon: Users },
 ];
 
@@ -917,6 +920,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                       <NotesTab />
                     </PremiumGate>
                   )}
+                  {activeTab === 'billing' && <BillingTab />}
                   {activeTab === 'community' && <CommunityTab />}
                 </div>
               )}
