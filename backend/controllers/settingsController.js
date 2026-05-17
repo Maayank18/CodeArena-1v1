@@ -473,6 +473,7 @@ export const verifyEmailAddress = async (req, res) => {
             }
 
             user.email = newEmail;
+            user._bypassEmailVerificationInvalidation = true;
         }
 
         user.emailVerified = true;

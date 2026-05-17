@@ -454,7 +454,7 @@ userSchema.pre('save', async function () {
     }
 
     // 2. Handle email verification invalidation
-    if (this.isModified('email')) {
+    if (this.isModified('email') && !this._bypassEmailVerificationInvalidation) {
         this.emailVerified = false;
         this.emailVerifiedAt = null;
     }
