@@ -1382,7 +1382,7 @@ io.on('connection', async (socket) => {
       let persistentCustomRoom = null;
       if (!rooms.has(roomId)) {
         persistentCustomRoom = await Room.findOne({ roomId, isCustom: true })
-          .select('roomId status players customSettings quotaChargedAt')
+          .select('roomId status players customSettings quotaChargedAt problems activatedAt currentRound winner aiHelpsUsed')
           .lean();
 
         if (persistentCustomRoom) {
@@ -1405,16 +1405,33 @@ io.on('connection', async (socket) => {
             return;
           }
 
+          // Hydrate the in-memory room map with existing database fields (to support re-connection / page refreshes)
+          const hydratedPlayers = (persistentCustomRoom.players || []).map(p => ({
+              id: p.socketId || '',
+              username: p.username,
+              side: p.side,
+              avatar: '', 
+              userId: p.userId,
+              customization: {} 
+          }));
+
+          const hydratedScores = (persistentCustomRoom.players || []).reduce((acc, p) => {
+              acc[p.username] = p.currentScore || 0;
+              return acc;
+          }, {});
+
+          const problemIdsMapped = (persistentCustomRoom.problems || []).map(id => id.toString());
+
           rooms.set(roomId, {
-            players: [],
-            round: 1,
-            totalRounds: persistentCustomRoom.customSettings?.numQuestions || 3,
-            problemIds: [],
-            scores: {},
+            players: hydratedPlayers,
+            round: persistentCustomRoom.currentRound || 1,
+            totalRounds: problemIdsMapped.length || persistentCustomRoom.customSettings?.numQuestions || 3,
+            problemIds: problemIdsMapped,
+            scores: hydratedScores,
             roundCompletions: new Set(),
-            isGameActive: false,
-            startTime: null,
-            roundStartAt: null,
+            isGameActive: persistentCustomRoom.status === 'active',
+            startTime: persistentCustomRoom.activatedAt ? new Date(persistentCustomRoom.activatedAt).getTime() : null,
+            roundStartAt: persistentCustomRoom.activatedAt ? new Date(persistentCustomRoom.activatedAt).getTime() : null,
             cheaters: new Set(),
             submissionAttempts: new Set(),
             submissionCountByUser: {},
