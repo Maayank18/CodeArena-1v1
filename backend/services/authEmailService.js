@@ -538,6 +538,33 @@ export const sendPaymentSubmissionEmail = async (args) => {
     });
 };
 
+export const sendAdminPaymentAlert = async (args) => {
+    try {
+        const planName = typeof args.planName === 'string' ? args.planName.toUpperCase() : 'UNKNOWN';
+        const userName = args.name || args.username || 'Unknown User';
+        const userEmail = args.email || 'No email provided';
+        const utrNumber = args.utrNumber || 'Unavailable';
+
+        return await sendEmail({
+            to: 'maayank51518@gmail.com',
+            subject: `Action Required: New CodeArena Payment (${planName})`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #111827;">
+                    <h2 style="margin: 0 0 16px;">New Payment Verification Pending</h2>
+                    <p style="margin: 0 0 10px;"><strong>User:</strong> ${userName} (${userEmail})</p>
+                    <p style="margin: 0 0 10px;"><strong>Plan Requested:</strong> ${planName}</p>
+                    <p style="margin: 0 0 10px;"><strong>UTR Number:</strong> <span style="background: #eeeeee; padding: 4px 8px; border-radius: 6px;">${utrNumber}</span></p>
+                    <p style="margin: 16px 0 0;">Please log in to the Admin Dashboard to cross-verify and approve this transaction.</p>
+                </div>
+            `,
+            text: `New payment verification pending.\nUser: ${userName} (${userEmail})\nPlan Requested: ${planName}\nUTR Number: ${utrNumber}\nPlease log in to the Admin Dashboard to review this transaction.`
+        });
+    } catch (error) {
+        console.error('Failed to send Admin Payment Alert:', error);
+        return { delivered: false, error: error.message };
+    }
+};
+
 export const sendPaymentApprovedEmail = async (args) => {
     return sendEmail({
         to: args.to,
@@ -567,4 +594,3 @@ export const sendEmailVerificationOtp = async (email, name, otpCode) => {
         text: buildOtpEmailText({ title, otp: otpCode, bodyText, expiresInMinutes: 15 })
     });
 };
-

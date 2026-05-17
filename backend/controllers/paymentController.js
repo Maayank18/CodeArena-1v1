@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import PaymentTransaction from '../models/PaymentTransaction.js';
 import User from '../models/User.js';
 import {
+    sendAdminPaymentAlert,
     sendPaymentRejectedEmail,
     sendPaymentSubmissionEmail,
     sendPurchaseReceiptEmail,
@@ -127,6 +128,15 @@ export const submitPaymentUtr = async (req, res) => {
 
             throw error;
         }
+
+        sendAdminPaymentAlert({
+            name: user.fullName || user.username,
+            email: user.email,
+            planName: plan.planName,
+            utrNumber: normalizedUtr,
+        }).catch((emailError) => {
+            console.error('[PAYMENTS] Admin alert email failed:', emailError);
+        });
 
         let emailDelivered = false;
 

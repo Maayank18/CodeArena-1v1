@@ -66,7 +66,7 @@ export const getUsageLimits = (planOrUser) => {
         matches: 3,
         customMatches: 0,
         visualizations: 0,
-        aiHelp: 1
+        aiHelp: 0
     };
 
     switch (plan) {
@@ -76,7 +76,7 @@ export const getUsageLimits = (planOrUser) => {
                 matches: 5, 
                 customMatches: 3,
                 visualizations: 0,
-                aiHelp: 3
+                aiHelp: 1
             };
             break;
         case 'pro':
@@ -85,7 +85,7 @@ export const getUsageLimits = (planOrUser) => {
                 matches: Infinity, 
                 customMatches: 15,
                 visualizations: 10,
-                aiHelp: 6
+                aiHelp: 3
             };
             break;
         case 'premium':
@@ -94,7 +94,7 @@ export const getUsageLimits = (planOrUser) => {
                 matches: Infinity, 
                 customMatches: Infinity,
                 visualizations: Infinity,
-                aiHelp: 15
+                aiHelp: 7
             };
             break;
         default: // Novice / Free
@@ -103,7 +103,7 @@ export const getUsageLimits = (planOrUser) => {
                 matches: 3, 
                 customMatches: 0,
                 visualizations: 0,
-                aiHelp: 1
+                aiHelp: 0
             };
             break;
     }

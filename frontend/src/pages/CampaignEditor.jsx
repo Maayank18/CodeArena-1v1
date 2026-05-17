@@ -18,6 +18,7 @@ import SagePanel    from '../components/Campaign/SagePanel';
 import StarDisplay  from '../components/Campaign/StarDisplay';
 import CampaignTeaserModal from '../components/Campaign/CampaignTeaserModal';
 import ProblemMarkdown from '../components/ProblemMarkdown';
+import AIHelpWidget from '../components/AIHelpWidget';
 import {
   getStoredCampaignUser,
   hasPremiumCampaignAccess,
@@ -164,7 +165,7 @@ const ResultRow = ({ result, index }) => {
   );
 };
 
-const ProblemPanel = ({ node, existingBest, isDark }) => {
+const ProblemPanel = ({ node, existingBest, isDark, currentCode }) => {
   const problem = node?.problemId;
   if (!problem) return null;
   return (
@@ -181,12 +182,6 @@ const ProblemPanel = ({ node, existingBest, isDark }) => {
                   Boss
                 </span>
               )}
-              {problem.timeLimit && (
-                <span className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-gray-600">
-                  <Clock size={10} />
-                  {problem.timeLimit}ms limit
-                </span>
-              )}
               {existingBest && (
                 <div className="mt-2 w-full flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 dark:border-amber-800/30 dark:bg-amber-950/20">
                   <StarDisplay stars={existingBest.starsAwarded} total={3} size="sm" />
@@ -200,6 +195,10 @@ const ProblemPanel = ({ node, existingBest, isDark }) => {
               )}
             </div>
           }
+        />
+        <AIHelpWidget
+          problemTitle={problem.title}
+          currentCode={currentCode}
         />
         <div className="h-6" />
       </div>
@@ -595,7 +594,7 @@ const CampaignEditor = () => {
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col sm:flex-row">
         {mobileTab === 'problem' ? (
           <div className="flex-1 h-full sm:w-2/5 border-r border-slate-200 dark:border-gray-800/40">
-            <ProblemPanel node={node} existingBest={existingBest} isDark={isDark} />
+            <ProblemPanel node={node} existingBest={existingBest} isDark={isDark} currentCode={code} />
           </div>
         ) : null}
         

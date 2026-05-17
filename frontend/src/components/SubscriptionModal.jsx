@@ -616,6 +616,10 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                                 className="w-full rounded-2xl object-contain"
                               />
                             </div>
+                            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs text-blue-400">
+                              <AlertCircle size={14} />
+                              <span>Tip: Make payment through Paytm for a faster verification response.</span>
+                            </div>
                           </div>
 
                           <div className="rounded-[2rem] border border-gray-800 bg-[#171717] p-5">
@@ -728,9 +732,15 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
                             </p>
                           </div>
                         ) : (
-                          <p className="text-center text-[11px] text-gray-500 mb-6">
-                            You&apos;ll receive an email when the request is approved or rejected.
-                          </p>
+                          <div className="mt-6 mb-6 rounded-xl border border-white/10 bg-[#1e1e1e] p-4 text-center">
+                            <h3 className="mb-2 font-bold text-emerald-400">Verification in Progress</h3>
+                            <p className="text-sm text-gray-300">
+                              Your payment details have been sent to our team. You will get access to your upgraded features within <strong>1 hour</strong> from when the payment was made.
+                            </p>
+                            <p className="mt-3 text-xs text-gray-500">
+                              Please try refreshing this page after an hour to access your new features.
+                            </p>
+                          </div>
                         )}
 
                         <button

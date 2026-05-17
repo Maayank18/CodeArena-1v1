@@ -4,10 +4,10 @@
  */
 
 export const AI_DAILY_LIMITS = {
-    'free': 1,
-    'plus': 3,
-    'pro': 6,
-    'premium': 15
+    'free': 0,
+    'plus': 1,
+    'pro': 3,
+    'premium': 7
 };
 
 export const AI_TIER_MAP = {

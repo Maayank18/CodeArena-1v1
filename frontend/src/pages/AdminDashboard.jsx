@@ -344,10 +344,10 @@ const AdminDashboard = () => {
 
     const getStandardLimit = (plan, key) => {
         const planLimits = {
-            free:    { chat: 7, matches: 3, custom: 0, visualizations: 0, aiHelp: 1 },
-            plus:    { chat: 10, matches: 5, custom: 3, visualizations: 3, aiHelp: 3 },
-            pro:     { chat: 50, matches: Infinity, custom: 15, visualizations: 10, aiHelp: 6 },
-            premium: { chat: Infinity, matches: Infinity, custom: Infinity, visualizations: Infinity, aiHelp: 15 }
+            free:    { chat: 7, matches: 3, custom: 0, visualizations: 0, aiHelp: 0 },
+            plus:    { chat: 10, matches: 5, custom: 3, visualizations: 3, aiHelp: 1 },
+            pro:     { chat: 50, matches: Infinity, custom: 15, visualizations: 10, aiHelp: 3 },
+            premium: { chat: Infinity, matches: Infinity, custom: Infinity, visualizations: Infinity, aiHelp: 7 }
         };
         const resolvedPlan = planLimits[plan] || planLimits.free;
         
@@ -1245,10 +1245,10 @@ const AdminDashboard = () => {
                                     <div className="flex flex-col justify-center bg-gray-950/40 border border-gray-800/40 rounded-lg px-3 py-2.5">
                                         <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Plan Allowances</span>
                                         <span className="text-xs text-gray-300 mt-1">
-                                            {quotaFormData.subscriptionPlan === 'plus' && "Plus Tier: 10 daily chats, 5 matches, 3 custom rooms, 3 AI helps"}
-                                            {quotaFormData.subscriptionPlan === 'pro' && "Pro Tier: 50 daily chats, Unlimited matches, 15 custom rooms, 6 AI helps"}
-                                            {quotaFormData.subscriptionPlan === 'premium' && "Premium Tier: Unlimited daily chats, Unlimited matches, Unlimited custom rooms, 15 AI helps"}
-                                            {quotaFormData.subscriptionPlan === 'free' && "Free Tier: 7 daily chats, 3 matches, 0 custom rooms, 1 AI help"}
+                                            {quotaFormData.subscriptionPlan === 'plus' && "Plus Tier: 10 daily chats, 5 matches, 3 custom rooms, 1 AI help"}
+                                            {quotaFormData.subscriptionPlan === 'pro' && "Pro Tier: 50 daily chats, Unlimited matches, 15 custom rooms, 3 AI helps"}
+                                            {quotaFormData.subscriptionPlan === 'premium' && "Premium Tier: Unlimited daily chats, Unlimited matches, Unlimited custom rooms, 7 AI helps"}
+                                            {quotaFormData.subscriptionPlan === 'free' && "Free Tier: 7 daily chats, 3 matches, 0 custom rooms, 0 AI help"}
                                         </span>
                                     </div>
                                 </div>

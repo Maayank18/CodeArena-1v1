@@ -56,6 +56,15 @@ const buildSettingsPayload = (user) => ({
     rating: user.rating,
     seasonScore: user.seasonScore,
     stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+    usageStats: user.usageStats || {
+        chatQueriesToday: 0,
+        matchesToday: 0,
+        customMatchesToday: 0,
+        visualizationsToday: 0,
+        visualizerTrialUsed: false,
+        aiHelpToday: 0,
+        lastResetDate: null,
+    },
     subscriptionPlan: user.subscriptionPlan || 'free',
     badges: user.badges || [],
     customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
@@ -99,7 +108,7 @@ const validateProfileInput = ({ fullName, username, bio, avatar }) => {
 export const getSettingsProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt')
+            .select('username fullName email phone avatar bio preferences rating seasonScore stats usageStats subscriptionPlan badges customization emailVerified emailVerifiedAt')
             .lean();
 
         if (!user) {
@@ -156,7 +165,8 @@ export const updateProfileSettings = async (req, res) => {
                 },
             },
             { new: true, runValidators: true }
-        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt');
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats usageStats subscriptionPlan badges customization emailVerified emailVerifiedAt');
+        
 
         return res.json({
             success: true,
@@ -288,7 +298,7 @@ export const verifySettingsOtp = async (req, res) => {
         }
 
         const user = await User.findById(req.user._id).select(
-            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats passwordChangedAt failedLoginAttempts lockUntil emailVerified emailVerifiedAt'
+            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats usageStats passwordChangedAt failedLoginAttempts lockUntil emailVerified emailVerifiedAt'
         );
 
         if (!user) {
@@ -433,7 +443,7 @@ export const verifyEmailAddress = async (req, res) => {
         }
 
         const user = await User.findById(req.user._id).select(
-            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt'
+            '+otpCode +otpExpiry +otpAttemptCount +pendingUpdates username fullName email phone avatar bio preferences rating seasonScore stats usageStats subscriptionPlan badges customization emailVerified emailVerifiedAt'
         );
 
         if (!user) {
@@ -561,7 +571,7 @@ export const updateCustomization = async (req, res) => {
             userId,
             { $set: update },
             { new: true, runValidators: true }
-        ).select('username fullName email phone avatar bio preferences rating seasonScore stats subscriptionPlan badges customization emailVerified emailVerifiedAt').lean();
+        ).select('username fullName email phone avatar bio preferences rating seasonScore stats usageStats subscriptionPlan badges customization emailVerified emailVerifiedAt').lean();
 
         if (!updatedUser) {
             return res.status(404).json({ success: false, message: 'User not found' });

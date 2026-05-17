@@ -143,6 +143,15 @@ export const buildAuthUserPayload = (user, token, extra = {}) => ({
     rating: user.rating ?? 1000,
     seasonScore: user.seasonScore ?? 0,
     stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+    usageStats: user.usageStats || {
+        chatQueriesToday: 0,
+        matchesToday: 0,
+        customMatchesToday: 0,
+        visualizationsToday: 0,
+        visualizerTrialUsed: false,
+        aiHelpToday: 0,
+        lastResetDate: null,
+    },
     badges: user.badges || [],
     customization: user.customization || {
         avatarFrame: 'none',

@@ -1,35 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles, Lightbulb, Code, Loader2 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 
-const AIHelpWidget = ({ roomId, problemTitle, currentCode, userTier, initialHelpsUsed = 0 }) => {
-    const [helpsUsed, setHelpsUsed] = useState(initialHelpsUsed);
+const AI_LIMITS_BY_TIER = { 0: 0, 1: 1, 2: 3, 3: 7 };
+
+const getStoredUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem('codearena_user') || '{}');
+    } catch {
+        return {};
+    }
+};
+
+const getTierFromPlan = (plan) => (
+    plan === 'premium' ? 3 :
+    plan === 'pro' ? 2 :
+    plan === 'plus' ? 1 :
+    0
+);
+
+const syncStoredUser = (updater) => {
+    const currentUser = getStoredUser();
+    const nextUser = typeof updater === 'function' ? updater(currentUser) : { ...currentUser, ...updater };
+    localStorage.setItem('codearena_user', JSON.stringify(nextUser));
+    window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: nextUser }));
+    return nextUser;
+};
+
+const AIHelpWidget = ({ problemTitle, currentCode, userTier }) => {
+    const [authUser, setAuthUser] = useState(() => getStoredUser());
     const [isLoading, setIsLoading] = useState(false);
     const [response, setResponse] = useState('');
-    const [activeAction, setActiveAction] = useState(null); // 'hint' or 'check'
+    const [activeAction, setActiveAction] = useState(null);
 
-    const limits = { 0: 0, 1: 1, 2: 3, 3: 7 };
-    const sessionLimit = limits[userTier] || 0;
-    const isLimitReached = helpsUsed >= sessionLimit;
+    const resolvedTier = userTier ?? getTierFromPlan(authUser?.subscriptionPlan);
+    const dailyLimit = AI_LIMITS_BY_TIER[resolvedTier] ?? 0;
+    const helpsUsedToday = Number(authUser?.usageStats?.aiHelpToday || 0);
+    const isLimitReached = helpsUsedToday >= dailyLimit;
 
     useEffect(() => {
-        setHelpsUsed(initialHelpsUsed);
-    }, [initialHelpsUsed]);
+        const handleUserUpdated = (event) => {
+            if (event?.detail) {
+                setAuthUser(event.detail);
+                return;
+            }
+            setAuthUser(getStoredUser());
+        };
+
+        const syncUsageStats = async () => {
+            try {
+                const { data } = await api.get('/settings/profile', {
+                    params: { refresh: Date.now() },
+                });
+                if (data?.user) {
+                    const mergedUser = syncStoredUser((currentUser) => ({
+                        ...currentUser,
+                        ...data.user,
+                    }));
+                    setAuthUser(mergedUser);
+                }
+            } catch {
+                setAuthUser(getStoredUser());
+            }
+        };
+
+        window.addEventListener('codearena:user-updated', handleUserUpdated);
+        syncUsageStats();
+        return () => window.removeEventListener('codearena:user-updated', handleUserUpdated);
+    }, []);
+
+    const usageLabel = useMemo(() => {
+        if (resolvedTier === 0) {
+            return 'Unlock with Plus+';
+        }
+        return `Daily Usage: ${helpsUsedToday}/${dailyLimit}`;
+    }, [dailyLimit, helpsUsedToday, resolvedTier]);
 
     const handleAIAction = async (type) => {
-        if (userTier === 0) {
-            toast.error("AI Help is a Plus+ feature. Please upgrade!", {
+        if (resolvedTier === 0) {
+            toast.error('AI Help is a Plus+ feature. Please upgrade!', {
                 icon: '🔒',
-                style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                style: { borderRadius: '10px', background: '#333', color: '#fff' },
             });
             return;
         }
 
         if (isLimitReached) {
-            toast.error("Session AI limit reached. Upgrade for more help!", {
-                icon: '⚠️'
+            toast.error('Daily AI limit reached. Upgrade for more help!', {
+                icon: '⚠️',
             });
             return;
         }
@@ -40,19 +100,25 @@ const AIHelpWidget = ({ roomId, problemTitle, currentCode, userTier, initialHelp
 
         try {
             const endpoint = type === 'hint' ? '/ai/hint' : '/ai/check-code';
-            const payload = { 
-                roomId, 
+            const payload = {
                 problemTitle,
-                ...(type === 'check' ? { code: currentCode } : {})
+                ...(type === 'check' ? { code: currentCode } : {}),
             };
 
             const { data } = await api.post(endpoint, payload);
-            
             setResponse(data.reply);
-            setHelpsUsed(data.helpsUsed);
+
+            const mergedUser = syncStoredUser((currentUser) => ({
+                ...currentUser,
+                usageStats: {
+                    ...(currentUser?.usageStats || {}),
+                    aiHelpToday: Number(data.helpsUsedToday || 0),
+                },
+            }));
+            setAuthUser(mergedUser);
         } catch (error) {
             console.error(`[AI HELP] ${type} error:`, error);
-            const msg = error.response?.data?.message || "Cody AI is currently resting. Please try again later.";
+            const msg = error.response?.data?.message || 'Cody AI is currently resting. Please try again later.';
             toast.error(msg);
         } finally {
             setIsLoading(false);
@@ -70,7 +136,7 @@ const AIHelpWidget = ({ roomId, problemTitle, currentCode, userTier, initialHelp
                     <div>
                         <h4 className="text-sm font-bold text-white tracking-tight">Need a push? Ask Cody AI</h4>
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">
-                            {userTier === 0 ? "Unlock with Plus+" : `Session Usage: ${helpsUsed}/${sessionLimit}`}
+                            {usageLabel}
                         </p>
                     </div>
                 </div>
@@ -88,7 +154,7 @@ const AIHelpWidget = ({ roomId, problemTitle, currentCode, userTier, initialHelp
                         )}
                         Get Hint
                     </button>
-                    
+
                     <button
                         onClick={() => handleAIAction('check')}
                         disabled={isLoading || isLimitReached}
@@ -111,7 +177,7 @@ const AIHelpWidget = ({ roomId, problemTitle, currentCode, userTier, initialHelp
                     </div>
                 </div>
             )}
-            
+
             {isLoading && !response && (
                 <div className="bg-[#1e1e1e]/50 p-6 rounded-xl border border-white/5 flex flex-col items-center justify-center gap-3 animate-pulse">
                     <Loader2 size={24} className="text-emerald-500 animate-spin" />
