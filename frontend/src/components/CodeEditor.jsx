@@ -52,13 +52,13 @@ const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, languag
   return (
     <>
       {/* Legacy Bright Theme Editor Surface (for quick reversal): bg-[#1e1e1e] */}
-    <div className={`relative flex h-full w-full flex-col ${theme === 'dark' ? 'bg-[#1e1e1e]' : 'bg-[#fffdf8]'}`}>
+    <div className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden ${theme === 'dark' ? 'bg-[#1e1e1e]' : 'bg-[#fffdf8]'}`}>
       {isReadOnly && (
         <div className={`absolute inset-0 z-10 cursor-not-allowed ${theme === 'dark' ? 'bg-black/40' : 'bg-stone-100/50'}`} />
       )}
 
       <CodeMirror
-        className="flex-1 overflow-hidden text-xs sm:text-sm md:text-base"
+        className="min-h-0 flex-1 overflow-hidden text-xs sm:text-sm md:text-base"
         height="100%"
         theme={editorTheme}
         extensions={[

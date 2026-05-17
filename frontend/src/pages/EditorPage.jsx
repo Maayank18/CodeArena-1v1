@@ -679,10 +679,10 @@ const EditorPage = () => {
                 </div>
             )}
 
-            <div className="flex-1 flex flex-col md:grid md:grid-cols-3 min-h-0">
-                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-col h-full order-2 md:order-1 ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'}`}>
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3">
+                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'}`}>
                     <PaneHeader side="left" />
-                    <div className="flex-1 relative min-h-0">
+                    <div className="relative flex-1 min-h-0 overflow-hidden">
                         {ydocRef.current && providerRef.current && <CodeEditor side="left" isReadOnly={mySide !== 'left'} ydoc={ydocRef.current} provider={providerRef.current} language={mySide === 'left' ? language : 'cpp'} />}
                     </div>
                 </div>
@@ -724,7 +724,7 @@ const EditorPage = () => {
                             <TimerBadge initialTime={remainingTime} socket={socketRef.current} compact={shouldCompactTimer} />
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
                         {!problem && roomId?.startsWith('C-') && clients.length < 2 ? (
                             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                                 <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
@@ -759,7 +759,7 @@ const EditorPage = () => {
                             </div>
                         )}
                     </div>
-                    <div className={`arena-problem-footer flex-shrink-0 p-4 space-y-4 border-t ${
+                    <div className={`arena-problem-footer shrink-0 p-4 space-y-4 border-t ${
                         isDark ? 'bg-[#1e1e1e] border-white/10' : 'bg-stone-100 border-stone-300'
                     }`}>
                         <div className={`flex items-center justify-between p-2 rounded border ${
@@ -774,9 +774,9 @@ const EditorPage = () => {
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-col h-full order-3 ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'}`}>
+                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-3 ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'}`}>
                     <PaneHeader side="right" />
-                    <div className="flex-1 relative min-h-0">
+                    <div className="relative flex-1 min-h-0 overflow-hidden">
                         {ydocRef.current && providerRef.current && <CodeEditor side="right" isReadOnly={mySide !== 'right'} ydoc={ydocRef.current} provider={providerRef.current} language={mySide === 'right' ? language : 'cpp'} />}
                     </div>
                 </div>
