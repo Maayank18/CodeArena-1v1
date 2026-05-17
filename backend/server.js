@@ -1318,7 +1318,7 @@ io.on('connection', async (socket) => {
       }
 
       // ✅ DAILY MATCH AND AI USAGE
-      const isActuallyCustom = rooms.has(roomId) ? rooms.get(roomId).isCustom : (await Room.exists({ roomId, isCustom: true }));
+      const isActuallyCustom = roomId.startsWith('C-') || (rooms.has(roomId) && rooms.get(roomId).isCustom) || (await Room.exists({ roomId, isCustom: true }));
       const userDoc = await User.findById(authUser._id);
       
       if (userDoc) {
