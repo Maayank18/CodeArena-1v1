@@ -100,7 +100,9 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, message, className
                     </div>
 
                     <h3 className="text-[22px] font-black text-white mb-2 tracking-tight">
-                        Unlock <span className="text-amber-400">Pro Features</span>
+                        Unlock <span className="text-amber-400">
+                            {requiredTier === 'pro' ? 'Pro Features' : requiredTier === 'plus' ? 'Plus Features' : 'Premium Features'}
+                        </span>
                     </h3>
                     
                     <p className="text-gray-400 text-[12px] font-medium leading-relaxed mb-8 px-2">

@@ -314,6 +314,16 @@ const CampaignEditor = () => {
 
   // -- Load node and recover session code (REFRESH FIX) ------------------
   useEffect(() => {
+    // Sync profile to ensure subscription plan is up-to-date
+    api.get('/settings/profile').then(({ data }) => {
+        if (data?.user) {
+            const existing = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+            const merged = { ...existing, ...data.user };
+            localStorage.setItem('codearena_user', JSON.stringify(merged));
+            window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: merged }));
+        }
+    }).catch(() => {});
+
     let cancelled = false;
     const load = async () => {
       if (!isValidNodeId(nodeId)) {
