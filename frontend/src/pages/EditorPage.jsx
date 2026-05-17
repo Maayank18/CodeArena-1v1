@@ -198,7 +198,7 @@ const EditorPage = () => {
 
     const ydocRef = useRef(null);
     const providerRef = useRef(null);
-    const problemLabel = problem ? `Q${round}/${totalRounds}: ${problem.title}` : 'Loading...';
+    const problemLabel = problem ? `Q${round}/${totalRounds}: ${problem.title}` : (roomId?.startsWith('C-') && clients.length < 2 ? 'Waiting for Challenger...' : 'Loading...');
     const shouldCompactTimer = problemLabel.length > 30;
     const notebookSide = mySide === 'left' ? 'right' : 'left';
 
@@ -725,7 +725,26 @@ const EditorPage = () => {
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
-                        {problem && (
+                        {!problem && roomId?.startsWith('C-') && clients.length < 2 ? (
+                            <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                                <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+                                <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Waiting for Challenger...</h3>
+                                <p className={`text-sm max-w-sm mb-6 ${isDark ? 'text-gray-400' : 'text-slate-600'}`}>
+                                    Share the Room ID <span className="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-1 rounded select-all">{roomId}</span> with your opponent.
+                                </p>
+                                <div className={`max-w-xs border text-xs px-4 py-2.5 rounded-lg flex items-center gap-2 ${
+                                    isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-amber-50 border-amber-500/30 text-amber-800'
+                                }`}>
+                                    <span className="text-sm">🔒</span>
+                                    <span className="text-left font-semibold">The problem will be revealed the moment they join.</span>
+                                </div>
+                            </div>
+                        ) : !problem ? (
+                            <div className="flex flex-col items-center justify-center h-full p-6 text-center text-gray-400">
+                                <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <span>Loading arena data...</span>
+                            </div>
+                        ) : (
                             <div className="pb-6">
                                 <ProblemMarkdown
                                     problem={problem}
