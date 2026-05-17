@@ -50,6 +50,27 @@ const PROBLEM_TYPE_META = {
     },
 };
 
+const SUGGESTED_PROBLEM_TOPICS = [
+    'arrays',
+    'strings',
+    'trees',
+    'graphs',
+    'dynamic programming',
+    'sorting',
+    'binary search',
+    'linked lists',
+    'stacks',
+    'queues',
+    'hash tables',
+    'recursion',
+];
+
+const normalizeProblemTopic = (value) => (
+    typeof value === 'string'
+        ? value.trim().toLowerCase().replace(/\s+/g, ' ')
+        : ''
+);
+
 // ═══════════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════════
@@ -2051,6 +2072,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
     const [submitting, setSubmitting] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [activeCodeTab, setActiveCodeTab] = useState('javascript');
+    const [topicInput, setTopicInput] = useState('');
     const fileInputRef = useRef(null);
 
     const handleImageUpload = async (e) => {
@@ -2082,6 +2104,16 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
     };
 
     const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+    const updateTopics = useCallback((nextTopics) => {
+        const normalizedTopics = Array.from(
+            new Set(
+                (nextTopics || [])
+                    .map(normalizeProblemTopic)
+                    .filter(Boolean)
+            )
+        );
+        set('topics', normalizedTopics);
+    }, []);
     const resolvedProblemType = String(formData.type ?? '').trim().toLowerCase() === 'campaign'
         ? 'campaign'
         : 'battle';
@@ -2128,6 +2160,33 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
 
         setProblemType(initialType);
     }, [initialType, problem, setProblemType]);
+
+    const addTopicFromInput = useCallback(() => {
+        const normalizedTopic = normalizeProblemTopic(topicInput);
+        if (!normalizedTopic) {
+            return;
+        }
+
+        if ((formData.topics || []).includes(normalizedTopic)) {
+            toast.error('That tag is already added');
+            return;
+        }
+
+        updateTopics([...(formData.topics || []), normalizedTopic]);
+        setTopicInput('');
+    }, [formData.topics, topicInput, updateTopics]);
+
+    const toggleTopic = useCallback((topic) => {
+        const normalizedTopic = normalizeProblemTopic(topic);
+        const currentTopics = formData.topics || [];
+
+        if (currentTopics.includes(normalizedTopic)) {
+            updateTopics(currentTopics.filter((existingTopic) => existingTopic !== normalizedTopic));
+            return;
+        }
+
+        updateTopics([...currentTopics, normalizedTopic]);
+    }, [formData.topics, updateTopics]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -2177,7 +2236,9 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                     explanation: testCase.explanation || '',
                     isPublic: Boolean(testCase.isPublic),
                 })),
-                topics: formData.topics,
+                topics: (formData.topics || [])
+                    .map(normalizeProblemTopic)
+                    .filter(Boolean),
             };
             if (isEditing) {
                 await api.post(`/admin/problems/${problem._id}/update`, payload);
@@ -2399,14 +2460,24 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                     {/* Topics */}
                     <div>
                         <label className="block text-sm font-semibold mb-1.5 text-gray-300">Topics</label>
-                        <p className="text-xs text-gray-600 mb-2">Tag this problem with data structure/algorithm topics for analytics and custom matchmaking.</p>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                            {['arrays', 'strings', 'trees', 'graphs', 'dynamic programming', 'sorting', 'binary search', 'linked lists', 'stacks', 'queues', 'hash tables', 'recursion'].map(t => (
-                                <button key={t} type="button" onClick={() => {
-                                    const current = formData.topics || [];
-                                    if (current.includes(t)) set('topics', current.filter(x => x !== t));
-                                    else set('topics', [...current, t]);
+                        <p className="text-xs text-gray-600 mb-2">Tag this problem with data structure or algorithm topics. Type a tag name and press Enter to add it, or use the quick picks below.</p>
+                        <div className="mb-3">
+                            <input
+                                value={topicInput}
+                                onChange={(e) => setTopicInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addTopicFromInput();
+                                    }
                                 }}
+                                className="w-full px-4 py-2.5 bg-gray-900/60 border border-gray-800 rounded-xl focus:outline-none focus:border-accent/60 transition-all"
+                                placeholder="Type a tag like segment tree and press Enter"
+                            />
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                            {SUGGESTED_PROBLEM_TOPICS.map(t => (
+                                <button key={t} type="button" onClick={() => toggleTopic(t)}
                                 className={`text-xs px-2.5 py-1 rounded-lg font-bold transition-all ${
                                     formData.topics?.includes(t)
                                         ? 'bg-accent text-black'
@@ -2415,7 +2486,19 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                             ))}
                         </div>
                         {formData.topics?.length > 0 && (
-                            <p className="text-xs text-accent">Selected: {formData.topics.join(', ')}</p>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.topics.map((topic) => (
+                                    <button
+                                        key={topic}
+                                        type="button"
+                                        onClick={() => toggleTopic(topic)}
+                                        className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-bold text-black transition-all hover:bg-accent/80"
+                                    >
+                                        <span>{topic}</span>
+                                        <X size={12} />
+                                    </button>
+                                ))}
+                            </div>
                         )}
                     </div>
 
