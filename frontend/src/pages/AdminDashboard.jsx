@@ -71,6 +71,30 @@ const normalizeProblemTopic = (value) => (
         : ''
 );
 
+const readStoredUser = () => {
+    try {
+        const raw = localStorage.getItem('codearena_user');
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const resolveAdminUsername = () => (
+    String(import.meta.env.VITE_ADMIN_USERNAME || 'Maya').trim().toLowerCase()
+);
+
+const SPINNER_SIZE_CLASS_MAP = {
+    4: 'h-4 w-4',
+    8: 'h-8 w-8',
+};
+
+const SYSTEM_STAT_COLOR_CLASS_MAP = {
+    blue: 'text-blue-400',
+    yellow: 'text-amber-400',
+    green: 'text-emerald-400',
+};
+
 // ═══════════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════════
@@ -116,7 +140,7 @@ const Badge = ({ children, color = 'gray' }) => {
 };
 
 const Spinner = ({ size = 8 }) => (
-    <div className={`animate-spin rounded-full h-${size} w-${size} border-2 border-gray-700 border-t-accent`} />
+    <div className={`animate-spin rounded-full border-2 border-gray-700 border-t-accent ${SPINNER_SIZE_CLASS_MAP[size] || SPINNER_SIZE_CLASS_MAP[8]}`} />
 );
 
 const EmptyState = ({ icon: Icon, title, sub }) => (
@@ -238,10 +262,10 @@ const AdminDashboard = () => {
 
     // ── AUTH CHECK ──────────────────────────────────────────────
     useEffect(() => {
-        const stored = JSON.parse(localStorage.getItem('codearena_user'));
+        const stored = readStoredUser();
         if (!stored) { navigate('/login'); return; }
-        const adminUsername = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
-        if (stored.username !== adminUsername) {
+        const adminUsername = resolveAdminUsername();
+        if (String(stored.username || '').trim().toLowerCase() !== adminUsername) {
             toast.error('Access Denied: Admin privileges required');
             navigate('/dashboard'); return;
         }
@@ -1485,9 +1509,11 @@ const OverviewTab = ({ stats, users, matches, problems, recentActivity, hourlyAc
 // ANALYTICS TAB
 // ═══════════════════════════════════════════════════════════════
 const AnalyticsTab = ({ stats, users, matches, problems, hourlyActivity }) => {
-    const maxHourly = Math.max(...hourlyActivity, 1);
-    const peakHour  = hourlyActivity.indexOf(Math.max(...hourlyActivity));
-    const totalHourly = hourlyActivity.reduce((a,b)=>a+b,0);
+    const safeHourlyActivity = hourlyActivity.length === 24 ? hourlyActivity : new Array(24).fill(0);
+    const peakCount = Math.max(...safeHourlyActivity, 0);
+    const maxHourly = Math.max(...safeHourlyActivity, 1);
+    const peakHour  = safeHourlyActivity.indexOf(peakCount);
+    const totalHourly = safeHourlyActivity.reduce((a,b)=>a+b,0);
 
     // Match outcome distribution
     const p0Wins = matches.filter(m => m.winner === m.players?.[0]?.username).length;
@@ -1522,11 +1548,11 @@ const AnalyticsTab = ({ stats, users, matches, problems, hourlyActivity }) => {
                     <h3 className="font-bold flex items-center gap-2"><BarChart size={18} className="text-accent"/> Matches by Hour of Day</h3>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>Total: <span className="text-white font-bold">{totalHourly}</span></span>
-                        <span>Peak: <span className="text-accent font-bold">{peakHour}:00 ({Math.max(...hourlyActivity)} matches)</span></span>
+                        <span>Peak: <span className="text-accent font-bold">{`${String(Math.max(peakHour, 0)).padStart(2, '0')}:00`} ({peakCount} matches)</span></span>
                     </div>
                 </div>
                 <div className="flex items-end gap-1 h-48">
-                    {hourlyActivity.map((count, hour) => {
+                    {safeHourlyActivity.map((count, hour) => {
                         const h = (count / maxHourly) * 100;
                         const isPeak = hour === peakHour;
                         return (
@@ -1704,10 +1730,10 @@ const SystemTab = ({ health, users, matches, problems, adminUser }) => {
                     ].map(d => (
                         <div key={d.collection} className="bg-gray-800/30 rounded-xl p-4">
                             <div className="flex items-center gap-2 mb-2">
-                                <span className={`text-${d.color}-400`}>{d.icon}</span>
+                                <span className={SYSTEM_STAT_COLOR_CLASS_MAP[d.color] || SYSTEM_STAT_COLOR_CLASS_MAP.green}>{d.icon}</span>
                                 <span className="font-semibold text-sm">{d.collection}</span>
                             </div>
-                            <div className={`text-2xl font-black text-${d.color}-400`}>{d.count}</div>
+                            <div className={`text-2xl font-black ${SYSTEM_STAT_COLOR_CLASS_MAP[d.color] || SYSTEM_STAT_COLOR_CLASS_MAP.green}`}>{d.count}</div>
                             <div className="text-xs text-gray-600 mt-1">documents</div>
                         </div>
                     ))}
@@ -2190,7 +2216,6 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Current Form State:', formData);
 
         if (!formData.title || !formData.slug || !formData.description) {
             toast.error('Title, slug, and description are required'); return;
@@ -2206,13 +2231,6 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
         }
         setSubmitting(true);
         try {
-            console.log('[AdminDashboard] Submitting problem payload:', {
-                title: formData.title,
-                type: resolvedProblemType,
-                campaignRegion: formData.campaignRegion,
-                campaignNodeId: formData.campaignNodeId
-            });
-
             const payload = {
                 username,
                 title: formData.title,
@@ -2232,6 +2250,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 testCases: formData.testCases.map((testCase) => ({
                     input: testCase.input,
                     displayInput: testCase.displayInput || '',
+                    visualInput: testCase.visualInput || '',
                     output: testCase.output,
                     explanation: testCase.explanation || '',
                     isPublic: Boolean(testCase.isPublic),
