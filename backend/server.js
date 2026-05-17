@@ -1322,7 +1322,35 @@ io.on('connection', async (socket) => {
       const userDoc = await User.findById(authUser._id);
       
       if (userDoc) {
-          await userDoc.checkAndResetDailyStats();
+          if (typeof userDoc.checkAndResetDailyStats === 'function') {
+              await userDoc.checkAndResetDailyStats();
+          } else {
+              // Defensive bulletproof fallback in case instance method is not loaded on this document
+              const now = new Date();
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              if (!userDoc.usageStats) {
+                  userDoc.usageStats = {
+                      chatQueriesToday: 0,
+                      matchesToday: 0,
+                      customMatchesToday: 0,
+                      visualizationsToday: 0,
+                      visualizerTrialUsed: false,
+                      aiHelpToday: 0,
+                      lastResetDate: today
+                  };
+              }
+              const lastReset = userDoc.usageStats.lastResetDate ? new Date(userDoc.usageStats.lastResetDate) : today;
+              const lastResetDay = new Date(lastReset.getFullYear(), lastReset.getMonth(), lastReset.getDate());
+              if (today.getTime() > lastResetDay.getTime()) {
+                  userDoc.usageStats.chatQueriesToday = 0;
+                  userDoc.usageStats.matchesToday = 0;
+                  userDoc.usageStats.customMatchesToday = 0;
+                  userDoc.usageStats.visualizationsToday = 0;
+                  userDoc.usageStats.aiHelpToday = 0;
+                  userDoc.usageStats.lastResetDate = today;
+                  await User.updateOne({ _id: userDoc._id }, { $set: { usageStats: userDoc.usageStats } });
+              }
+          }
           const plan = userDoc.subscriptionPlan || 'free';
           const userTier = AI_TIER_MAP[plan] || 0;
           const limits = getUsageLimits(plan);

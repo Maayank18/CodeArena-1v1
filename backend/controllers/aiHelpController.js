@@ -35,7 +35,35 @@ const handleAIHelpUsage = async (req, problemTitle, type, code = null) => {
     const dailyLimit = AI_DAILY_LIMITS[plan];
 
     // 2. Perform Daily Reset if needed (Atomic via middleware or direct check)
-    await user.checkAndResetDailyStats();
+    if (typeof user.checkAndResetDailyStats === 'function') {
+        await user.checkAndResetDailyStats();
+    } else {
+        // Defensive bulletproof fallback in case instance method is not loaded on this document
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (!user.usageStats) {
+            user.usageStats = {
+                chatQueriesToday: 0,
+                matchesToday: 0,
+                customMatchesToday: 0,
+                visualizationsToday: 0,
+                visualizerTrialUsed: false,
+                aiHelpToday: 0,
+                lastResetDate: today
+            };
+        }
+        const lastReset = user.usageStats.lastResetDate ? new Date(user.usageStats.lastResetDate) : today;
+        const lastResetDay = new Date(lastReset.getFullYear(), lastReset.getMonth(), lastReset.getDate());
+        if (today.getTime() > lastResetDay.getTime()) {
+            user.usageStats.chatQueriesToday = 0;
+            user.usageStats.matchesToday = 0;
+            user.usageStats.customMatchesToday = 0;
+            user.usageStats.visualizationsToday = 0;
+            user.usageStats.aiHelpToday = 0;
+            user.usageStats.lastResetDate = today;
+            await User.updateOne({ _id: user._id }, { $set: { usageStats: user.usageStats } });
+        }
+    }
 
     // 3. ATOMIC CHECK AND INCREMENT
     // Using findOneAndUpdate ensures that even with rapid simultaneous requests,

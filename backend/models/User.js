@@ -310,6 +310,7 @@ const userSchema = new mongoose.Schema({
         customMatchesToday: { type: Number, default: 0 },
         visualizationsToday: { type: Number, default: 0 },
         visualizerTrialUsed: { type: Boolean, default: false },
+        aiHelpToday: { type: Number, default: 0 },
         lastResetDate: { type: Date, default: Date.now }
     },
     proActivatedAt: {
@@ -493,6 +494,41 @@ userSchema.statics.findByUsername = async function(username) {
     }
     
     return user;
+};
+
+// ✅ DAILY RESET METHOD FOR AI & MATCH USAGE LIMITS
+userSchema.methods.checkAndResetDailyStats = async function() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Ensure usageStats exists on this instance
+    if (!this.usageStats) {
+        this.usageStats = {
+            chatQueriesToday: 0,
+            matchesToday: 0,
+            customMatchesToday: 0,
+            visualizationsToday: 0,
+            visualizerTrialUsed: false,
+            aiHelpToday: 0,
+            lastResetDate: today
+        };
+    }
+    
+    // Fallback if lastResetDate is missing
+    const lastReset = this.usageStats.lastResetDate ? new Date(this.usageStats.lastResetDate) : today;
+    const lastResetDay = new Date(lastReset.getFullYear(), lastReset.getMonth(), lastReset.getDate());
+    
+    // If the calendar day has changed, reset daily counters!
+    if (today.getTime() > lastResetDay.getTime()) {
+        this.usageStats.chatQueriesToday = 0;
+        this.usageStats.matchesToday = 0;
+        this.usageStats.customMatchesToday = 0;
+        this.usageStats.visualizationsToday = 0;
+        this.usageStats.aiHelpToday = 0; // Reset shared pool limit
+        this.usageStats.lastResetDate = today;
+        
+        await this.save();
+    }
 };
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
