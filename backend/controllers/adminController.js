@@ -1232,7 +1232,7 @@ export const updateUserUsageStats = async (req, res) => {
             user.planId = ['plus', 'pro', 'premium'].includes(subscriptionPlan) ? subscriptionPlan : null;
         }
 
-        // Initialize objects if missing
+        // CRITICAL FIX: Initialize usageStats for legacy users
         if (!user.usageStats) {
             user.usageStats = {
                 chatQueriesToday: 0,
@@ -1244,6 +1244,7 @@ export const updateUserUsageStats = async (req, res) => {
             };
         }
 
+        // CRITICAL FIX: Initialize customLimits for legacy users
         if (!user.customLimits) {
             user.customLimits = {
                 chatQueriesLimit: null,
@@ -1255,12 +1256,12 @@ export const updateUserUsageStats = async (req, res) => {
             };
         }
 
-        // Apply usage statistics resets / overrides
-        if (chatQueriesToday !== undefined) user.usageStats.chatQueriesToday = Number(chatQueriesToday);
-        if (matchesToday !== undefined) user.usageStats.matchesToday = Number(matchesToday);
-        if (customMatchesToday !== undefined) user.usageStats.customMatchesToday = Number(customMatchesToday);
-        if (visualizationsToday !== undefined) user.usageStats.visualizationsToday = Number(visualizationsToday);
-        if (aiHelpToday !== undefined) user.usageStats.aiHelpToday = Number(aiHelpToday);
+        // Apply usage statistics resets / overrides. Safely parse and assign ONLY provided numbers. Ignore empty strings.
+        if (chatQueriesToday !== undefined && chatQueriesToday !== '') user.usageStats.chatQueriesToday = Number(chatQueriesToday);
+        if (matchesToday !== undefined && matchesToday !== '') user.usageStats.matchesToday = Number(matchesToday);
+        if (customMatchesToday !== undefined && customMatchesToday !== '') user.usageStats.customMatchesToday = Number(customMatchesToday);
+        if (visualizationsToday !== undefined && visualizationsToday !== '') user.usageStats.visualizationsToday = Number(visualizationsToday);
+        if (aiHelpToday !== undefined && aiHelpToday !== '') user.usageStats.aiHelpToday = Number(aiHelpToday);
 
         // Apply custom limit overrides
         if (hasCustomLimits !== undefined) user.customLimits.hasCustomLimits = Boolean(hasCustomLimits);
@@ -1288,6 +1289,7 @@ export const updateUserUsageStats = async (req, res) => {
         await user.save();
 
         res.json({
+            success: true,
             message: 'User quotas and plan updated successfully',
             user: {
                 _id: user._id,
@@ -1305,9 +1307,9 @@ export const updateUserUsageStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Admin] updateUserUsageStats error:', error);
-        const status = error.message.startsWith('Unauthorized') ? 403 : 500;
-        res.status(status).json({ message: error.message });
+        console.error("Admin Quota Update Error:", error);
+        const status = error.message && error.message.startsWith('Unauthorized') ? 403 : 500;
+        res.status(status).json({ message: error.message || 'Failed to update user quotas. Check server logs.' });
     }
 };
 
