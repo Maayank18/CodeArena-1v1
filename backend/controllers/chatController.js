@@ -60,14 +60,14 @@ export const chat = async (req, res) => {
     // ✅ DAILY RESET & LIMIT CHECK
     await checkAndResetDailyUsage(user);
     
-    const limits = getUsageLimits(user.subscriptionPlan);
+    const limits = getUsageLimits(user);
     const userTier = user.subscriptionPlan === 'free' ? 0 : user.subscriptionPlan === 'plus' ? 1 : user.subscriptionPlan === 'pro' ? 2 : 3;
 
     const isAdmin = user.role === 'admin';
 
-    // ✅ PREMIUM/ADMIN BYPASS: Unlimited chat, no increment
-    if (!isAdmin && userTier < 3) {
-        if (user.usageStats.chatQueriesToday >= limits.chat) {
+    // ✅ PREMIUM/ADMIN/OVERRIDE BYPASS: Only limit if limits.chat !== Infinity
+    if (!isAdmin) {
+        if (limits.chat !== Infinity && user.usageStats.chatQueriesToday >= limits.chat) {
             return res.status(403).json({ 
                 success: false, 
                 message: `Daily chat limit reached (${limits.chat}/day). Upgrade for more AI assistance!`,
@@ -119,8 +119,8 @@ export const chat = async (req, res) => {
             return res.status(500).json({ message: 'Received an empty response. Please try again.' });
         }
 
-        // ✅ INCREMENT USAGE (Skip for Premium/Admin)
-        if (!isAdmin && userTier < 3) {
+        // ✅ INCREMENT USAGE (Skip if limits.chat is Infinity or Admin)
+        if (!isAdmin && limits.chat !== Infinity) {
             user.usageStats.chatQueriesToday += 1;
             await user.save();
         }

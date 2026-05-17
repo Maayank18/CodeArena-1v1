@@ -2,6 +2,7 @@ import Room from '../models/Room.js';
 import User from '../models/User.js';
 import { getGroqClient } from '../services/aiRouterService.js';
 import { AI_DAILY_LIMITS, AI_TIER_MAP, AI_RESPONSE_MESSAGES } from '../config/aiConfig.js';
+import { getUsageLimits } from '../utils/usageTracker.js';
 
 const callGroq = async (client, messages) => {
     try {
@@ -32,7 +33,8 @@ const handleAIHelpUsage = async (req, problemTitle, type, code = null) => {
     if (!user) throw new Error('USER_NOT_FOUND');
 
     const plan = user.subscriptionPlan || 'free';
-    const dailyLimit = AI_DAILY_LIMITS[plan];
+    const limits = getUsageLimits(user);
+    const dailyLimit = limits.aiHelp;
 
     // 2. Perform Daily Reset if needed (Atomic via middleware or direct check)
     if (typeof user.checkAndResetDailyStats === 'function') {
@@ -68,19 +70,28 @@ const handleAIHelpUsage = async (req, problemTitle, type, code = null) => {
     // 3. ATOMIC CHECK AND INCREMENT
     // Using findOneAndUpdate ensures that even with rapid simultaneous requests,
     // the count never exceeds the dailyLimit.
-    const updatedUser = await User.findOneAndUpdate(
-        { 
-            _id: userId, 
-            "usageStats.aiHelpToday": { $lt: dailyLimit } 
-        },
-        { 
-            $inc: { "usageStats.aiHelpToday": 1 } 
-        },
-        { 
-            new: true, // Return the updated document
-            runValidators: true 
-        }
-    );
+    let updatedUser;
+    if (dailyLimit === Infinity) {
+        updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $inc: { "usageStats.aiHelpToday": 1 } },
+            { new: true }
+        );
+    } else {
+        updatedUser = await User.findOneAndUpdate(
+            { 
+                _id: userId, 
+                "usageStats.aiHelpToday": { $lt: dailyLimit } 
+            },
+            { 
+                $inc: { "usageStats.aiHelpToday": 1 } 
+            },
+            { 
+                new: true, // Return the updated document
+                runValidators: true 
+            }
+        );
+    }
 
     if (!updatedUser) {
         // If findOneAndUpdate returns null, it means the count already >= dailyLimit

@@ -9,7 +9,7 @@ import {
     ArrowDown, Target, HardDrive, Upload, Image, Loader2,
     Wifi, AlertCircle, Info, Layers,
     UserCheck, BarChart2, PieChart, TrendingDown,
-    Server, Radio, Save as SaveIcon
+    Server, Radio, Save as SaveIcon, Settings, RotateCcw
 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
@@ -179,6 +179,23 @@ const AdminDashboard = () => {
     const [viewingUser, setViewingUser]         = useState(null);
     const [editingUser, setEditingUser]         = useState(null);
     const [viewingMatch, setViewingMatch]       = useState(null);
+    const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
+    const [selectedUserForQuota, setSelectedUserForQuota] = useState(null);
+    const [quotaFormData, setQuotaFormData] = useState({
+        chatQueriesToday: 0,
+        matchesToday: 0,
+        customMatchesToday: 0,
+        visualizationsToday: 0,
+        aiHelpToday: 0,
+        subscriptionPlan: 'free',
+        // Support custom overrides as well!
+        customChatQueriesLimit: 0,
+        customMatchesLimit: 0,
+        customCustomMatchesLimit: 0,
+        customVisualizationsLimit: 0,
+        customAIHelpLimit: 0,
+        hasCustomLimits: false
+    });
 
     // Filters & Sort
     const [search, setSearch]                   = useState('');
@@ -278,6 +295,21 @@ const AdminDashboard = () => {
             setUsers(prev => prev.map(u => u._id === userId ? { ...u, ...res.data.user } : u));
             setEditingUser(null);
         } catch { toast.error('Failed to update stats'); }
+    };
+
+    const handleUpdateQuotas = async (e) => {
+        if (e) e.preventDefault();
+        try {
+            const res = await api.patch(`/admin/users/${selectedUserForQuota._id}/usage`, {
+                username: adminUser.username,
+                ...quotaFormData
+            });
+            toast.success("User quotas updated!");
+            setIsQuotaModalOpen(false);
+            setUsers(prev => prev.map(u => u._id === selectedUserForQuota._id ? { ...u, ...res.data.user } : u));
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update quotas');
+        }
     };
 
     const handleBanUser = async (userId, username) => {
@@ -629,7 +661,28 @@ const AdminDashboard = () => {
                                                                 className="p-1.5 bg-amber-500/15 text-amber-400 rounded hover:bg-amber-500/30 transition-all">
                                                                 <Edit size={14}/>
                                                             </button>
-                                                            <button onClick={() => handleDeleteUser(u._id, u.username)} title="Delete User"
+                                                            <button onClick={() => {
+                                                                 setSelectedUserForQuota(u);
+                                                                 setQuotaFormData({
+                                                                     chatQueriesToday: u.usageStats?.chatQueriesToday || 0,
+                                                                     matchesToday: u.usageStats?.matchesToday || 0,
+                                                                     customMatchesToday: u.usageStats?.customMatchesToday || 0,
+                                                                     visualizationsToday: u.usageStats?.visualizationsToday || 0,
+                                                                     aiHelpToday: u.usageStats?.aiHelpToday || 0,
+                                                                     subscriptionPlan: u.subscriptionPlan || 'free',
+                                                                     customChatQueriesLimit: u.customLimits?.chatQueriesLimit ?? '',
+                                                                     customMatchesLimit: u.customLimits?.matchesLimit ?? '',
+                                                                     customCustomMatchesLimit: u.customLimits?.customMatchesLimit ?? '',
+                                                                     customVisualizationsLimit: u.customLimits?.visualizationsLimit ?? '',
+                                                                     customAIHelpLimit: u.customLimits?.aiHelpLimit ?? '',
+                                                                     hasCustomLimits: u.customLimits?.hasCustomLimits ?? false
+                                                                 });
+                                                                 setIsQuotaModalOpen(true);
+                                                             }} title="Manage Quotas"
+                                                                 className="p-1.5 bg-emerald-500/15 text-emerald-400 rounded hover:bg-emerald-500/30 transition-all mr-1">
+                                                                 <Settings size={14}/>
+                                                             </button>
+                                                             <button onClick={() => handleDeleteUser(u._id, u.username)} title="Delete User"
                                                                 className="p-1.5 bg-red-500/15 text-red-400 rounded hover:bg-red-500/30 transition-all">
                                                                 <Trash2 size={14}/>
                                                             </button>
@@ -1065,6 +1118,166 @@ const AdminDashboard = () => {
             {editingUser && (
                 <EditUserModal user={editingUser} onClose={() => setEditingUser(null)}
                     onSave={handleUpdateUserStats}/>
+            )}
+            {isQuotaModalOpen && selectedUserForQuota && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all duration-300">
+                    <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#151b26]/95 to-[#0b0f17]/98 border border-emerald-500/20 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-800/60 bg-emerald-500/5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/10">
+                                    <Settings className="animate-spin-slow" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-white tracking-tight">Customer Success Override</h3>
+                                    <p className="text-xs text-gray-400">Configure plans, quotas, and custom limits for <span className="text-emerald-400 font-semibold">{selectedUserForQuota.username}</span></p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={() => setIsQuotaModalOpen(false)} className="text-gray-400 hover:text-white p-1 hover:bg-gray-800/60 rounded-lg transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <form onSubmit={handleUpdateQuotas} className="p-6 overflow-y-auto space-y-6 custom-scroll text-left">
+                            {/* Plan Configuration */}
+                            <div className="bg-gray-900/40 border border-gray-800/80 rounded-xl p-4 space-y-3.5">
+                                <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Layers size={14} /> Subscription Tier
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-400 mb-1.5">Select Plan Tier</label>
+                                        <select
+                                            value={quotaFormData.subscriptionPlan}
+                                            onChange={(e) => setQuotaFormData(prev => ({ ...prev, subscriptionPlan: e.target.value }))}
+                                            className="w-full bg-[#111622] border border-gray-800 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition-all"
+                                        >
+                                            <option value="free">Novice / Free (Standard Limits)</option>
+                                            <option value="plus">Plus (₹49 / Mo)</option>
+                                            <option value="pro">Pro (₹99 / Mo)</option>
+                                            <option value="premium">Premium (₹149 / Mo)</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col justify-center bg-gray-950/40 border border-gray-800/40 rounded-lg px-3 py-2.5">
+                                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Plan Allowances</span>
+                                        <span className="text-xs text-gray-300 mt-1">
+                                            {quotaFormData.subscriptionPlan === 'plus' && "Plus Tier: 10 daily chats, 5 matches, 3 custom rooms, 3 AI helps"}
+                                            {quotaFormData.subscriptionPlan === 'pro' && "Pro Tier: 50 daily chats, Unlimited matches, 15 custom rooms, 6 AI helps"}
+                                            {quotaFormData.subscriptionPlan === 'premium' && "Premium Tier: Unlimited daily chats, Unlimited matches, Unlimited custom rooms, 15 AI helps"}
+                                            {quotaFormData.subscriptionPlan === 'free' && "Free Tier: 7 daily chats, 3 matches, 0 custom rooms, 1 AI help"}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Current Usage Controls */}
+                            <div className="bg-gray-900/40 border border-gray-800/80 rounded-xl p-4 space-y-4">
+                                <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Activity size={14} /> Current Daily Usage Stats
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    {[
+                                        { label: 'Chat Queries', key: 'chatQueriesToday' },
+                                        { label: 'Normal Matches', key: 'matchesToday' },
+                                        { label: 'Custom Matches', key: 'customMatchesToday' },
+                                        { label: 'Visualizations', key: 'visualizationsToday' },
+                                        { label: 'AI Help Requests', key: 'aiHelpToday' }
+                                    ].map(item => (
+                                        <div key={item.key} className="bg-gray-950/40 border border-gray-800/50 rounded-lg p-3 space-y-2 text-left">
+                                            <label className="block text-xs font-semibold text-gray-400">{item.label}</label>
+                                            <div className="flex items-center gap-1.5">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={quotaFormData[item.key]}
+                                                    onChange={(e) => setQuotaFormData(prev => ({ ...prev, [item.key]: parseInt(e.target.value) || 0 }))}
+                                                    className="w-full bg-[#111622] border border-gray-800 focus:border-emerald-500 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none transition-all"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    title="Reset to 0"
+                                                    onClick={() => setQuotaFormData(prev => ({ ...prev, [item.key]: 0 }))}
+                                                    className="p-2 bg-gray-800 hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 rounded-lg border border-gray-800 hover:border-emerald-500/30 transition-all shrink-0"
+                                                >
+                                                    <RotateCcw size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Custom Overrides Controls */}
+                            <div className="bg-gray-900/40 border border-gray-800/80 rounded-xl p-4 space-y-4">
+                                <div className="flex items-center justify-between border-b border-gray-800/60 pb-2">
+                                    <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Zap size={14} /> Custom Daily Limit Overrides
+                                    </h4>
+                                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={quotaFormData.hasCustomLimits}
+                                            onChange={(e) => setQuotaFormData(prev => ({ ...prev, hasCustomLimits: e.target.checked }))}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 peer-checked:after:bg-white peer-checked:after:border-transparent"></div>
+                                        <span className="ml-2.5 text-xs font-bold text-gray-400 peer-checked:text-emerald-400 transition-colors">Enabled</span>
+                                    </label>
+                                </div>
+
+                                {quotaFormData.hasCustomLimits ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        {[
+                                            { label: 'Chat Limit Override', key: 'customChatQueriesLimit' },
+                                            { label: 'Matches Limit Override', key: 'customMatchesLimit' },
+                                            { label: 'Custom Rooms Limit Override', key: 'customCustomMatchesLimit' },
+                                            { label: 'Visualizations Limit Override', key: 'customVisualizationsLimit' },
+                                            { label: 'AI Help Limit Override', key: 'customAIHelpLimit' }
+                                        ].map(item => (
+                                            <div key={item.key} className="bg-gray-950/40 border border-emerald-500/10 rounded-lg p-3 space-y-2 text-left">
+                                                <label className="block text-xs font-semibold text-gray-300">{item.label}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    placeholder="Default"
+                                                    value={quotaFormData[item.key]}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setQuotaFormData(prev => ({ ...prev, [item.key]: val === '' ? '' : parseInt(val) }));
+                                                    }}
+                                                    className="w-full bg-[#111622] border border-gray-800 focus:border-emerald-500 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none transition-all"
+                                                />
+                                                <span className="block text-[10px] text-gray-500">Leave blank for plan default</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4 bg-gray-950/20 border border-dashed border-gray-800/40 rounded-lg">
+                                        <p className="text-xs text-gray-500">Enable custom overrides to configure granular limits for specific features.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer Actions */}
+                            <div className="flex items-center justify-end gap-3 border-t border-gray-800/60 pt-4 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsQuotaModalOpen(false)}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-800 rounded-lg border border-gray-800 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-2 text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg shadow-lg shadow-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all flex items-center gap-1.5"
+                                >
+                                    <Save size={14} /> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
             {viewingMatch && (
                 <MatchDetailModal match={viewingMatch} onClose={() => setViewingMatch(null)}/>

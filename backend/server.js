@@ -1353,7 +1353,7 @@ io.on('connection', async (socket) => {
           }
           const plan = userDoc.subscriptionPlan || 'free';
           const userTier = AI_TIER_MAP[plan] || 0;
-          const limits = getUsageLimits(plan);
+          const limits = getUsageLimits(userDoc);
 
           // We check for re-join to avoid double-charging
           let playerAlreadyIn = false;
@@ -1363,13 +1363,15 @@ io.on('connection', async (socket) => {
 
           if (!playerAlreadyIn) {
               if (isActuallyCustom) {
-                  if (userTier < 3 && userDoc.usageStats.customMatchesToday >= limits.customMatches) {
+                  const limit = limits.customMatches;
+                  if (limit !== Infinity && userDoc.usageStats.customMatchesToday >= limit) {
                       socket.emit('error', { message: 'Daily custom match limit reached.', code: 'LIMIT_REACHED' });
                       return;
                   }
                   userDoc.usageStats.customMatchesToday += 1;
               } else {
-                  if (userTier < 2 && userDoc.usageStats.matchesToday >= limits.matches) {
+                  const limit = limits.matches;
+                  if (limit !== Infinity && userDoc.usageStats.matchesToday >= limit) {
                       socket.emit('error', { message: 'Daily normal match limit reached.', code: 'LIMIT_REACHED' });
                       return;
                   }

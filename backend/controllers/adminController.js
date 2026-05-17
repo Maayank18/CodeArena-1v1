@@ -1191,6 +1191,126 @@ const validateGoldenSolution = (goldenSolution, testCases) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// USER SUCCESS OVERRIDE TOOL
+// ═══════════════════════════════════════════════════════════════
+export const updateUserUsageStats = async (req, res) => {
+    try {
+        await verifyAdmin(req.body.username);
+
+        const { userId } = req.params;
+        const {
+            // Usage stats
+            chatQueriesToday,
+            matchesToday,
+            customMatchesToday,
+            visualizationsToday,
+            aiHelpToday,
+
+            // Subscription plan
+            subscriptionPlan,
+
+            // Custom limits
+            customChatQueriesLimit,
+            customMatchesLimit,
+            customCustomMatchesLimit,
+            customVisualizationsLimit,
+            customAIHelpLimit,
+            hasCustomLimits
+        } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Apply subscription plan if provided
+        if (subscriptionPlan !== undefined) {
+            user.subscriptionPlan = subscriptionPlan;
+            // Keep standard boolean/string fields in sync
+            user.isPro = ['plus', 'pro', 'premium'].includes(subscriptionPlan);
+            user.planId = ['plus', 'pro', 'premium'].includes(subscriptionPlan) ? subscriptionPlan : null;
+        }
+
+        // Initialize objects if missing
+        if (!user.usageStats) {
+            user.usageStats = {
+                chatQueriesToday: 0,
+                matchesToday: 0,
+                customMatchesToday: 0,
+                visualizationsToday: 0,
+                aiHelpToday: 0,
+                lastResetDate: new Date()
+            };
+        }
+
+        if (!user.customLimits) {
+            user.customLimits = {
+                chatQueriesLimit: null,
+                matchesLimit: null,
+                customMatchesLimit: null,
+                visualizationsLimit: null,
+                aiHelpLimit: null,
+                hasCustomLimits: false
+            };
+        }
+
+        // Apply usage statistics resets / overrides
+        if (chatQueriesToday !== undefined) user.usageStats.chatQueriesToday = Number(chatQueriesToday);
+        if (matchesToday !== undefined) user.usageStats.matchesToday = Number(matchesToday);
+        if (customMatchesToday !== undefined) user.usageStats.customMatchesToday = Number(customMatchesToday);
+        if (visualizationsToday !== undefined) user.usageStats.visualizationsToday = Number(visualizationsToday);
+        if (aiHelpToday !== undefined) user.usageStats.aiHelpToday = Number(aiHelpToday);
+
+        // Apply custom limit overrides
+        if (hasCustomLimits !== undefined) user.customLimits.hasCustomLimits = Boolean(hasCustomLimits);
+        
+        if (customChatQueriesLimit !== undefined) {
+            user.customLimits.chatQueriesLimit = customChatQueriesLimit === null || customChatQueriesLimit === '' ? null : Number(customChatQueriesLimit);
+        }
+        if (customMatchesLimit !== undefined) {
+            user.customLimits.matchesLimit = customMatchesLimit === null || customMatchesLimit === '' ? null : Number(customMatchesLimit);
+        }
+        if (customCustomMatchesLimit !== undefined) {
+            user.customLimits.customMatchesLimit = customCustomMatchesLimit === null || customCustomMatchesLimit === '' ? null : Number(customCustomMatchesLimit);
+        }
+        if (customVisualizationsLimit !== undefined) {
+            user.customLimits.visualizationsLimit = customVisualizationsLimit === null || customVisualizationsLimit === '' ? null : Number(customVisualizationsLimit);
+        }
+        if (customAIHelpLimit !== undefined) {
+            user.customLimits.aiHelpLimit = customAIHelpLimit === null || customAIHelpLimit === '' ? null : Number(customAIHelpLimit);
+        }
+
+        // Mark paths as modified to ensure Mongoose saves nested changes
+        user.markModified('usageStats');
+        user.markModified('customLimits');
+
+        await user.save();
+
+        res.json({
+            message: 'User quotas and plan updated successfully',
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                rating: user.rating,
+                seasonScore: user.seasonScore,
+                stats: user.stats,
+                createdAt: user.createdAt,
+                banned: user.banned,
+                subscriptionPlan: user.subscriptionPlan,
+                usageStats: user.usageStats,
+                customLimits: user.customLimits
+            }
+        });
+
+    } catch (error) {
+        console.error('[Admin] updateUserUsageStats error:', error);
+        const status = error.message.startsWith('Unauthorized') ? 403 : 500;
+        res.status(status).json({ message: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
 // EXPORT ALL HANDLERS
 // ═══════════════════════════════════════════════════════════════
 // All existing exports preserved for backward compatibility.
@@ -1199,18 +1319,18 @@ const validateGoldenSolution = (goldenSolution, testCases) => {
 //   router.post('/admin/stats',                    getDashboardStats);
 //   router.post('/admin/users',                    getAllUsers);
 //   router.post('/admin/users/:userId/delete',     deleteUser);
-//   router.post('/admin/users/:userId/update-stats', updateUserStats);  ← NEW
-//   router.post('/admin/users/:userId/ban',        banUser);             ← NEW
-//   router.post('/admin/users/:userId',            getUserById);         ← NEW
-//   router.post('/admin/matches',                  getAllMatches);        ← NEW
+//   router.post('/admin/users/:userId/update-stats', updateUserStats);
+//   router.post('/admin/users/:userId/ban',        banUser);
+//   router.post('/admin/users/:userId',            getUserById);
+//   router.post('/admin/matches',                  getAllMatches);
 //   router.post('/admin/matches/clear',            clearMatchHistory);
 //   router.post('/admin/activity/recent',          getRecentActivity);
 //   router.post('/admin/activity/hourly',          getActivityByHour);
-//   router.post('/admin/system/health',            getSystemHealth);     ← NEW
+//   router.post('/admin/system/health',            getSystemHealth);
 //   router.post('/admin/problems',                 getAllProblems);
 //   router.post('/admin/problems/create',          createProblem);
 //   router.post('/admin/problems/:problemId/update', updateProblem);
 //   router.post('/admin/problems/:problemId/delete', deleteProblem);
 //   router.post('/admin/leaderboard/reset-season', resetSeasonScores);
 //   router.post('/admin/leaderboard/reset-all',    resetAllStats);
-// V 1.5
+// V 1.6

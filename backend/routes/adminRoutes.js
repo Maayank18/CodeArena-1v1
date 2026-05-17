@@ -80,6 +80,7 @@ import {
     getAllUsers,
     getUserById,
     updateUserStats,
+    updateUserUsageStats,
     deleteUser,
     banUser,
 
@@ -141,6 +142,7 @@ router.post('/system/health',      adminAuth, getSystemHealth);
 router.post('/users',                        adminAuth, getAllUsers);
 router.post('/users/:userId/delete',         adminAuth, deleteUser);
 router.post('/users/:userId/update-stats',   adminAuth, updateUserStats);
+router.patch('/users/:userId/usage',         adminAuth, updateUserUsageStats);
 router.post('/users/:userId/ban',            adminAuth, banUser);
 router.post('/users/:userId',                adminAuth, getUserById);
 

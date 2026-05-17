@@ -50,35 +50,82 @@ export const checkAndResetDailyUsage = async (user) => {
     }
 };
 
-export const getUsageLimits = (plan) => {
+export const getUsageLimits = (planOrUser) => {
+    let plan = 'free';
+    let user = null;
+    if (planOrUser && typeof planOrUser === 'object') {
+        plan = planOrUser.subscriptionPlan || 'free';
+        user = planOrUser;
+    } else if (typeof planOrUser === 'string') {
+        plan = planOrUser;
+    }
+
+    // Get default limits based on plan
+    let limits = {
+        chat: 7,
+        matches: 3,
+        customMatches: 0,
+        visualizations: 0,
+        aiHelp: 1
+    };
+
     switch (plan) {
         case 'plus':
-            return { 
+            limits = { 
                 chat: 10, 
                 matches: 5, 
                 customMatches: 3,
-                visualizations: 0 // Plus users still use the 1-time trial logic
+                visualizations: 0,
+                aiHelp: 3
             };
+            break;
         case 'pro':
-            return { 
+            limits = { 
                 chat: 50, 
                 matches: Infinity, 
                 customMatches: 15,
-                visualizations: 10 
+                visualizations: 10,
+                aiHelp: 6
             };
+            break;
         case 'premium':
-            return { 
+            limits = { 
                 chat: Infinity, 
                 matches: Infinity, 
                 customMatches: Infinity,
-                visualizations: Infinity
+                visualizations: Infinity,
+                aiHelp: 15
             };
+            break;
         default: // Novice / Free
-            return { 
+            limits = { 
                 chat: 7, 
                 matches: 3, 
                 customMatches: 0,
-                visualizations: 0 // Free users use the 1-time trial logic
+                visualizations: 0,
+                aiHelp: 1
             };
+            break;
     }
+
+    // Apply custom overrides if enabled for this user
+    if (user && user.customLimits && user.customLimits.hasCustomLimits) {
+        if (user.customLimits.chatQueriesLimit !== null && user.customLimits.chatQueriesLimit !== undefined) {
+            limits.chat = user.customLimits.chatQueriesLimit;
+        }
+        if (user.customLimits.matchesLimit !== null && user.customLimits.matchesLimit !== undefined) {
+            limits.matches = user.customLimits.matchesLimit;
+        }
+        if (user.customLimits.customMatchesLimit !== null && user.customLimits.customMatchesLimit !== undefined) {
+            limits.customMatches = user.customLimits.customMatchesLimit;
+        }
+        if (user.customLimits.visualizationsLimit !== null && user.customLimits.visualizationsLimit !== undefined) {
+            limits.visualizations = user.customLimits.visualizationsLimit;
+        }
+        if (user.customLimits.aiHelpLimit !== null && user.customLimits.aiHelpLimit !== undefined) {
+            limits.aiHelp = user.customLimits.aiHelpLimit;
+        }
+    }
+
+    return limits;
 };

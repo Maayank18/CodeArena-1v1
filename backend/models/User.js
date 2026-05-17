@@ -313,6 +313,14 @@ const userSchema = new mongoose.Schema({
         aiHelpToday: { type: Number, default: 0 },
         lastResetDate: { type: Date, default: Date.now }
     },
+    customLimits: {
+        chatQueriesLimit: { type: Number, default: null },
+        matchesLimit: { type: Number, default: null },
+        customMatchesLimit: { type: Number, default: null },
+        visualizationsLimit: { type: Number, default: null },
+        aiHelpLimit: { type: Number, default: null },
+        hasCustomLimits: { type: Boolean, default: false }
+    },
     proActivatedAt: {
         type: Date,
         default: null,
