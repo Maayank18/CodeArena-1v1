@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
+import PremiumGate from './PremiumGate';
 
 const NOTE_RETRY_DELAY_MS = 5000;
 
@@ -467,53 +468,55 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                         </div>
 
                         <div className="flex-1 relative overflow-hidden">
-                            <div
-                                className="absolute inset-0 pointer-events-none"
-                                style={{
-                                    backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.06) 31px, rgba(0,0,0,0.06) 32px)',
-                                    backgroundPosition: '0 0',
-                                    backgroundAttachment: 'local'
-                                }}
-                            />
-                            <div className="absolute left-8 top-0 bottom-0 w-px bg-red-400/30 pointer-events-none" />
+                            <PremiumGate requiredTier="plus" message="Upgrade to Plus to unlock the Spiral Notebook and persistent note-taking." className="h-full">
+                                <div
+                                    className="absolute inset-0 pointer-events-none"
+                                    style={{
+                                        backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, rgba(0,0,0,0.06) 31px, rgba(0,0,0,0.06) 32px)',
+                                        backgroundPosition: '0 0',
+                                        backgroundAttachment: 'local'
+                                    }}
+                                />
+                                <div className="absolute left-8 top-0 bottom-0 w-px bg-red-400/30 pointer-events-none" />
 
-                            {isLoading ? (
-                                <div className="flex h-full items-center justify-center relative z-10">
-                                    <Loader2 className="animate-spin text-gray-400" size={32} />
-                                </div>
-                            ) : (
-                                <div className="relative z-10 h-full">
-                                    {!hasVisibleContent && (
+                                {isLoading ? (
+                                    <div className="flex h-full items-center justify-center relative z-10">
+                                        <Loader2 className="animate-spin text-gray-400" size={32} />
+                                    </div>
+                                ) : (
+                                    <div className="relative z-10 h-full">
+                                        {!hasVisibleContent && (
+                                            <div
+                                                className="absolute left-12 right-6 top-[7px] text-gray-400/90 pointer-events-none"
+                                                style={{
+                                                    lineHeight: '32px',
+                                                    fontSize: '16px',
+                                                    fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif"
+                                                }}
+                                            >
+                                                Type your notes here. Formatting, autosave, and manual save all work now.
+                                            </div>
+                                        )}
                                         <div
-                                            className="absolute left-12 right-6 top-[7px] text-gray-400/90 pointer-events-none"
+                                            ref={editorRef}
+                                            contentEditable
+                                            suppressContentEditableWarning
+                                            spellCheck={false}
+                                            onInput={updateContentFromEditor}
+                                            onBlur={flushPendingSave}
+                                            className="h-full overflow-y-auto overflow-x-hidden outline-none custom-scrollbar px-12 py-[5px] text-gray-800 break-words"
                                             style={{
                                                 lineHeight: '32px',
                                                 fontSize: '16px',
-                                                fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif"
+                                                fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif",
+                                                letterSpacing: '0.01em',
+                                                whiteSpace: 'pre-wrap',
+                                                wordBreak: 'break-word'
                                             }}
-                                        >
-                                            Type your notes here. Formatting, autosave, and manual save all work now.
-                                        </div>
-                                    )}
-                                    <div
-                                        ref={editorRef}
-                                        contentEditable
-                                        suppressContentEditableWarning
-                                        spellCheck={false}
-                                        onInput={updateContentFromEditor}
-                                        onBlur={flushPendingSave}
-                                        className="h-full overflow-y-auto overflow-x-hidden outline-none custom-scrollbar px-12 py-[5px] text-gray-800 break-words"
-                                        style={{
-                                            lineHeight: '32px',
-                                            fontSize: '16px',
-                                            fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif",
-                                            letterSpacing: '0.01em',
-                                            whiteSpace: 'pre-wrap',
-                                            wordBreak: 'break-word'
-                                        }}
-                                    />
-                                </div>
-                            )}
+                                        />
+                                    </div>
+                                )}
+                            </PremiumGate>
                         </div>
 
                         <div className="flex justify-between items-center gap-3 px-6 py-3 bg-[#faf8ef]/85 backdrop-blur-md border-t border-black/5 relative z-20">

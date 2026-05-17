@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Crown, Lock, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const PremiumGate = ({ requiredTier = 'pro', compact = false, message, children }) => {
+const PremiumGate = ({ requiredTier = 'pro', compact = false, message, className = '', children }) => {
     const navigate = useNavigate();
     
     const [user, setUser] = useState(() => {
@@ -52,7 +52,7 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, message, children 
         return (
             <button
                 onClick={() => navigate('/pricing?source=settings')}
-                className="w-full mt-3 group relative flex items-center justify-between gap-4 rounded-xl border border-yellow-500/10 bg-yellow-500/[0.02] p-3.5 transition-all hover:bg-yellow-500/[0.05] hover:border-yellow-500/30 overflow-hidden"
+                className={`w-full mt-3 group relative flex items-center justify-between gap-4 rounded-xl border border-yellow-500/10 bg-yellow-500/[0.02] p-3.5 transition-all hover:bg-yellow-500/[0.05] hover:border-yellow-500/30 overflow-hidden ${className}`}
             >
                 {/* Subtle shine effect on hover */}
                 <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-yellow-500/5 to-transparent pointer-events-none" />
@@ -79,7 +79,7 @@ const PremiumGate = ({ requiredTier = 'pro', compact = false, message, children 
     }
 
     return (
-        <div className="relative w-full h-full min-h-[580px] flex items-center justify-center overflow-hidden rounded-2xl bg-transparent">
+        <div className={`relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl bg-transparent ${className || 'min-h-[580px]'}`}>
             {/* Blurred Background Content */}
             <div className="absolute inset-0 blur-[6px] saturate-[1.2] brightness-[0.7] pointer-events-none select-none overflow-hidden transition-all duration-700">
                 {children}
