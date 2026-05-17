@@ -496,8 +496,9 @@ export const uploadProblemImage = async (req, res) => {
 // MIDDLEWARE HELPER — validate admin identity
 // ═══════════════════════════════════════════════════════════════
 const verifyAdmin = async (username) => {
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    if (!username || username !== adminUsername) {
+    const adminUsername = (process.env.ADMIN_USERNAME || 'Maya').trim().toLowerCase();
+    const currentUsername = (username || '').trim().toLowerCase();
+    if (!currentUsername || currentUsername !== adminUsername) {
         throw new Error('Unauthorized: Admin privileges required');
     }
 };
@@ -777,7 +778,7 @@ export const getAllUsers = async (req, res) => {
         const { limit = 500 } = req.body;
 
         const users = await User.find()
-            .select('username email rating seasonScore stats createdAt banned')
+            .select('username email rating seasonScore stats createdAt banned subscriptionPlan usageStats customLimits')
             .sort({ createdAt: -1 })
             .limit(parseInt(limit))
             .lean();
@@ -801,7 +802,7 @@ export const getUserById = async (req, res) => {
 
         const [user, userMatches] = await Promise.all([
             User.findById(userId)
-                .select('username email rating seasonScore stats createdAt banned')
+                .select('username email rating seasonScore stats createdAt banned subscriptionPlan usageStats customLimits')
                 .lean(),
             Match.find({ players: userId })
                 .sort({ createdAt: -1 })

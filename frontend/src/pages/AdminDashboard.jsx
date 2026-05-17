@@ -297,6 +297,44 @@ const AdminDashboard = () => {
         } catch { toast.error('Failed to update stats'); }
     };
 
+    const getStandardLimit = (plan, key) => {
+        const planLimits = {
+            free:    { chat: 7, matches: 3, custom: 0, visualizations: 0, aiHelp: 1 },
+            plus:    { chat: 10, matches: 5, custom: 3, visualizations: 3, aiHelp: 3 },
+            pro:     { chat: 50, matches: Infinity, custom: 15, visualizations: 10, aiHelp: 6 },
+            premium: { chat: Infinity, matches: Infinity, custom: Infinity, visualizations: Infinity, aiHelp: 15 }
+        };
+        const resolvedPlan = planLimits[plan] || planLimits.free;
+        
+        const keyMap = {
+            chatQueriesToday: 'chat',
+            matchesToday: 'matches',
+            customMatchesToday: 'custom',
+            visualizationsToday: 'visualizations',
+            aiHelpToday: 'aiHelp'
+        };
+        return resolvedPlan[keyMap[key]] ?? 'Unlimited';
+    };
+
+    const getLimitDisplay = (key) => {
+        if (quotaFormData.hasCustomLimits) {
+            const overrideKeyMap = {
+                chatQueriesToday: 'customChatQueriesLimit',
+                matchesToday: 'customMatchesLimit',
+                customMatchesToday: 'customCustomMatchesLimit',
+                visualizationsToday: 'customVisualizationsLimit',
+                aiHelpToday: 'customAIHelpLimit'
+            };
+            const overrideVal = quotaFormData[overrideKeyMap[key]];
+            if (overrideVal !== undefined && overrideVal !== '' && overrideVal !== null) {
+                return `${overrideVal} (Override)`;
+            }
+        }
+        
+        const limit = getStandardLimit(quotaFormData.subscriptionPlan, key);
+        return limit === Infinity ? 'Unlimited' : limit;
+    };
+
     const handleUpdateQuotas = async (e) => {
         if (e) e.preventDefault();
         try {
@@ -1173,9 +1211,16 @@ const AdminDashboard = () => {
 
                             {/* Current Usage Controls */}
                             <div className="bg-gray-900/40 border border-gray-800/80 rounded-xl p-4 space-y-4">
-                                <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Activity size={14} /> Current Daily Usage Stats
-                                </h4>
+                                <div>
+                                    <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Activity size={14} /> Attempts Consumed / Used Today
+                                    </h4>
+                                    <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">
+                                        These numbers show how many matches or queries the user has <strong>already consumed</strong> today. 
+                                        A value of <code>0</code> means they have not used any allowance yet today. 
+                                        Click the reset icon (<RotateCcw size={10} className="inline mb-0.5" />) next to a stat to instantly restore their full daily allowance.
+                                    </p>
+                                </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     {[
                                         { label: 'Chat Queries', key: 'chatQueriesToday' },
@@ -1184,8 +1229,13 @@ const AdminDashboard = () => {
                                         { label: 'Visualizations', key: 'visualizationsToday' },
                                         { label: 'AI Help Requests', key: 'aiHelpToday' }
                                     ].map(item => (
-                                        <div key={item.key} className="bg-gray-950/40 border border-gray-800/50 rounded-lg p-3 space-y-2 text-left">
-                                            <label className="block text-xs font-semibold text-gray-400">{item.label}</label>
+                                        <div key={item.key} className="bg-gray-950/40 border border-gray-800/50 rounded-lg p-3 space-y-2 text-left flex flex-col justify-between">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-300">{item.label}</label>
+                                                <span className="block text-[10px] text-gray-500 mb-1.5">
+                                                    Currently: <strong className="text-emerald-400">{quotaFormData[item.key]}</strong> / {getLimitDisplay(item.key)} used
+                                                </span>
+                                            </div>
                                             <div className="flex items-center gap-1.5">
                                                 <input
                                                     type="number"
