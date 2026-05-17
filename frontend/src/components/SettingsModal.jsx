@@ -353,7 +353,7 @@ const StatusBadge = ({ verified }) => (
   )
 );
 
-const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth }) => {
+const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, initialTab }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [profileForm, setProfileForm] = useState(() => buildInitialProfileForm(user));
   const [securityForm, setSecurityForm] = useState(() => buildInitialSecurityForm(user));
@@ -361,6 +361,13 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
   const [otpCode, setOtpCode] = useState('');
   const [otpPending, setOtpPending] = useState(null);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -397,6 +404,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
       setActiveTab('profile');
       setOtpPending(null);
       setOtpCode('');
+      setIsChangingEmail(false);
 
       setProfileForm(buildInitialProfileForm(user));
       setSecurityForm(buildInitialSecurityForm(user));
@@ -557,6 +565,33 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
     }
   };
 
+  const requestEmailChangeVerification = async () => {
+    const emailVal = securityForm.email.trim();
+    if (!emailVal) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(emailVal)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setRequestingOtp(true);
+    try {
+      const { data } = await api.post('/settings/request-email-verification', {
+        newEmail: emailVal,
+      });
+      setOtpPending({ email: true, isChange: true });
+      setOtpCode('');
+      toast.success(data.message || 'Verification code sent to your new email');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Unable to send verification code'));
+    } finally {
+      setRequestingOtp(false);
+    }
+  };
+
   const verifyOtp = async () => {
     if (!otpCode.trim()) {
       toast.error('Enter the 6 digit verification code');
@@ -573,6 +608,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
         setProfileForm(buildInitialProfileForm(data.user));
         setSecurityForm(buildInitialSecurityForm(data.user));
         setPreferencesForm(buildInitialPreferencesForm(data.user));
+        setIsChangingEmail(false);
       }
       setOtpPending(null);
       setOtpCode('');
@@ -783,20 +819,63 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
 
                       <div className="grid gap-6">
                         <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Email Address</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Email Address</label>
+                            {!isChangingEmail ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsChangingEmail(true);
+                                }}
+                                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                              >
+                                Change Email
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsChangingEmail(false);
+                                  setSecurityForm((prev) => ({ ...prev, email: user?.email || '' }));
+                                }}
+                                className="text-xs text-red-400 hover:text-red-300 font-semibold"
+                              >
+                                Cancel Change
+                              </button>
+                            )}
+                          </div>
                           <div className="relative">
                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={securityForm.email}
-                              readOnly
-                              className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3.5 pl-12 pr-4 text-sm text-[var(--text-primary)] outline-none"
+                              onChange={(e) => {
+                                if (isChangingEmail) {
+                                  setSecurityForm((prev) => ({ ...prev, email: e.target.value }));
+                                }
+                              }}
+                              readOnly={!isChangingEmail}
+                              className={`w-full rounded-2xl border py-3.5 pl-12 pr-28 text-sm text-[var(--text-primary)] outline-none transition-colors ${
+                                isChangingEmail
+                                  ? 'border-emerald-500 bg-[var(--bg-secondary)]'
+                                  : 'border-[var(--border-color)] bg-[var(--bg-tertiary)]'
+                              }`}
                               placeholder="email@example.com"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                              {user?.emailVerified ? (
+                              {isChangingEmail ? (
+                                <button
+                                  type="button"
+                                  onClick={requestEmailChangeVerification}
+                                  disabled={requestingOtp || !securityForm.email}
+                                  className="text-[10px] font-black uppercase tracking-tighter bg-emerald-500 text-black px-2 py-1 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                                >
+                                  {requestingOtp ? '...' : 'Send Code'}
+                                </button>
+                              ) : user?.emailVerified ? (
                                 <StatusBadge verified={true} />
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={requestEmailVerification}
                                   disabled={requestingOtp}
                                   className="text-[10px] font-black uppercase tracking-tighter bg-emerald-500 text-black px-2 py-1 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50"
@@ -806,8 +885,11 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth })
                               )}
                             </div>
                           </div>
-                          {!user?.emailVerified && (
+                          {!user?.emailVerified && !isChangingEmail && (
                             <p className="px-2 text-[10px] text-emerald-400 font-bold">Email verification is required to upgrade your plan.</p>
+                          )}
+                          {isChangingEmail && (
+                            <p className="px-2 text-[10px] text-emerald-400 font-bold">Enter your new email address to receive a verification code.</p>
                           )}
                         </div>
 

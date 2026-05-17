@@ -15,6 +15,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(user);
+  const [settingsInitialTab, setSettingsInitialTab] = useState('profile');
 
   // ✅ SYNC MODAL WITH URL
   useEffect(() => {
@@ -27,10 +28,24 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
   const handleCloseSettings = useCallback(() => {
     setIsSettingsOpen(false);
+    setSettingsInitialTab('profile');
     // If we are currently on /settings, go back to previous page
     if (location.pathname === '/settings') {
       navigate(-1);
     }
+  }, [navigate, location.pathname]);
+
+  useEffect(() => {
+    const handleOpenSettings = (e) => {
+      const targetTab = e.detail?.tab || 'profile';
+      setSettingsInitialTab(targetTab);
+      setIsSettingsOpen(true);
+      if (location.pathname !== '/settings') {
+        navigate('/settings');
+      }
+    };
+    window.addEventListener('codearena:open-settings', handleOpenSettings);
+    return () => window.removeEventListener('codearena:open-settings', handleOpenSettings);
   }, [navigate, location.pathname]);
 
   useEffect(() => {
@@ -233,6 +248,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
         user={displayUser}
         onUserUpdate={handleUserUpdate}
         onRequireReauth={handleRequireReauth}
+        initialTab={settingsInitialTab}
       />
     </>
   );

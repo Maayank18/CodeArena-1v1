@@ -366,14 +366,35 @@ export const verifySettingsOtp = async (req, res) => {
 
 export const requestEmailVerificationOtp = async (req, res) => {
     try {
+        const { newEmail } = req.body;
         const user = await User.findById(req.user._id).select('+otpCode +otpExpiry +otpAttemptCount username fullName email');
         
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (user.emailVerified) {
-            return res.status(400).json({ success: false, message: 'Email is already verified' });
+        let targetEmail = user.email;
+
+        if (newEmail) {
+            const sanitizedEmail = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
+            if (!sanitizedEmail || !EMAIL_REGEX.test(sanitizedEmail)) {
+                return res.status(400).json({ success: false, message: 'Provide a valid email address' });
+            }
+
+            if (sanitizedEmail === user.email.toLowerCase()) {
+                return res.status(400).json({ success: false, message: 'New email must be different from your current email' });
+            }
+
+            const existingEmailUser = await User.findOne({ email: sanitizedEmail }).select('_id').lean();
+            if (existingEmailUser) {
+                return res.status(400).json({ success: false, message: 'This email is already registered to another account' });
+            }
+
+            targetEmail = sanitizedEmail;
+        } else {
+            if (user.emailVerified) {
+                return res.status(400).json({ success: false, message: 'Email is already verified' });
+            }
         }
 
         const otp = generateOtp();
@@ -381,20 +402,21 @@ export const requestEmailVerificationOtp = async (req, res) => {
         user.otpExpiry = minutesFromNow(AUTH_LIMITS.otpExpiryMinutes);
         user.otpAttemptCount = 0;
         user.pendingUpdates = {
-            type: 'email_verification',
+            type: newEmail ? 'email_change' : 'email_verification',
+            email: newEmail ? targetEmail : undefined,
             requestedAt: new Date(),
         };
         await user.save();
 
         await sendEmailVerificationOtp(
-            user.email,
+            targetEmail,
             user.fullName || user.username,
             otp
         );
 
         return res.json({
             success: true,
-            message: 'Verification code sent to your email.',
+            message: `Verification code sent to ${targetEmail}.`,
             expiresInMinutes: AUTH_LIMITS.otpExpiryMinutes,
         });
     } catch (error) {
@@ -418,7 +440,9 @@ export const verifyEmailAddress = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (user.pendingUpdates?.type !== 'email_verification' && !user.otpCode) {
+        const pendingType = user.pendingUpdates?.type;
+
+        if (pendingType !== 'email_verification' && pendingType !== 'email_change' && !user.otpCode) {
             return res.status(400).json({ success: false, message: 'No pending verification request found' });
         }
 
@@ -426,11 +450,29 @@ export const verifyEmailAddress = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Code expired. Request a new one.' });
         }
 
+        if ((user.otpAttemptCount || 0) >= MAX_OTP_ATTEMPTS) {
+            return res.status(429).json({ success: false, message: 'Too many invalid attempts. Request a new code.' });
+        }
+
         const otpMatches = safeEqualHex(hashOtp(otp), user.otpCode);
         if (!otpMatches) {
             user.otpAttemptCount = (user.otpAttemptCount || 0) + 1;
             await user.save();
             return res.status(400).json({ success: false, message: 'Invalid verification code' });
+        }
+
+        if (pendingType === 'email_change') {
+            const newEmail = user.pendingUpdates?.email;
+            if (!newEmail || !EMAIL_REGEX.test(newEmail)) {
+                return res.status(400).json({ success: false, message: 'Invalid pending email update' });
+            }
+
+            const existingEmailUser = await User.findOne({ email: newEmail }).select('_id').lean();
+            if (existingEmailUser) {
+                return res.status(400).json({ success: false, message: 'This email is already registered to another account' });
+            }
+
+            user.email = newEmail;
         }
 
         user.emailVerified = true;
@@ -443,7 +485,9 @@ export const verifyEmailAddress = async (req, res) => {
 
         return res.json({
             success: true,
-            message: 'Email verified successfully.',
+            message: pendingType === 'email_change' 
+                ? 'Email changed and verified successfully.' 
+                : 'Email verified successfully.',
             user: buildSettingsPayload(user),
         });
     } catch (error) {
