@@ -39,6 +39,9 @@ const getCachedProblem = async (problemId) => {
 const isExecutionErrorVerdict = (verdict) =>
   ['compile_error', 'runtime_error', 'internal_error', 'unknown'].includes(verdict);
 
+const JAVA_MAIN_CLASS_REGEX = /(?:public\s+)?class\s+Main\b/;
+const JAVA_MAIN_METHOD_REGEX = /public\s+static\s+void\s+main\s*\(\s*(?:final\s+)?String\s*(?:(?:\[\s*\]\s*\w+)|(?:\w+\s*\[\s*\])|(?:\.\.\.\s*\w+))\s*\)/;
+
 const buildFailureMessage = ({ verdict, stderr }) => {
   if (verdict === 'tle') return 'Time Limit Exceeded';
   if (verdict === 'compile_error') return stderr || 'Compilation Error';
@@ -46,6 +49,21 @@ const buildFailureMessage = ({ verdict, stderr }) => {
   if (verdict === 'internal_error') return stderr || 'Execution Engine Error';
   if (verdict === 'wrong_answer') return 'Wrong Answer';
   return stderr || 'Execution Error';
+};
+
+const getExecutionValidationError = (language, code) => {
+  if (language !== 'java') {
+    return null;
+  }
+
+  const hasMainClass = JAVA_MAIN_CLASS_REGEX.test(code);
+  const hasMainMethod = JAVA_MAIN_METHOD_REGEX.test(code);
+
+  if (hasMainClass && hasMainMethod) {
+    return null;
+  }
+
+  return "CodeArena runs Java in Standard I/O mode. Please submit a full executable program with `public class Main` and `public static void main(String[] args)`, including input parsing, helper methods, and output.";
 };
 
 export const runCode = async (req, res) => {
@@ -57,6 +75,22 @@ export const runCode = async (req, res) => {
 
   if (code.length > MAX_CODE_SIZE) {
     return res.status(400).json({ message: `Code exceeds maximum length (${MAX_CODE_SIZE / 1000}KB)` });
+  }
+
+  const validationError = getExecutionValidationError(language, code);
+  if (validationError) {
+    return res.json({
+      success: false,
+      ok: false,
+      verdict: 'compile_error',
+      status: { description: 'Compile Error' },
+      output: '',
+      stdout: '',
+      stderr: validationError,
+      error: validationError,
+      executionTime: 0,
+      memoryKb: 0,
+    });
   }
 
   try {
@@ -97,6 +131,30 @@ export const submitCode = async (req, res) => {
 
     if (code.length > MAX_CODE_SIZE) {
       return res.status(400).json({ message: `Code exceeds maximum length (${MAX_CODE_SIZE / 1000}KB)` });
+    }
+
+    const validationError = getExecutionValidationError(language, code);
+    if (validationError) {
+      return res.json({
+        success: false,
+        allPassed: false,
+        isCorrect: false,
+        passedCount: 0,
+        totalTestCases: 0,
+        avgTimeMs: 0,
+        starsAwarded: 0,
+        results: [{
+          input: 'Hidden',
+          expected: 'Hidden',
+          actual: '',
+          passed: false,
+          timeMs: 0,
+          verdict: 'compile_error',
+          status: 'Compile Error',
+          error: validationError,
+          stderr: validationError,
+        }],
+      });
     }
 
     if (!mongoose.Types.ObjectId.isValid(problemId)) {

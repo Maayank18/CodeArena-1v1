@@ -2,7 +2,7 @@
 // FILE: frontend/src/pages/EditorPage.jsx
 // ✅ FIXED VERSION - Timer receives data via props, not socket events
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/CodeEditor';
 import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
@@ -50,6 +50,83 @@ const resolveYjsUrl = () => {
 
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 const CUSTOMIZATION_ACCESS_TIERS = new Set(['pro', 'premium']);
+const SUPPORTED_EDITOR_LANGUAGES = ['javascript', 'cpp', 'java', 'python'];
+const DEFAULT_EDITOR_LANGUAGE = 'cpp';
+const DEFAULT_EDITOR_BOILERPLATES = {
+    javascript: `const fs = require('fs');
+
+function solve() {
+    const input = fs.readFileSync(0, 'utf-8').trim();
+
+    // CodeArena uses Standard I/O mode.
+    // Write the full program from scratch: input parsing, helper functions, and output.
+}
+
+solve();`,
+    cpp: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // CodeArena uses Standard I/O mode.
+    // Write the full program from scratch: input parsing, helper functions, and output.
+
+    return 0;
+}`,
+    java: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        // CodeArena uses Standard I/O mode.
+        // Write the full program from scratch: input parsing, helper methods, and output.
+    }
+}`,
+    python: `import sys
+
+def solve():
+    data = sys.stdin.read().split()
+
+    # CodeArena uses Standard I/O mode.
+    # Write the full program from scratch: input parsing, helper functions, and output.
+
+if __name__ == "__main__":
+    solve()`,
+};
+
+const getArenaLanguageStorageKey = ({ roomId, problemId, side }) =>
+    `codearena_arena_language_${roomId}_${problemId}_${side}`;
+
+const getArenaDraftStorageKey = ({ roomId, problemId, side, language }) =>
+    `codearena_arena_draft_${roomId}_${problemId}_${side}_${language}`;
+
+const normalizeEditorBoilerplates = (problem) => {
+    const source = problem?.boilerplates || problem?.starterCode || {};
+
+    return {
+        javascript: source.javascript || DEFAULT_EDITOR_BOILERPLATES.javascript,
+        cpp: source.cpp || DEFAULT_EDITOR_BOILERPLATES.cpp,
+        java: source.java || DEFAULT_EDITOR_BOILERPLATES.java,
+        python: source.python || DEFAULT_EDITOR_BOILERPLATES.python,
+    };
+};
+
+const replaceYTextContent = (ytext, nextValue = '') => {
+    const currentValue = ytext.toString();
+    if (currentValue === nextValue) return;
+
+    ytext.doc?.transact(() => {
+        if (ytext.length > 0) {
+            ytext.delete(0, ytext.length);
+        }
+        if (nextValue) {
+            ytext.insert(0, nextValue);
+        }
+    });
+};
 
 // ✅ FIXED TIMER: Receives initial time via props
 const Timer = React.memo(({ initialTime, socket }) => {
@@ -169,7 +246,7 @@ const EditorPage = () => {
     const [runResults, setRunResults] = useState(null); 
     const [isRunning, setIsRunning] = useState(false);
     const [isNotesOpen, setIsNotesOpen] = useState(false);
-    const [language, setLanguage] = useState('cpp'); 
+    const [language, setLanguage] = useState(DEFAULT_EDITOR_LANGUAGE); 
     const [arenaUnavailableMessage, setArenaUnavailableMessage] = useState('');
     const [roomLoadError, setRoomLoadError] = useState('');
     
@@ -182,6 +259,7 @@ const EditorPage = () => {
     const [showEntrance, setShowEntrance] = useState(false);
     const [entranceData, setEntranceData] = useState(null);
     const [aiHelpsUsed, setAiHelpsUsed] = useState(0);
+    const [sessionNoteTitle, setSessionNoteTitle] = useState("Arena Battle Match");
 
     const ENTRANCE_BANNERS = {
         'default-dark': 'from-gray-900 to-black',
@@ -199,9 +277,11 @@ const EditorPage = () => {
 
     const ydocRef = useRef(null);
     const providerRef = useRef(null);
+    const activeEditorContextRef = useRef(null);
     const problemLabel = problem ? `Q${round}/${totalRounds}: ${problem.title}` : (roomId?.startsWith('C-') && clients.length < 2 ? 'Waiting for Challenger...' : 'Loading...');
     const shouldCompactTimer = problemLabel.length > 30;
     const notebookSide = mySide === 'left' ? 'right' : 'left';
+    const boilerplates = useMemo(() => normalizeEditorBoilerplates(problem), [problem]);
 
     // ✅ Robust Entrance Animation Control
     useEffect(() => {
@@ -230,6 +310,115 @@ const EditorPage = () => {
     }, []);
 
     const debounceTimerRef = useRef(null);
+
+    const persistArenaDraft = useCallback((problemId, side, draftLanguage, code) => {
+        if (!problemId || !side || !draftLanguage) return;
+
+        try {
+            localStorage.setItem(
+                getArenaDraftStorageKey({ roomId, problemId, side, language: draftLanguage }),
+                code
+            );
+        } catch (error) {
+            console.warn('[Editor] Failed to persist arena draft:', error);
+        }
+    }, [roomId]);
+
+    const readArenaDraft = useCallback((problemId, side, draftLanguage) => {
+        if (!problemId || !side || !draftLanguage) return null;
+
+        try {
+            return localStorage.getItem(
+                getArenaDraftStorageKey({ roomId, problemId, side, language: draftLanguage })
+            );
+        } catch (error) {
+            console.warn('[Editor] Failed to read arena draft:', error);
+            return null;
+        }
+    }, [roomId]);
+
+    useEffect(() => {
+        if (!problem?._id || !mySide) return;
+
+        const languageStorageKey = getArenaLanguageStorageKey({
+            roomId,
+            problemId: problem._id,
+            side: mySide,
+        });
+
+        let preferredLanguage = DEFAULT_EDITOR_LANGUAGE;
+
+        try {
+            const storedLanguage = localStorage.getItem(languageStorageKey);
+            if (storedLanguage && SUPPORTED_EDITOR_LANGUAGES.includes(storedLanguage)) {
+                preferredLanguage = storedLanguage;
+            }
+        } catch (error) {
+            console.warn('[Editor] Failed to read preferred language:', error);
+        }
+
+        setLanguage((currentLanguage) => currentLanguage === preferredLanguage ? currentLanguage : preferredLanguage);
+    }, [mySide, problem?._id, roomId]);
+
+    useEffect(() => {
+        if (!problem?._id || !mySide || !ydocRef.current || !SUPPORTED_EDITOR_LANGUAGES.includes(language)) {
+            return;
+        }
+
+        const sideText = ydocRef.current.getText(`code-${mySide}`);
+        const previousContext = activeEditorContextRef.current;
+
+        if (
+            previousContext?.problemId &&
+            previousContext?.side === mySide &&
+            previousContext?.language
+        ) {
+            persistArenaDraft(
+                previousContext.problemId,
+                mySide,
+                previousContext.language,
+                sideText.toString()
+            );
+        }
+
+        const draft = readArenaDraft(problem._id, mySide, language);
+        const nextCode = draft !== null ? draft : boilerplates[language];
+        replaceYTextContent(sideText, nextCode);
+
+        activeEditorContextRef.current = {
+            problemId: problem._id,
+            side: mySide,
+            language,
+        };
+
+        setRunResults(null);
+
+        try {
+            localStorage.setItem(
+                getArenaLanguageStorageKey({ roomId, problemId: problem._id, side: mySide }),
+                language
+            );
+        } catch (error) {
+            console.warn('[Editor] Failed to persist preferred language:', error);
+        }
+    }, [boilerplates, language, mySide, persistArenaDraft, problem?._id, readArenaDraft, roomId]);
+
+    useEffect(() => {
+        if (!problem?._id || !mySide || !ydocRef.current || !SUPPORTED_EDITOR_LANGUAGES.includes(language)) {
+            return undefined;
+        }
+
+        const sideText = ydocRef.current.getText(`code-${mySide}`);
+        const persistCurrentDraft = () => {
+            persistArenaDraft(problem._id, mySide, language, sideText.toString());
+        };
+
+        sideText.observe(persistCurrentDraft);
+        return () => {
+            persistCurrentDraft();
+            sideText.unobserve(persistCurrentDraft);
+        };
+    }, [language, mySide, persistArenaDraft, problem?._id]);
 
     useEffect(() => {
         if (!username || !isValidRoomId) {
@@ -447,7 +636,7 @@ const EditorPage = () => {
                 providerRef.current = null;
             }
         };
-    }, [roomId, navigate, username, isValidRoomId, joinToken, storedUser?.token, hasCustomizationAccess]);
+    }, [roomId, navigate, username, isValidRoomId, joinToken, storedUser?._id, storedUser?.token, hasCustomizationAccess]);
 
     // ✅ ANTI-CHEAT
     useEffect(() => {
@@ -562,6 +751,12 @@ const EditorPage = () => {
         } finally { setIsRunning(false); }
     }, [problem, language, mySide, roomId, location.state]);
 
+    useEffect(() => {
+        if (problem && sessionNoteTitle === "Arena Battle Match") {
+            setSessionNoteTitle(`Battle Arena - ${problem.title}`);
+        }
+    }, [problem, sessionNoteTitle]);
+
     if (!location.state) return <Navigate to="/" replace />;
 
     if (arenaUnavailableMessage || roomLoadError) {
@@ -615,15 +810,6 @@ const EditorPage = () => {
             </div>
         );
     };
-
-    // Session-persistent note title
-    const [sessionNoteTitle, setSessionNoteTitle] = useState("Arena Battle Match");
-
-    useEffect(() => {
-        if (problem && sessionNoteTitle === "Arena Battle Match") {
-            setSessionNoteTitle(`Battle Arena - ${problem.title}`);
-        }
-    }, [problem, sessionNoteTitle]);
 
     return (
         <div className="arena-shell relative h-screen w-screen overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]" data-theme={theme}>
@@ -788,6 +974,13 @@ const EditorPage = () => {
                     <div className={`arena-problem-footer shrink-0 p-4 space-y-4 border-t ${
                         isDark ? 'bg-[#1e1e1e] border-white/10' : 'bg-stone-100 border-stone-300'
                     }`}>
+                        <div className={`rounded-xl border px-3 py-2 text-[11px] leading-relaxed ${
+                            isDark
+                                ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-100'
+                                : 'border-cyan-200 bg-cyan-50 text-cyan-900'
+                        }`}>
+                            CodeArena runs in Standard I/O mode. Write the full program from scratch, including driver code, input parsing, helper functions, and final output.
+                        </div>
                         <div className={`flex items-center justify-between p-2 rounded border ${
                             isDark ? 'bg-[#252526] border-[#3e3e42]' : 'bg-white border-stone-300'
                         }`}><span className={`text-[10px] font-bold ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>ROOM: {roomId}</span><button onClick={copyRoomId} className={isDark ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}><Copy size={16} /></button></div>

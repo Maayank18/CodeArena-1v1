@@ -561,6 +561,7 @@ const toPublicProblem = (problem) => {
 
   return {
     ...problem,
+    boilerplates: problem.boilerplates || problem.starterCode || {},
     testCases: Array.isArray(problem.testCases)
       ? problem.testCases.filter((testCase) => testCase?.isPublic)
       : [],

@@ -3,6 +3,51 @@
 import mongoose from 'mongoose';
 console.log('[Model] Problem.js loaded');
 
+const DEFAULT_STARTER_CODE = {
+    javascript: `const fs = require('fs');
+
+function solve() {
+    const input = fs.readFileSync(0, 'utf-8').trim();
+
+    // CodeArena runs in Standard I/O mode.
+    // Write the full program from scratch: input parsing, helper functions, and output.
+}
+
+solve();`,
+    python: `import sys
+
+def solve():
+    data = sys.stdin.read().split()
+
+    # CodeArena runs in Standard I/O mode.
+    # Write the full program from scratch: input parsing, helper functions, and output.
+
+if __name__ == "__main__":
+    solve()`,
+    cpp: `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // CodeArena runs in Standard I/O mode.
+    // Write the full program from scratch: input parsing, helper functions, and output.
+
+    return 0;
+}`,
+    java: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        // CodeArena runs in Standard I/O mode.
+        // Write the full program from scratch: input parsing, helper methods, and output.
+    }
+}`
+};
+
 const problemSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -82,60 +127,19 @@ const problemSchema = new mongoose.Schema({
     starterCode: {
         javascript: { 
             type: String, 
-            default: `// Read from stdin (Node.js)
-const fs = require('fs');
-const stdin = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/);
-let currentIdx = 0;
-function read() { return stdin[currentIdx++]; }
-
-// Write your code below
-function solve() {
-    // const n = parseInt(read());
-}
-solve();` 
+            default: DEFAULT_STARTER_CODE.javascript,
         },
         python: { 
             type: String, 
-            default: `import sys
-
-def solve():
-    # Read all input efficiently
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    iterator = iter(input_data)
-
-    # Use next(iterator) to get inputs
-    # n = int(next(iterator))
-
-if __name__ == "__main__":
-    solve()` 
+            default: DEFAULT_STARTER_CODE.python,
         },
         cpp: { 
             type: String, 
-            default: `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    // Fast I/O
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
-
-    // Write your code here
-    
-    return 0;
-}`
+            default: DEFAULT_STARTER_CODE.cpp,
         },
         java: { 
             type: String, 
-            default: `import java.util.*;
-
-public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        // Write your code here
-    }
-}` 
+            default: DEFAULT_STARTER_CODE.java,
         }
     },
     testCases: [{
@@ -162,7 +166,13 @@ public class Main {
         }
     }]
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+problemSchema.virtual('boilerplates').get(function problemBoilerplates() {
+    return this.starterCode || DEFAULT_STARTER_CODE;
 });
 
 // ✅ EXISTING INDEXES (kept for backward compatibility)

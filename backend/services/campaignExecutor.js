@@ -81,6 +81,24 @@
 import { executeCode } from '../utils/judge0Client.js';
 import { outputsMatch, sanitizeOutput } from '../utils/sanitizeOutput.js';
 
+const JAVA_MAIN_CLASS_REGEX = /(?:public\s+)?class\s+Main\b/;
+const JAVA_MAIN_METHOD_REGEX = /public\s+static\s+void\s+main\s*\(\s*(?:final\s+)?String\s*(?:(?:\[\s*\]\s*\w+)|(?:\w+\s*\[\s*\])|(?:\.\.\.\s*\w+))\s*\)/;
+
+const getExecutionValidationError = (language, code) => {
+  if (language !== 'java') {
+    return null;
+  }
+
+  const hasMainClass = JAVA_MAIN_CLASS_REGEX.test(code);
+  const hasMainMethod = JAVA_MAIN_METHOD_REGEX.test(code);
+
+  if (hasMainClass && hasMainMethod) {
+    return null;
+  }
+
+  return 'CodeArena runs Java in Standard I/O mode. Please submit a full executable program with public class Main and public static void main(String[] args), including input parsing, helper methods, and output.';
+};
+
 export const executeForCampaign = async (code, language, testCases) => {
   if (!code || !language) {
     throw new Error('Code and language are required');
@@ -90,6 +108,26 @@ export const executeForCampaign = async (code, language, testCases) => {
     return {
       allPassed: false,
       results: [],
+      totalTimeMs: 0,
+      avgTimeMs: 0,
+    };
+  }
+
+  const validationError = getExecutionValidationError(language, code);
+  if (validationError) {
+    return {
+      allPassed: false,
+      results: [{
+        input: 'Hidden',
+        expected: 'Hidden',
+        actual: '',
+        passed: false,
+        timeMs: 0,
+        verdict: 'compile_error',
+        error: validationError,
+        stderr: validationError,
+        isPublic: false,
+      }],
       totalTimeMs: 0,
       avgTimeMs: 0,
     };

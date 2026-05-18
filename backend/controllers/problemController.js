@@ -141,6 +141,7 @@ export const getRandomProblem = async (req, res) => {
         }
 
         //  Update cache
+        problems[0].boilerplates = problems[0].boilerplates || problems[0].starterCode || {};
         problemCache = problems[0];
         cacheTimestamp = now;
 
@@ -167,6 +168,7 @@ export const getProblemById = async (req, res) => {
 
         //  SECURITY: Filter out non-public test cases
         problem.testCases = problem.testCases.filter(tc => tc.isPublic);
+        problem.boilerplates = problem.boilerplates || problem.starterCode || {};
 
         res.json(problem);
 

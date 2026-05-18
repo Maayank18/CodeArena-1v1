@@ -9,7 +9,8 @@ import {
     ArrowDown, Target, HardDrive, Upload, Image, Loader2,
     Wifi, AlertCircle, Info, Layers,
     UserCheck, BarChart2, PieChart, TrendingDown,
-    Server, Radio, Save as SaveIcon, Settings, RotateCcw
+    Server, Radio, Save as SaveIcon, Settings, RotateCcw,
+    ShieldCheck, ShieldOff
 } from 'lucide-react';
 import api from '../api';
 import toast from 'react-hot-toast';
@@ -101,12 +102,6 @@ const SYSTEM_STAT_COLOR_CLASS_MAP = {
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
 const fmtTime = (d) => d ? new Date(d).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '—';
 const fmtDateTime = (d) => d ? `${fmtDate(d)}, ${fmtTime(d)}` : '—';
-const fmtDuration = (ms) => {
-    if (!ms) return '—';
-    const m = Math.floor(ms / 60000);
-    const s = Math.floor((ms % 60000) / 1000);
-    return `${m}m ${s}s`;
-};
 const calcWinRate = (wins, total) => total > 0 ? ((wins / total) * 100).toFixed(1) + '%' : '0%';
 
 const exportCSV = (data, filename) => {
@@ -311,7 +306,9 @@ const AdminDashboard = () => {
         try {
             const res = await api.post('/admin/stats', { username });
             setStats(res.data);
-        } catch {}
+        } catch (error) {
+            console.warn('Failed to fetch live admin stats:', error);
+        }
     };
 
     const handleRefresh = async () => {
@@ -395,12 +392,16 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleBanUser = async (userId, username) => {
-        if (!confirm(`Ban user "${username}"? They will be unable to login.`)) return;
+    const handleBanUser = async (userId, username, isCurrentlyBanned = false) => {
+        const actionLabel = isCurrentlyBanned ? 'Unban' : 'Ban';
+        if (!confirm(`${actionLabel} user "${username}"?`)) return;
         try {
-            await api.post(`/admin/users/${userId}/ban`, { username: adminUser.username });
-            toast.success(`User "${username}" banned`);
-            setUsers(prev => prev.map(u => u._id === userId ? { ...u, banned: true } : u));
+            await api.post(`/admin/users/${userId}/ban`, {
+                username: adminUser.username,
+                banned: !isCurrentlyBanned,
+            });
+            toast.success(`User "${username}" ${isCurrentlyBanned ? 'unbanned' : 'banned'}`);
+            setUsers(prev => prev.map(u => u._id === userId ? { ...u, banned: !isCurrentlyBanned } : u));
         } catch { toast.error('Failed to ban user'); }
     };
 
@@ -523,7 +524,7 @@ const AdminDashboard = () => {
     );
 
     const campaignRegionOptions = useMemo(
-        () => CAMPAIGN_REGIONS.map(r => ({ id: r.id, name: r.name })),
+        () => CAMPAIGN_REGIONS.map((region) => ({ id: region.id, name: region.name })),
         []
     );
 
@@ -765,6 +766,17 @@ const AdminDashboard = () => {
                                                                  className="p-1.5 bg-emerald-500/15 text-emerald-400 rounded hover:bg-emerald-500/30 transition-all mr-1">
                                                                  <Settings size={14}/>
                                                              </button>
+                                                             <button
+                                                                onClick={() => handleBanUser(u._id, u.username, !!u.banned)}
+                                                                title={u.banned ? 'Unban User' : 'Ban User'}
+                                                                className={`p-1.5 rounded transition-all ${
+                                                                    u.banned
+                                                                        ? 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/30'
+                                                                        : 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/30'
+                                                                }`}
+                                                            >
+                                                                {u.banned ? <ShieldCheck size={14}/> : <ShieldOff size={14}/>}
+                                                            </button>
                                                              <button onClick={() => handleDeleteUser(u._id, u.username)} title="Delete User"
                                                                 className="p-1.5 bg-red-500/15 text-red-400 rounded hover:bg-red-500/30 transition-all">
                                                                 <Trash2 size={14}/>
@@ -995,7 +1007,7 @@ const AdminDashboard = () => {
                                         className="rounded-xl border border-gray-800 bg-gray-900/70 px-4 py-2.5 text-sm focus:outline-none focus:border-accent/60"
                                     >
                                         <option value="all">All Regions</option>
-                                        {CAMPAIGN_REGIONS.map((region) => (
+                                        {campaignRegionOptions.map((region) => (
                                             <option key={region.id} value={String(region.id)}>
                                                 Region {region.id}: {region.name}
                                             </option>
@@ -1408,7 +1420,7 @@ const WinRateBar = ({ wins, total }) => {
 // ═══════════════════════════════════════════════════════════════
 // OVERVIEW TAB
 // ═══════════════════════════════════════════════════════════════
-const OverviewTab = ({ stats, users, matches, problems, recentActivity, hourlyActivity }) => {
+const OverviewTab = ({ users, matches, problems, recentActivity }) => {
     const totalMatches = matches.length;
     const completedMatches = matches.filter(m => m.status === 'completed').length;
     const todayMatches = matches.filter(m => (new Date() - new Date(m.createdAt)) < 86400000).length;
@@ -1508,7 +1520,7 @@ const OverviewTab = ({ stats, users, matches, problems, recentActivity, hourlyAc
 // ═══════════════════════════════════════════════════════════════
 // ANALYTICS TAB
 // ═══════════════════════════════════════════════════════════════
-const AnalyticsTab = ({ stats, users, matches, problems, hourlyActivity }) => {
+const AnalyticsTab = ({ users, matches, hourlyActivity }) => {
     const safeHourlyActivity = hourlyActivity.length === 24 ? hourlyActivity : new Array(24).fill(0);
     const peakCount = Math.max(...safeHourlyActivity, 0);
     const maxHourly = Math.max(...safeHourlyActivity, 1);
@@ -1583,7 +1595,10 @@ const AnalyticsTab = ({ stats, users, matches, problems, hourlyActivity }) => {
                                         <span className="text-gray-300 font-bold">{count} <span className="text-gray-600">({pct.toFixed(0)}%)</span></span>
                                     </div>
                                     <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                                        <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style={{width:`${pct}%`}}/>
+                                        <div
+                                            className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"
+                                            style={{ width: `${(count / maxBucket) * 100}%` }}
+                                        />
                                     </div>
                                 </div>
                             );
@@ -2085,10 +2100,10 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
         memoryLimit:     problem?.memoryLimit || 512,
         goldenSolution:  problem?.goldenSolution || '',
         starterCode:     problem?.starterCode || {
-            javascript: `const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\n\nfunction solve(input) {\n    // Write your solution here\n}\n\nconsole.log(solve(input));`,
-            python:     `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    # Write your solution here\n\nsolve()`,
-            cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
-            java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
+            javascript: `const fs = require('fs');\n\nfunction solve() {\n    const input = fs.readFileSync(0, 'utf-8').trim();\n\n    // CodeArena runs in Standard I/O mode.\n    // Write the full program from scratch: input parsing, helper functions, and output.\n}\n\nsolve();`,
+            python:     `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n\n    # CodeArena runs in Standard I/O mode.\n    # Write the full program from scratch: input parsing, helper functions, and output.\n\nif __name__ == "__main__":\n    solve()`,
+            cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    // CodeArena runs in Standard I/O mode.\n    // Write the full program from scratch: input parsing, helper functions, and output.\n\n    return 0;\n}`,
+            java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n\n        // CodeArena runs in Standard I/O mode.\n        // Write the full program from scratch: input parsing, helper methods, and output.\n    }\n}`,
         },
         testCases: problem?.testCases || [{ input:'', displayInput:'', visualInput:'', output:'', explanation:'', isPublic:true }],
         topics: problem?.topics || [],
@@ -2172,10 +2187,10 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
                 memoryLimit:     problem.memoryLimit || 512,
                 goldenSolution:  problem.goldenSolution || '',
                 starterCode:     problem.starterCode || {
-                    javascript: `const fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim();\n\nfunction solve(input) {\n    // Write your solution here\n}\n\nconsole.log(solve(input));`,
-                    python:     `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n    # Write your solution here\n\nsolve()`,
-                    cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    // Write your solution here\n    return 0;\n}`,
-                    java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write your solution here\n    }\n}`,
+                    javascript: `const fs = require('fs');\n\nfunction solve() {\n    const input = fs.readFileSync(0, 'utf-8').trim();\n\n    // CodeArena runs in Standard I/O mode.\n    // Write the full program from scratch: input parsing, helper functions, and output.\n}\n\nsolve();`,
+                    python:     `import sys\n\ndef solve():\n    data = sys.stdin.read().split()\n\n    # CodeArena runs in Standard I/O mode.\n    # Write the full program from scratch: input parsing, helper functions, and output.\n\nif __name__ == "__main__":\n    solve()`,
+                    cpp:        `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    // CodeArena runs in Standard I/O mode.\n    // Write the full program from scratch: input parsing, helper functions, and output.\n\n    return 0;\n}`,
+                    java:       `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n\n        // CodeArena runs in Standard I/O mode.\n        // Write the full program from scratch: input parsing, helper methods, and output.\n    }\n}`,
                 },
                 testCases: problem.testCases || [{ input:'', displayInput:'', visualInput:'', output:'', explanation:'', isPublic:true }],
                 topics: problem.topics || [],
@@ -2523,7 +2538,7 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
 
                     {/* Golden solution */}
                     <div>
-                        <label className="block text-sm font-semibold mb-1.5 text-gray-300 flex items-center gap-1.5">
+                        <label className="flex items-center gap-1.5 text-sm font-semibold mb-1.5 text-gray-300">
                             <Zap size={16} className="text-amber-400"/> Golden Solution (JavaScript) <span className="text-red-400">*</span>
                         </label>
                         <p className="text-xs text-gray-600 mb-2">Reference solution used to validate test cases and judge submissions. Should be a function: <code className="text-accent bg-gray-800 px-1 rounded">(input) =&gt; output_string</code></p>
