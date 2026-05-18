@@ -18,6 +18,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 import { resolveBackendOrigin } from '../api.js';
+import { outputsMatch, sanitizeOutput } from '../utils/outputMatching.js';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
 const isLocalhostLike = (value = '') => /localhost|127\.0\.0\.1/i.test(String(value));
@@ -501,10 +502,35 @@ const EditorPage = () => {
             for (const [index, tc] of publicCases.entries()) {
                 try {
                     const response = await api.post('/run', { language, code, stdin: tc.input, isArena: true });
-                    const passed = (response.data.stdout ? response.data.stdout.trim() : "") === tc.output.trim();
-                    newResults.push({ type: 'success', id: index, input: tc.input, expected: tc.output, actual: response.data.stdout, error: response.data.stderr, passed });
+                    const actual = sanitizeOutput(response.data.stdout || '');
+                    const expected = sanitizeOutput(tc.output || '');
+                    const stderr = sanitizeOutput(response.data.stderr || response.data.error || '');
+                    const verdict = response.data.verdict || (stderr ? 'runtime_error' : 'accepted');
+                    const passed = verdict === 'accepted' && outputsMatch(actual, expected);
+                    newResults.push({
+                        type: 'success',
+                        id: index,
+                        input: tc.input,
+                        expected,
+                        actual,
+                        stderr,
+                        error: verdict === 'wrong_answer' ? 'Wrong Answer' : (stderr || 'Wrong Answer'),
+                        verdict,
+                        passed
+                    });
                 } catch (err) {
-                    newResults.push({ type: 'error', id: index, input: tc.input, error: err.response?.data?.message || "Execution Error", passed: false });
+                    const errorMessage = err.response?.data?.message || "Execution Error";
+                    newResults.push({
+                        type: 'error',
+                        id: index,
+                        input: tc.input,
+                        expected: sanitizeOutput(tc.output || ''),
+                        actual: '',
+                        stderr: errorMessage,
+                        error: errorMessage,
+                        verdict: 'internal_error',
+                        passed: false
+                    });
                 }
             }
             setRunResults(newResults);
@@ -524,8 +550,8 @@ const EditorPage = () => {
         debounceTimerRef.current = setTimeout(() => { debounceTimerRef.current = null; }, 3000);
         try {
             const response = await api.post('/run/submit', { language, code, problemId: problem._id, isArena: true });
-            setRunResults(response.data.results);
-            if (response.data.isCorrect) {
+            setRunResults(response.data.results || []);
+            if (response.data.allPassed) {
                 toast.success("✅ Correct! +10 Points", { icon: '🏆' });
                 socketRef.current.emit('level_completed', { roomId, username: location.state?.username });
             } else {

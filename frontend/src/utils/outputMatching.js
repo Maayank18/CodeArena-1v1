@@ -1,9 +1,3 @@
-// backend/utils/sanitizeOutput.js
-
-/**
- * Normalize raw execution output to a stable display string.
- * This preserves semantic content while smoothing out line-ending noise.
- */
 export const sanitizeOutput = (raw) => {
   if (raw == null) return '';
   if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw);
@@ -21,17 +15,11 @@ export const sanitizeOutput = (raw) => {
     .trim();
 };
 
-/**
- * Convert output into whitespace-separated tokens so formatting differences
- * like trailing spaces or repeated spaces do not fail correct solutions.
- */
-export const tokenizeOutput = (raw) => {
+export const normalizeForComparison = (raw) => {
   const sanitized = sanitizeOutput(raw);
-  if (!sanitized) return [];
-  return sanitized.split(/\s+/).filter(Boolean);
+  if (!sanitized) return '';
+  return sanitized.split(/\s+/).filter(Boolean).join(' ');
 };
-
-export const normalizeForComparison = (raw) => tokenizeOutput(raw).join(' ');
 
 export const outputsMatch = (actual, expected) =>
   normalizeForComparison(actual) === normalizeForComparison(expected);

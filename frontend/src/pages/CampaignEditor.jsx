@@ -25,6 +25,7 @@ import {
   isRootCampaignNodeId,
 } from '../utils/campaignAccess';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget';
+import { outputsMatch } from '../utils/outputMatching';
 
 // --- Constants ----------------------------------------------------------------
 
@@ -99,7 +100,7 @@ const normaliseResult = (r, index) => {
     actual:   stdout,
     expected,
     stderr,
-    passed:   r.passed ?? (stdout === expected && !stderr),
+    passed:   r.passed ?? (outputsMatch(stdout, expected) && !stderr),
   };
 };
 
@@ -133,7 +134,7 @@ const ResultRow = ({ result, index }) => {
           </span>
           {!result.passed && (result.error || result.stderr) && (
             <span className="text-[10px] text-red-600 dark:text-red-500 bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 rounded font-bold border border-red-200 dark:border-red-900/40 truncate max-w-[160px]">
-              {result.error || result.stderr?.split('\n') || 'Wrong Answer'}
+              {result.error || result.stderr?.split('\n')?.[0] || 'Wrong Answer'}
             </span>
           )}
         </div>
@@ -449,10 +450,32 @@ const CampaignEditor = () => {
         const response = await api.post('/run', { language, code, stdin: tc.input });
         const { stdout, stderr } = extractOutput(response.data);
         const expected = sanitize(tc.output);
-        results.push({ caseNum: i + 1, input: tc.input, expected, actual: stdout, passed: stdout === expected && !stderr, stderr, isPublic: true });
+        const verdict = response.data?.verdict || (stderr ? 'runtime_error' : 'accepted');
+        results.push({
+          caseNum: i + 1,
+          input: tc.input,
+          expected,
+          actual: stdout,
+          passed: verdict === 'accepted' && outputsMatch(stdout, expected),
+          stderr,
+          error: verdict === 'wrong_answer' ? 'Wrong Answer' : stderr,
+          verdict,
+          isPublic: true
+        });
       } catch (err) {
         console.log(err);
-        results.push({ caseNum: i + 1, input: tc.input, expected: sanitize(tc.output), actual: '', passed: false, error: 'Execution Error', isPublic: true });
+        const errorMessage = err?.response?.data?.message || 'Execution Error';
+        results.push({
+          caseNum: i + 1,
+          input: tc.input,
+          expected: sanitize(tc.output),
+          actual: '',
+          passed: false,
+          error: errorMessage,
+          stderr: errorMessage,
+          verdict: 'internal_error',
+          isPublic: true
+        });
       }
     }
     setRunResults(results);

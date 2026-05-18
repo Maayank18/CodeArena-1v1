@@ -79,7 +79,7 @@
 
 // backend/services/campaignExecutor.js
 import { executeCode } from '../utils/judge0Client.js';
-import { sanitizeOutput } from '../utils/sanitizeOutput.js';
+import { outputsMatch, sanitizeOutput } from '../utils/sanitizeOutput.js';
 
 export const executeForCampaign = async (code, language, testCases) => {
   if (!code || !language) {
@@ -108,6 +108,7 @@ export const executeForCampaign = async (code, language, testCases) => {
       const elapsed = result?.run?.millis ?? (Date.now() - t0);
       totalTimeMs += elapsed;
 
+      const verdict = result?.verdict || 'unknown';
       const stdout = sanitizeOutput(result?.run?.stdout ?? result?.run?.output ?? '');
       const stderr = sanitizeOutput(
         result?.run?.stderr ??
@@ -117,7 +118,7 @@ export const executeForCampaign = async (code, language, testCases) => {
       );
 
       const expected = sanitizeOutput(tc.output ?? '');
-      const passed = stdout === expected && !stderr;
+      const passed = verdict === 'accepted' && outputsMatch(stdout, expected);
 
       if (!passed) allPassed = false;
 
@@ -127,6 +128,11 @@ export const executeForCampaign = async (code, language, testCases) => {
         actual: stdout,
         passed,
         timeMs: elapsed,
+        verdict,
+        error:
+          verdict === 'tle'
+            ? 'Time Limit Exceeded'
+            : stderr || (verdict === 'wrong_answer' ? 'Wrong Answer' : 'Execution Error'),
         stderr,
         isPublic: !!tc.isPublic,
       });
