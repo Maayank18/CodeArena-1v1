@@ -14,6 +14,7 @@ import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3 } from
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
+import WinningModal from '../components/WinningModal.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
@@ -126,6 +127,26 @@ const replaceYTextContent = (ytext, nextValue = '') => {
             ytext.insert(0, nextValue);
         }
     });
+};
+
+const normalizeGameOverPayload = (data, currentUsername) => {
+    const scores = data?.scores && typeof data.scores === 'object' ? data.scores : {};
+    const playerResults = data?.playerResults && typeof data.playerResults === 'object' ? data.playerResults : {};
+    const currentPlayerResult = playerResults[currentUsername] || null;
+
+    return {
+        winner: data?.winner || data?.winnerName || 'Draw',
+        winnerName: data?.winnerName || data?.winner || 'Draw',
+        winnerId: data?.winnerId || null,
+        isDisqualified: Boolean(data?.isDisqualified),
+        disqualifiedPlayer: data?.disqualifiedPlayer || null,
+        scores,
+        eloChanges: data?.eloChanges && typeof data.eloChanges === 'object' ? data.eloChanges : {},
+        playerResults,
+        pointsEarned: Number(currentPlayerResult?.seasonPoints ?? data?.pointsEarned ?? 0) || 0,
+        newElo: currentPlayerResult?.newElo ?? data?.newElo ?? null,
+        message: data?.message || '',
+    };
 };
 
 // ✅ FIXED TIMER: Receives initial time via props
@@ -548,10 +569,11 @@ const EditorPage = () => {
         const handleScoreUpdate = (newScores) => setScores(newScores);
         
         const handleGameOver = (data) => {
-            setGameOverData(data);
+            const safeGameOverData = normalizeGameOverPayload(data, username);
+            setGameOverData(safeGameOverData);
             const myName = username;
-            const myScore = data.scores[myName] || 0;
-            const allPlayers = Object.keys(data.scores);
+            const myScore = safeGameOverData.scores?.[myName] || 0;
+            const allPlayers = Object.keys(safeGameOverData.scores || {});
             const opponentName = allPlayers.find(name => name !== myName) || "Unknown";
 
             try {
@@ -559,10 +581,10 @@ const EditorPage = () => {
                 history.unshift({
                     date: new Date().toISOString(),
                     opponent: opponentName,
-                    winner: data.winner,
+                    winner: safeGameOverData.winner,
                     score: myScore,
-                    isDisqualified: data.isDisqualified || false,
-                    disqualifiedPlayer: data.disqualifiedPlayer
+                    isDisqualified: safeGameOverData.isDisqualified,
+                    disqualifiedPlayer: safeGameOverData.disqualifiedPlayer
                 });
                 if (history.length > 50) history.length = 50;
                 localStorage.setItem('codearena_history', JSON.stringify(history));
@@ -571,11 +593,11 @@ const EditorPage = () => {
                 if (storedUser.username) {
                     if (!storedUser.stats) storedUser.stats = { matchesPlayed: 0, wins: 0, losses: 0 };
                     storedUser.stats.matchesPlayed += 1;
-                    if (data.winner === myName) storedUser.stats.wins += 1;
-                    else if (data.winner !== "Draw") storedUser.stats.losses += 1;
+                    if (safeGameOverData.winner === myName) storedUser.stats.wins += 1;
+                    else if (safeGameOverData.winner !== "Draw") storedUser.stats.losses += 1;
                     
-                    if (data.eloChanges) {
-                        const myEloUpdate = Object.values(data.eloChanges).find(p => p.username === myName);
+                    if (safeGameOverData.eloChanges) {
+                        const myEloUpdate = Object.values(safeGameOverData.eloChanges).find(p => p.username === myName);
                         if (myEloUpdate) {
                             storedUser.rating = myEloUpdate.newRating;
                             storedUser.seasonScore = (storedUser.seasonScore || 0) + (myEloUpdate.seasonPoints || 0);
@@ -876,19 +898,11 @@ const EditorPage = () => {
             )}
 
             {gameOverData && (
-                <div className="absolute inset-0 z-50 backdrop-blur-md flex flex-col items-center justify-center p-4" style={{ backgroundColor: 'var(--overlay-scrim)' }}>
-                    <div className="arena-modal-card bg-[#1e1e1e] p-6 md:p-10 rounded-2xl border border-accent shadow-2xl text-center w-full max-w-lg">
-                        <h1 className="text-6xl mb-4">{gameOverData.isDisqualified ? "🚫" : "🏆"}</h1>
-                        <h2 className="text-3xl font-bold text-white mb-2">{gameOverData.isDisqualified ? "Disqualified!" : "Match Complete!"}</h2>
-                        <p className="text-xl text-accent mb-6">{gameOverData.isDisqualified ? (gameOverData.disqualifiedPlayer === username ? "Lost by disqualification" : "Won by opponent disqualification") : `Winner: ${gameOverData.winner}`}</p>
-                        <div className="space-y-2 mb-8">
-                            {Object.entries(gameOverData.scores).map(([u, s]) => (
-                                <div key={u} className="flex justify-between bg-[#2d2d2d] p-3 rounded-lg"><span className="font-bold text-white">{u}</span><span className="text-accent font-mono">{s} pts</span></div>
-                            ))}
-                        </div>
-                        <button onClick={() => navigate('/dashboard')} className="bg-accent text-black font-bold py-3 px-8 rounded-lg w-full">Dashboard</button>
-                    </div>
-                </div>
+                <WinningModal
+                    result={gameOverData}
+                    currentUsername={username}
+                    onClose={() => navigate('/dashboard')}
+                />
             )}
 
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3">

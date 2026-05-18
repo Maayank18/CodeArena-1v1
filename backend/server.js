@@ -1000,7 +1000,9 @@ const handleGameEnd = async (roomId, room) => {
     console.log(`[GAME END] 🏁 Processing Room: ${roomId}`);
     
     let winnerName = playerNames.reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
+    let winnerId = null;
     let eloChanges = null;
+    let playerResults = {};
 
     try {
         // ✅ Parallel user fetches (optimized)
@@ -1135,6 +1137,25 @@ const handleGameEnd = async (roomId, room) => {
             }
         };
         winnerName = officialWinner;
+        winnerId = room.players.find((player) => player.username === officialWinner)?.userId || null;
+        playerResults = {
+            [p1Data.username]: {
+                username: p1Data.username,
+                score: p1Data.score,
+                seasonPoints: p1SeasonPoints,
+                newElo: p1NewRating,
+                eloChange: outcome.p1.pointsGained,
+                isWinner: outcome.p1.status.includes("Winner"),
+            },
+            [p2Data.username]: {
+                username: p2Data.username,
+                score: p2Data.score,
+                seasonPoints: p2SeasonPoints,
+                newElo: p2NewRating,
+                eloChange: outcome.p2.pointsGained,
+                isWinner: outcome.p2.status.includes("Winner"),
+            }
+        };
 
         console.log(`[GAME END] ✅ Room ${roomId} | Winner: ${winnerName}`);
 
@@ -1212,11 +1233,14 @@ const handleGameEnd = async (roomId, room) => {
 
     // ✅ Emit game over event to all players in room
     io.to(roomId).emit('game_over', { 
-        scores: room.scores, 
+        scores: room.scores || {},
         winner: winnerName,
+        winnerName,
+        winnerId,
         isDisqualified: room.cheaters.size > 0,
         disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
-        eloChanges: eloChanges
+        eloChanges: eloChanges || {},
+        playerResults,
     });
 
     // ✅ Delayed cleanup (1 minute delay for reconnections)
