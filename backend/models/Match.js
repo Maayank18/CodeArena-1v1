@@ -112,6 +112,11 @@ const matchSchema = new mongoose.Schema({
     type: String, 
     default: 'cpp' 
   },
+  reason: {
+    type: String,
+    enum: ['submission', 'timeout', 'forfeit', 'draw', 'cancelled'],
+    default: 'submission'
+  },
 
   // ── Analytics & Custom Match Tracking ─────────────────────────
   problemIds: [{

@@ -132,11 +132,18 @@ const replaceYTextContent = (ytext, nextValue = '') => {
 const normalizeGameOverPayload = (data, currentUsername) => {
     const scores = data?.scores && typeof data.scores === 'object' ? data.scores : {};
     const playerResults = data?.playerResults && typeof data.playerResults === 'object' ? data.playerResults : {};
-    const currentPlayerResult = playerResults[currentUsername] || null;
+    const inferredWinnerName =
+        data?.winnerName ||
+        data?.winner ||
+        Object.entries(playerResults).find(([, value]) => value?.isWinner)?.[0] ||
+        (Object.keys(scores).length === 1 ? Object.keys(scores)[0] : '');
+    const currentPlayerResult =
+        playerResults[currentUsername] ||
+        (Object.keys(playerResults).length === 1 ? Object.values(playerResults)[0] : null);
 
     return {
-        winner: data?.winner || data?.winnerName || 'Draw',
-        winnerName: data?.winnerName || data?.winner || 'Draw',
+        winner: inferredWinnerName || (data?.message ? '' : 'Draw'),
+        winnerName: inferredWinnerName || (currentUsername ? currentUsername : 'Player'),
         winnerId: data?.winnerId || null,
         isDisqualified: Boolean(data?.isDisqualified),
         disqualifiedPlayer: data?.disqualifiedPlayer || null,
@@ -699,6 +706,26 @@ const EditorPage = () => {
         toast.success('Room ID copied!', { duration: 2000 });
     }, [roomId]);
 
+    const handleReturnToDashboard = useCallback(() => {
+        try {
+            localStorage.removeItem(buildCustomRoomAuthKey(roomId));
+        } catch (error) {
+            console.warn('[Editor] Failed to clear room auth cache:', error);
+        }
+
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
+
+        if (providerRef.current) {
+            providerRef.current.destroy();
+            providerRef.current = null;
+        }
+
+        navigate('/dashboard');
+    }, [navigate, roomId]);
+
     const runCode = useCallback(async () => {
         if (debounceTimerRef.current || !problem || !ydocRef.current) return;
         setIsRunning(true);
@@ -901,7 +928,7 @@ const EditorPage = () => {
                 <WinningModal
                     result={gameOverData}
                     currentUsername={username}
-                    onClose={() => navigate('/dashboard')}
+                    onHomeClick={handleReturnToDashboard}
                 />
             )}
 

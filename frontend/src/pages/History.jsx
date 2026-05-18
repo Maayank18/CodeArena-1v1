@@ -104,7 +104,7 @@ const History = () => {
 
             const isWin = myData.isWinner;
             const eloChange = myData.newElo - myData.oldElo; 
-            const opponentName = opponentData ? opponentData.username : "Unknown";
+            const opponentName = opponentData?.username || (match.isCustom ? "Practice (Solo)" : "Unknown (Solo)");
 
             // Status calculation
             const isDisqualified = myData.statusText === "Disqualified";
