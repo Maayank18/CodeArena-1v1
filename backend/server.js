@@ -1174,7 +1174,7 @@ const handleGameEnd = async (roomId, room) => {
         // ✅ Parallel user fetches (optimized)
         const userDocs = await Promise.all(
             playerNames.slice(0, 2).map((playerName) =>
-                User.findByUsername(playerName).select('_id username rating avatar').lean()
+                User.findByUsername(playerName)
             )
         );
         const [user1Doc, user2Doc] = userDocs;
