@@ -963,23 +963,120 @@ const activateCustomRoomInDb = async (roomId, room) => {
 };
 
 // ✅ SEASON POINTS CALCULATOR (unchanged)
+const DEFAULT_PLAYER_RATING = 1000;
+const DEFAULT_PLAYER_USERNAME = 'Unknown Player';
+
+const toFiniteNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toSafeUsername = (value, fallback = DEFAULT_PLAYER_USERNAME) => {
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    return trimmed || fallback;
+};
+
 const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmitted) => {
+    if (!playerData || !matchOutcome) return 0;
     if (playerData.isCheater) return -20;
-    if (opponentData.isCheater) return 50;
+    if (opponentData?.isCheater) return 50;
     if (!hasSubmitted) return 0;
-    if (matchOutcome.status.includes("Winner")) return 50;
+    if (matchOutcome.status?.includes("Winner")) return 50;
     if (matchOutcome.status === "Draw") return 25;
     if (matchOutcome.status === "Loser" && hasSubmitted) return 10;
     return 0;
 };
 
-const SOLO_PRACTICE_ELO_CHANGE = 5;
-const SOLO_PRACTICE_POINTS = 10;
 const FORFEIT_ELO_K = 32;
 const FORFEIT_WIN_POINTS = 25;
 
 const calculateExpectedScore = (playerRating, opponentRating) =>
-    1 / (1 + Math.pow(10, ((opponentRating || 1000) - (playerRating || 1000)) / 400));
+    1 / (1 + Math.pow(10, ((opponentRating || DEFAULT_PLAYER_RATING) - (playerRating || DEFAULT_PLAYER_RATING)) / 400));
+
+const calculateSoloPracticeOutcome = (playerData, reason) => {
+    const rating = toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING);
+    const score = Math.max(0, toFiniteNumber(playerData?.score, 0));
+    const hasSubmitted = Boolean(playerData?.hasSubmitted);
+
+    if (playerData?.isCheater) {
+        return {
+            p1: {
+                newRating: rating,
+                pointsGained: 0,
+                seasonScore: 0,
+                status: 'Disqualified',
+            }
+        };
+    }
+
+    if (reason === 'forfeit') {
+        const eloPenalty = Math.min(12, Math.max(4, Math.round(Math.max(0, rating - DEFAULT_PLAYER_RATING) / 100) + 4));
+        return {
+            p1: {
+                newRating: Math.max(0, rating - eloPenalty),
+                pointsGained: -eloPenalty,
+                seasonScore: 0,
+                status: 'Loser',
+            }
+        };
+    }
+
+    if (!hasSubmitted) {
+        return {
+            p1: {
+                newRating: rating,
+                pointsGained: 0,
+                seasonScore: 0,
+                status: reason === 'timeout' ? 'Draw' : 'Loser',
+            }
+        };
+    }
+
+    const eloGain = Math.min(12, Math.max(2, Math.round(score / 4) || 2));
+    const practicePoints = Math.min(30, Math.max(8, Math.round(score / 2) || 8));
+
+    return {
+        p1: {
+            newRating: Math.max(0, rating + eloGain),
+            pointsGained: eloGain,
+            seasonScore: practicePoints,
+            status: 'Winner',
+        }
+    };
+};
+
+const buildPlayerStatsUpdate = ({ newRating, seasonPoints, outcomeStatus }) => ({
+    $set: {
+        rating: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
+    },
+    $inc: {
+        seasonScore: toFiniteNumber(seasonPoints, 0),
+        'stats.matchesPlayed': 1,
+        'stats.wins': outcomeStatus?.includes('Winner') ? 1 : 0,
+        'stats.losses': outcomeStatus === 'Loser' ? 1 : 0,
+    }
+});
+
+const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seasonPoints }) => ({
+    userId: userDoc?._id || null,
+    username: toSafeUsername(playerData?.username),
+    avatar: typeof userDoc?.avatar === 'string' ? userDoc.avatar : '',
+    isWinner: Boolean(outcome?.status?.includes('Winner')),
+    score: toFiniteNumber(playerData?.score, 0),
+    oldElo: toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING),
+    newElo: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
+    statusText: outcome?.status || 'Draw',
+    seasonPointsGained: toFiniteNumber(seasonPoints, 0),
+    hasSubmitted: Boolean(playerData?.hasSubmitted),
+});
+
+const logMatchResolutionError = (roomId, stage, error, context = {}) => {
+    console.error(`[MATCH RESOLUTION] ${stage} failed for room ${roomId}:`, {
+        ...context,
+        message: error?.message,
+        stack: error?.stack,
+    });
+};
 
 const buildForfeitOutcome = (p1Data, p2Data, winnerUsername) => {
     const p1Rating = p1Data?.rating || 1000;
@@ -1027,6 +1124,10 @@ const handleGameEnd = async (roomId, room) => {
     if (!room.scores || typeof room.scores !== 'object') {
         room.scores = {};
     }
+    room.cheaters = room.cheaters instanceof Set ? room.cheaters : new Set(room.cheaters || []);
+    room.submissionAttempts = room.submissionAttempts instanceof Set
+        ? room.submissionAttempts
+        : new Set(room.submissionAttempts || []);
     for (const player of room.players || []) {
         if (player?.username && room.scores[player.username] === undefined) {
             room.scores[player.username] = 0;
@@ -1104,57 +1205,23 @@ const handleGameEnd = async (roomId, room) => {
         let officialWinner;
 
         if (isSoloMatch) {
-            const isDisqualified = p1Data.isCheater;
-            if (matchReason === 'submission' && !isDisqualified) {
-                const soloNewRating = Math.max(0, p1Data.rating + SOLO_PRACTICE_ELO_CHANGE);
-                outcome = {
-                    p1: {
-                        newRating: soloNewRating,
-                        pointsGained: SOLO_PRACTICE_ELO_CHANGE,
-                        seasonScore: SOLO_PRACTICE_POINTS,
-                        status: "Winner"
-                    }
-                };
-                p1NewRating = soloNewRating;
-                p1SeasonPoints = SOLO_PRACTICE_POINTS;
-                officialWinner = p1Data.username;
-            } else if (matchReason === 'forfeit') {
-                const forfeitedRating = Math.max(0, p1Data.rating - 10);
-                outcome = {
-                    p1: {
-                        newRating: forfeitedRating,
-                        pointsGained: -10,
-                        seasonScore: 0,
-                        status: "Loser"
-                    }
-                };
-                p1NewRating = forfeitedRating;
-                officialWinner = null;
-            } else {
-                outcome = {
-                    p1: {
-                        newRating: p1Data.rating,
-                        pointsGained: 0,
-                        seasonScore: 0,
-                        status: isDisqualified ? "Disqualified" : "Draw"
-                    }
-                };
-                p1NewRating = p1Data.rating;
-                officialWinner = null;
-            }
+            outcome = calculateSoloPracticeOutcome(p1Data, matchReason);
+            p1NewRating = toFiniteNumber(outcome?.p1?.newRating, p1Data.rating);
+            p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
+            officialWinner = outcome?.p1?.status?.includes('Winner') ? p1Data.username : null;
             p2NewRating = null;
             p2SeasonPoints = 0;
         } else if (matchReason === 'forfeit' && forcedWinnerUsername) {
             outcome = buildForfeitOutcome(p1Data, p2Data, forcedWinnerUsername);
-            p1NewRating = Number(outcome.p1.newRating) || 1000;
-            p2NewRating = Number(outcome.p2.newRating) || 1000;
-            p1SeasonPoints = outcome.p1.seasonScore || 0;
-            p2SeasonPoints = outcome.p2.seasonScore || 0;
+            p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
+            p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
+            p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
+            p2SeasonPoints = toFiniteNumber(outcome?.p2?.seasonScore, 0);
             officialWinner = forcedWinnerUsername;
         } else {
             outcome = calculateMatchOutcome(p1Data, p2Data);
-            p1NewRating = Number(outcome.p1.newRating) || 1000;
-            p2NewRating = Number(outcome.p2.newRating) || 1000;
+            p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
+            p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
 
             p1SeasonPoints = calculateSeasonPoints(p1Data, p2Data, outcome.p1, p1Data.hasSubmitted);
             p2SeasonPoints = calculateSeasonPoints(p2Data, p1Data, outcome.p2, p2Data.hasSubmitted);
@@ -1163,86 +1230,137 @@ const handleGameEnd = async (roomId, room) => {
         }
 
         // ✅ Batch all database operations
-        const dbOperations = [];
+        const resolvedPlayers = [
+            {
+                key: 'p1',
+                userDoc: user1Doc,
+                data: p1Data,
+                outcome: outcome?.p1,
+                newRating: p1NewRating,
+                seasonPoints: p1SeasonPoints,
+            }
+        ];
+
+        if (p2Data && outcome?.p2) {
+            resolvedPlayers.push({
+                key: 'p2',
+                userDoc: user2Doc,
+                data: p2Data,
+                outcome: outcome.p2,
+                newRating: p2NewRating,
+                seasonPoints: p2SeasonPoints,
+            });
+        }
 
         // Update player 1
-        if (user1Doc) {
-            dbOperations.push(
-                User.findByIdAndUpdate(user1Doc._id, { 
-                    $set: { rating: p1NewRating },
-                    $inc: { 
-                        seasonScore: p1SeasonPoints,
-                        "stats.matchesPlayed": 1,
-                        "stats.wins": outcome.p1.status.includes("Winner") ? 1 : 0,
-                        "stats.losses": outcome.p1.status === "Loser" ? 1 : 0
-                    }
-                }, { new: false })
-            );
+        if (!user1Doc) {
+            console.warn(`[MATCH RESOLUTION] Missing user document for ${p1Data.username} in room ${roomId}`);
         }
 
         // Update player 2
-        if (user2Doc && p2Data && outcome?.p2) {
-            dbOperations.push(
-                User.findByIdAndUpdate(user2Doc._id, { 
-                    $set: { rating: p2NewRating },
-                    $inc: { 
-                        seasonScore: p2SeasonPoints,
-                        "stats.matchesPlayed": 1,
-                        "stats.wins": outcome.p2.status.includes("Winner") ? 1 : 0,
-                        "stats.losses": outcome.p2.status === "Loser" ? 1 : 0
-                    }
-                }, { new: false })
-            );
+        if (p2Data && !user2Doc) {
+            console.warn(`[MATCH RESOLUTION] Missing user document for ${p2Data.username} in room ${roomId}`);
         }
 
-        // Create match record
-        dbOperations.push(
-            Match.create({
+        winnerName = officialWinner;
+        winnerId = officialWinner ? room.players.find((player) => player.username === officialWinner)?.userId || null : null;
+        playerResults = Object.fromEntries(
+            resolvedPlayers.map((player) => [
+                toSafeUsername(player.data.username),
+                {
+                    username: toSafeUsername(player.data.username),
+                    score: toFiniteNumber(player.data.score, 0),
+                    seasonPoints: toFiniteNumber(player.seasonPoints, 0),
+                    newElo: Math.max(0, toFiniteNumber(player.newRating, DEFAULT_PLAYER_RATING)),
+                    eloChange: toFiniteNumber(player.outcome?.pointsGained, 0),
+                    isWinner: Boolean(player.outcome?.status?.includes('Winner')),
+                }
+            ])
+        );
+        eloChanges = Object.fromEntries(
+            resolvedPlayers.map((player) => [
+                player.key,
+                {
+                    username: toSafeUsername(player.data.username),
+                    newRating: Math.max(0, toFiniteNumber(player.newRating, DEFAULT_PLAYER_RATING)),
+                    eloChange: toFiniteNumber(player.outcome?.pointsGained, 0),
+                    seasonPoints: toFiniteNumber(player.seasonPoints, 0),
+                }
+            ])
+        );
+
+        const matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+
+        await Promise.all(
+            resolvedPlayers
+                .filter((player) => player.userDoc?._id)
+                .map(async (player) => {
+                    try {
+                        await User.findByIdAndUpdate(
+                            player.userDoc._id,
+                            buildPlayerStatsUpdate({
+                                newRating: player.newRating,
+                                seasonPoints: player.seasonPoints,
+                                outcomeStatus: player.outcome?.status,
+                            }),
+                            { new: false }
+                        );
+                    } catch (error) {
+                        logMatchResolutionError(roomId, 'user stats update', error, {
+                            username: player.data.username,
+                        });
+                    }
+                })
+        );
+
+        try {
+            await Match.create({
                 roomId,
-                winner: officialWinner || 'Draw', 
+                winner: officialWinner || 'Draw',
+                status: 'completed',
                 reason: officialWinner ? matchReason : (matchReason === 'forfeit' ? 'forfeit' : 'draw'),
                 isDisqualified: room.cheaters.size > 0,
                 disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
                 problemIds: room.problemIds || [],
                 isCustom: Boolean(room.isCustom),
-                matchDurationSeconds: Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000)),
+                matchDurationSeconds,
                 timeLimitSeconds: room.durationSeconds || (30 * 60),
                 totalRoundsConfigured: room.totalRounds || 0,
                 fastestSolveMsByUser: room.fastestSolveMsByUser || {},
                 firstRoundFirstSolverUsername: room.firstRoundFirstSolverUsername || null,
                 firstRoundOpponentSubmissionCounts: room.firstRoundOpponentSubmissionCounts || {},
-                players: [
-                    { 
-                        userId: user1Doc?._id || null, 
-                        username: p1Data.username, 
-                        avatar: user1Doc?.avatar || "", 
-                        isWinner: outcome.p1.status.includes("Winner"), 
-                        score: p1Data.score, 
-                        oldElo: p1Data.rating, 
-                        newElo: p1NewRating, 
-                        statusText: outcome.p1.status,
-                        seasonPointsGained: p1SeasonPoints,
-                        hasSubmitted: p1Data.hasSubmitted
-                    }
-                ].concat(
-                    user2Doc && p2Data && outcome?.p2
-                        ? [{
-                            userId: user2Doc?._id || null, 
-                            username: p2Data.username, 
-                            avatar: user2Doc?.avatar || "", 
-                            isWinner: outcome.p2.status.includes("Winner"), 
-                            score: p2Data.score, 
-                            oldElo: p2Data.rating, 
-                            newElo: p2NewRating, 
-                            statusText: outcome.p2.status,
-                            seasonPointsGained: p2SeasonPoints,
-                            hasSubmitted: p2Data.hasSubmitted
-                        }]
-                        : []
-                )
-            })
-        );
-        dbOperations.push(
+                players: resolvedPlayers.map((player) => buildMatchPlayerRecord({
+                    userDoc: player.userDoc,
+                    playerData: player.data,
+                    outcome: player.outcome,
+                    newRating: player.newRating,
+                    seasonPoints: player.seasonPoints,
+                })),
+            });
+        } catch (error) {
+            logMatchResolutionError(roomId, 'match record save', error, {
+                players: resolvedPlayers.map((player) => toSafeUsername(player.data.username)),
+                reason: matchReason,
+            });
+        }
+
+        try {
+            await Room.findOneAndUpdate(
+                { roomId, status: { $ne: 'finished' } },
+                { $set: { status: 'finished', winner: officialWinner || 'Draw' } }
+            );
+        } catch (error) {
+            logMatchResolutionError(roomId, 'room finalization', error, {
+                winner: officialWinner || 'Draw',
+            });
+        }
+
+        clearLeaderboardCache();
+        clearStatsCache();
+
+        console.log(`[GAME END] Room ${roomId} | Winner: ${winnerName || 'Draw'}`);
+
+        /*
             Room.findOneAndUpdate(
                 { roomId, status: { $ne: 'finished' } },
                 { $set: { status: 'finished', winner: officialWinner || 'Draw' } }
@@ -1305,24 +1423,27 @@ const handleGameEnd = async (roomId, room) => {
             (room.durationSeconds || (30 * 60)) - matchDurationSeconds
         );
 
-        const analyticsOps = [];
-        if (user1Doc) {
-            analyticsOps.push(User.findByIdAndUpdate(user1Doc._id, {
-                $inc: {
-                    totalTimeSpent: matchDurationMinutes,
-                    totalSolved: outcome.p1.status.includes('Winner') ? (room.totalRounds || room.round || 0) : 0
-                }
-            }));
-        }
-        if (user2Doc && outcome?.p2) {
-            analyticsOps.push(User.findByIdAndUpdate(user2Doc._id, {
-                $inc: {
-                    totalTimeSpent: matchDurationMinutes,
-                    totalSolved: outcome.p2.status.includes('Winner') ? (room.totalRounds || room.round || 0) : 0
-                }
-            }));
-        }
-        await Promise.all(analyticsOps);
+        */
+        await Promise.all(
+            resolvedPlayers
+                .filter((player) => player.userDoc?._id)
+                .map(async (player) => {
+                    try {
+                        await User.findByIdAndUpdate(player.userDoc._id, {
+                            $inc: {
+                                totalTimeSpent: matchDurationMinutes,
+                                totalSolved: player.outcome?.status?.includes('Winner')
+                                    ? (room.totalRounds || room.round || 0)
+                                    : 0
+                            }
+                        });
+                    } catch (error) {
+                        logMatchResolutionError(roomId, 'analytics update', error, {
+                            username: player.data.username,
+                        });
+                    }
+                })
+        );
 
         // ✅ BADGE ENGINE: Evaluate achievements asynchronously (fire-and-forget)
         try {

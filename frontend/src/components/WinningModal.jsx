@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const WinningModal = ({ result, currentUsername, onHomeClick, onClose }) => {
-    const handleHomeClick = onHomeClick || onClose || (() => {});
+    const [isLeaving, setIsLeaving] = useState(false);
+    const handleHomeClick = async () => {
+        if (isLeaving) {
+            return;
+        }
+
+        const action = onHomeClick || onClose || (() => {});
+        setIsLeaving(true);
+
+        try {
+            await Promise.resolve(action());
+        } finally {
+            setIsLeaving(false);
+        }
+    };
     const winnerName = result?.winnerName || result?.winner || (currentUsername ? 'You' : 'A Player');
     const isDisqualified = Boolean(result?.isDisqualified);
     const disqualifiedPlayer = result?.disqualifiedPlayer || null;
@@ -64,9 +78,10 @@ const WinningModal = ({ result, currentUsername, onHomeClick, onClose }) => {
 
                 <button
                     onClick={handleHomeClick}
+                    disabled={isLeaving}
                     className="relative w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 font-bold text-white shadow-lg transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/25 active:scale-95"
                 >
-                    Return to Dashboard
+                    {isLeaving ? 'Syncing Results...' : 'Return to Dashboard'}
                 </button>
             </div>
         </div>

@@ -196,6 +196,12 @@ const shouldDedupeRequest = (config) => (
     Boolean(config?.meta?.dedupe) && config?.method && config.method !== 'get'
 );
 
+const shouldUseGetCache = (config) => (
+    config?.method === 'get' &&
+    CONFIG.cacheEnabled &&
+    !config?.meta?.skipCache
+);
+
 const invalidateCache = (predicate) => {
     for (const key of requestCache.keys()) {
         if (predicate(key)) {
@@ -250,7 +256,7 @@ api.interceptors.request.use(
         }
 
         // 2. ✅ CHECK CACHE for GET requests
-        if (config.method === 'get' && CONFIG.cacheEnabled) {
+        if (shouldUseGetCache(config)) {
             const cacheKey = `${config.url}?${JSON.stringify(config.params || {})}`;
             const cached = requestCache.get(cacheKey);
             
@@ -296,7 +302,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => {
         // 1. ✅ CACHE SUCCESSFUL GET RESPONSES
-        if (response.config.method === 'get' && CONFIG.cacheEnabled) {
+        if (shouldUseGetCache(response.config)) {
             const cacheKey = `${response.config.url}?${JSON.stringify(response.config.params || {})}`;
             requestCache.set(cacheKey, {
                 data: response.data,

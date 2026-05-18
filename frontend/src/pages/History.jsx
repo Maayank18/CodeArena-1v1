@@ -8,20 +8,13 @@ import { History as HistoryIcon, Trophy, Loader2, TrendingUp, TrendingDown } fro
 import api from '../api.js';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { HISTORY_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
 
-const HISTORY_CACHE_KEY = 'history_cache';
 const CACHE_DURATION = 60000; // 60 seconds
 
 const History = () => {
     const [history, setHistory] = useState([]);
-    const [user, setUser] = useState(() => {
-        try {
-            const stored = localStorage.getItem('codearena_user');
-            return stored ? JSON.parse(stored) : null;
-        } catch {
-            return null;
-        }
-    });
+    const [user, setUser] = useState(() => readStoredUser());
     const [loading, setLoading] = useState(true);
 
     const navigate = useNavigate();
@@ -37,7 +30,7 @@ const History = () => {
     // ✅ OPTIMIZED: Fetch history with caching
     useEffect(() => {
         const fetchData = async () => {
-            const u = JSON.parse(localStorage.getItem('codearena_user'));
+            const u = readStoredUser();
             if (!u) {
                 navigate('/login');
                 return;
@@ -66,7 +59,9 @@ const History = () => {
 
             // Fetch fresh data
             try {
-                const response = await api.get(`/matches/user/${u.username}`);
+                const response = await api.get(`/matches/user/${u.username}`, {
+                    meta: { skipCache: true },
+                });
                 const matchData = response.data;
                 setHistory(matchData);
                 

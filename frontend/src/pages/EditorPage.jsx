@@ -20,6 +20,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 import { resolveBackendOrigin } from '../api.js';
 import { outputsMatch, sanitizeOutput } from '../utils/outputMatching.js';
+import {
+    clearDerivedUserCaches,
+    refreshCurrentUserProfile,
+} from '../utils/sessionSync.js';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
 const isLocalhostLike = (value = '') => /localhost|127\.0\.0\.1/i.test(String(value));
@@ -612,6 +616,7 @@ const EditorPage = () => {
                     }
                     localStorage.setItem('codearena_user', JSON.stringify(storedUser));
                 }
+                clearDerivedUserCaches();
             } catch (e) { console.error("Failed to save game stats:", e); }
             toast.success("Match Ended!", { icon: '🏁' });
         };
@@ -723,7 +728,18 @@ const EditorPage = () => {
             providerRef.current = null;
         }
 
-        navigate('/dashboard');
+        clearDerivedUserCaches();
+
+        return refreshCurrentUserProfile()
+            .catch((error) => {
+                console.error('[Editor] Failed to refresh profile after match:', error);
+            })
+            .finally(() => {
+                navigate('/dashboard', {
+                    replace: true,
+                    state: { forceProfileRefresh: true },
+                });
+            });
     }, [navigate, roomId]);
 
     const runCode = useCallback(async () => {

@@ -4,31 +4,30 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer'; 
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Logo } from '../components/Logo';
-import { Loader2, Trophy, Swords } from 'lucide-react'; 
-import api from '../api.js'; 
+import { Loader2, Trophy, Swords } from 'lucide-react';
+import api from '../api.js';
 import { getLevelInfo } from '../utils/levelSystem';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
 import CustomMatchModal from '../components/CustomMatchModal';
 import PremiumGate from '../components/PremiumGate.jsx';
+import {
+  DASHBOARD_CACHE_KEY,
+  mergeUserProfile,
+  readStoredUser,
+  refreshCurrentUserProfile,
+} from '../utils/sessionSync.js';
 
-const CACHE_KEY = 'dashboard_profile_cache';
 const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('codearena_user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => readStoredUser());
   const navigate = useNavigate();
+  const location = useLocation();
   const [roomIdInput, setRoomIdInput] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
   const [loadingText, setLoadingText] = useState('');
@@ -42,7 +41,7 @@ const Dashboard = () => {
   // ✅ OPTIMIZED: Fetch user data with proper error handling
   useEffect(() => {
     const syncUserAndData = async () => {
-      const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
+      const storedUser = readStoredUser();
       if (!storedUser) { 
         navigate('/login'); 
         return; 
@@ -50,7 +49,8 @@ const Dashboard = () => {
       
       setUser(storedUser);
 
-      const cache = localStorage.getItem(CACHE_KEY);
+      const shouldForceRefresh = Boolean(location.state?.forceProfileRefresh);
+      const cache = shouldForceRefresh ? null : localStorage.getItem(DASHBOARD_CACHE_KEY);
       let shouldFetch = true;
       
       if (cache) {
@@ -60,7 +60,7 @@ const Dashboard = () => {
           
           if (age < CACHE_DURATION) {
             shouldFetch = false;
-            const cachedUser = { ...storedUser, ...data };
+            const cachedUser = mergeUserProfile(storedUser, data);
             setUser(cachedUser);
             localStorage.setItem('codearena_user', JSON.stringify(cachedUser));
           }
@@ -72,27 +72,14 @@ const Dashboard = () => {
       if (!shouldFetch) return;
 
       try {
-        const response = await api.get(`/users/profile/${storedUser.username}`);
-        const serverUser = response.data;
+        const finalUser = await refreshCurrentUserProfile();
+        if (!finalUser) {
+          return;
+        }
 
-        // ✅ SAFE SYNC: Merge server data with local state (preserves token)
-        const finalUser = { 
-          ...storedUser,
-          ...serverUser,
-          // Ensure nested fields are properly handled if server returns partials
-          stats: serverUser.stats || storedUser.stats || { 
-            matchesPlayed: 0, 
-            wins: 0, 
-            losses: 0 
-          },
-          customization: serverUser.customization || storedUser.customization || {}
-        };
-        
         setUser(finalUser);
-        localStorage.setItem('codearena_user', JSON.stringify(finalUser));
-        
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          data: serverUser,
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
+          data: finalUser,
           timestamp: Date.now()
         }));
       } catch (err) {
@@ -101,12 +88,12 @@ const Dashboard = () => {
     };
     
     syncUserAndData();
-  }, [navigate]);
+  }, [location.state, navigate]);
 
   // ✅ OPTIMIZED: Memoized handlers
   const handleLogout = useCallback(() => {
     localStorage.removeItem('codearena_user');
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(DASHBOARD_CACHE_KEY);
     toast.success('Logged out successfully');
     navigate('/');
   }, [navigate]);

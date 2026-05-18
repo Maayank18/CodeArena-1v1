@@ -61,6 +61,8 @@
 // HEAVILY OPTIMIZED VERSION
 import User from '../models/User.js';
 
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // ✅ PERFORMANCE: Cache leaderboard for 60 seconds
 let leaderboardCache = null;
 let leaderboardCacheTimestamp = 0;
@@ -106,7 +108,7 @@ export const getLeaderboard = async (req, res) => {
 // @route   GET /api/users/profile/:username
 export const getUserProfile = async (req, res) => {
     try {
-        const { username } = req.params;
+        const username = String(req.params.username || '').trim();
         
         // ✅ VALIDATION
         if (!username || username === 'undefined') {
@@ -115,11 +117,20 @@ export const getUserProfile = async (req, res) => {
 
         // ✅ OPTIMIZED: Uses usernameLower index + lean()
         // Before: ~100ms | After: ~10ms
-        const user = await User.findOne({ 
-            usernameLower: username.toLowerCase() 
+        const selectFields = 'username rating seasonScore stats avatar email fullName phone bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry badges customization createdAt';
+        let user = await User.findOne({
+            usernameLower: username.toLowerCase()
         })
-        .select('username rating seasonScore stats avatar email fullName phone bio preferences isPro role planId subscriptionPlan proActivatedAt subscriptionExpiry badges customization createdAt')
-        .lean();
+            .select(selectFields)
+            .lean();
+
+        if (!user) {
+            user = await User.findOne({
+                username: { $regex: new RegExp(`^${escapeRegex(username)}$`, 'i') }
+            })
+                .select(selectFields)
+                .lean();
+        }
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });

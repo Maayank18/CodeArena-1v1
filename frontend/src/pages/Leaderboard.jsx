@@ -9,8 +9,8 @@ import { getLevelInfo } from '../utils/levelSystem';
 import Avatar from '../components/Avatar'; 
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
 
-const LEADERBOARD_CACHE_KEY = 'leaderboard_cache';
 const CACHE_DURATION = 60000; // 60 seconds
 
 const STACK_COLORS = {
@@ -32,7 +32,7 @@ const Leaderboard = () => {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('codearena_user') || '{}'));
+  const [user, setUser] = useState(() => readStoredUser() || {});
   
   const navigate = useNavigate();
 
@@ -57,14 +57,19 @@ const Leaderboard = () => {
             setLoading(false);
             return;
           }
-        } catch (e) {}
+        } catch (cacheError) {
+          console.warn('[Leaderboard] Cache parse failed:', cacheError);
+        }
       }
 
       try {
-        const { data } = await api.get('/users/leaderboard');
+        const { data } = await api.get('/users/leaderboard', {
+          meta: { skipCache: true },
+        });
         setPlayers(data);
         localStorage.setItem(LEADERBOARD_CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
       } catch (error) {
+        console.error('[Leaderboard] Fetch failed:', error);
         toast.error("Could not load leaderboard");
       } finally {
         setLoading(false);
