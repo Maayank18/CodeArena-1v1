@@ -147,11 +147,9 @@ const roomSchema = new mongoose.Schema({
 // ✅ EXISTING TTL INDEX (kept as-is)
 roomSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 }); // 24 hours
 
-// ✅ NEW: Explicit unique index on roomId
-// Used in: roomController.js - Room.findOne({ roomId })
-// Impact: Instant O(1) room lookups instead of O(n) collection scan
-// CRITICAL FIX: Without this, every room join does full table scan!
-roomSchema.index({ roomId: 1 }, { unique: true });
+// ✅ UNIQUE INDEX ON roomId is declared inline within the schema definition above:
+// roomId: { type: String, required: true, unique: true }
+// Mongoose automatically creates a unique index for it, so no duplicate manual definition is needed here.
 
 // ✅ NEW: Status-based queries optimization
 // Used in: statsController.js - Room.countDocuments({ status: 'active' })
