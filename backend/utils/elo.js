@@ -1,20 +1,48 @@
 const K_FACTOR = 32;          // How fast ratings change
 const CHEATER_PENALTY = 50;   // Immediate Elo drop for cheaters
-const EFFORT_MULTIPLIER = 5; // Elo points awarded per 10 in-game points
+const EFFORT_MULTIPLIER = 5;  // Elo points awarded per 10 in-game points
 
 /**
+ * Helper to calculate base points earned in the season based on result.
+ * @param {number} result - 1 for Win, 0.5 for Draw, 0 for Loss
+ * @returns {number} base points
+ */
+const getBasePoints = (result) => {
+    if (result === 1) return 25;   // Win
+    if (result === 0.5) return 15; // Draw (Better than loss!)
+    return 5;                      // Loss
+};
+
+/**
+ * Calculates match outcomes for ELO ratings, point gains, and game status.
+ * Safe for both 1v1 multiplayer and solo/practice matches.
+ * 
  * @param {Object} p1 - { username, rating, score, isCheater }
- * @param {Object} p2 - { username, rating, score, isCheater }
+ * @param {Object} p2 - { username, rating, score, isCheater } | null | undefined
  */
 export const calculateMatchOutcome = (p1, p2) => {
+    // 🛑 1. SOLO GUARD: Prevent crashes if p2 is undefined/null (Practice Match)
+    if (!p2) {
+        return {
+            p1: { 
+                newRating: Math.max(0, (p1.rating || 1000) + 5), // +5 ELO for solo practice
+                pointsGained: 5, 
+                seasonScore: 10 + (p1.score || 0), // Base 10 + effort
+                status: "Winner (Solo)" 
+            },
+            p2: null // Explicitly return null so the DB knows there is no second player
+        };
+    }
+
+    // 🎮 2. MULTIPLAYER LOGIC (Safe to run because p2 exists)
     const p1Rating = p1.rating || 1000;
     const p2Rating = p2.rating || 1000;
 
-    // 1. Calculate Expected Scores (Probability)
+    // Calculate Expected Scores (Probability)
     const expectedP1 = 1 / (1 + Math.pow(10, (p2Rating - p1Rating) / 400));
     const expectedP2 = 1 / (1 + Math.pow(10, (p1Rating - p2Rating) / 400));
 
-    // 2. Scenario: BOTH ARE CHEATERS
+    // Scenario: BOTH ARE CHEATERS
     if (p1.isCheater && p2.isCheater) {
         return {
             p1: { newRating: Math.max(0, p1Rating - CHEATER_PENALTY), pointsGained: -CHEATER_PENALTY, seasonScore: 0, status: "Disqualified" },
@@ -22,7 +50,7 @@ export const calculateMatchOutcome = (p1, p2) => {
         };
     }
 
-    // 3. Scenario: ONE CHEATER
+    // Scenario: ONE CHEATER
     if (p1.isCheater || p2.isCheater) {
         const fair = p1.isCheater ? p2 : p1;
         
@@ -39,7 +67,7 @@ export const calculateMatchOutcome = (p1, p2) => {
         };
     }
 
-    // 4. Scenario: FAIR PLAY (Dynamic Scoring)
+    // Scenario: FAIR PLAY (Dynamic Scoring)
     let p1Actual = 0.5; // Draw
     let p1Status = "Draw";
     let p2Status = "Draw";
@@ -65,52 +93,18 @@ export const calculateMatchOutcome = (p1, p2) => {
     const finalP1Delta = p1Delta + p1EffortBonus;
     const finalP2Delta = p2Delta + p2EffortBonus;
 
-        // ✅ INSERT THIS HELPER FUNCTION
-        // updated part 
-    const getBasePoints = (result) => {
-        if (result === 1) return 25;   // Win
-        if (result === 0.5) return 15; // Draw (Better than loss!)
-        return 5;                      // Loss
-    };
-
-    // ✅ FIX: Added 'status' property to the return objects
-    // return {
-    //     p1: { 
-    //         newRating: Math.max(0, p1Rating + finalP1Delta), 
-    //         pointsGained: finalP1Delta, 
-    //         seasonScore: (p1Actual === 1 ? 25 : 5) + p1.score,
-    //         status: p1Status 
-    //     },
-    //     p2: { 
-    //         newRating: Math.max(0, p2Rating + finalP2Delta), 
-    //         pointsGained: finalP2Delta, 
-    //         seasonScore: (p1Actual === 0 ? 25 : 5) + p2.score,
-    //         status: p2Status
-    //     }
-    // };
-    // ✅ UPDATE THE RETURN OBJECT
-    // updated part
     return {
         p1: { 
             newRating: Math.max(0, p1Rating + finalP1Delta), 
             pointsGained: finalP1Delta, 
-            
-            // 🔴 OLD LINE: seasonScore: (p1Actual === 1 ? 25 : 5) + p1.score,
-            // 🟢 NEW LINE:
             seasonScore: getBasePoints(p1Actual) + p1.score,
-            
             status: p1Status 
         },
         p2: { 
             newRating: Math.max(0, p2Rating + finalP2Delta), 
             pointsGained: finalP2Delta, 
-            
-            // 🔴 OLD LINE: seasonScore: (p1Actual === 0 ? 25 : 5) + p2.score,
-            // 🟢 NEW LINE:
             seasonScore: getBasePoints(1 - p1Actual) + p2.score,
-            
             status: p2Status
         }
     };
 };
-// V 1.5

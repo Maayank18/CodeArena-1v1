@@ -1223,10 +1223,12 @@ const handleGameEnd = async (roomId, room) => {
             p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
             p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
 
-            p1SeasonPoints = calculateSeasonPoints(p1Data, p2Data, outcome.p1, p1Data.hasSubmitted);
-            p2SeasonPoints = calculateSeasonPoints(p2Data, p1Data, outcome.p2, p2Data.hasSubmitted);
-            officialWinner = outcome.p1.status.includes("Winner") ? p1Data.username : 
-                (outcome.p2.status.includes("Winner") ? p2Data.username : null);
+            p1SeasonPoints = calculateSeasonPoints(p1Data, p2Data, outcome?.p1, p1Data.hasSubmitted);
+            p2SeasonPoints = calculateSeasonPoints(p2Data, p1Data, outcome?.p2, p2Data?.hasSubmitted);
+            
+            const p1IsWinner = outcome?.p1?.status?.includes("Winner");
+            const p2IsWinner = outcome?.p2?.status?.includes("Winner");
+            officialWinner = p1IsWinner ? p1Data.username : (p2IsWinner ? p2Data?.username : null);
         }
 
         // ✅ Batch all database operations
@@ -1456,11 +1458,11 @@ const handleGameEnd = async (roomId, room) => {
             if (user1Doc?._id && !isSoloMatch) {
                 evaluateBadges(user1Doc._id, {
                     ...badgeContext,
-                    isWinner: outcome.p1.status.includes('Winner'),
+                    isWinner: Boolean(outcome?.p1?.status?.includes('Winner')),
                     score: p1Data.score,
-                    opponentScore: p2Data.score,
+                    opponentScore: p2Data?.score || 0,
                     userRating: p1Data.rating,
-                    opponentRating: p2Data.rating,
+                    opponentRating: p2Data?.rating || 1000,
                     roundsWon: Math.floor(p1Data.score / 10),
                     fastestSolveMs: room.fastestSolveMsByUser?.[p1Data.username],
                     instantKill: room.firstRoundFirstSolverUsername === p1Data.username &&
@@ -1470,7 +1472,7 @@ const handleGameEnd = async (roomId, room) => {
             if (user2Doc?._id && p2Data && outcome?.p2 && !isSoloMatch) {
                 evaluateBadges(user2Doc._id, {
                     ...badgeContext,
-                    isWinner: outcome.p2.status.includes('Winner'),
+                    isWinner: Boolean(outcome?.p2?.status?.includes('Winner')),
                     score: p2Data.score,
                     opponentScore: p1Data.score,
                     userRating: p2Data.rating,
