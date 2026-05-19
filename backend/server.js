@@ -1726,7 +1726,12 @@ io.on('connection', async (socket) => {
   // Send initial stats
   try {
     const totalUsers = await User.countDocuments();
-    const statsData = { live: io.engine.clientsCount, total: totalUsers };
+    const uniqueUsersSet = new Set();
+    for (const s of io.sockets.sockets.values()) {
+      const uname = s.data?.user?.username;
+      if (uname) uniqueUsersSet.add(uname.toLowerCase());
+    }
+    const statsData = { live: uniqueUsersSet.size, total: totalUsers };
     socket.emit('site_stats', statsData);
     socket.broadcast.emit('site_stats', statsData);
   } catch (err) { 
@@ -2299,7 +2304,12 @@ io.on('connection', async (socket) => {
       console.log(`[SOCKET] ❌ Disconnected: ${socket.id} (${reason})`);
       
       // Update stats
-      const statsData = { live: io.engine.clientsCount };
+      const uniqueUsersSet = new Set();
+      for (const s of io.sockets.sockets.values()) {
+        const uname = s.data?.user?.username;
+        if (uname) uniqueUsersSet.add(uname.toLowerCase());
+      }
+      const statsData = { live: uniqueUsersSet.size };
       io.emit('site_stats', statsData);
       
       // Cleanup rate limits for this socket

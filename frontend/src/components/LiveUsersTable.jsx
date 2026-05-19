@@ -133,7 +133,7 @@ const LiveUsersTable = () => {
                         <div className="relative"><Radio size={18} className="text-accent" /><span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent rounded-full animate-ping" /></div>
                         <h3 className="text-lg font-bold text-white">Live Users</h3>
                     </div>
-                    <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs font-bold rounded-lg border border-accent/20">{liveUsers.length} online</span>
+                    <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs font-bold rounded-lg border border-accent/20">{new Set(liveUsers.map(u => u.username)).size} online</span>
                     <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border ${connected ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                         {connected ? <Wifi size={10} /> : <WifiOff size={10} />} {connected ? 'Live' : 'Disconnected'}
                     </span>
@@ -173,7 +173,7 @@ const LiveUsersTable = () => {
                                 <tr key={user.socketId} className={`border-b border-gray-800/40 hover:bg-gray-800/20 transition-all ${idx % 2 === 0 ? 'bg-black/20' : ''}`}>
                                     <td className="p-3.5">
                                         <div className="flex items-center gap-3">
-                                            <Avatar username={user.username} avatarFrame={user.customization?.avatarFrame} className="w-10 h-10" />
+                                            <Avatar username={user.username} src={user.avatar} avatarFrame={user.customization?.avatarFrame} className="w-10 h-10" />
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-semibold text-white leading-tight">{user.username}</span>

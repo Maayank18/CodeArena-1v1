@@ -33,14 +33,15 @@ function attachPresenceTracking(io) {
     io.on('connection', (socket) => {
 
         // — User announces presence ————————————————————————
-        socket.on('user_connected', ({ userId, username, avatar, activity, customization }) => {
+        socket.on('user_connected', (data) => {
+            const authUser = socket.data.user;
             activeUsers.set(socket.id, {
                 socketId: socket.id,
-                userId:   userId   || null,
-                username: username || 'Anonymous',
-                avatar:   avatar   || '',
-                activity: activity || 'IDLE_LOBBY',
-                customization: customization || {},
+                userId:   authUser?._id || data?.userId || null,
+                username: authUser?.username || data?.username || 'Anonymous',
+                avatar:   authUser?.avatar || data?.avatar || '',
+                activity: data?.activity || 'IDLE_LOBBY',
+                customization: authUser?.customization || data?.customization || {},
                 connectedAt: Date.now(),
             });
         });

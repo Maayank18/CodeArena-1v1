@@ -34,7 +34,15 @@ export const getStats = async (req, res) => {
 
         // 1. Live Users (always fresh - from Socket.IO)
         const io = req.app.get('io') || req.app.locals.io;
-        const liveUsers = io ? io.engine.clientsCount : 0;
+        let liveUsers = 0;
+        if (io) {
+            const uniqueUsersSet = new Set();
+            for (const s of io.sockets.sockets.values()) {
+                const uname = s.data?.user?.username;
+                if (uname) uniqueUsersSet.add(uname.toLowerCase());
+            }
+            liveUsers = uniqueUsersSet.size;
+        }
 
         // 2. CACHE: Return cached stats if valid
         if (statsCache && (now - statsCacheTimestamp) < STATS_CACHE_DURATION) {
