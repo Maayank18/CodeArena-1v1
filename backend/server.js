@@ -1166,7 +1166,17 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
 
     // Lobby Dodge check: if left in under 20 seconds
     const isLobbyDodge = matchDurationSeconds < 20;
-    const winnerPoints = isLobbyDodge ? 25 : 30;
+
+    // Check if the winner made any submission attempts
+    const p1Attempted = Boolean(p1Data?.hasSubmitted);
+    const p2Attempted = Boolean(p2Data?.hasSubmitted);
+    const winnerAttempted = p1IsWinner ? p1Attempted : p2Attempted;
+
+    // Scale down points and ELO gain if the winner did not even try to attempt the question
+    let winnerPoints = isLobbyDodge ? 25 : 30;
+    if (!winnerAttempted) {
+        winnerPoints = isLobbyDodge ? 5 : 10;
+    }
 
     let p1SeasonPoints = 0;
     let p2SeasonPoints = 0;
@@ -1174,12 +1184,24 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
     if (p1IsWinner) {
         p1SeasonPoints = winnerPoints;
         p2SeasonPoints = isLobbyDodge ? -10 : 5; // -10 for dodge, +5 for benefit of doubt
+
+        if (!p1Attempted) {
+            // Winner p1 did not attempt: scale down their ELO gain by 50%
+            p1Delta = Math.round(p1Delta * 0.5);
+        }
+
         if (isLobbyDodge) {
             p2Delta = Math.min(p2Delta, -15); // Stiffer Elo drop for dodging
         }
     } else {
         p2SeasonPoints = winnerPoints;
         p1SeasonPoints = isLobbyDodge ? -10 : 5;
+
+        if (!p2Attempted) {
+            // Winner p2 did not attempt: scale down their ELO gain by 50%
+            p2Delta = Math.round(p2Delta * 0.5);
+        }
+
         if (isLobbyDodge) {
             p1Delta = Math.min(p1Delta, -15);
         }
