@@ -657,7 +657,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.98 }}
           transition={{ duration: 0.2 }}
-          className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--bg-primary)] shadow-[0_24px_80px_rgba(0,0,0,0.45)] h-[650px]"
+          className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--bg-primary)] shadow-[0_24px_80px_rgba(0,0,0,0.45)] h-[650px] max-h-[calc(100dvh-32px)] sm:max-h-[calc(100dvh-48px)]"
         >
           <div className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-5 sm:px-7">
             <div>
@@ -697,15 +697,15 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex min-w-max items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all lg:min-w-0 ${
+                      className={`flex min-w-max items-center justify-between gap-3 rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all lg:min-w-0 ${
                         isActive
                           ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/10'
                           : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon size={18} />
-                        <span className="hidden lg:inline">{tab.label}</span>
+                      <div className="flex items-center gap-2 lg:gap-3">
+                        <Icon size={16} className="shrink-0" />
+                        <span className="text-xs sm:text-sm">{tab.label}</span>
                       </div>
                       {isLocked && (
                         <Lock size={14} className={isActive ? 'text-black/60' : 'text-emerald-500/60'} />
@@ -722,7 +722,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
                   <Loader2 className="animate-spin text-emerald-500" size={32} />
                 </div>
               ) : (
-                <div className="mx-auto max-w-2xl h-full flex flex-col">
+                <div className="mx-auto max-w-2xl min-h-full flex flex-col">
                   {activeTab === 'profile' && (
                     <div className="space-y-8 animate-fade-in">
                       <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -769,7 +769,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
                         <div className="space-y-2">
                           <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Username</label>
                           <div className="relative">
-                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
+                            <UserRound className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
                             <input
                               value={profileForm.username}
                               onChange={(e) => setProfileForm((prev) => ({ ...prev, username: e.target.value }))}

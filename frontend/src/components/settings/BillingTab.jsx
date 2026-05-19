@@ -130,7 +130,7 @@ const BillingTab = () => {
                       </td>
                       <td className="px-6 py-4.5 whitespace-nowrap">
                         <span className="text-xs font-semibold text-gray-400 font-mono tracking-wider">
-                          {tx.utrNumber.slice(0, 4)}...{tx.utrNumber.slice(-4)}
+                          {tx.utrNumber ? `${tx.utrNumber.slice(0, 4)}...${tx.utrNumber.slice(-4)}` : 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4.5 whitespace-nowrap text-xs text-gray-400 font-medium">

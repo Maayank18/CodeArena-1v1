@@ -258,7 +258,7 @@ const ChatWidget = ({ user }) => {
             <button
                 onClick={isOpen ? handleClose : handleOpen}
                 aria-label="Toggle AI assistant"
-                className="fixed bottom-6 right-2 md:bottom-8 md:right-4 z-50 w-20 h-20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                className="fixed bottom-20 right-2 md:bottom-8 md:right-4 z-50 w-20 h-20 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
             >
                 <div className={`transition-all duration-200 ${isOpen ? 'rotate-90 scale-90' : 'rotate-0 scale-100'} w-full h-full flex items-center justify-center`}>
                     {isOpen ? (
@@ -284,7 +284,7 @@ const ChatWidget = ({ user }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                        className="fixed bottom-24 right-4 md:bottom-28 md:right-6 w-[calc(100vw-32px)] sm:w-[440px] bg-[#121212]/95 backdrop-blur-xl border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.6)] rounded-[24px] flex flex-col overflow-hidden z-50 origin-bottom-right"
+                        className="fixed bottom-32 right-4 md:bottom-28 md:right-6 w-[calc(100vw-32px)] sm:w-[440px] bg-[#121212]/95 backdrop-blur-xl border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.6)] rounded-[24px] flex flex-col overflow-hidden z-50 origin-bottom-right"
                         style={{
                             height: 'min(650px, 75dvh)',
                             maxHeight: 'calc(100dvh - 140px)',
