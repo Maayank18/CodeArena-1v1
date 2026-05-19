@@ -890,20 +890,30 @@ const EditorPage = () => {
                     {mySide === side && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
                 </div>
                 {mySide === side && (
-                    <select 
-                        className={`arena-lang-select text-xs p-1 rounded border outline-none cursor-pointer ${
-                            isDark
-                                ? 'bg-[#3e3e42] text-white border-[#555]'
-                                : 'bg-white text-slate-800 border-stone-300'
-                        }`} 
-                        value={language} 
-                        onChange={(e) => setLanguage(e.target.value)}
-                    >
-                        <option value="javascript">JavaScript</option>
-                        <option value="cpp">C++</option>
-                        <option value="java">Java</option>
-                        <option value="python">Python</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                        <select 
+                            className={`arena-lang-select text-xs p-1 rounded border outline-none cursor-pointer ${
+                                isDark
+                                    ? 'bg-[#3e3e42] text-white border-[#555]'
+                                    : 'bg-white text-slate-800 border-stone-300'
+                            }`} 
+                            value={language} 
+                            onChange={(e) => setLanguage(e.target.value)}
+                        >
+                            <option value="javascript">JavaScript</option>
+                            <option value="cpp">C++</option>
+                            <option value="java">Java</option>
+                            <option value="python">Python</option>
+                        </select>
+                        <button 
+                            onClick={handleLeaveRoom}
+                            className="px-2.5 py-1 text-[10px] font-bold rounded-md transition-all text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-1 cursor-pointer border border-red-500/20 bg-red-500/5 h-7"
+                            title="Leave Arena Room"
+                        >
+                            <LogOut size={11} />
+                            <span>Leave</span>
+                        </button>
+                    </div>
                 )}
             </div>
         );
@@ -1017,7 +1027,7 @@ const EditorPage = () => {
                         isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
                     }`}>
                         <div className="flex items-center gap-2">
-                            <div className="flex p-1 bg-black/20 rounded-lg mr-2 gap-1.5">
+                            <div className="flex p-1 bg-black/20 rounded-lg mr-2">
                                 <button 
                                     onClick={() => {
                                         setIsNotesOpen(true);
@@ -1025,14 +1035,6 @@ const EditorPage = () => {
                                     className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isNotesOpen ? 'bg-accent text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
                                     Notes
-                                </button>
-                                <button 
-                                    onClick={handleLeaveRoom}
-                                    className="px-2 py-1 text-[10px] font-bold rounded-md transition-all text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-1 cursor-pointer"
-                                    title="Leave Arena Room"
-                                >
-                                    <LogOut size={11} />
-                                    <span>Leave</span>
                                 </button>
                             </div>
                             <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`} title={problemLabel}>
