@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
 
-const badgeImages = import.meta.glob('../assets/badges/*.png', { eager: true, import: 'default' });
+import { getBadgeImage } from '../utils/badgeAssets';
 
 const CACHE_DURATION = 60000; // 60 seconds
 
@@ -119,13 +119,14 @@ const Leaderboard = () => {
                     const equippedBadgeId = player.customization?.equippedBadge;
                     const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
                     if (badgeData) {
-                      const BadgeIcon = badgeData.icon;
-                      const assetKey = `../assets/badges/${badgeData.assetName || badgeData.id + '.png'}`;
-                      const badgeImageSrc = badgeImages[assetKey];
+                      const badgeImageSrc = getBadgeImage(badgeData.id);
                       return (
                         <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1.5 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
-                          {BadgeIcon ? (
-                            <BadgeIcon className="text-white" size={10} />
+                          {badgeData.icon ? (
+                            (() => {
+                              const IconComp = badgeData.icon;
+                              return <IconComp className="text-white" size={10} />;
+                            })()
                           ) : badgeImageSrc ? (
                             <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
                           ) : (

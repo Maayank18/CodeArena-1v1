@@ -25,7 +25,7 @@ import {
 const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
-const badgeImages = import.meta.glob('../assets/badges/*.png', { eager: true, import: 'default' });
+import { getBadgeImage } from '../utils/badgeAssets';
 
 const Dashboard = () => {
   const [user, setUser] = useState(() => readStoredUser());
@@ -295,13 +295,14 @@ const Dashboard = () => {
                             const equippedBadgeId = user?.customization?.equippedBadge;
                             const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
                             if (badgeData) {
-                              const BadgeIcon = badgeData.icon;
-                              const assetKey = `../assets/badges/${badgeData.assetName || badgeData.id + '.png'}`;
-                              const badgeImageSrc = badgeImages[assetKey];
+                              const badgeImageSrc = getBadgeImage(badgeData.id);
                               return (
                                 <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/20 shrink-0 mr-2 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
-                                  {BadgeIcon ? (
-                                    <BadgeIcon className="text-white" size={16} />
+                                  {badgeData.icon ? (
+                                    (() => {
+                                      const IconComp = badgeData.icon;
+                                      return <IconComp className="text-white" size={16} />;
+                                    })()
                                   ) : badgeImageSrc ? (
                                     <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
                                   ) : (

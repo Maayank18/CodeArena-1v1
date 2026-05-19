@@ -3,8 +3,7 @@ import { Loader2, Lock, Check, Award, Clock } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
 import { BADGE_DEFINITIONS, GLOW_MAP, CATEGORIES } from '../../utils/badgeHelper';
-
-const badgeImages = import.meta.glob('../../assets/badges/*.png', { eager: true, import: 'default' });
+import { getBadgeImage } from '../../utils/badgeAssets';
 
 const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }) => {
     const [imgError, setImgError] = useState(false);
@@ -15,9 +14,8 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
     const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
     const isEquipped = equippedBadge === badge.key;
 
-    // Asset Mapping - Safely resolve image asset from Vite eager glob map
-    const assetKey = `../../assets/badges/${badge.assetName || badge.key + '.png'}`;
-    const badgeImageSrc = badgeImages[assetKey];
+    // Asset Mapping - Safely resolve image asset from centralized resolver
+    const badgeImageSrc = getBadgeImage(badge.key);
 
     return (
         <div
@@ -34,11 +32,11 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
             className={`relative flex flex-col group rounded-2xl border p-5 transition-all duration-300 ease-out select-none
                 ${isVisualUnlock
                     ? isEquipped
-                        ? `bg-[var(--bg-secondary)] border-accent shadow-2xl ${glowClass} ring-2 ring-accent/60 scale-[1.02] cursor-pointer`
+                        ? `bg-[var(--bg-secondary)] border-accent shadow-2xl ${glowClass} ring-2 ring-accent/60 scale-[1.02] cursor-pointer hover:brightness-110`
                         : `bg-[var(--bg-secondary)] border-[var(--border-color)] hover:border-gray-500 hover:-translate-y-1 hover:scale-[1.02] shadow-xl hover:${glowClass} cursor-pointer`
                     : isLockedByTier
                         ? 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-40 hover:opacity-50 cursor-not-allowed'
-                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-90 cursor-default hover:bg-[var(--surface-elevated)]'
+                        : `bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-80 cursor-default hover:bg-[var(--surface-elevated)] hover:opacity-95 shadow-[0_0_10px_rgba(255,255,255,0.02)] hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]`
                 }`}
         >
             {/* Header row: Icon & Status */}
@@ -52,7 +50,7 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
                             className={`w-full h-full object-contain transition-all duration-500 ${
                                 isVisualUnlock 
                                     ? 'group-hover:scale-110 drop-shadow-lg opacity-100' 
-                                    : 'filter blur-[4px] grayscale-[80%] opacity-60 brightness-75' // Locked visual treatment
+                                    : 'filter blur-[3px] grayscale-[100%] opacity-40 brightness-75 group-hover:opacity-60 transition-opacity' // Locked visual treatment
                             }`} 
                             onError={() => {
                                 console.warn(`Badge asset missing or broken for: ${badge.displayName}`);
@@ -64,8 +62,8 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
                     )}
                     
                     {!isVisualUnlock && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
-                            <Lock className={isLockedByTier ? "text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/80 drop-shadow-md"} size={24} />
+                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/55 backdrop-blur-[0.5px]">
+                            <Lock className={isLockedByTier ? "text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/80 drop-shadow-md"} size={20} />
                         </div>
                     )}
                 </div>
@@ -240,6 +238,12 @@ const BadgesTab = () => {
         if (earnedBadges.includes(backendDef.key)) {
             unlocked = true;
             progress = backendDef.requiredValue;
+        }
+
+        // Admin override: visually unlock everything instantly with completed progress
+        if (isAdmin) {
+            unlocked = true;
+            progress = backendDef.requiredValue || 1;
         }
 
         return {
