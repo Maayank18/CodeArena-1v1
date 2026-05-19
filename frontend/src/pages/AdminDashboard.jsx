@@ -574,39 +574,41 @@ const AdminDashboard = () => {
 
             {/* ── HEADER ─────────────────────────────────────────── */}
             <header className="bg-[#0d0d0d]/95 border-b border-gray-800/60 sticky top-0 z-50 backdrop-blur-xl shadow-2xl">
-                <div className="max-w-[1600px] mx-auto px-6 py-3.5 flex items-center justify-between gap-4">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-emerald-600 flex items-center justify-center shadow-lg shadow-accent/20 shrink-0">
                             <Shield size={22} className="text-black" />
                         </div>
                         <div>
                             <h1 className="text-lg font-black tracking-tight text-white">CodeArena Admin</h1>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"/>
-                                Signed in as <span className="text-accent font-semibold">{adminUser?.username}</span>
-                                <span className="text-gray-700">·</span>
-                                <span>{users.length} users · {matches.length} matches</span>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shrink-0"/>
+                                    Signed in as <span className="text-accent font-semibold">{adminUser?.username}</span>
+                                </div>
+                                <span className="text-gray-700 hidden xs:inline">·</span>
+                                <span className="w-full xs:w-auto text-[10px] xs:text-xs text-gray-400 font-medium">{users.length} users · {matches.length} matches</span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
                         <button onClick={handleRefresh} disabled={refreshing}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-gray-800/80 hover:bg-gray-700 rounded-lg transition-all text-sm font-medium border border-gray-700/50 hover:border-gray-600">
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-gray-800/80 hover:bg-gray-700 rounded-lg transition-all text-sm font-medium border border-gray-700/50 hover:border-gray-600">
                             <RefreshCw size={15} className={refreshing ? 'animate-spin text-accent' : ''}/>
-                            {refreshing ? 'Refreshing...' : 'Refresh'}
+                            <span className="whitespace-nowrap">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
                         </button>
                         <button onClick={() => navigate('/dashboard')}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 hover:text-red-300 rounded-lg transition-all text-sm font-medium border border-red-500/20 hover:border-red-500/40">
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 hover:text-red-300 rounded-lg transition-all text-sm font-medium border border-red-500/20 hover:border-red-500/40">
                             <LogOut size={15}/>
-                            Exit Admin
+                            <span className="whitespace-nowrap">Exit Admin</span>
                         </button>
                     </div>
                 </div>
             </header>
 
             {/* ── TABS ───────────────────────────────────────────── */}
-            <nav className="bg-[#0a0a0a]/95 border-b border-gray-800/60 sticky top-[57px] z-40 backdrop-blur-xl">
-                <div className="max-w-[1600px] mx-auto px-6">
+            <nav className="bg-[#0a0a0a]/95 border-b border-gray-800/60 sticky top-[112px] sm:top-[73px] z-40 backdrop-blur-xl">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
                     <div className="flex gap-0.5 overflow-x-auto scrollbar-hide">
                         {TABS.map(tab => (
                             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSearch(''); setMatchSearch(''); }}
@@ -627,7 +629,7 @@ const AdminDashboard = () => {
             </nav>
 
             {/* ── CONTENT ────────────────────────────────────────── */}
-            <main className="max-w-[1600px] mx-auto p-6 space-y-6">
+            <main className="max-w-[1600px] mx-auto p-4 sm:p-6 space-y-6">
 
                 {/* ════════ OVERVIEW TAB ════════ */}
                 {activeTab === 'overview' && (
@@ -645,7 +647,7 @@ const AdminDashboard = () => {
                 {activeTab === 'users' && (
                     <div className="space-y-4">
                         {/* Toolbar */}
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <div className="relative flex-1 min-w-[240px]">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16}/>
                                 <input type="text" placeholder="Search users by username or email..." value={search}
@@ -657,13 +659,13 @@ const AdminDashboard = () => {
                                 seasonScore: u.seasonScore||0, wins: u.stats?.wins||0,
                                 losses: u.stats?.losses||0, matches: u.stats?.matchesPlayed||0,
                                 joined: fmtDate(u.createdAt)
-                            })), 'users.csv')} className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/50 rounded-xl text-sm font-medium transition-all">
+                            })), 'users.csv')} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/50 rounded-xl text-sm font-medium transition-all shrink-0">
                                 <Download size={15}/> Export CSV
                             </button>
                         </div>
 
                         {/* Stats bar */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3">
                             {[
                                 { label:'Total Users',   val: users.length, color:'text-white' },
                                 { label:'Active (played ≥1 match)', val: users.filter(u=>u.stats?.matchesPlayed>0).length, color:'text-emerald-400' },
@@ -736,7 +738,7 @@ const AdminDashboard = () => {
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(u.createdAt)}</td>
                                                     <td className="px-4 py-3">
-                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                                             <button onClick={() => setViewingUser(u)} title="View Profile"
                                                                 className="p-1.5 bg-blue-500/15 text-blue-400 rounded hover:bg-blue-500/30 transition-all">
                                                                 <Eye size={14}/>
@@ -803,7 +805,7 @@ const AdminDashboard = () => {
                 {activeTab === 'matches' && (
                     <div className="space-y-4">
                         {/* Toolbar */}
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <div className="relative flex-1 min-w-[240px]">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16}/>
                                 <input type="text" placeholder="Search by player, winner, or problem..." value={matchSearch}
@@ -821,7 +823,7 @@ const AdminDashboard = () => {
                                 player1: m.players?.[0]?.username||'?', player2: m.players?.[1]?.username||'?',
                                 winner: m.winner||'?', problem: m.problem?.title||'?',
                                 status: m.status||'?', date: fmtDateTime(m.createdAt)
-                            })), 'matches.csv')} className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/50 rounded-xl text-sm font-medium transition-all">
+                            })), 'matches.csv')} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/50 rounded-xl text-sm font-medium transition-all shrink-0">
                                 <Download size={15}/> Export CSV
                             </button>
                         </div>
@@ -890,7 +892,7 @@ const AdminDashboard = () => {
                                                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDateTime(m.createdAt)}</td>
                                                     <td className="px-4 py-3">
                                                         <button onClick={() => setViewingMatch(m)}
-                                                            className="p-1.5 bg-blue-500/15 text-blue-400 rounded hover:bg-blue-500/30 transition-all opacity-0 group-hover:opacity-100">
+                                                            className="p-1.5 bg-blue-500/15 text-blue-400 rounded hover:bg-blue-500/30 transition-all md:opacity-0 md:group-hover:opacity-100">
                                                             <Eye size={14}/>
                                                         </button>
                                                     </td>
@@ -913,7 +915,7 @@ const AdminDashboard = () => {
                 {/* ════════ PROBLEMS TAB ════════ */}
                 {activeTab === 'problems' && (
                     <div className="space-y-4">
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                             <div className="relative flex-1 min-w-[240px]">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16}/>
                                 <input type="text" placeholder="Search problems..." value={search}
@@ -930,7 +932,7 @@ const AdminDashboard = () => {
                             <button onClick={() => {
                                 setShowAddProblem(true);
                             }}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent/80 text-black rounded-xl text-sm font-bold transition-all shadow-lg shadow-accent/20 hover:shadow-accent/30">
+                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent/80 text-black rounded-xl text-sm font-bold transition-all shadow-lg shadow-accent/20 hover:shadow-accent/30 shrink-0">
                                 <Plus size={16}/> Add Problem
                             </button>
                         </div>
@@ -971,7 +973,7 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* Problem stats */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3">
                             {['Easy','Medium','Hard'].map(d => {
                                 const dc = DIFF_COLORS[d] || DIFF_COLORS.Easy;
                                 const source = problemView === 'campaign' ? campaignProblems : battleProblems;
@@ -991,7 +993,7 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="rounded-2xl border border-gray-800/60 bg-gray-900/30 overflow-hidden">
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/60 px-5 py-4">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-gray-800/60 px-5 py-4">
                                 <div>
                                     <h3 className="text-base font-bold text-white">{PROBLEM_TYPE_META[problemView].label}</h3>
                                     <p className="text-xs text-gray-500">
@@ -1215,10 +1217,10 @@ const AdminDashboard = () => {
                     onSave={handleUpdateUserStats}/>
             )}
             {isQuotaModalOpen && selectedUserForQuota && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all duration-300">
-                    <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#151b26]/95 to-[#0b0f17]/98 border border-emerald-500/20 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md transition-all duration-300">
+                    <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#151b26]/95 to-[#0b0f17]/98 border border-emerald-500/20 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col max-h-[calc(100dvh-32px)] sm:max-h-[calc(100dvh-64px)]">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-800/60 bg-emerald-500/5">
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-800/60 bg-emerald-500/5 shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/10">
                                     <Settings className="animate-spin-slow" size={20} />
@@ -1234,7 +1236,7 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* Content */}
-                        <form onSubmit={handleUpdateQuotas} className="p-6 overflow-y-auto space-y-6 custom-scroll text-left">
+                        <form onSubmit={handleUpdateQuotas} className="p-4 sm:p-6 overflow-y-auto space-y-6 custom-scroll text-left flex-1">
                             {/* Plan Configuration */}
                             <div className="bg-gray-900/40 border border-gray-800/80 rounded-xl p-4 space-y-3.5">
                                 <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1367,7 +1369,7 @@ const AdminDashboard = () => {
                             </div>
 
                             {/* Footer Actions */}
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-800/60 pt-4 mt-6">
+                            <div className="flex items-center justify-end gap-3 border-t border-gray-800/60 pt-4 mt-6 shrink-0">
                                 <button
                                     type="button"
                                     onClick={() => setIsQuotaModalOpen(false)}
@@ -1430,7 +1432,7 @@ const OverviewTab = ({ users, matches, problems, recentActivity }) => {
     return (
         <div className="space-y-6">
             {/* Top stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={<Users size={22} className="text-blue-400"/>} title="Total Users"
                     value={users.length} subtitle={`+${todayUsers} today`} color="blue" delta={12}/>
                 <StatCard icon={<Trophy size={22} className="text-amber-400"/>} title="Total Matches"
@@ -1442,7 +1444,7 @@ const OverviewTab = ({ users, matches, problems, recentActivity }) => {
             </div>
 
             {/* Secondary cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                     { label:'Avg Rating',    val: users.length ? Math.round(users.reduce((a,u)=>a+(u.rating||1000),0)/users.length) : 0, icon:<Target size={18}/>, color:'text-amber-400' },
                     { label:'Completion Rate', val: totalMatches > 0 ? `${((completedMatches/totalMatches)*100).toFixed(1)}%` : '0%', icon:<CheckCircle size={18}/>, color:'text-emerald-400' },
@@ -1715,7 +1717,7 @@ const SystemTab = ({ health, users, matches, problems, adminUser }) => {
             {health && (
                 <div className="bg-gray-900/30 border border-gray-800/60 rounded-xl p-6">
                     <h3 className="font-bold mb-4 flex items-center gap-2"><Activity size={18} className="text-accent"/> Live Server Stats</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-4">
                         {[
                             { label:'Active Sockets',   val: health.activeSockets ?? '—',  icon:<Wifi size={16}/>,       color:'text-emerald-400' },
                             { label:'Active Rooms',      val: health.activeRooms ?? '—',    icon:<Layers size={16}/>,     color:'text-blue-400' },
@@ -1737,7 +1739,7 @@ const SystemTab = ({ health, users, matches, problems, adminUser }) => {
             {/* Database overview */}
             <div className="bg-gray-900/30 border border-gray-800/60 rounded-xl p-6">
                 <h3 className="font-bold mb-4 flex items-center gap-2"><Database size={18} className="text-blue-400"/> Database Overview</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
                         { collection:'Users',    count: users.length,    icon:<Users size={18}/>,  color:'blue' },
                         { collection:'Matches',  count: matches.length,  icon:<Trophy size={18}/>, color:'yellow' },
@@ -1912,7 +1914,7 @@ const UserDetailModal = ({ user, matches, onClose }) => {
                 </div>
 
                 {/* Stats grid */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 xs:grid-cols-3 gap-3">
                     {[
                         { label:'Rating',     val: user.rating || 1000,           color:'text-amber-400' },
                         { label:'Season',     val: user.seasonScore || 0,          color:'text-emerald-400' },
@@ -1938,13 +1940,13 @@ const UserDetailModal = ({ user, matches, onClose }) => {
                                 const won = m.winner === user.username;
                                 const drew = m.winner === 'draw' || m.winner === 'tie';
                                 return (
-                                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg">
+                                    <div key={i} className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 p-3 bg-gray-800/30 rounded-lg">
                                         <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-black shrink-0 ${won?'bg-emerald-500/20 text-emerald-400':drew?'bg-gray-600/20 text-gray-400':'bg-red-500/20 text-red-400'}`}>
                                             {won?'W':drew?'D':'L'}
                                         </div>
                                         <div className="flex-1 text-sm">vs <span className="font-semibold">{opp}</span></div>
-                                        <div className="text-xs text-gray-500">{m.problem?.title || '—'}</div>
-                                        <div className="text-xs text-gray-600">{fmtDate(m.createdAt)}</div>
+                                        <div className="text-xs text-gray-500 w-full sm:w-auto">{m.problem?.title || '—'}</div>
+                                        <div className="text-xs text-gray-600 ml-auto sm:ml-0 shrink-0">{fmtDate(m.createdAt)}</div>
                                     </div>
                                 );
                             })}
@@ -2064,15 +2066,15 @@ const MatchDetailModal = ({ match, onClose }) => {
 const Modal = ({ title, onClose, children, size = 'md' }) => {
     const sizes = { sm:'max-w-md', md:'max-w-lg', lg:'max-w-2xl', xl:'max-w-4xl' };
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className={`bg-[#111] border border-gray-800 rounded-2xl w-full ${sizes[size]} shadow-2xl my-8`}>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-                    <h2 className="text-lg font-bold">{title}</h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto" onClick={e => e.target === e.currentTarget && onClose()}>
+            <div className={`bg-[#111] border border-gray-800 rounded-2xl w-full ${sizes[size]} shadow-2xl my-4 sm:my-8 max-h-[calc(100dvh-32px)] sm:max-h-[calc(100dvh-64px)] flex flex-col overflow-hidden`}>
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-800 shrink-0">
+                    <h2 className="text-base sm:text-lg font-bold">{title}</h2>
                     <button onClick={onClose} className="p-1.5 hover:bg-gray-800 rounded-lg transition-all text-gray-400 hover:text-white">
                         <X size={20}/>
                     </button>
                 </div>
-                <div className="p-6 max-h-[80vh] overflow-y-auto custom-scroll">
+                <div className="p-4 sm:p-6 overflow-y-auto custom-scroll flex-1">
                     {children}
                 </div>
             </div>
@@ -2290,17 +2292,17 @@ const ProblemModal = ({ problem, onClose, onSuccess, username, initialType = 'ba
     };
 
     return (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl my-8 shadow-2xl">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-start justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+            <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl my-4 sm:my-8 max-h-[calc(100dvh-32px)] sm:max-h-[calc(100dvh-64px)] flex flex-col overflow-hidden shadow-2xl">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-[#0f0f0f] z-10 rounded-t-2xl">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-800 sticky top-0 bg-[#0f0f0f] z-10 rounded-t-2xl shrink-0">
                     <h2 className="text-lg font-bold flex items-center gap-2">
                         {isEditing ? <><Edit size={20} className="text-blue-400"/> Edit Problem</> : <><Plus size={20} className="text-accent"/> New Problem</>}
                     </h2>
                     <button onClick={onClose} className="p-1.5 hover:bg-gray-800 rounded-lg transition-all text-gray-400 hover:text-white"><X size={20}/></button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[85vh] overflow-y-auto custom-scroll">
+                <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto custom-scroll">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl">
                         <div className="mb-3 flex items-center justify-between gap-3">
                             <div>
