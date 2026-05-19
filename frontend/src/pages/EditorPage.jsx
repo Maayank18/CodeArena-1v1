@@ -311,6 +311,7 @@ const EditorPage = () => {
     const ydocRef = useRef(null);
     const providerRef = useRef(null);
     const activeEditorContextRef = useRef(null);
+    const problemContainerRef = useRef(null);
     const problemLabel = problem ? `Q${round}/${totalRounds}: ${problem.title}` : (roomId?.startsWith('C-') && clients.length < 2 ? 'Waiting for Challenger...' : 'Loading...');
     const shouldCompactTimer = problemLabel.length > 30;
     const notebookSide = mySide === 'left' ? 'right' : 'left';
@@ -325,6 +326,20 @@ const EditorPage = () => {
             return () => clearTimeout(timer);
         }
     }, [showEntrance]);
+
+    useEffect(() => {
+        if (runResults && problemContainerRef.current) {
+            const timer = setTimeout(() => {
+                if (problemContainerRef.current) {
+                    problemContainerRef.current.scrollTo({
+                        top: problemContainerRef.current.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [runResults]);
 
     useEffect(() => {
         // Sync profile to ensure subscription plan is up-to-date
@@ -1021,7 +1036,7 @@ const EditorPage = () => {
                             <TimerBadge initialTime={remainingTime} socket={socketRef.current} compact={shouldCompactTimer} />
                         </div>
                     </div>
-                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
+                    <div ref={problemContainerRef} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 md:p-6 text-sm leading-relaxed">
                         {!problem && roomId?.startsWith('C-') && clients.length < 2 ? (
                             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                                 <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
