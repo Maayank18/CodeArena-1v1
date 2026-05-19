@@ -1123,7 +1123,7 @@ const logMatchResolutionError = (roomId, stage, error, context = {}) => {
     });
 };
 
-const buildForfeitOutcome = (p1Data, p2Data, winnerUsername) => {
+const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSeconds = 60) => {
     const p1Rating = p1Data?.rating || 1000;
     const p2Rating = p2Data?.rating || 1000;
     const expectedP1 = calculateExpectedScore(p1Rating, p2Rating);
@@ -1131,20 +1131,71 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername) => {
     const p1IsWinner = p1Data?.username === winnerUsername;
     const p1Actual = p1IsWinner ? 1 : 0;
     const p2Actual = 1 - p1Actual;
-    const p1Delta = Math.round(FORFEIT_ELO_K * (p1Actual - expectedP1));
-    const p2Delta = Math.round(FORFEIT_ELO_K * (p2Actual - expectedP2));
+
+    const p1IsCheater = Boolean(p1Data?.isCheater);
+    const p2IsCheater = Boolean(p2Data?.isCheater);
+
+    // Scenario A: BOTH ARE CHEATERS
+    if (p1IsCheater && p2IsCheater) {
+        return {
+            p1: { newRating: Math.max(0, p1Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" },
+            p2: { newRating: Math.max(0, p2Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
+        };
+    }
+
+    // Scenario B: ONE IS CHEATER
+    if (p1IsCheater || p2IsCheater) {
+        const fairRating = p1IsCheater ? p2Rating : p1Rating;
+        const cheaterRating = p1IsCheater ? p1Rating : p2Rating;
+        const bounty = 40 + Math.min(20, Math.max(0, Math.round(cheaterRating / 100)));
+        const ratingGain = 15 + Math.min(15, Math.max(0, Math.round((cheaterRating - fairRating) / 20)));
+
+        return {
+            p1: p1IsCheater
+                ? { newRating: Math.max(0, p1Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
+                : { newRating: p1Rating + ratingGain, pointsGained: ratingGain, seasonScore: bounty, status: "Winner" },
+            p2: p2IsCheater
+                ? { newRating: Math.max(0, p2Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
+                : { newRating: p2Rating + ratingGain, pointsGained: ratingGain, seasonScore: bounty, status: "Winner" }
+        };
+    }
+
+    // Scenario C: STANDARD FORFEIT / DISCONNECT
+    let p1Delta = Math.round(FORFEIT_ELO_K * (p1Actual - expectedP1));
+    let p2Delta = Math.round(FORFEIT_ELO_K * (p2Actual - expectedP2));
+
+    // Lobby Dodge check: if left in under 20 seconds
+    const isLobbyDodge = matchDurationSeconds < 20;
+    const winnerPoints = isLobbyDodge ? 25 : 30;
+
+    let p1SeasonPoints = 0;
+    let p2SeasonPoints = 0;
+
+    if (p1IsWinner) {
+        p1SeasonPoints = winnerPoints;
+        p2SeasonPoints = isLobbyDodge ? -10 : 5; // -10 for dodge, +5 for benefit of doubt
+        if (isLobbyDodge) {
+            p2Delta = Math.min(p2Delta, -15); // Stiffer Elo drop for dodging
+        }
+    } else {
+        p2SeasonPoints = winnerPoints;
+        p1SeasonPoints = isLobbyDodge ? -10 : 5;
+        if (isLobbyDodge) {
+            p1Delta = Math.min(p1Delta, -15);
+        }
+    }
 
     return {
         p1: {
             newRating: Math.max(0, p1Rating + p1Delta),
             pointsGained: p1Delta,
-            seasonScore: p1IsWinner ? FORFEIT_WIN_POINTS : 0,
+            seasonScore: p1SeasonPoints,
             status: p1IsWinner ? 'Winner' : 'Loser',
         },
         p2: {
             newRating: Math.max(0, p2Rating + p2Delta),
             pointsGained: p2Delta,
-            seasonScore: p1IsWinner ? 0 : FORFEIT_WIN_POINTS,
+            seasonScore: p2SeasonPoints,
             status: p1IsWinner ? 'Loser' : 'Winner',
         }
     };
@@ -1242,6 +1293,8 @@ const handleGameEnd = async (roomId, room) => {
                 hasSubmitted: room.submissionAttempts.has(playerNames[1])
             };
 
+        let matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+
         let outcome;
         let p1NewRating;
         let p2NewRating;
@@ -1257,7 +1310,7 @@ const handleGameEnd = async (roomId, room) => {
             p2NewRating = null;
             p2SeasonPoints = 0;
         } else if (matchReason === 'forfeit' && forcedWinnerUsername) {
-            outcome = buildForfeitOutcome(p1Data, p2Data, forcedWinnerUsername);
+            outcome = buildForfeitOutcome(p1Data, p2Data, forcedWinnerUsername, matchDurationSeconds);
             p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
             p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
             p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
@@ -1336,7 +1389,7 @@ const handleGameEnd = async (roomId, room) => {
             ])
         );
 
-        const matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+        matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
 
         await Promise.all(
             resolvedPlayers
@@ -1673,6 +1726,63 @@ io.on('connection', async (socket) => {
       }
 
       // Rate limiting
+      // Check if this room has already finished (either in-memory or persisted Match)
+      let isMatchFinished = false;
+      let finishedMatchPayload = null;
+
+      if (rooms.has(roomId) && (rooms.get(roomId).status === 'finished' || rooms.get(roomId).resolutionResult)) {
+          isMatchFinished = true;
+          finishedMatchPayload = rooms.get(roomId).resolutionResult;
+      } else {
+          const finishedMatch = await Match.findOne({ roomId }).lean();
+          if (finishedMatch) {
+              isMatchFinished = true;
+              const pResults = {};
+              if (finishedMatch.players) {
+                  for (const p of finishedMatch.players) {
+                      pResults[p.username] = {
+                          username: p.username,
+                          score: p.score || 0,
+                          seasonPoints: p.seasonPoints || 0,
+                          newElo: p.newElo || 1000,
+                          eloChange: p.eloChange || 0,
+                          isWinner: p.username === finishedMatch.winner
+                      };
+                  }
+              }
+              finishedMatchPayload = {
+                  scores: finishedMatch.players?.reduce((acc, p) => { acc[p.username] = p.score || 0; return acc; }, {}) || {},
+                  winner: finishedMatch.winner || 'Draw',
+                  winnerName: finishedMatch.winner || 'Draw',
+                  winnerId: null,
+                  isDisqualified: finishedMatch.status === 'abandoned' || finishedMatch.status === 'cancelled',
+                  eloChanges: finishedMatch.players?.reduce((acc, p) => { 
+                      acc[p.username] = { username: p.username, newRating: p.newElo, eloChange: p.eloChange, seasonPoints: p.seasonPoints };
+                      return acc;
+                  }, {}) || {},
+                  playerResults: pResults,
+                  reason: finishedMatch.reason || 'submission',
+                  message: 'Match ended.'
+              };
+          }
+      }
+
+      if (isMatchFinished) {
+          socket.join(roomId);
+          socket.emit('room_joined', {
+              roomId,
+              players: finishedMatchPayload?.playerResults ? Object.keys(finishedMatchPayload.playerResults).map(username => ({ username, side: 'left' })) : [],
+              problem: null,
+              round: 1,
+              totalRounds: 1,
+              scores: finishedMatchPayload?.scores || {},
+              remainingTime: 0,
+              gameOverData: finishedMatchPayload,
+              isFinished: true
+          });
+          return;
+      }
+
       if (!checkRateLimit(socket.id, 'join_room')) {
         socket.emit('error', { message: 'Too many join attempts. Please wait.' });
         return;

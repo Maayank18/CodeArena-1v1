@@ -510,6 +510,11 @@ const EditorPage = () => {
         });
 
         const handleRoomJoined = (data) => {
+            if (data?.gameOverData) {
+                const safeGameOverData = normalizeGameOverPayload(data.gameOverData, username);
+                setGameOverData(safeGameOverData);
+                return;
+            }
             roomHydratedRef.current = true;
             setClients(data.players || []);
             setProblem(data?.problem ?? null);
@@ -526,7 +531,7 @@ const EditorPage = () => {
                 setTotalRounds(data.totalRounds);
             }
             // TRIGGER ENTRANCE BANNER (Only on initial join, not refresh if possible)
-            if (data.players && hasCustomizationAccess) {
+            if (data.players && hasCustomizationAccess && !sessionStorage.getItem(`codearena_entrance_shown_${roomId}`)) {
                 const me = data.players.find(p => p.username.toLowerCase() === username.toLowerCase());
                 const hasCustomEntrance =
                     me?.customization?.entranceBanner &&
@@ -541,6 +546,7 @@ const EditorPage = () => {
                     console.log('[ARENA] ✨ Triggering Entrance Banner:', me.customization.entranceBanner);
                     setEntranceData(me.customization);
                     setShowEntrance(true);
+                    sessionStorage.setItem(`codearena_entrance_shown_${roomId}`, 'true');
                 } else {
                     console.warn('[ARENA] ⚠️ No entrance banner customization found for user');
                 }
@@ -949,7 +955,28 @@ const EditorPage = () => {
                 />
             )}
 
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3">
+            {gameOverData ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6 bg-[var(--bg-primary)]">
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+                            <Swords size={36} className="text-emerald-400" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-3xl font-extrabold tracking-tight">Match Ended</h2>
+                        <p className={`text-sm max-w-md ${isDark ? 'text-gray-400' : 'text-slate-600'}`}>
+                            This arena match has already concluded. All ratings, dynamic ELO changes, and season points have been successfully updated.
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleReturnToDashboard}
+                        className="px-6 py-3 rounded-xl bg-accent hover:bg-emerald-400 text-black font-bold text-sm transition-all shadow-lg hover:shadow-emerald-500/10 cursor-pointer"
+                    >
+                        Return to Dashboard
+                    </button>
+                </div>
+            ) : (
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3">
                 <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'}`}>
                     <PaneHeader side="left" />
                     <div className="relative flex-1 min-h-0 overflow-hidden">
@@ -1058,6 +1085,7 @@ const EditorPage = () => {
                     </div>
                 </div>
             </div>
+            )}
 
             <div className={`md:hidden flex h-14 border-t ${isDark ? 'border-[#3e3e42] bg-[#1e1e1e]' : 'border-stone-300 bg-stone-100'}`}>
                 <button onClick={() => setActiveTab('left')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'left' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Code2 size={18} /><span className="text-[10px] font-bold">Left</span></button>
