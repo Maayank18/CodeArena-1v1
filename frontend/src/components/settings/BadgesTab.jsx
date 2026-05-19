@@ -1,64 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import PremiumGate from '../PremiumGate';
-import { Loader2, Lock, Shield, Flame, Zap, Target, Award, Star, Trophy, Crown, Timer, Swords, Eye, Moon, Brain, Hash, GitBranch, Layers, Search, ArrowUpDown } from 'lucide-react';
+import { Loader2, Lock, Check, Award } from 'lucide-react';
 import api from '../../api';
-
-const BADGE_DEFINITIONS = [
-    // ── Speed (6) ─────────────────────────────────────────────────
-    { id: 'flash',           category: 'Speed',       name: 'Flash',            desc: 'Win a match in under 5 minutes.',           icon: Zap,    gradient: 'from-yellow-400 to-amber-600',   glow: 'yellow', isExclusive: false },
-    { id: 'sub_minute',      category: 'Speed',       name: 'Sub-Minute',       desc: 'Solve a problem in under 60 seconds.',      icon: Timer,  gradient: 'from-cyan-400 to-blue-600',      glow: 'cyan', isExclusive: true },
-    { id: 'lightning_round', category: 'Speed',       name: 'Lightning Round',  desc: 'Complete all rounds in under 10 minutes.',  icon: Zap,    gradient: 'from-amber-400 to-orange-600',   glow: 'amber', isExclusive: true },
-    { id: 'speed_demon',     category: 'Speed',       name: 'Speed Demon',      desc: 'Win 5 matches in under 10 minutes each.',   icon: Flame,  gradient: 'from-red-500 to-orange-600',     glow: 'red', isExclusive: true },
-    { id: 'time_lord',       category: 'Speed',       name: 'Time Lord',        desc: 'Win a match with 20+ minutes remaining.',   icon: Timer,  gradient: 'from-indigo-500 to-purple-700',  glow: 'indigo', isExclusive: true },
-    { id: 'instant_kill',    category: 'Speed',       name: 'Instant Kill',     desc: 'Solve first before opponent submits once.', icon: Swords, gradient: 'from-rose-500 to-red-700',       glow: 'rose', isExclusive: true },
-
-    // ── Consistency (6) ───────────────────────────────────────────
-    { id: 'streak_3',        category: 'Consistency',  name: 'Getting Started',  desc: 'Maintain a 3-day activity streak.',         icon: Flame,  gradient: 'from-green-500 to-emerald-700',  glow: 'green', isExclusive: false },
-    { id: 'streak_7',        category: 'Consistency',  name: 'Unstoppable',      desc: 'Maintain a 7-day consistency streak.',      icon: Flame,  gradient: 'from-orange-500 to-red-600',     glow: 'orange', isExclusive: true },
-    { id: 'streak_14',       category: 'Consistency',  name: 'Iron Will',        desc: 'Maintain a 14-day consistency streak.',     icon: Shield, gradient: 'from-slate-500 to-zinc-700',     glow: 'slate', isExclusive: true },
-    { id: 'streak_30',       category: 'Consistency',  name: 'Marathon Runner',  desc: 'Maintain a 30-day consistency streak.',     icon: Crown,  gradient: 'from-yellow-500 to-amber-700',   glow: 'yellow', isExclusive: true },
-    { id: 'weekend_warrior', category: 'Consistency',  name: 'Weekend Warrior',  desc: 'Play on 4 consecutive weekends.',           icon: Swords, gradient: 'from-sky-500 to-blue-700',      glow: 'sky', isExclusive: true },
-    { id: 'night_owl',       category: 'Consistency',  name: 'Night Owl',        desc: 'Win 10 matches played after midnight.',     icon: Moon,   gradient: 'from-violet-600 to-indigo-800',  glow: 'violet', isExclusive: true },
-
-    // ── Combat (9) ────────────────────────────────────────────────
-    { id: 'first_blood',     category: 'Combat',      name: 'First Blood',      desc: 'Win your very first 1v1 battle.',           icon: Swords, gradient: 'from-cyan-500 to-blue-600',     glow: 'cyan', isExclusive: false },
-    { id: 'hat_trick',       category: 'Combat',      name: 'Hat Trick',        desc: 'Win 3 matches in a row.',                   icon: Trophy, gradient: 'from-amber-500 to-yellow-600',  glow: 'amber', isExclusive: true },
-    { id: 'arena_gladiator', category: 'Combat',      name: 'Arena Gladiator',  desc: 'Win 25 battles in the Arena.',              icon: Shield, gradient: 'from-emerald-500 to-green-700', glow: 'emerald', isExclusive: true },
-    { id: 'centurion',       category: 'Combat',      name: 'Centurion',        desc: 'Play 100 matches in total.',                icon: Award,  gradient: 'from-teal-500 to-cyan-700',     glow: 'teal', isExclusive: true },
-    { id: 'perfect_round',   category: 'Combat',      name: 'Perfect Round',    desc: 'Solve all problems in a single match.',     icon: Target, gradient: 'from-lime-500 to-green-600',    glow: 'lime', isExclusive: true },
-    { id: 'flawless_victory',category: 'Combat',      name: 'Flawless Victory', desc: 'Win a best-of-3 match 3-0.',                icon: Star,   gradient: 'from-pink-500 to-rose-700',     glow: 'pink', isExclusive: true },
-    { id: 'dominator',       category: 'Combat',      name: 'Dominator',        desc: 'Achieve a 10-match win streak.',            icon: Crown,  gradient: 'from-red-600 to-rose-800',      glow: 'red', isExclusive: true },
-    { id: 'underdog',        category: 'Combat',      name: 'Underdog',         desc: 'Beat an opponent 200+ ELO above you.',      icon: Eye,    gradient: 'from-blue-500 to-indigo-700',   glow: 'blue', isExclusive: true },
-    { id: 'survivor',        category: 'Combat',      name: 'Survivor',         desc: 'Win a match with <1 minute remaining.',     icon: Timer,  gradient: 'from-orange-600 to-red-700',    glow: 'orange', isExclusive: true },
-
-    // ── Mastery (9) ───────────────────────────────────────────────
-    { id: 'array_ace',       category: 'Mastery',     name: 'Array Ace',        desc: 'Solve 10 Array problems.',                  icon: Layers,      gradient: 'from-blue-500 to-cyan-600',     glow: 'blue', isExclusive: true },
-    { id: 'string_slicer',   category: 'Mastery',     name: 'String Slicer',    desc: 'Solve 10 String problems.',                 icon: Award,       gradient: 'from-fuchsia-500 to-pink-700',  glow: 'fuchsia', isExclusive: true },
-    { id: 'tree_hugger',     category: 'Mastery',     name: 'Tree Hugger',      desc: 'Solve 10 Tree problems.',                   icon: GitBranch,   gradient: 'from-green-500 to-emerald-700', glow: 'green', isExclusive: true },
-    { id: 'graph_guru',      category: 'Mastery',     name: 'Graph Guru',       desc: 'Solve 10 Graph problems.',                  icon: Brain,       gradient: 'from-purple-500 to-violet-700', glow: 'purple', isExclusive: true },
-    { id: 'dp_dynamo',       category: 'Mastery',     name: 'DP Dynamo',        desc: 'Solve 10 Dynamic Programming problems.',    icon: Brain,       gradient: 'from-orange-500 to-amber-700',  glow: 'orange', isExclusive: true },
-    { id: 'sort_king',       category: 'Mastery',     name: 'Sort King',        desc: 'Solve 10 Sorting problems.',                icon: ArrowUpDown, gradient: 'from-teal-500 to-green-600',    glow: 'teal', isExclusive: true },
-    { id: 'binary_boss',     category: 'Mastery',     name: 'Binary Boss',      desc: 'Solve 10 Binary Search problems.',          icon: Search,      gradient: 'from-indigo-500 to-blue-700',   glow: 'indigo', isExclusive: true },
-    { id: 'hash_master',     category: 'Mastery',     name: 'Hash Master',      desc: 'Solve 10 Hash Table problems.',             icon: Hash,        gradient: 'from-rose-500 to-pink-700',     glow: 'rose', isExclusive: true },
-    { id: 'diamond_ranked',  category: 'Mastery',     name: 'Diamond Ranked',   desc: 'Reach a rating of 1500 ELO or higher.',     icon: Star,        gradient: 'from-violet-500 to-purple-700', glow: 'violet', isExclusive: true },
-];
-
-const GLOW_MAP = {
-    cyan: 'shadow-cyan-500/40', orange: 'shadow-orange-500/40', yellow: 'shadow-yellow-500/40',
-    emerald: 'shadow-emerald-500/40', purple: 'shadow-purple-500/40', pink: 'shadow-pink-500/40',
-    amber: 'shadow-amber-500/40', teal: 'shadow-teal-500/40', violet: 'shadow-violet-500/40',
-    red: 'shadow-red-500/40', blue: 'shadow-blue-500/40', green: 'shadow-green-500/40',
-    indigo: 'shadow-indigo-500/40', rose: 'shadow-rose-500/40', lime: 'shadow-lime-500/40',
-    sky: 'shadow-sky-500/40', slate: 'shadow-slate-500/40', fuchsia: 'shadow-fuchsia-500/40',
-};
-
-const CATEGORIES = ['Speed', 'Consistency', 'Combat', 'Mastery'];
+import toast from 'react-hot-toast';
+import { BADGE_DEFINITIONS, GLOW_MAP, CATEGORIES } from '../../utils/badgeHelper';
 
 const BadgesTab = () => {
     const [earnedBadges, setEarnedBadges] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('all');
+    const [equippedBadge, setEquippedBadge] = useState('');
 
     const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
     const plan = storedUser?.subscriptionPlan || 'free';
@@ -81,6 +33,48 @@ const BadgesTab = () => {
         fetchBadges();
     }, []);
 
+    useEffect(() => {
+        const stored = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+        setEquippedBadge(stored.customization?.equippedBadge || '');
+    }, []);
+
+    const handleEquipBadge = async (badgeId) => {
+        const isEquipped = equippedBadge === badgeId;
+        const newEquipped = isEquipped ? '' : badgeId;
+
+        if (userTier < 2) {
+            toast.error('Equipping badges is a Pro tier customization.', {
+                icon: '🔒',
+                style: { borderRadius: '10px', background: '#333', color: '#fff' }
+            });
+            return;
+        }
+
+        try {
+            const res = await api.put('/settings/customization', {
+                equippedBadge: newEquipped
+            });
+            if (res.data?.success) {
+                setEquippedBadge(newEquipped);
+                toast.success(isEquipped ? 'Unequipped badge!' : `Equipped ${BADGE_DEFINITIONS.find(b => b.id === badgeId)?.name || 'Badge'}!`);
+                
+                const currentStored = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+                const nextUser = res.data.user || {
+                    ...currentStored,
+                    customization: {
+                        ...currentStored.customization,
+                        equippedBadge: newEquipped
+                    }
+                };
+                const mergedUser = { ...currentStored, ...nextUser };
+                localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
+                window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
+            }
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to equip badge');
+        }
+    };
+
     if (loading) {
         return (
             <div className="h-64 flex items-center justify-center">
@@ -98,114 +92,131 @@ const BadgesTab = () => {
 
     return (
         <div className="space-y-8">
-                {/* Header Stats */}
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <h2 className="text-2xl font-black">Achievement Badges</h2>
-                        <p className="text-[var(--text-secondary)] text-sm mt-1">Collect badges by dominating the arena. {total} unique achievements await.</p>
-                    </div>
-                    <div className="bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-2xl px-6 py-3 flex items-center gap-3">
-                        <Award className="text-amber-400" size={22} />
-                        <span className="text-2xl font-black text-amber-400">{earned}</span>
-                        <span className="text-[var(--text-secondary)] text-sm font-bold">/ {total} Earned</span>
-                    </div>
+            {/* Header Stats */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h2 className="text-2xl font-black">Achievement Badges</h2>
+                    <p className="text-[var(--text-secondary)] text-sm mt-1">Collect badges by dominating the arena. {total} unique achievements await.</p>
                 </div>
-
-                {/* Category Filter */}
-                <div className="flex gap-2 flex-wrap">
-                    <button
-                        onClick={() => setActiveCategory('all')}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                            activeCategory === 'all'
-                                ? 'bg-accent text-black'
-                                : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-accent/50'
-                        }`}
-                    >
-                        All ({total})
-                    </button>
-                    {CATEGORIES.map(cat => {
-                        const count = BADGE_DEFINITIONS.filter(b => b.category === cat).length;
-                        const earnedCount = BADGE_DEFINITIONS.filter(b => b.category === cat && earnedBadges?.includes(b.id)).length;
-                        return (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                                    activeCategory === cat
-                                        ? 'bg-accent text-black'
-                                        : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-accent/50'
-                                }`}
-                            >
-                                {cat} ({earnedCount}/{count})
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Badge Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filteredBadges.map((badge) => {
-                        const isEarned = earnedBadges?.includes(badge.id);
-                        const isLockedByTier = badge.isExclusive && userTier < 2;
-                        const Icon = badge.icon;
-                        const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
-
-                        return (
-                            <div
-                                key={badge.id}
-                                onClick={() => {
-                                    if (isLockedByTier) {
-                                        toast.error(`${badge.name} is a Pro tier exclusive achievement.`, {
-                                            icon: '🔒',
-                                            style: { borderRadius: '10px', background: '#333', color: '#fff' }
-                                        });
-                                    }
-                                }}
-                                className={`relative group rounded-2xl border p-6 transition-all duration-300 ease-out
-                                    ${isEarned
-                                        ? `bg-[var(--bg-secondary)] backdrop-blur-md border-[var(--border-color)] ring-1 ring-white/10 shadow-2xl ${glowClass} hover:-translate-y-2 hover:scale-105 cursor-default`
-                                        : isLockedByTier
-                                            ? 'bg-[var(--bg-tertiary)] border-[var(--border-color)] grayscale opacity-40 cursor-pointer'
-                                            : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] grayscale opacity-60 cursor-not-allowed'
-                                    }`}
-                            >
-                                {/* Category Tag */}
-                                <div className="absolute top-3 right-3">
-                                    {isEarned ? (
-                                        <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${badge.gradient} shadow-lg`} />
-                                    ) : (
-                                        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">{badge.category}</span>
-                                    )}
-                                </div>
-
-                                {/* Badge Icon */}
-                                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300
-                                    ${isEarned
-                                        ? `bg-gradient-to-br ${badge.gradient} shadow-lg group-hover:scale-110 group-hover:rotate-3`
-                                        : 'bg-[var(--bg-secondary)]'
-                                    }`}
-                                >
-                                    {isEarned ? (
-                                        <Icon className="text-[var(--text-primary)]" size={26} />
-                                    ) : isLockedByTier ? (
-                                        <Lock className="text-amber-500/60" size={22} />
-                                    ) : (
-                                        <Lock className="text-[var(--text-secondary)]" size={22} />
-                                    )}
-                                </div>
-
-                                {/* Badge Info */}
-                                <h3 className={`text-lg font-bold mb-1 ${isEarned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
-                                    {badge.name}
-                                </h3>
-                                <p className={`text-sm ${isEarned ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>
-                                    {isLockedByTier ? "Pro Tier Exclusive Achievement" : badge.desc}
-                                </p>
-                            </div>
-                        );
-                    })}
+                <div className="bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-2xl px-6 py-3 flex items-center gap-3">
+                    <Award className="text-amber-400" size={22} />
+                    <span className="text-2xl font-black text-amber-400">{earned}</span>
+                    <span className="text-[var(--text-secondary)] text-sm font-bold">/ {total} Earned</span>
                 </div>
             </div>
+
+            {/* Category Filter */}
+            <div className="flex gap-2 flex-wrap">
+                <button
+                    onClick={() => setActiveCategory('all')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        activeCategory === 'all'
+                            ? 'bg-accent text-black'
+                            : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-accent/50'
+                    }`}
+                >
+                    All ({total})
+                </button>
+                {CATEGORIES.map(cat => {
+                    const count = BADGE_DEFINITIONS.filter(b => b.category === cat).length;
+                    const earnedCount = BADGE_DEFINITIONS.filter(b => b.category === cat && earnedBadges?.includes(b.id)).length;
+                    return (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                                activeCategory === cat
+                                    ? 'bg-accent text-black'
+                                    : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-accent/50'
+                            }`}
+                        >
+                            {cat} ({earnedCount}/{count})
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Badge Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredBadges.map((badge) => {
+                    const isEarned = earnedBadges?.includes(badge.id);
+                    const isLockedByTier = badge.isExclusive && userTier < 2;
+                    const Icon = badge.icon;
+                    const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
+                    const isEquipped = equippedBadge === badge.id;
+
+                    return (
+                        <div
+                            key={badge.id}
+                            onClick={() => {
+                                if (isEarned) {
+                                    handleEquipBadge(badge.id);
+                                } else if (isLockedByTier) {
+                                    toast.error(`${badge.name} is a Pro tier exclusive achievement.`, {
+                                        icon: '🔒',
+                                        style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                    });
+                                }
+                            }}
+                            className={`relative group rounded-2xl border p-6 transition-all duration-300 ease-out cursor-pointer select-none
+                                ${isEarned
+                                    ? isEquipped
+                                        ? `bg-[var(--bg-secondary)] border-accent shadow-2xl ${glowClass} ring-2 ring-accent/60 scale-[1.02]`
+                                        : `bg-[var(--bg-secondary)] border-[var(--border-color)] hover:border-gray-500 hover:-translate-y-1 hover:scale-[1.02] shadow-xl hover:${glowClass}`
+                                    : isLockedByTier
+                                        ? 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-40 hover:opacity-50'
+                                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-60'
+                                }`}
+                        >
+                            {/* Category Tag / Equipped State */}
+                            <div className="absolute top-3 right-3">
+                                {isEquipped ? (
+                                    <div className="flex items-center gap-1 bg-accent/20 text-accent border border-accent/40 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                                        <Check size={10} className="stroke-[3]" />
+                                        <span>Equipped</span>
+                                    </div>
+                                ) : isEarned ? (
+                                    <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${badge.gradient} shadow-lg`} />
+                                ) : (
+                                    <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">{badge.category}</span>
+                                )}
+                            </div>
+
+                            {/* Badge Icon with Blurry Locked Preview */}
+                            <div className="relative w-14 h-14 mb-4 select-none">
+                                <div className={`w-full h-full rounded-xl flex items-center justify-center transition-transform duration-300
+                                    ${isEarned
+                                        ? `bg-gradient-to-br ${badge.gradient} shadow-lg group-hover:scale-110 group-hover:rotate-3`
+                                        : `bg-gradient-to-br ${badge.gradient} opacity-20 blur-[3px]`
+                                    }`}
+                                >
+                                    <Icon className="text-[var(--text-primary)]" size={26} />
+                                </div>
+                                {!isEarned && (
+                                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 rounded-xl">
+                                        <Lock className={isLockedByTier ? "text-amber-500drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/60"} size={18} />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Badge Info */}
+                            <h3 className={`text-lg font-bold mb-1 ${isEarned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                                {badge.name}
+                            </h3>
+                            <p className="text-sm text-[var(--text-secondary)]">
+                                {isLockedByTier && !isEarned ? "Pro Tier Exclusive Achievement" : badge.desc}
+                            </p>
+                            
+                            {isEarned && !isEquipped && (
+                                <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <span className="text-[10px] text-accent font-bold uppercase tracking-wider">Click to Equip</span>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
     );
 };
 

@@ -5,7 +5,8 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import api from '../api.js'; 
 import { Trophy, Medal, Flame, Search, AlertCircle, Loader2 } from 'lucide-react';
-import { getLevelInfo } from '../utils/levelSystem'; 
+import { getLevelInfo } from '../utils/levelSystem';
+import { getBadgeIconData } from '../utils/badgeHelper'; 
 import Avatar from '../components/Avatar'; 
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -112,7 +113,19 @@ const Leaderboard = () => {
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
                 <span className={`font-bold text-sm sm:text-base truncate text-[var(--text-primary)]`}>
-                  {player.username}
+                  {(() => {
+                    const equippedBadgeId = player.customization?.equippedBadge;
+                    const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
+                    if (badgeData) {
+                      const BadgeIcon = badgeData.icon;
+                      return (
+                        <span className={`w-5 h-5 rounded flex items-center justify-center bg-gradient-to-br ${badgeData.gradient} shadow shrink-0 mr-1.5 inline-flex align-middle`} title={badgeData.name}>
+                          <BadgeIcon className="text-white" size={10} />
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}{player.username}
                 </span>
                 {isCurrentUser && <span className="text-[9px] bg-accent text-black px-1.5 py-0.5 rounded font-black shrink-0">YOU</span>}
                 <div className="hidden sm:flex items-center gap-1">

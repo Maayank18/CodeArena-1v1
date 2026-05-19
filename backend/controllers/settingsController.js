@@ -532,7 +532,7 @@ const VALID_STACK_LANGUAGES = [
 export const updateCustomization = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { avatarFrame, tagline, signatureStack, entranceBanner } = req.body;
+        const { avatarFrame, tagline, signatureStack, entranceBanner, equippedBadge } = req.body;
 
         const update = {};
 
@@ -561,6 +561,22 @@ export const updateCustomization = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Invalid entrance banner' });
             }
             update['customization.entranceBanner'] = entranceBanner;
+        }
+
+        if (equippedBadge !== undefined) {
+            const sanitized = typeof equippedBadge === 'string' ? equippedBadge.trim() : '';
+            if (sanitized !== '') {
+                // Fetch the user's earned badges to verify they unlocked it
+                const userObj = await User.findById(userId).select('badges').lean();
+                if (!userObj) {
+                    return res.status(404).json({ success: false, message: 'User not found' });
+                }
+                const earnedBadges = userObj.badges || [];
+                if (!earnedBadges.includes(sanitized)) {
+                    return res.status(400).json({ success: false, message: 'You must earn this badge before you can equip it' });
+                }
+            }
+            update['customization.equippedBadge'] = sanitized;
         }
 
         if (Object.keys(update).length === 0) {

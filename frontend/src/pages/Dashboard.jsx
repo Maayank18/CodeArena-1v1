@@ -10,6 +10,7 @@ import { Logo } from '../components/Logo';
 import { Loader2, Trophy, Swords } from 'lucide-react';
 import api from '../api.js';
 import { getLevelInfo } from '../utils/levelSystem';
+import { getBadgeIconData } from '../utils/badgeHelper';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
 import CustomMatchModal from '../components/CustomMatchModal';
@@ -37,6 +38,17 @@ const Dashboard = () => {
   const rankInfo = useMemo(() => {
     return getLevelInfo(user?.rating || 1000);
   }, [user?.rating]);
+
+  // Listen for real-time user customization updates
+  useEffect(() => {
+    const handleUserUpdate = (e) => {
+      if (e.detail) {
+        setUser(e.detail);
+      }
+    };
+    window.addEventListener('codearena:user-updated', handleUserUpdate);
+    return () => window.removeEventListener('codearena:user-updated', handleUserUpdate);
+  }, []);
 
   // ✅ OPTIMIZED: Fetch user data with proper error handling
   useEffect(() => {
@@ -277,7 +289,19 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex flex-col">
                         <h3 className={`text-2xl font-black ${rankInfo.color} uppercase tracking-tighter`}>
-                          {rankInfo.title}
+                          {(() => {
+                            const equippedBadgeId = user?.customization?.equippedBadge;
+                            const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
+                            if (badgeData) {
+                              const BadgeIcon = badgeData.icon;
+                              return (
+                                <span className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${badgeData.gradient} shadow-lg shrink-0 mr-2 inline-flex align-middle`} title={badgeData.name}>
+                                  <BadgeIcon className="text-white" size={16} />
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}{rankInfo.title}
                         </h3>
                         <span className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">
                           Current Rank

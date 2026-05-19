@@ -12,6 +12,7 @@ import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js';
 import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3, LogOut } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import { getBadgeIconData } from '../utils/badgeHelper';
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import WinningModal from '../components/WinningModal.jsx';
@@ -880,6 +881,19 @@ const EditorPage = () => {
                     <Avatar username={p?.username} src={p?.avatar} avatarFrame={p?.customization?.avatarFrame} className="h-8 w-8 flex-shrink-0" />
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
+                            {(() => {
+                                const equippedBadgeId = p?.customization?.equippedBadge;
+                                const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
+                                if (badgeData) {
+                                    const BadgeIcon = badgeData.icon;
+                                    return (
+                                        <span className={`w-5 h-5 rounded flex items-center justify-center bg-gradient-to-br ${badgeData.gradient} shadow shrink-0 mr-1 inline-flex align-middle`} title={badgeData.name}>
+                                            <BadgeIcon className="text-white" size={10} />
+                                        </span>
+                                    );
+                                }
+                                return null;
+                            })()}
                             <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>
                             <span className={`arena-score-pill px-2 py-0.5 rounded text-[10px] font-mono shrink-0 ${
                                 isDark ? 'bg-black/50 text-green-400' : 'bg-white text-emerald-600 border border-emerald-200'

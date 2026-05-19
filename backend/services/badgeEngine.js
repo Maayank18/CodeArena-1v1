@@ -7,20 +7,30 @@ import Problem from '../models/Problem.js';
 import CampaignProgress from '../models/CampaignProgress.js';
 
 export const BADGE_DEFINITIONS = [
+    // Speed
     { id: 'flash', category: 'speed', name: 'Flash', desc: 'Win a match in under 5 minutes.' },
     { id: 'sub_minute', category: 'speed', name: 'Sub-Minute', desc: 'Solve a problem in under 60 seconds.' },
     { id: 'lightning_round', category: 'speed', name: 'Lightning Round', desc: 'Complete all rounds in under 10 minutes.' },
     { id: 'speed_demon', category: 'speed', name: 'Speed Demon', desc: 'Win 5 matches in under 10 minutes each.' },
     { id: 'time_lord', category: 'speed', name: 'Time Lord', desc: 'Win a match with over 20 minutes remaining.' },
     { id: 'instant_kill', category: 'speed', name: 'Instant Kill', desc: 'Solve the first problem before your opponent submits once.' },
+    { id: 'supersonic', category: 'speed', name: 'Supersonic', desc: 'Win a match in under 3 minutes.' },
+    { id: 'blitzkrieg', category: 'speed', name: 'Blitzkrieg', desc: 'Solve a problem in under 30 seconds.' },
+    { id: 'clutch_win', category: 'speed', name: 'Clutch Win', desc: 'Win a match with less than 10 seconds remaining.' },
 
+    // Consistency
     { id: 'streak_3', category: 'consistency', name: 'Getting Started', desc: 'Maintain a 3-day activity streak.' },
     { id: 'streak_7', category: 'consistency', name: 'Unstoppable', desc: 'Maintain a 7-day consistency streak.' },
     { id: 'streak_14', category: 'consistency', name: 'Iron Will', desc: 'Maintain a 14-day consistency streak.' },
     { id: 'streak_30', category: 'consistency', name: 'Marathon Runner', desc: 'Maintain a 30-day consistency streak.' },
     { id: 'weekend_warrior', category: 'consistency', name: 'Weekend Warrior', desc: 'Play matches on 4 consecutive weekends.' },
     { id: 'night_owl', category: 'consistency', name: 'Night Owl', desc: 'Win 10 matches played after midnight.' },
+    { id: 'half_century', category: 'consistency', name: 'Half-Century Streak', desc: 'Maintain a 50-day consistency streak.' },
+    { id: 'centurion_streak', category: 'consistency', name: 'Centurion Streak', desc: 'Maintain a 100-day consistency streak.' },
+    { id: 'early_bird', category: 'consistency', name: 'Early Bird', desc: 'Win 10 matches played between 5 AM and 8 AM.' },
+    { id: 'devoted_coder', category: 'consistency', name: 'Devoted Coder', desc: 'Solve at least 1 problem every day for a calendar month.' },
 
+    // Combat
     { id: 'first_blood', category: 'combat', name: 'First Blood', desc: 'Win your very first 1v1 battle.' },
     { id: 'hat_trick', category: 'combat', name: 'Hat Trick', desc: 'Win 3 matches in a row.' },
     { id: 'arena_gladiator', category: 'combat', name: 'Arena Gladiator', desc: 'Win 25 battles in the Arena.' },
@@ -30,7 +40,12 @@ export const BADGE_DEFINITIONS = [
     { id: 'dominator', category: 'combat', name: 'Dominator', desc: 'Achieve a 10-match win streak.' },
     { id: 'underdog', category: 'combat', name: 'Underdog', desc: 'Beat an opponent rated 200+ ELO above you.' },
     { id: 'survivor', category: 'combat', name: 'Survivor', desc: 'Win a match with less than 1 minute remaining.' },
+    { id: 'grandmaster_slayer', category: 'combat', name: 'Grandmaster Slayer', desc: 'Beat an opponent rated 300+ ELO above you.' },
+    { id: 'legendary_streak', category: 'combat', name: 'Legendary Streak', desc: 'Achieve a 15-match win streak.' },
+    { id: 'arena_conqueror', category: 'combat', name: 'Arena Conqueror', desc: 'Win 100 battles in the Arena.' },
+    { id: 'veteran', category: 'combat', name: 'Veteran', desc: 'Play 500 matches in total.' },
 
+    // Mastery
     { id: 'array_ace', category: 'mastery', name: 'Array Ace', desc: 'Solve 10 Array problems.' },
     { id: 'string_slicer', category: 'mastery', name: 'String Slicer', desc: 'Solve 10 String problems.' },
     { id: 'tree_hugger', category: 'mastery', name: 'Tree Hugger', desc: 'Solve 10 Tree problems.' },
@@ -40,6 +55,15 @@ export const BADGE_DEFINITIONS = [
     { id: 'binary_boss', category: 'mastery', name: 'Binary Boss', desc: 'Solve 10 Binary Search problems.' },
     { id: 'hash_master', category: 'mastery', name: 'Hash Master', desc: 'Solve 10 Hash Table problems.' },
     { id: 'diamond_ranked', category: 'mastery', name: 'Diamond Ranked', desc: 'Reach a rating of 1500 ELO or higher.' },
+    { id: 'linked_list_legend', category: 'mastery', name: 'Linked List Legend', desc: 'Solve 10 Linked List problems.' },
+    { id: 'greedy_genius', category: 'mastery', name: 'Greedy Genius', desc: 'Solve 10 Greedy problems.' },
+    { id: 'stack_surgeon', category: 'mastery', name: 'Stack Surgeon', desc: 'Solve 10 Stack/Queue problems.' },
+    { id: 'math_magician', category: 'mastery', name: 'Math Magician', desc: 'Solve 10 Math/Number Theory problems.' },
+    { id: 'bit_wizard', category: 'mastery', name: 'Bit Wizard', desc: 'Solve 10 Bit Manipulation problems.' },
+    { id: 'backtracking_boss', category: 'mastery', name: 'Backtracking Boss', desc: 'Solve 10 Backtracking problems.' },
+    { id: 'recursion_ranger', category: 'mastery', name: 'Recursion Ranger', desc: 'Solve 10 Recursion/DFS problems.' },
+    { id: 'grandmaster_ranked', category: 'mastery', name: 'Grandmaster Ranked', desc: 'Reach a rating of 1800 ELO or higher.' },
+    { id: 'immortal_ranked', category: 'mastery', name: 'Immortal Ranked', desc: 'Reach a rating of 2100 ELO or higher.' },
 ];
 
 const TOPIC_BADGE_MAP = {
@@ -59,6 +83,23 @@ const TOPIC_BADGE_MAP = {
     'hash table': 'hash_master',
     'hash tables': 'hash_master',
     hashing: 'hash_master',
+    'linked list': 'linked_list_legend',
+    'linked lists': 'linked_list_legend',
+    linkedlist: 'linked_list_legend',
+    greedy: 'greedy_genius',
+    stack: 'stack_surgeon',
+    queue: 'stack_surgeon',
+    stacks: 'stack_surgeon',
+    queues: 'stack_surgeon',
+    math: 'math_magician',
+    mathematics: 'math_magician',
+    'number theory': 'math_magician',
+    'bit manipulation': 'bit_wizard',
+    bit: 'bit_wizard',
+    bits: 'bit_wizard',
+    backtracking: 'backtracking_boss',
+    recursion: 'recursion_ranger',
+    dfs: 'recursion_ranger',
 };
 
 const MASTERY_THRESHOLD = 10;
@@ -172,6 +213,11 @@ export async function evaluateBadges(userId, matchData = {}) {
             const hour = new Date(match.createdAt).getHours();
             return Boolean(me?.isWinner) && hour >= 0 && hour < 5;
         }).length;
+        const earlyWins = recentMatches.filter((match) => {
+            const me = match.players?.find((player) => String(player.userId) === String(userId));
+            const hour = new Date(match.createdAt).getHours();
+            return Boolean(me?.isWinner) && hour >= 5 && hour < 8;
+        }).length;
 
         const activityDates = [
             ...recentMatches.map((match) => match.createdAt),
@@ -233,6 +279,18 @@ export async function evaluateBadges(userId, matchData = {}) {
         if (matchData.isWinner && Number(matchData.remainingTimeSeconds) > 0 && Number(matchData.remainingTimeSeconds) < 60) {
             award('survivor');
         }
+        if (matchData.isWinner && Number(matchData.opponentRating) - Number(matchData.userRating) >= 300) {
+            award('grandmaster_slayer');
+        }
+        if (currentWinStreak >= 15) {
+            award('legendary_streak');
+        }
+        if (stats.wins >= 100) {
+            award('arena_conqueror');
+        }
+        if (stats.matchesPlayed >= 500) {
+            award('veteran');
+        }
 
         // Speed badges
         if (matchData.isWinner && Number(matchData.matchDurationMinutes) > 0 && Number(matchData.matchDurationMinutes) < 5) {
@@ -253,6 +311,15 @@ export async function evaluateBadges(userId, matchData = {}) {
         if (matchData.instantKill) {
             award('instant_kill');
         }
+        if (matchData.isWinner && Number(matchData.matchDurationMinutes) > 0 && Number(matchData.matchDurationMinutes) < 3) {
+            award('supersonic');
+        }
+        if (Number(matchData.fastestSolveMs) > 0 && Number(matchData.fastestSolveMs) < 30000) {
+            award('blitzkrieg');
+        }
+        if (matchData.isWinner && Number(matchData.remainingTimeSeconds) > 0 && Number(matchData.remainingTimeSeconds) < 10) {
+            award('clutch_win');
+        }
 
         // Consistency badges
         if (currentStreak >= 3) {
@@ -266,12 +333,22 @@ export async function evaluateBadges(userId, matchData = {}) {
         }
         if (currentStreak >= 30) {
             award('streak_30');
+            award('devoted_coder');
+        }
+        if (currentStreak >= 50) {
+            award('half_century');
+        }
+        if (currentStreak >= 100) {
+            award('centurion_streak');
         }
         if (consecutiveWeekends >= 4) {
             award('weekend_warrior');
         }
         if (nightWins >= 10) {
             award('night_owl');
+        }
+        if (earlyWins >= 10) {
+            award('early_bird');
         }
 
         // Mastery badges
@@ -283,6 +360,12 @@ export async function evaluateBadges(userId, matchData = {}) {
         }
         if (user.rating >= 1500) {
             award('diamond_ranked');
+        }
+        if (user.rating >= 1800) {
+            award('grandmaster_ranked');
+        }
+        if (user.rating >= 2100) {
+            award('immortal_ranked');
         }
 
         if (newBadges.length > 0) {

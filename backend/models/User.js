@@ -364,6 +364,10 @@ const userSchema = new mongoose.Schema({
             type: String,
             default: 'default-dark',
         },
+        equippedBadge: {
+            type: String,
+            default: '',
+        },
     },
 
     // ── Custom Matchmaking Quotas ──────────────────────────────────
