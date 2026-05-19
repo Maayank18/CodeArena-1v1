@@ -10,7 +10,7 @@ import { io } from 'socket.io-client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api from '../api.js';
-import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3 } from 'lucide-react';
+import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3, LogOut } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
@@ -691,6 +691,10 @@ const EditorPage = () => {
                 providerRef.current.destroy();
                 providerRef.current = null;
             }
+            try {
+                localStorage.removeItem(buildCustomRoomAuthKey(roomId));
+            } catch (e) {}
+            clearDerivedUserCaches();
         };
     }, [roomId, navigate, username, isValidRoomId, joinToken, storedUser?._id, storedUser?.token, hasCustomizationAccess]);
 
@@ -763,6 +767,13 @@ const EditorPage = () => {
                 });
             });
     }, [navigate, roomId]);
+
+    const handleLeaveRoom = useCallback(() => {
+        const confirmLeave = window.confirm("Are you sure you want to leave the room? If a match is active, leaving will result in a forfeit and loss of ELO/points.");
+        if (confirmLeave) {
+            handleReturnToDashboard();
+        }
+    }, [handleReturnToDashboard]);
 
     const runCode = useCallback(async () => {
         if (debounceTimerRef.current || !problem || !ydocRef.current) return;
@@ -1006,7 +1017,7 @@ const EditorPage = () => {
                         isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
                     }`}>
                         <div className="flex items-center gap-2">
-                            <div className="flex p-1 bg-black/20 rounded-lg mr-2">
+                            <div className="flex p-1 bg-black/20 rounded-lg mr-2 gap-1.5">
                                 <button 
                                     onClick={() => {
                                         setIsNotesOpen(true);
@@ -1014,6 +1025,14 @@ const EditorPage = () => {
                                     className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${isNotesOpen ? 'bg-accent text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
                                     Notes
+                                </button>
+                                <button 
+                                    onClick={handleLeaveRoom}
+                                    className="px-2 py-1 text-[10px] font-bold rounded-md transition-all text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-1 cursor-pointer"
+                                    title="Leave Arena Room"
+                                >
+                                    <LogOut size={11} />
+                                    <span>Leave</span>
                                 </button>
                             </div>
                             <span className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`} title={problemLabel}>
