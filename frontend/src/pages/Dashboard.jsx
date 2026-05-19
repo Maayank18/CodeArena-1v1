@@ -319,7 +319,7 @@ const Dashboard = () => {
               </div>
 
               {/* Mobile Consistency Calendar - Visible only on small screens */}
-              <div className="px-4 pb-8 lg:hidden">
+              <div className="mt-6 px-4 pb-8 lg:hidden">
                 <ConsistencyCalendar className="w-full" />
               </div>
             </div>
