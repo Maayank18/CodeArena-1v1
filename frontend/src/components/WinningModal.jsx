@@ -23,6 +23,7 @@ const WinningModal = ({ result, currentUsername, onHomeClick, onClose }) => {
     const playerEntries = Object.entries(scores);
     const currentPlayerResult =
         result?.playerResults?.[currentUsername] ||
+        Object.entries(result?.playerResults || {}).find(([k]) => k.toLowerCase() === String(currentUsername).toLowerCase())?.[1] ||
         (playerEntries.length === 1 ? result?.playerResults?.[playerEntries[0][0]] : null);
     const pointsEarned = Number(
         currentPlayerResult?.seasonPoints ??

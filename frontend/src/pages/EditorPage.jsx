@@ -143,6 +143,7 @@ const normalizeGameOverPayload = (data, currentUsername) => {
         (Object.keys(scores).length === 1 ? Object.keys(scores)[0] : '');
     const currentPlayerResult =
         playerResults[currentUsername] ||
+        Object.entries(playerResults).find(([k]) => k.toLowerCase() === String(currentUsername).toLowerCase())?.[1] ||
         (Object.keys(playerResults).length === 1 ? Object.values(playerResults)[0] : null);
 
     return {

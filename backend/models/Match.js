@@ -62,7 +62,7 @@ const matchSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['completed', 'cancelled'],
+    enum: ['completed', 'cancelled', 'abandoned', 'active'],
     default: 'completed'
   },
   isDisqualified: {
@@ -79,7 +79,7 @@ const matchSchema = new mongoose.Schema({
   },
   reason: {
     type: String,
-    enum: ['submission', 'timeout', 'forfeit', 'draw', 'cancelled'],
+    enum: ['submission', 'timeout', 'forfeit', 'draw', 'cancelled', 'disconnect', 'normal'],
     default: 'submission'
   },
   problemIds: [{

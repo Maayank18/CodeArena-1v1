@@ -977,14 +977,51 @@ const toSafeUsername = (value, fallback = DEFAULT_PLAYER_USERNAME) => {
 };
 
 const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmitted) => {
-    if (!playerData || !matchOutcome) return 0;
-    if (playerData.isCheater) return -20;
-    if (opponentData?.isCheater) return 50;
-    if (!hasSubmitted) return 0;
-    if (matchOutcome.status?.includes("Winner")) return 50;
-    if (matchOutcome.status === "Draw") return 25;
-    if (matchOutcome.status === "Loser" && hasSubmitted) return 10;
-    return 0;
+    if (!playerData || !matchOutcome) return 5;
+    
+    const pRating = toFiniteNumber(playerData.rating, DEFAULT_PLAYER_RATING);
+    const oRating = opponentData ? toFiniteNumber(opponentData.rating, DEFAULT_PLAYER_RATING) : DEFAULT_PLAYER_RATING;
+    const pScore = toFiniteNumber(playerData.score, 0);
+
+    // 1. CHEATER PENALTY
+    if (playerData.isCheater) {
+        const dynamicPenalty = 20 + Math.min(30, Math.max(0, Math.round((pRating - 1000) / 50)));
+        return -dynamicPenalty;
+    }
+
+    // 2. CHEATER BOUNTY
+    if (opponentData?.isCheater) {
+        const dynamicBounty = 40 + Math.min(20, Math.max(0, Math.round(oRating / 100)));
+        return dynamicBounty;
+    }
+
+    // 3. WINNER OUTCOME
+    if (matchOutcome.status?.includes("Winner")) {
+        const baseWin = 35;
+        // Dynamic ELO Difference Bonus: Reward more points for defeating a stronger player
+        const eloDiff = oRating - pRating;
+        const eloBonus = eloDiff > 0 ? Math.min(20, Math.round(eloDiff / 15)) : 0;
+        // Score/Performance Bonus: reward based on score
+        const scoreBonus = Math.min(15, Math.round(pScore / 2));
+        
+        return baseWin + eloBonus + scoreBonus;
+    }
+
+    // 4. DRAW OUTCOME
+    if (matchOutcome.status === "Draw") {
+        const baseDraw = 15;
+        const scoreBonus = Math.min(10, Math.round(pScore / 3));
+        return baseDraw + scoreBonus;
+    }
+
+    // 5. LOSER OUTCOME
+    if (matchOutcome.status === "Loser") {
+        const baseLoss = 5; // Baseline participation points to avoid 0
+        const scoreBonus = hasSubmitted ? Math.min(10, Math.round(pScore / 4)) : 0;
+        return baseLoss + scoreBonus;
+    }
+
+    return 5;
 };
 
 const FORFEIT_ELO_K = 32;
@@ -998,40 +1035,48 @@ const calculateSoloPracticeOutcome = (playerData, reason) => {
     const score = Math.max(0, toFiniteNumber(playerData?.score, 0));
     const hasSubmitted = Boolean(playerData?.hasSubmitted);
 
+    // 1. Cheater check
     if (playerData?.isCheater) {
+        const penalty = 15 + Math.min(20, Math.max(0, Math.round((rating - 1000) / 100)));
         return {
             p1: {
-                newRating: rating,
-                pointsGained: 0,
-                seasonScore: 0,
+                newRating: Math.max(0, rating - penalty),
+                pointsGained: -penalty,
+                seasonScore: -penalty,
                 status: 'Disqualified',
             }
         };
     }
 
+    // 2. Forfeit/Leave Scenario (Maya vs undefined case)
     if (reason === 'forfeit') {
         const eloPenalty = Math.min(12, Math.max(4, Math.round(Math.max(0, rating - DEFAULT_PLAYER_RATING) / 100) + 4));
+        const dynamicParticipationPoints = 5 + Math.min(10, Math.round(score / 4));
+        
         return {
             p1: {
                 newRating: Math.max(0, rating - eloPenalty),
                 pointsGained: -eloPenalty,
-                seasonScore: 0,
+                seasonScore: dynamicParticipationPoints, // Dynamic points even on forfeit!
                 status: 'Loser',
             }
         };
     }
 
+    // 3. Timeout or Quit without submission
     if (!hasSubmitted) {
+        const dynamicParticipationPoints = 5 + Math.min(10, Math.round(score / 4));
         return {
             p1: {
                 newRating: rating,
                 pointsGained: 0,
-                seasonScore: 0,
+                seasonScore: dynamicParticipationPoints, // Dynamic points even on timeout!
                 status: reason === 'timeout' ? 'Draw' : 'Loser',
             }
         };
     }
 
+    // 4. Completed Solo Match
     const eloGain = Math.min(12, Math.max(2, Math.round(score / 4) || 2));
     const practicePoints = Math.min(30, Math.max(8, Math.round(score / 2) || 8));
 
@@ -2096,6 +2141,28 @@ io.on('connection', async (socket) => {
 
   // ✅ DISCONNECT EVENT
   socket.on('disconnect', async (reason) => {
+    try {
+      // Find the room this socket belongs to
+      for (const [roomId, room] of rooms.entries()) {
+        const playerIndex = room.players.findIndex(p => p.id === socket.id);
+        if (playerIndex !== -1) {
+            const player = room.players[playerIndex];
+            console.log(`[DISCONNECT] Player ${player.username} left room ${roomId} (socket: ${socket.id})`);
+            
+            // If the game is currently active, we MUST resolve it!
+            if (room.isGameActive && !room.resolutionResult && !room.isResolving) {
+                // The opponent wins by default due to disconnect
+                const opponent = room.players.find(p => p.id !== socket.id);
+                const winnerUsername = opponent ? opponent.username : null;
+                console.log(`[DISCONNECT] Active game in room ${roomId}. Winner by default: ${winnerUsername || 'Draw'}`);
+                await resolveMatch(roomId, winnerUsername, 'forfeit', room);
+            }
+            break;
+        }
+      }
+    } catch (e) {
+      console.error("[SOCKET] Disconnect Resolution Error:", e);
+    }
     try {
       console.log(`[SOCKET] ❌ Disconnected: ${socket.id} (${reason})`);
       
