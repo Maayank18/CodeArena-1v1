@@ -5,7 +5,7 @@ const rawImages = import.meta.glob('../assets/badges/*.png', { eager: true, impo
 
 // Create dictionary of filename -> asset URL
 const badgeAssetDict = Object.fromEntries(
-    Object.entries(rawImages).map(([path, val]) => [path.split('/').pop(), val])
+    Object.entries(rawImages).map(([path, val]) => [path.split(/[/\\]/).pop(), val])
 );
 
 // Normalize badge keys: lowercase, trim, replace spaces and hyphens with underscores
@@ -29,10 +29,13 @@ const BADGE_ASSET_MAP = {
     blitzkrieg: 'blitzkrieg.png',
     boss_slayer: 'boss_slayer.png',
     centurion: 'centurion.png',
+    centurion_streak: 'centurion.png',
     clutch_win: 'clutch_win.png',
+    devoted_coder: 'marathon_runner.png',
     diamond_ranked: 'diamond_ranked.png',
     dominator: 'dominator.png',
     dp_dynamo: 'dp_dynamo.png',
+    early_bird: 'getting_started.png',
     first_blood: 'first_blood.png',
     flash: 'flash.png',
     flawless_victory: 'flawless_victory.png',
@@ -62,6 +65,7 @@ const BADGE_ASSET_MAP = {
     sirens_solver: 'sirens_solver.png',
     sort_king: 'sort_king.png',
     speed_demon: 'speed_demon.png',
+    stack_surgeon: 'array_ace.png',
     star_collector: 'star_collector.png',
     string_slicer: 'string_slicer.png',
     sub_minute: 'sub_minute.png',
