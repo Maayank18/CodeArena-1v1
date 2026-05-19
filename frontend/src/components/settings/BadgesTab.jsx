@@ -6,19 +6,20 @@ import { BADGE_DEFINITIONS, GLOW_MAP, CATEGORIES } from '../../utils/badgeHelper
 
 const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }) => {
     const [imgError, setImgError] = useState(false);
-    const isEarned = badge.unlocked;
+    const realUnlockState = badge.unlocked;
+    const adminPreviewOverride = isAdmin && !realUnlockState;
+    const isVisualUnlock = realUnlockState || adminPreviewOverride;
     const isLockedByTier = badge.category === 'Campaign' && userTier < 1; 
-    const isVisualUnlock = isEarned || isAdmin;
     const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
     const isEquipped = equippedBadge === badge.key;
 
-    // Dynamically resolve image asset safely
+    // Asset Mapping - Safely resolve image asset
     const badgeImageSrc = new URL(`../../assets/badges/${badge.assetName || badge.key + '.png'}`, import.meta.url).href;
 
     return (
         <div
             onClick={() => {
-                if (isEarned || isAdmin) {
+                if (realUnlockState || isAdmin) {
                     handleEquipBadge(badge.key);
                 } else if (isLockedByTier) {
                     toast.error(`${badge.displayName} is a Plus/Pro tier exclusive achievement.`, {
@@ -48,7 +49,7 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
                             className={`w-full h-full object-contain transition-all duration-500 ${
                                 isVisualUnlock 
                                     ? 'group-hover:scale-110 drop-shadow-lg opacity-100' 
-                                    : 'filter blur-[3px] grayscale opacity-40 brightness-75 mix-blend-luminosity'
+                                    : 'filter blur-[4px] grayscale-[80%] opacity-60 brightness-75' // Locked visual treatment
                             }`} 
                             onError={() => {
                                 console.warn(`Badge asset missing for: ${badge.displayName} (${badgeImageSrc})`);
@@ -60,17 +61,17 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
                     )}
                     
                     {!isVisualUnlock && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20">
-                            <Lock className={isLockedByTier ? "text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/70 drop-shadow-md"} size={22} />
+                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50">
+                            <Lock className={isLockedByTier ? "text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/80 drop-shadow-md"} size={24} />
                         </div>
                     )}
                 </div>
 
                 {/* Status tags */}
                 <div className="flex flex-col items-end gap-1">
-                    {isAdmin && !isEarned && (
+                    {adminPreviewOverride && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
-                            Admin Mode
+                            Admin Preview
                         </span>
                     )}
                     {isEquipped && (
@@ -97,7 +98,7 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
                     {badge.displayName}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
-                    {isLockedByTier && !isEarned ? "Plus/Pro Tier Exclusive Achievement" : badge.description}
+                    {isLockedByTier && !realUnlockState ? "Plus/Pro Tier Exclusive Achievement" : badge.description}
                 </p>
             </div>
 
@@ -105,19 +106,19 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
             <div className="mt-auto pt-4 border-t border-[var(--border-color)]">
                 <div className="flex justify-between text-xs font-bold mb-2">
                     <span className={isVisualUnlock ? 'text-accent' : 'text-[var(--text-secondary)]'}>
-                        {isEarned ? 'Unlocked' : isAdmin ? 'Admin Override' : `Progress: ${badge.progress} / ${badge.requiredValue}`}
+                        {realUnlockState ? 'Unlocked' : adminPreviewOverride ? 'Previewing (Locked)' : `Progress: ${badge.progress} / ${badge.requiredValue}`}
                     </span>
                     <span className="text-[var(--text-secondary)]">
-                        {isEarned || isAdmin ? '' : `${badge.remaining} remaining`}
+                        {realUnlockState ? '' : `${badge.remaining} remaining`}
                     </span>
                 </div>
                 <div className="w-full bg-[var(--bg-primary)] rounded-full h-1.5 overflow-hidden">
                     <div 
-                        className={`h-full transition-all duration-1000 ease-out ${isEarned ? 'bg-accent' : isAdmin ? 'bg-red-500' : 'bg-gray-500'}`}
-                        style={{ width: `${isAdmin && !isEarned ? 100 : badge.completionPercent}%` }}
+                        className={`h-full transition-all duration-1000 ease-out ${realUnlockState ? 'bg-accent' : adminPreviewOverride ? 'bg-red-500' : 'bg-gray-500'}`}
+                        style={{ width: `${badge.completionPercent}%` }}
                     />
                 </div>
-                {isEarned && badge.unlockedAt && (
+                {realUnlockState && badge.unlockedAt && (
                     <div className="flex items-center gap-1 mt-3 text-[10px] text-[var(--text-secondary)] font-medium">
                         <Clock size={12} />
                         <span>Earned on {new Date(badge.unlockedAt).toLocaleDateString()}</span>
