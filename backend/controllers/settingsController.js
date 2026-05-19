@@ -567,12 +567,13 @@ export const updateCustomization = async (req, res) => {
             const sanitized = typeof equippedBadge === 'string' ? equippedBadge.trim() : '';
             if (sanitized !== '') {
                 // Fetch the user's earned badges to verify they unlocked it
-                const userObj = await User.findById(userId).select('badges').lean();
+                const userObj = await User.findById(userId).select('badges role').lean();
                 if (!userObj) {
                     return res.status(404).json({ success: false, message: 'User not found' });
                 }
                 const earnedBadges = userObj.badges || [];
-                if (!earnedBadges.includes(sanitized)) {
+                const isAdmin = userObj.role === 'admin';
+                if (!earnedBadges.includes(sanitized) && !isAdmin) {
                     return res.status(400).json({ success: false, message: 'You must earn this badge before you can equip it' });
                 }
             }

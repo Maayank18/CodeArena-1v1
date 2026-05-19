@@ -22,10 +22,8 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
     return (
         <div
             onClick={() => {
-                if (realUnlockState) {
+                if (realUnlockState || isAdmin) {
                     handleEquipBadge(badge.key);
-                } else if (adminPreviewOverride) {
-                    toast('Admin Preview: Equipping is disabled for unearned badges.', { icon: 'ℹ️' });
                 } else if (isLockedByTier) {
                     toast.error(`${badge.displayName} is a Plus/Pro tier exclusive achievement.`, {
                         icon: '🔒',

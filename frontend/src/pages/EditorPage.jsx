@@ -13,6 +13,9 @@ import api from '../api.js';
 import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3, LogOut } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import { getBadgeIconData } from '../utils/badgeHelper';
+import { Trophy } from 'lucide-react';
+
+const badgeImages = import.meta.glob('../assets/badges/*.png', { eager: true, import: 'default' });
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import WinningModal from '../components/WinningModal.jsx';
@@ -886,9 +889,17 @@ const EditorPage = () => {
                                 const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
                                 if (badgeData) {
                                     const BadgeIcon = badgeData.icon;
+                                    const assetKey = `../assets/badges/${badgeData.assetName || badgeData.id + '.png'}`;
+                                    const badgeImageSrc = badgeImages[assetKey];
                                     return (
-                                        <span className={`w-5 h-5 rounded flex items-center justify-center bg-gradient-to-br ${badgeData.gradient} shadow shrink-0 mr-1 inline-flex align-middle`} title={badgeData.name}>
-                                            <BadgeIcon className="text-white" size={10} />
+                                        <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
+                                            {BadgeIcon ? (
+                                                <BadgeIcon className="text-white" size={10} />
+                                            ) : badgeImageSrc ? (
+                                                <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
+                                            ) : (
+                                                <Trophy size={10} className="text-accent" />
+                                            )}
                                         </span>
                                     );
                                 }

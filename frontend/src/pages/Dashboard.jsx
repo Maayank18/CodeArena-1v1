@@ -25,6 +25,8 @@ import {
 const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
+const badgeImages = import.meta.glob('../assets/badges/*.png', { eager: true, import: 'default' });
+
 const Dashboard = () => {
   const [user, setUser] = useState(() => readStoredUser());
   const navigate = useNavigate();
@@ -294,9 +296,17 @@ const Dashboard = () => {
                             const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
                             if (badgeData) {
                               const BadgeIcon = badgeData.icon;
+                              const assetKey = `../assets/badges/${badgeData.assetName || badgeData.id + '.png'}`;
+                              const badgeImageSrc = badgeImages[assetKey];
                               return (
-                                <span className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${badgeData.gradient} shadow-lg shrink-0 mr-2 inline-flex align-middle`} title={badgeData.name}>
-                                  <BadgeIcon className="text-white" size={16} />
+                                <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/20 shrink-0 mr-2 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
+                                  {BadgeIcon ? (
+                                    <BadgeIcon className="text-white" size={16} />
+                                  ) : badgeImageSrc ? (
+                                    <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
+                                  ) : (
+                                    <Trophy size={16} className="text-accent" />
+                                  )}
                                 </span>
                               );
                             }
