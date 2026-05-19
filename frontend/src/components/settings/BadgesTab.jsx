@@ -4,6 +4,8 @@ import api from '../../api';
 import toast from 'react-hot-toast';
 import { BADGE_DEFINITIONS, GLOW_MAP, CATEGORIES } from '../../utils/badgeHelper';
 
+const badgeImages = import.meta.glob('../../assets/badges/*.png', { eager: true, import: 'default' });
+
 const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }) => {
     const [imgError, setImgError] = useState(false);
     const realUnlockState = badge.unlocked;
@@ -13,14 +15,17 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
     const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
     const isEquipped = equippedBadge === badge.key;
 
-    // Asset Mapping - Safely resolve image asset
-    const badgeImageSrc = new URL(`../../assets/badges/${badge.assetName || badge.key + '.png'}`, import.meta.url).href;
+    // Asset Mapping - Safely resolve image asset from Vite eager glob map
+    const assetKey = `../../assets/badges/${badge.assetName || badge.key + '.png'}`;
+    const badgeImageSrc = badgeImages[assetKey];
 
     return (
         <div
             onClick={() => {
-                if (realUnlockState || isAdmin) {
+                if (realUnlockState) {
                     handleEquipBadge(badge.key);
+                } else if (adminPreviewOverride) {
+                    toast('Admin Preview: Equipping is disabled for unearned badges.', { icon: 'ℹ️' });
                 } else if (isLockedByTier) {
                     toast.error(`${badge.displayName} is a Plus/Pro tier exclusive achievement.`, {
                         icon: '🔒',
@@ -42,7 +47,7 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
             <div className="flex justify-between items-start mb-4">
                 {/* Visual Badge Art */}
                 <div className="relative w-16 h-16 shrink-0 flex items-center justify-center bg-black/20 rounded-xl border border-[var(--border-color)] overflow-hidden p-1">
-                    {!imgError ? (
+                    {!imgError && badgeImageSrc ? (
                         <img 
                             src={badgeImageSrc} 
                             alt={badge.displayName} 
@@ -52,7 +57,7 @@ const BadgeCard = ({ badge, userTier, equippedBadge, handleEquipBadge, isAdmin }
                                     : 'filter blur-[4px] grayscale-[80%] opacity-60 brightness-75' // Locked visual treatment
                             }`} 
                             onError={() => {
-                                console.warn(`Badge asset missing for: ${badge.displayName} (${badgeImageSrc})`);
+                                console.warn(`Badge asset missing or broken for: ${badge.displayName}`);
                                 setImgError(true);
                             }}
                         />
