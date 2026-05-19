@@ -550,7 +550,7 @@ import { clearStatsCache } from './controllers/statsController.js';
 import { attachPresenceTracking } from './services/presenceTracker.js';
 
 // ✅ BADGE ENGINE (Event-driven achievement system)
-import { evaluateBadges } from './services/badgeEngine.js';
+import { processAchievementEvent } from './services/achievementEngine.js';
 import { verifyCustomRoomJoinToken } from './utils/customRoomAuth.js';
 
 dotenv.config();
@@ -1567,44 +1567,36 @@ const handleGameEnd = async (roomId, room) => {
                 })
         );
 
-        // ✅ BADGE ENGINE: Evaluate achievements asynchronously (fire-and-forget)
+        // ✅ ACHIEVEMENT ENGINE: Evaluate achievements asynchronously (fire-and-forget)
         try {
-            const badgeContext = {
-                matchDurationMinutes,
-                remainingTimeSeconds,
-                totalRounds: room.totalRounds,
-            };
-
-            if (user1Doc?._id && !isSoloMatch) {
-                evaluateBadges(user1Doc._id, {
-                    ...badgeContext,
-                    isWinner: Boolean(outcome?.p1?.status?.includes('Winner')),
-                    score: p1Data.score,
-                    opponentScore: p2Data?.score || 0,
-                    userRating: p1Data.rating,
+            if (user1Doc?._id) {
+                processAchievementEvent(user1Doc._id, 'MATCH_COMPLETED', {
+                    isWin: Boolean(outcome?.p1?.status?.includes('Winner')),
+                    isSolo: isSoloMatch,
                     opponentRating: p2Data?.rating || 1000,
-                    roundsWon: Math.floor(p1Data.score / 10),
-                    fastestSolveMs: room.fastestSolveMsByUser?.[p1Data.username],
-                    instantKill: room.firstRoundFirstSolverUsername === p1Data.username &&
-                        ((room.firstRoundOpponentSubmissionCounts?.[p1Data.username] || 0) === 0),
-                }).catch(e => console.error('[BADGES] P1 eval error:', e.message));
+                    matchDurationSeconds: matchDurationMinutes * 60,
+                    timeRemainingSeconds: remainingTimeSeconds,
+                    isCustom: Boolean(room.isCustom),
+                    myScore: p1Data.score,
+                    opponentSubmissions: room.firstRoundFirstSolverUsername === p1Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p1Data.username] || 0) === 0) ? 0 : 1,
+                    allSolvedCorrectly: p1Data.score === 10 * (room.totalRounds || 0)
+                }).catch(e => console.error('[ACHIEVEMENT] P1 eval error:', e.message));
             }
-            if (user2Doc?._id && p2Data && outcome?.p2 && !isSoloMatch) {
-                evaluateBadges(user2Doc._id, {
-                    ...badgeContext,
-                    isWinner: Boolean(outcome?.p2?.status?.includes('Winner')),
-                    score: p2Data.score,
-                    opponentScore: p1Data.score,
-                    userRating: p2Data.rating,
-                    opponentRating: p1Data.rating,
-                    roundsWon: Math.floor(p2Data.score / 10),
-                    fastestSolveMs: room.fastestSolveMsByUser?.[p2Data.username],
-                    instantKill: room.firstRoundFirstSolverUsername === p2Data.username &&
-                        ((room.firstRoundOpponentSubmissionCounts?.[p2Data.username] || 0) === 0),
-                }).catch(e => console.error('[BADGES] P2 eval error:', e.message));
+            if (user2Doc?._id && p2Data && outcome?.p2) {
+                processAchievementEvent(user2Doc._id, 'MATCH_COMPLETED', {
+                    isWin: Boolean(outcome?.p2?.status?.includes('Winner')),
+                    isSolo: isSoloMatch,
+                    opponentRating: p1Data?.rating || 1000,
+                    matchDurationSeconds: matchDurationMinutes * 60,
+                    timeRemainingSeconds: remainingTimeSeconds,
+                    isCustom: Boolean(room.isCustom),
+                    myScore: p2Data.score,
+                    opponentSubmissions: room.firstRoundFirstSolverUsername === p2Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p2Data.username] || 0) === 0) ? 0 : 1,
+                    allSolvedCorrectly: p2Data.score === 10 * (room.totalRounds || 0)
+                }).catch(e => console.error('[ACHIEVEMENT] P2 eval error:', e.message));
             }
         } catch (badgeErr) {
-            console.error('[BADGES] Non-critical badge error:', badgeErr.message);
+            console.error('[ACHIEVEMENT] Non-critical error:', badgeErr.message);
         }
 
     } catch (err) {

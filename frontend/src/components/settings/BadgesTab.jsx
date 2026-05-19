@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import PremiumGate from '../PremiumGate';
-import { Loader2, Lock, Check, Award } from 'lucide-react';
+import { Loader2, Lock, Check, Award, Clock } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
 import { BADGE_DEFINITIONS, GLOW_MAP, CATEGORIES } from '../../utils/badgeHelper';
 
 const BadgesTab = () => {
     const [earnedBadges, setEarnedBadges] = useState([]);
+    const [achievementProgress, setAchievementProgress] = useState([]);
+    const [catalog, setCatalog] = useState(BADGE_DEFINITIONS);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('all');
@@ -21,8 +22,13 @@ const BadgesTab = () => {
             try {
                 const res = await api.get('/settings/badges');
                 if (res.data?.success) {
-                    setEarnedBadges(res.data.badges || []);
+                    setEarnedBadges(res.data.earned || res.data.badges || []);
+                    setAchievementProgress(res.data.achievementProgress || []);
                     setStats(res.data.stats);
+                    // Use backend catalog if provided, else fallback to frontend helper
+                    if (res.data.catalog) {
+                        setCatalog(res.data.catalog);
+                    }
                 }
             } catch (err) {
                 console.error('Badge fetch failed:', err);
@@ -56,7 +62,7 @@ const BadgesTab = () => {
             });
             if (res.data?.success) {
                 setEquippedBadge(newEquipped);
-                toast.success(isEquipped ? 'Unequipped badge!' : `Equipped ${BADGE_DEFINITIONS.find(b => b.id === badgeId)?.name || 'Badge'}!`);
+                toast.success(isEquipped ? 'Unequipped badge!' : `Equipped Badge!`);
                 
                 const currentStored = JSON.parse(localStorage.getItem('codearena_user') || '{}');
                 const nextUser = res.data.user || {
@@ -84,11 +90,44 @@ const BadgesTab = () => {
     }
 
     const earned = earnedBadges?.length || 0;
-    const total = BADGE_DEFINITIONS.length;
+    const total = catalog.length || BADGE_DEFINITIONS.length;
+
+    // Use frontend descriptions and UI classes, but merge with backend dynamic progress
+    const mergedBadges = (catalog || BADGE_DEFINITIONS).map(backendDef => {
+        const frontendDef = BADGE_DEFINITIONS.find(b => b.id === backendDef.key) || {};
+        const progItem = achievementProgress.find(p => p.badgeKey === backendDef.key);
+        
+        let progress = 0;
+        let unlocked = false;
+        let unlockedAt = null;
+
+        if (progItem) {
+            progress = progItem.progress || 0;
+            unlocked = progItem.unlocked || false;
+            unlockedAt = progItem.unlockedAt;
+        }
+        
+        // Backward compatibility
+        if (earnedBadges.includes(backendDef.key)) {
+            unlocked = true;
+            progress = backendDef.requiredValue;
+        }
+
+        return {
+            ...frontendDef,
+            ...backendDef,
+            progress,
+            unlocked,
+            unlockedAt,
+            requiredValue: backendDef.requiredValue || 1,
+            remaining: Math.max((backendDef.requiredValue || 1) - progress, 0),
+            completionPercent: Math.min((progress / (backendDef.requiredValue || 1)) * 100, 100)
+        };
+    });
 
     const filteredBadges = activeCategory === 'all' 
-        ? BADGE_DEFINITIONS 
-        : BADGE_DEFINITIONS.filter(b => b.category === activeCategory);
+        ? mergedBadges 
+        : mergedBadges.filter(b => b.category === activeCategory);
 
     return (
         <div className="space-y-8">
@@ -118,8 +157,8 @@ const BadgesTab = () => {
                     All ({total})
                 </button>
                 {CATEGORIES.map(cat => {
-                    const count = BADGE_DEFINITIONS.filter(b => b.category === cat).length;
-                    const earnedCount = BADGE_DEFINITIONS.filter(b => b.category === cat && earnedBadges?.includes(b.id)).length;
+                    const count = mergedBadges.filter(b => b.category === cat).length;
+                    const earnedCount = mergedBadges.filter(b => b.category === cat && b.unlocked).length;
                     return (
                         <button
                             key={cat}
@@ -137,81 +176,122 @@ const BadgesTab = () => {
             </div>
 
             {/* Badge Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredBadges.map((badge) => {
-                    const isEarned = earnedBadges?.includes(badge.id);
-                    const isLockedByTier = badge.isExclusive && userTier < 2;
-                    const Icon = badge.icon;
+                    const isEarned = badge.unlocked;
+                    const isLockedByTier = badge.category === 'Campaign' && userTier < 1; 
                     const glowClass = GLOW_MAP[badge.glow] || 'shadow-gray-500/20';
-                    const isEquipped = equippedBadge === badge.id;
+                    const isEquipped = equippedBadge === badge.key;
+
+                    // Dynamically resolve image asset
+                    const badgeImageSrc = new URL(`../../assets/badges/${badge.assetName || badge.key + '.png'}`, import.meta.url).href;
 
                     return (
                         <div
-                            key={badge.id}
+                            key={badge.key}
                             onClick={() => {
                                 if (isEarned) {
-                                    handleEquipBadge(badge.id);
+                                    handleEquipBadge(badge.key);
                                 } else if (isLockedByTier) {
-                                    toast.error(`${badge.name} is a Pro tier exclusive achievement.`, {
+                                    toast.error(`${badge.displayName} is a Plus/Pro tier exclusive achievement.`, {
                                         icon: '🔒',
                                         style: { borderRadius: '10px', background: '#333', color: '#fff' }
                                     });
                                 }
                             }}
-                            className={`relative group rounded-2xl border p-6 transition-all duration-300 ease-out cursor-pointer select-none
+                            className={`relative flex flex-col group rounded-2xl border p-5 transition-all duration-300 ease-out select-none
                                 ${isEarned
                                     ? isEquipped
-                                        ? `bg-[var(--bg-secondary)] border-accent shadow-2xl ${glowClass} ring-2 ring-accent/60 scale-[1.02]`
-                                        : `bg-[var(--bg-secondary)] border-[var(--border-color)] hover:border-gray-500 hover:-translate-y-1 hover:scale-[1.02] shadow-xl hover:${glowClass}`
+                                        ? `bg-[var(--bg-secondary)] border-accent shadow-2xl ${glowClass} ring-2 ring-accent/60 scale-[1.02] cursor-pointer`
+                                        : `bg-[var(--bg-secondary)] border-[var(--border-color)] hover:border-gray-500 hover:-translate-y-1 hover:scale-[1.02] shadow-xl hover:${glowClass} cursor-pointer`
                                     : isLockedByTier
-                                        ? 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-40 hover:opacity-50'
-                                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-60'
+                                        ? 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-40 hover:opacity-50 cursor-not-allowed'
+                                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] opacity-70 cursor-default hover:bg-[var(--surface-elevated)]'
                                 }`}
                         >
-                            {/* Category Tag / Equipped State */}
-                            <div className="absolute top-3 right-3">
-                                {isEquipped ? (
-                                    <div className="flex items-center gap-1 bg-accent/20 text-accent border border-accent/40 rounded-full px-2 py-0.5 text-[10px] font-bold">
-                                        <Check size={10} className="stroke-[3]" />
-                                        <span>Equipped</span>
+                            {/* Header row: Icon & Status */}
+                            <div className="flex justify-between items-start mb-4">
+                                {/* Visual Badge Art */}
+                                <div className="relative w-16 h-16 shrink-0 flex items-center justify-center bg-black/20 rounded-xl border border-[var(--border-color)] p-1">
+                                    <img 
+                                        src={badgeImageSrc} 
+                                        alt={badge.displayName} 
+                                        className={`w-full h-full object-contain transition-all duration-300 ${
+                                            isEarned 
+                                                ? 'group-hover:scale-110 drop-shadow-lg' 
+                                                : 'filter blur-[4px] grayscale-[80%] opacity-40'
+                                        }`} 
+                                        onError={(e) => {
+                                            // Fallback for missing images
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'flex';
+                                        }}
+                                    />
+                                    {/* Fallback layout if img fails to load */}
+                                    <div className="absolute inset-0 items-center justify-center hidden">
+                                        <Award size={24} className={isEarned ? 'text-accent' : 'text-gray-500'} />
                                     </div>
-                                ) : isEarned ? (
-                                    <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${badge.gradient} shadow-lg`} />
-                                ) : (
-                                    <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">{badge.category}</span>
-                                )}
+                                    
+                                    {!isEarned && (
+                                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                                            <Lock className={isLockedByTier ? "text-amber-500 drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/60"} size={20} />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Status tags */}
+                                <div className="flex flex-col items-end gap-1">
+                                    {isEquipped && (
+                                        <div className="flex items-center gap-1 bg-accent/20 text-accent border border-accent/40 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                                            <Check size={10} className="stroke-[3]" />
+                                            <span>Equipped</span>
+                                        </div>
+                                    )}
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                                        badge.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-500' :
+                                        badge.rarity === 'Epic' ? 'bg-purple-500/20 text-purple-400' :
+                                        badge.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-400' :
+                                        badge.rarity === 'Uncommon' ? 'bg-green-500/20 text-green-400' :
+                                        'bg-gray-500/20 text-gray-400'
+                                    }`}>
+                                        {badge.rarity}
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* Badge Icon with Blurry Locked Preview */}
-                            <div className="relative w-14 h-14 mb-4 select-none">
-                                <div className={`w-full h-full rounded-xl flex items-center justify-center transition-transform duration-300
-                                    ${isEarned
-                                        ? `bg-gradient-to-br ${badge.gradient} shadow-lg group-hover:scale-110 group-hover:rotate-3`
-                                        : `bg-gradient-to-br ${badge.gradient} opacity-20 blur-[3px]`
-                                    }`}
-                                >
-                                    <Icon className="text-[var(--text-primary)]" size={26} />
+                            {/* Badge Metadata */}
+                            <div className="flex-1">
+                                <h3 className={`text-lg font-bold mb-1 ${isEarned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                                    {badge.displayName}
+                                </h3>
+                                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                                    {isLockedByTier && !isEarned ? "Plus/Pro Tier Exclusive Achievement" : badge.description}
+                                </p>
+                            </div>
+
+                            {/* Progress Section */}
+                            <div className="mt-auto pt-4 border-t border-[var(--border-color)]">
+                                <div className="flex justify-between text-xs font-bold mb-2">
+                                    <span className={isEarned ? 'text-accent' : 'text-[var(--text-secondary)]'}>
+                                        {isEarned ? 'Unlocked' : `Progress: ${badge.progress} / ${badge.requiredValue}`}
+                                    </span>
+                                    <span className="text-[var(--text-secondary)]">
+                                        {isEarned ? '' : `${badge.remaining} remaining`}
+                                    </span>
                                 </div>
-                                {!isEarned && (
-                                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 rounded-xl">
-                                        <Lock className={isLockedByTier ? "text-amber-500drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]" : "text-white/60"} size={18} />
+                                <div className="w-full bg-[var(--bg-primary)] rounded-full h-1.5 overflow-hidden">
+                                    <div 
+                                        className={`h-full transition-all duration-1000 ease-out ${isEarned ? 'bg-accent' : 'bg-gray-500'}`}
+                                        style={{ width: `${badge.completionPercent}%` }}
+                                    />
+                                </div>
+                                {isEarned && badge.unlockedAt && (
+                                    <div className="flex items-center gap-1 mt-3 text-[10px] text-[var(--text-secondary)] font-medium">
+                                        <Clock size={12} />
+                                        <span>Earned on {new Date(badge.unlockedAt).toLocaleDateString()}</span>
                                     </div>
                                 )}
                             </div>
-
-                            {/* Badge Info */}
-                            <h3 className={`text-lg font-bold mb-1 ${isEarned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
-                                {badge.name}
-                            </h3>
-                            <p className="text-sm text-[var(--text-secondary)]">
-                                {isLockedByTier && !isEarned ? "Pro Tier Exclusive Achievement" : badge.desc}
-                            </p>
-                            
-                            {isEarned && !isEquipped && (
-                                <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                    <span className="text-[10px] text-accent font-bold uppercase tracking-wider">Click to Equip</span>
-                                </div>
-                            )}
                         </div>
                     );
                 })}

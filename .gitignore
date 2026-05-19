@@ -26,3 +26,6 @@ Thumbs.db
 # IDE settings (Optional)
 .vscode/
 .idea/
+
+# Assets
+frontend/src/assets/badges/

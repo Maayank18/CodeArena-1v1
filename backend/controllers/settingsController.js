@@ -1,6 +1,6 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
-import { BADGE_DEFINITIONS } from '../services/badgeEngine.js';
+import { BADGES_CATALOG } from '../config/badgesCatalog.js';
 import { sendSettingsOtpEmail, sendEmailVerificationOtp } from '../services/authEmailService.js';
 import {
     AUTH_LIMITS,
@@ -608,7 +608,7 @@ export const updateCustomization = async (req, res) => {
 export const getUserBadges = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .select('badges stats')
+            .select('badges achievementProgress stats')
             .lean();
 
         if (!user) {
@@ -616,13 +616,16 @@ export const getUserBadges = async (req, res) => {
         }
 
         const earnedBadges = user.badges || [];
-        const byCategory = BADGE_DEFINITIONS.reduce((acc, badge) => {
+        const achievementProgress = user.achievementProgress || [];
+        
+        const byCategory = BADGES_CATALOG.reduce((acc, badge) => {
             if (!acc[badge.category]) {
                 acc[badge.category] = { earned: 0, total: 0 };
             }
 
             acc[badge.category].total += 1;
-            if (earnedBadges.includes(badge.id)) {
+            const prog = achievementProgress.find(p => p.badgeKey === badge.key);
+            if ((prog && prog.unlocked) || earnedBadges.includes(badge.key)) {
                 acc[badge.category].earned += 1;
             }
 
@@ -631,13 +634,14 @@ export const getUserBadges = async (req, res) => {
 
         return res.json({
             success: true,
-            catalog: BADGE_DEFINITIONS,
+            catalog: BADGES_CATALOG,
             earned: earnedBadges,
-            badges: earnedBadges,
+            badges: earnedBadges, // backwards compat
+            achievementProgress: achievementProgress,
             stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
             progress: {
-                earnedCount: earnedBadges.length,
-                totalCount: BADGE_DEFINITIONS.length,
+                earnedCount: Object.values(byCategory).reduce((sum, cat) => sum + cat.earned, 0),
+                totalCount: BADGES_CATALOG.length,
                 byCategory,
             },
         });

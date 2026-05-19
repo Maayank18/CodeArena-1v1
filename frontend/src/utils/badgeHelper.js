@@ -1,66 +1,88 @@
-import { 
-    Zap, Timer, Flame, Shield, Swords, Crown, Moon, Trophy, Award, 
-    Star, Target, Eye, Layers, GitBranch, Brain, ArrowUpDown, Search, Hash 
-} from 'lucide-react';
+// FILE: frontend/src/utils/badgeHelper.js
+// Frontend catalog for all 60 achievement badges with asset mappings and styles.
+
+// Note: We are now using local PNG assets mapped via assetName instead of lucide-react icons.
 
 export const BADGE_DEFINITIONS = [
-    // ── Speed (9) ─────────────────────────────────────────────────
-    { id: 'flash',           category: 'Speed',       name: 'Flash',            desc: 'Win a match in under 5 minutes.',           icon: Zap,    gradient: 'from-yellow-400 to-amber-600',   glow: 'yellow', isExclusive: false },
-    { id: 'sub_minute',      category: 'Speed',       name: 'Sub-Minute',       desc: 'Solve a problem in under 60 seconds.',      icon: Timer,  gradient: 'from-cyan-400 to-blue-600',      glow: 'cyan', isExclusive: true },
-    { id: 'lightning_round', category: 'Speed',       name: 'Lightning Round',  desc: 'Complete all rounds in under 10 minutes.',  icon: Zap,    gradient: 'from-amber-400 to-orange-600',   glow: 'amber', isExclusive: true },
-    { id: 'speed_demon',     category: 'Speed',       name: 'Speed Demon',      desc: 'Win 5 matches in under 10 minutes each.',   icon: Flame,  gradient: 'from-red-500 to-orange-600',     glow: 'red', isExclusive: true },
-    { id: 'time_lord',       category: 'Speed',       name: 'Time Lord',        desc: 'Win a match with 20+ minutes remaining.',   icon: Timer,  gradient: 'from-indigo-500 to-purple-700',  glow: 'indigo', isExclusive: true },
-    { id: 'instant_kill',    category: 'Speed',       name: 'Instant Kill',     desc: 'Solve first before opponent submits once.', icon: Swords, gradient: 'from-rose-500 to-red-700',       glow: 'rose', isExclusive: true },
-    { id: 'supersonic',      category: 'Speed',       name: 'Supersonic',       desc: 'Win a match in under 3 minutes.',           icon: Zap,    gradient: 'from-emerald-400 to-teal-600',   glow: 'emerald', isExclusive: true },
-    { id: 'blitzkrieg',      category: 'Speed',       name: 'Blitzkrieg',       desc: 'Solve a problem in under 30 seconds.',      icon: Timer,  gradient: 'from-fuchsia-400 to-rose-600',   glow: 'pink', isExclusive: true },
-    { id: 'clutch_win',      category: 'Speed',       name: 'Clutch Win',       desc: 'Win a match with <10 seconds remaining.',   icon: Timer,  gradient: 'from-amber-500 to-red-600',      glow: 'orange', isExclusive: true },
+    // ----------------------------------------------------
+    // A) SPEED
+    // ----------------------------------------------------
+    { id: 'flash', category: 'Speed', name: 'Flash', desc: 'Win a complete 1v1 battle in under 5 minutes.', assetName: 'flash.png', rarity: 'Epic', gradient: 'from-yellow-400 to-amber-600', glow: 'yellow' },
+    { id: 'sub_minute', category: 'Speed', name: 'Sub-Minute', desc: 'Solve any problem in under 60 seconds.', assetName: 'sub_minute.png', rarity: 'Legendary', gradient: 'from-cyan-400 to-blue-600', glow: 'cyan' },
+    { id: 'lightning_round', category: 'Speed', name: 'Lightning Round', desc: 'Complete 5 matches completely under 10 minutes and win.', assetName: 'lightning_round.png', rarity: 'Rare', gradient: 'from-amber-400 to-orange-600', glow: 'amber' },
+    { id: 'speed_demon', category: 'Speed', name: 'Speed Demon', desc: 'Win and complete 10 matches completely under 10 minutes.', assetName: 'speed_demon.png', rarity: 'Epic', gradient: 'from-red-500 to-orange-600', glow: 'red' },
+    { id: 'time_lord', category: 'Speed', name: 'Time Lord', desc: 'Win 10 matches with 15+ minutes remaining on the clock.', assetName: 'time_lord.png', rarity: 'Legendary', gradient: 'from-indigo-500 to-purple-700', glow: 'indigo' },
+    { id: 'instant_kill', category: 'Speed', name: 'Instant Kill', desc: 'Solve the first problem of 10 matches before opponent submits.', assetName: 'instant_kill.png', rarity: 'Epic', gradient: 'from-rose-500 to-red-700', glow: 'rose' },
+    { id: 'supersonic', category: 'Speed', name: 'Supersonic', desc: 'Win 5 matches under 5 minutes.', assetName: 'supersonic.png', rarity: 'Legendary', gradient: 'from-emerald-400 to-teal-600', glow: 'emerald' },
+    { id: 'blitzkrieg', category: 'Speed', name: 'Blitzkrieg', desc: 'Solve 5 problems under 30 seconds.', assetName: 'blitzkrieg.png', rarity: 'Legendary', gradient: 'from-fuchsia-400 to-rose-600', glow: 'pink' },
+    { id: 'clutch_win', category: 'Speed', name: 'Clutch Win', desc: 'Win 5 matches with less than 10 seconds remaining.', assetName: 'clutch_win.png', rarity: 'Epic', gradient: 'from-amber-500 to-red-600', glow: 'orange' },
 
-    // ── Consistency (10) ───────────────────────────────────────────
-    { id: 'streak_3',        category: 'Consistency',  name: 'Getting Started',  desc: 'Maintain a 3-day activity streak.',         icon: Flame,  gradient: 'from-green-500 to-emerald-700',  glow: 'green', isExclusive: false },
-    { id: 'streak_7',        category: 'Consistency',  name: 'Unstoppable',      desc: 'Maintain a 7-day consistency streak.',      icon: Flame,  gradient: 'from-orange-500 to-red-600',     glow: 'orange', isExclusive: true },
-    { id: 'streak_14',       category: 'Consistency',  name: 'Iron Will',        desc: 'Maintain a 14-day consistency streak.',     icon: Shield, gradient: 'from-slate-500 to-zinc-700',     glow: 'slate', isExclusive: true },
-    { id: 'streak_30',       category: 'Consistency',  name: 'Marathon Runner',  desc: 'Maintain a 30-day consistency streak.',     icon: Crown,  gradient: 'from-yellow-500 to-amber-700',   glow: 'yellow', isExclusive: true },
-    { id: 'weekend_warrior', category: 'Consistency',  name: 'Weekend Warrior',  desc: 'Play on 4 consecutive weekends.',           icon: Swords, gradient: 'from-sky-500 to-blue-700',      glow: 'sky', isExclusive: true },
-    { id: 'night_owl',       category: 'Consistency',  name: 'Night Owl',        desc: 'Win 10 matches played after midnight.',     icon: Moon,   gradient: 'from-violet-600 to-indigo-800',  glow: 'violet', isExclusive: true },
-    { id: 'half_century',    category: 'Consistency',  name: 'Half-Century',     desc: 'Maintain a 50-day consistency streak.',     icon: Trophy, gradient: 'from-cyan-500 to-blue-700',      glow: 'cyan', isExclusive: true },
-    { id: 'centurion_streak',category: 'Consistency',  name: 'Centurion Streak', desc: 'Maintain a 100-day consistency streak.',    icon: Crown,  gradient: 'from-yellow-400 via-amber-500 to-red-600', glow: 'yellow', isExclusive: true },
-    { id: 'early_bird',      category: 'Consistency',  name: 'Early Bird',       desc: 'Win 10 matches played between 5-8 AM.',     icon: Timer,  gradient: 'from-orange-400 to-yellow-600',  glow: 'amber', isExclusive: true },
-    { id: 'devoted_coder',   category: 'Consistency',  name: 'Devoted Coder',    desc: 'Solve problems every day for 30 days.',     icon: Flame,  gradient: 'from-pink-500 to-rose-700',     glow: 'pink', isExclusive: true },
+    // ----------------------------------------------------
+    // B) CONSISTENCY
+    // ----------------------------------------------------
+    { id: 'getting_started', category: 'Consistency', name: 'Getting Started', desc: 'Maintain a 7-day activity streak.', assetName: 'getting_started.png', rarity: 'Common', gradient: 'from-green-500 to-emerald-700', glow: 'green' },
+    { id: 'unstoppable', category: 'Consistency', name: 'Unstoppable', desc: 'Maintain a 14-day activity streak.', assetName: 'unstoppable.png', rarity: 'Uncommon', gradient: 'from-orange-500 to-red-600', glow: 'orange' },
+    { id: 'iron_will', category: 'Consistency', name: 'Iron Will', desc: 'Maintain a 25-day activity streak.', assetName: 'iron_will.png', rarity: 'Rare', gradient: 'from-slate-500 to-zinc-700', glow: 'slate' },
+    { id: 'marathon_runner', category: 'Consistency', name: 'Marathon Runner', desc: 'Maintain a 40-day activity streak.', assetName: 'marathon_runner.png', rarity: 'Epic', gradient: 'from-yellow-500 to-amber-700', glow: 'yellow' },
+    { id: 'weekend_warrior', category: 'Consistency', name: 'Weekend Warrior', desc: 'Play matches on 5 consecutive weekends.', assetName: 'weekend_warrior.png', rarity: 'Rare', gradient: 'from-sky-500 to-blue-700', glow: 'sky' },
+    { id: 'night_owl', category: 'Consistency', name: 'Night Owl', desc: 'Win 10 matches played after midnight (00:00–05:00).', assetName: 'night_owl.png', rarity: 'Epic', gradient: 'from-violet-600 to-indigo-800', glow: 'violet' },
+    { id: 'half_century', category: 'Consistency', name: 'Half-Century', desc: 'Maintain a 50-day consistency streak.', assetName: 'half_century.png', rarity: 'Legendary', gradient: 'from-cyan-500 to-blue-700', glow: 'cyan' },
+    { id: 'centurion_streak', category: 'Consistency', name: 'Centurion Streak', desc: 'Maintain a 100-day consistency streak.', assetName: 'centurion_streak.png', rarity: 'Legendary', gradient: 'from-yellow-400 via-amber-500 to-red-600', glow: 'yellow' },
+    { id: 'early_bird', category: 'Consistency', name: 'Early Bird', desc: 'Win 10 matches played in the morning (05:00–08:00).', assetName: 'early_bird.png', rarity: 'Rare', gradient: 'from-orange-400 to-yellow-600', glow: 'amber' },
+    { id: 'devoted_coder', category: 'Consistency', name: 'Devoted Coder', desc: 'Solve at least 1 problem every day for a month.', assetName: 'devoted_coder.png', rarity: 'Epic', gradient: 'from-pink-500 to-rose-700', glow: 'pink' },
 
-    // ── Combat (13) ────────────────────────────────────────────────
-    { id: 'first_blood',     category: 'Combat',      name: 'First Blood',      desc: 'Win your very first 1v1 battle.',           icon: Swords, gradient: 'from-cyan-500 to-blue-600',     glow: 'cyan', isExclusive: false },
-    { id: 'hat_trick',       category: 'Combat',      name: 'Hat Trick',        desc: 'Win 3 matches in a row.',                   icon: Trophy, gradient: 'from-amber-500 to-yellow-600',  glow: 'amber', isExclusive: true },
-    { id: 'arena_gladiator', category: 'Combat',      name: 'Arena Gladiator',  desc: 'Win 25 battles in the Arena.',              icon: Shield, gradient: 'from-emerald-500 to-green-700', glow: 'emerald', isExclusive: true },
-    { id: 'centurion',       category: 'Combat',      name: 'Centurion',        desc: 'Play 100 matches in total.',                icon: Award,  gradient: 'from-teal-500 to-cyan-700',     glow: 'teal', isExclusive: true },
-    { id: 'perfect_round',   category: 'Combat',      name: 'Perfect Round',    desc: 'Solve all problems in a single match.',     icon: Target, gradient: 'from-lime-500 to-green-600',    glow: 'lime', isExclusive: true },
-    { id: 'flawless_victory',category: 'Combat',      name: 'Flawless Victory', desc: 'Win a best-of-3 match 3-0.',                icon: Star,   gradient: 'from-pink-500 to-rose-700',     glow: 'pink', isExclusive: true },
-    { id: 'dominator',       category: 'Combat',      name: 'Dominator',        desc: 'Achieve a 10-match win streak.',            icon: Crown,  gradient: 'from-red-600 to-rose-800',      glow: 'red', isExclusive: true },
-    { id: 'underdog',        category: 'Combat',      name: 'Underdog',         desc: 'Beat an opponent 200+ ELO above you.',      icon: Eye,    gradient: 'from-blue-500 to-indigo-700',   glow: 'blue', isExclusive: true },
-    { id: 'survivor',        category: 'Combat',      name: 'Survivor',         desc: 'Win a match with <1 minute remaining.',     icon: Timer,  gradient: 'from-orange-600 to-red-700',    glow: 'orange', isExclusive: true },
-    { id: 'grandmaster_slayer',category: 'Combat',    name: 'Grandmaster Slayer',desc: 'Beat an opponent 300+ ELO above you.',     icon: Swords, gradient: 'from-purple-600 to-pink-700',     glow: 'purple', isExclusive: true },
-    { id: 'legendary_streak',category: 'Combat',      name: 'Legendary Streak', desc: 'Achieve a 15-match win streak.',            icon: Crown,  gradient: 'from-yellow-400 via-orange-500 to-red-600', glow: 'yellow', isExclusive: true },
-    { id: 'arena_conqueror', category: 'Combat',      name: 'Arena Conqueror',  desc: 'Win 100 battles in the Arena.',              icon: Trophy, gradient: 'from-emerald-400 to-teal-600',   glow: 'emerald', isExclusive: true },
-    { id: 'veteran',         category: 'Combat',      name: 'Veteran',          desc: 'Play 500 matches in total.',                icon: Shield, gradient: 'from-slate-600 to-slate-800',     glow: 'slate', isExclusive: true },
+    // ----------------------------------------------------
+    // C) COMBAT
+    // ----------------------------------------------------
+    { id: 'first_blood', category: 'Combat', name: 'First Blood', desc: 'Win your first perfect battle against a real opponent.', assetName: 'first_blood.png', rarity: 'Common', gradient: 'from-cyan-500 to-blue-600', glow: 'cyan' },
+    { id: 'hat_trick', category: 'Combat', name: 'Hat Trick', desc: 'Win 3 matches in a row against a real opponent.', assetName: 'hat_trick.png', rarity: 'Uncommon', gradient: 'from-amber-500 to-yellow-600', glow: 'amber' },
+    { id: 'arena_gladiator', category: 'Combat', name: 'Arena Gladiator', desc: 'Win 25 battles in the Arena.', assetName: 'arena_gladiator.png', rarity: 'Rare', gradient: 'from-emerald-500 to-green-700', glow: 'emerald' },
+    { id: 'centurion', category: 'Combat', name: 'Centurion', desc: 'Play 100 matches in total.', assetName: 'centurion.png', rarity: 'Rare', gradient: 'from-teal-500 to-cyan-700', glow: 'teal' },
+    { id: 'perfect_round', category: 'Combat', name: 'Perfect Round', desc: 'Solve all problems correctly in a single match.', assetName: 'perfect_round.png', rarity: 'Epic', gradient: 'from-lime-500 to-green-600', glow: 'lime' },
+    { id: 'flawless_victory', category: 'Combat', name: 'Flawless Victory', desc: 'Win three custom games with a 3–0 score.', assetName: 'flawless_victory.png', rarity: 'Legendary', gradient: 'from-pink-500 to-rose-700', glow: 'pink' },
+    { id: 'dominator', category: 'Combat', name: 'Dominator', desc: 'Achieve a 10-match win streak.', assetName: 'dominator.png', rarity: 'Epic', gradient: 'from-red-600 to-rose-800', glow: 'red' },
+    { id: 'underdog', category: 'Combat', name: 'Underdog', desc: 'Beat an opponent rated 200+ ELO above your current rating.', assetName: 'underdog.png', rarity: 'Epic', gradient: 'from-blue-500 to-indigo-700', glow: 'blue' },
+    { id: 'survivor', category: 'Combat', name: 'Survivor', desc: 'Win a match with less than 1 minute remaining.', assetName: 'survivor.png', rarity: 'Epic', gradient: 'from-orange-600 to-red-700', glow: 'orange' },
+    { id: 'legendary_streak', category: 'Combat', name: 'Legendary Streak', desc: 'Achieve a 15-match win streak.', assetName: 'legendary_streak.png', rarity: 'Legendary', gradient: 'from-yellow-400 via-orange-500 to-red-600', glow: 'yellow' },
+    { id: 'arena_conqueror', category: 'Combat', name: 'Arena Conqueror', desc: 'Win 100 battles in the Arena.', assetName: 'arena_conqueror.png', rarity: 'Legendary', gradient: 'from-emerald-400 to-teal-600', glow: 'emerald' },
+    { id: 'veteran', category: 'Combat', name: 'Veteran', desc: 'Play 500 matches in total.', assetName: 'veteran.png', rarity: 'Legendary', gradient: 'from-slate-600 to-slate-800', glow: 'slate' },
 
-    // ── Mastery (18) ───────────────────────────────────────────────
-    { id: 'array_ace',       category: 'Mastery',     name: 'Array Ace',        desc: 'Solve 10 Array problems.',                  icon: Layers,      gradient: 'from-blue-500 to-cyan-600',     glow: 'blue', isExclusive: true },
-    { id: 'string_slicer',   category: 'Mastery',     name: 'String Slicer',    desc: 'Solve 10 String problems.',                 icon: Award,       gradient: 'from-fuchsia-500 to-pink-700',  glow: 'fuchsia', isExclusive: true },
-    { id: 'tree_hugger',     category: 'Mastery',     name: 'Tree Hugger',      desc: 'Solve 10 Tree problems.',                   icon: GitBranch,   gradient: 'from-green-500 to-emerald-700', glow: 'green', isExclusive: true },
-    { id: 'graph_guru',      category: 'Mastery',     name: 'Graph Guru',       desc: 'Solve 10 Graph problems.',                  icon: Brain,       gradient: 'from-purple-500 to-violet-700', glow: 'purple', isExclusive: true },
-    { id: 'dp_dynamo',       category: 'Mastery',     name: 'DP Dynamo',        desc: 'Solve 10 Dynamic Programming problems.',    icon: Brain,       gradient: 'from-orange-500 to-amber-700',  glow: 'orange', isExclusive: true },
-    { id: 'sort_king',       category: 'Mastery',     name: 'Sort King',        desc: 'Solve 10 Sorting problems.',                icon: ArrowUpDown, gradient: 'from-teal-500 to-green-600',    glow: 'teal', isExclusive: true },
-    { id: 'binary_boss',     category: 'Mastery',     name: 'Binary Boss',      desc: 'Solve 10 Binary Search problems.',          icon: Search,      gradient: 'from-indigo-500 to-blue-700',   glow: 'indigo', isExclusive: true },
-    { id: 'hash_master',     category: 'Mastery',     name: 'Hash Master',      desc: 'Solve 10 Hash Table problems.',             icon: Hash,        gradient: 'from-rose-500 to-pink-700',     glow: 'rose', isExclusive: true },
-    { id: 'diamond_ranked',  category: 'Mastery',     name: 'Diamond Ranked',   desc: 'Reach a rating of 1500 ELO or higher.',     icon: Star,        gradient: 'from-violet-500 to-purple-700', glow: 'violet', isExclusive: true },
-    { id: 'linked_list_legend',category: 'Mastery',   name: 'Linked List Legend',desc: 'Solve 10 Linked List problems.',           icon: Layers,      gradient: 'from-teal-400 to-emerald-600',   glow: 'emerald', isExclusive: true },
-    { id: 'greedy_genius',   category: 'Mastery',     name: 'Greedy Genius',    desc: 'Solve 10 Greedy problems.',                 icon: Brain,       gradient: 'from-amber-400 to-orange-600',   glow: 'amber', isExclusive: true },
-    { id: 'stack_surgeon',   category: 'Mastery',     name: 'Stack Surgeon',    desc: 'Solve 10 Stack/Queue problems.',            icon: Layers,      gradient: 'from-blue-600 to-indigo-700',    glow: 'blue', isExclusive: true },
-    { id: 'math_magician',   category: 'Mastery',     name: 'Math Magician',    desc: 'Solve 10 Math/Number Theory problems.',     icon: Hash,        gradient: 'from-rose-400 to-red-600',       glow: 'rose', isExclusive: true },
-    { id: 'bit_wizard',      category: 'Mastery',     name: 'Bit Wizard',       desc: 'Solve 10 Bit Manipulation problems.',       icon: Zap,         gradient: 'from-yellow-400 to-orange-500',  glow: 'yellow', isExclusive: true },
-    { id: 'backtracking_boss',category: 'Mastery',    name: 'Backtracking Boss',desc: 'Solve 10 Backtracking problems.',           icon: GitBranch,   gradient: 'from-purple-600 to-indigo-800',  glow: 'violet', isExclusive: true },
-    { id: 'recursion_ranger',category: 'Mastery',     name: 'Recursion Ranger', desc: 'Solve 10 Recursion/DFS problems.',          icon: Brain,       gradient: 'from-green-400 to-emerald-600',  glow: 'green', isExclusive: true },
-    { id: 'grandmaster_ranked',category: 'Mastery',   name: 'Grandmaster Ranked',desc: 'Reach a rating of 1800 ELO or higher.',     icon: Crown,       gradient: 'from-fuchsia-500 via-purple-600 to-pink-700', glow: 'fuchsia', isExclusive: true },
-    { id: 'immortal_ranked', category: 'Mastery',     name: 'Immortal Ranked',  desc: 'Reach a rating of 2100 ELO or higher.',     icon: Star,        gradient: 'from-cyan-400 via-indigo-500 to-purple-600', glow: 'cyan', isExclusive: true },
+    // ----------------------------------------------------
+    // D) MASTERY
+    // ----------------------------------------------------
+    { id: 'array_ace', category: 'Mastery', name: 'Array Ace', desc: 'Solve 30 Array-tagged problems.', assetName: 'array_ace.png', rarity: 'Rare', gradient: 'from-blue-500 to-cyan-600', glow: 'blue' },
+    { id: 'string_slicer', category: 'Mastery', name: 'String Slicer', desc: 'Solve 30 String-tagged problems.', assetName: 'string_slicer.png', rarity: 'Rare', gradient: 'from-fuchsia-500 to-pink-700', glow: 'fuchsia' },
+    { id: 'tree_hugger', category: 'Mastery', name: 'Tree Hugger', desc: 'Solve 30 Tree-tagged problems.', assetName: 'tree_hugger.png', rarity: 'Epic', gradient: 'from-green-500 to-emerald-700', glow: 'green' },
+    { id: 'graph_guru', category: 'Mastery', name: 'Graph Guru', desc: 'Solve 30 Graph-tagged problems.', assetName: 'graph_guru.png', rarity: 'Epic', gradient: 'from-purple-500 to-violet-700', glow: 'purple' },
+    { id: 'dp_dynamo', category: 'Mastery', name: 'DP Dynamo', desc: 'Solve 30 DP-tagged problems.', assetName: 'dp_dynamo.png', rarity: 'Legendary', gradient: 'from-orange-500 to-amber-700', glow: 'orange' },
+    { id: 'sort_king', category: 'Mastery', name: 'Sort King', desc: 'Solve 30 Sorting-tagged problems.', assetName: 'sort_king.png', rarity: 'Rare', gradient: 'from-teal-500 to-green-600', glow: 'teal' },
+    { id: 'binary_boss', category: 'Mastery', name: 'Binary Boss', desc: 'Solve 30 Binary Search-tagged problems.', assetName: 'binary_boss.png', rarity: 'Epic', gradient: 'from-indigo-500 to-blue-700', glow: 'indigo' },
+    { id: 'hash_master', category: 'Mastery', name: 'Hash Master', desc: 'Solve 30 Hash Table-tagged problems.', assetName: 'hash_master.png', rarity: 'Rare', gradient: 'from-rose-500 to-pink-700', glow: 'rose' },
+    { id: 'diamond_ranked', category: 'Mastery', name: 'Diamond Ranked', desc: 'Reach a rating of 1500 ELO or higher.', assetName: 'diamond_ranked.png', rarity: 'Epic', gradient: 'from-violet-500 to-purple-700', glow: 'violet' },
+    { id: 'linked_list_legend', category: 'Mastery', name: 'Linked List Legend', desc: 'Solve 30 Linked List-tagged problems.', assetName: 'linked_list_legend.png', rarity: 'Rare', gradient: 'from-teal-400 to-emerald-600', glow: 'emerald' },
+    { id: 'greedy_genius', category: 'Mastery', name: 'Greedy Genius', desc: 'Solve 30 Greedy-tagged problems.', assetName: 'greedy_genius.png', rarity: 'Epic', gradient: 'from-amber-400 to-orange-600', glow: 'amber' },
+    { id: 'stack_surgeon', category: 'Mastery', name: 'Stack Surgeon', desc: 'Solve 30 Stack/Queue-tagged problems.', assetName: 'stack_surgeon.png', rarity: 'Rare', gradient: 'from-blue-600 to-indigo-700', glow: 'blue' },
+    { id: 'math_magician', category: 'Mastery', name: 'Math Magician', desc: 'Solve 30 Math/Number Theory-tagged problems.', assetName: 'math_magician.png', rarity: 'Rare', gradient: 'from-rose-400 to-red-600', glow: 'rose' },
+    { id: 'bit_wizard', category: 'Mastery', name: 'Bit Wizard', desc: 'Solve 30 Bit Manipulation-tagged problems.', assetName: 'bit_wizard.png', rarity: 'Epic', gradient: 'from-yellow-400 to-orange-500', glow: 'yellow' },
+    { id: 'backtracking_boss', category: 'Mastery', name: 'Backtracking Boss', desc: 'Solve 30 Backtracking-tagged problems.', assetName: 'backtracking_boss.png', rarity: 'Legendary', gradient: 'from-purple-600 to-indigo-800', glow: 'violet' },
+    { id: 'recursion_ranger', category: 'Mastery', name: 'Recursion Ranger', desc: 'Solve 30 Recursion/DFS-tagged problems.', assetName: 'recursion_ranger.png', rarity: 'Epic', gradient: 'from-green-400 to-emerald-600', glow: 'green' },
+    { id: 'grandmaster_ranked', category: 'Mastery', name: 'Grandmaster Ranked', desc: 'Reach a rating of 2000 ELO or higher.', assetName: 'grandmaster_ranked.png', rarity: 'Legendary', gradient: 'from-fuchsia-500 via-purple-600 to-pink-700', glow: 'fuchsia' },
+    { id: 'immortal_ranked', category: 'Mastery', name: 'Immortal Ranked', desc: 'Reach a rating of 2500 ELO or higher.', assetName: 'immortal_ranked.png', rarity: 'Legendary', gradient: 'from-cyan-400 via-indigo-500 to-purple-600', glow: 'cyan' },
+
+    // ----------------------------------------------------
+    // E) CAMPAIGN
+    // ----------------------------------------------------
+    { id: 'island_hopper', category: 'Campaign', name: 'Island Hopper', desc: 'Complete the first 10 nodes of Array Archipelago.', assetName: 'island_hopper.png', rarity: 'Common', gradient: 'from-blue-400 to-cyan-500', glow: 'cyan' },
+    { id: 'archipelago_admiral', category: 'Campaign', name: 'Archipelago Admiral', desc: 'Defeat Zone 1 boss with 3-stars.', assetName: 'archipelago_admiral.png', rarity: 'Epic', gradient: 'from-blue-500 to-indigo-600', glow: 'blue' },
+    { id: 'shore_walker', category: 'Campaign', name: 'Shore Walker', desc: 'Complete all standard nodes in String Shores.', assetName: 'shore_walker.png', rarity: 'Rare', gradient: 'from-purple-400 to-fuchsia-500', glow: 'purple' },
+    { id: 'sirens_solver', category: 'Campaign', name: 'Siren’s Solver', desc: 'Solve String Shores boss in under 3 minutes.', assetName: 'sirens_solver.png', rarity: 'Epic', gradient: 'from-fuchsia-500 to-pink-600', glow: 'pink' },
+    { id: 'lagoon_legend', category: 'Campaign', name: 'Lagoon Legend', desc: 'Defeat Zone 3 boss with a 3-star rating.', assetName: 'lagoon_legend.png', rarity: 'Legendary', gradient: 'from-emerald-400 to-teal-500', glow: 'emerald' },
+    { id: 'triple_crown', category: 'Campaign', name: 'Triple Crown', desc: 'Earn 3-stars on all nodes in Array Archipelago.', assetName: 'triple_crown.png', rarity: 'Legendary', gradient: 'from-amber-400 to-yellow-600', glow: 'amber' },
+    { id: 'star_collector', category: 'Campaign', name: 'Star Collector', desc: 'Accumulate 100 stars across all zones.', assetName: 'star_collector.png', rarity: 'Epic', gradient: 'from-yellow-300 to-amber-500', glow: 'yellow' },
+    { id: 'boss_slayer', category: 'Campaign', name: 'Boss Slayer', desc: 'Defeat a Zone Boss on the first submission attempt.', assetName: 'boss_slayer.png', rarity: 'Epic', gradient: 'from-red-500 to-rose-700', glow: 'red' },
+    { id: 'loot_raider', category: 'Campaign', name: 'Loot Raider', desc: 'Obtain a rare drop from a Zone Boss loot pool.', assetName: 'loot_raider.png', rarity: 'Epic', gradient: 'from-indigo-400 to-violet-600', glow: 'indigo' },
+    { id: 'grand_conqueror', category: 'Campaign', name: 'Grand Conqueror', desc: 'Complete all 45 nodes across all three zones.', assetName: 'grand_conqueror.png', rarity: 'Legendary', gradient: 'from-yellow-500 via-orange-500 to-red-600', glow: 'orange' },
+    { id: 'ultimate_guardian', category: 'Campaign', name: 'Ultimate Guardian', desc: 'Secret: Complete all regions and nodes.', assetName: 'ultimate_guardian.png', rarity: 'Legendary', gradient: 'from-slate-700 via-zinc-800 to-black', glow: 'slate', isSecret: true },
 ];
 
 export const GLOW_MAP = {
@@ -72,11 +94,8 @@ export const GLOW_MAP = {
     sky: 'shadow-sky-500/40', slate: 'shadow-slate-500/40', fuchsia: 'shadow-fuchsia-500/40',
 };
 
-export const CATEGORIES = ['Speed', 'Consistency', 'Combat', 'Mastery'];
+export const CATEGORIES = ['Speed', 'Consistency', 'Combat', 'Mastery', 'Campaign'];
 
-// Helper function to render badge icon nicely
 export const getBadgeIconData = (badgeId) => {
-    const badge = BADGE_DEFINITIONS.find(b => b.id === badgeId);
-    if (!badge) return null;
-    return badge;
+    return BADGE_DEFINITIONS.find(b => b.id === badgeId);
 };

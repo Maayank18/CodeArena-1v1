@@ -342,6 +342,17 @@ const userSchema = new mongoose.Schema({
     },
 
     // ── Pro Feature: Developer Identity Customization ──────────────
+    achievementProgress: {
+        type: [{
+            badgeKey: { type: String, required: true },
+            progress: { type: Number, default: 0 },
+            unlocked: { type: Boolean, default: false },
+            unlockedAt: { type: Date, default: null },
+            updatedAt: { type: Date, default: null },
+            metadata: { type: mongoose.Schema.Types.Mixed, default: {} }
+        }],
+        default: []
+    },
     customization: {
         avatarFrame: {
             type: String,

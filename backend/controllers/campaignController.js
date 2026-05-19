@@ -5,7 +5,7 @@ import Problem from '../models/Problem.js';
 import User from '../models/User.js';
 import { executeForCampaign } from '../services/campaignExecutor.js';
 import { calculateStars, calculateKP, shouldUpdateNode } from '../services/starCalculator.js';
-import { evaluateBadges } from '../services/badgeEngine.js';
+import { processAchievementEvent } from '../services/achievementEngine.js';
 import { outputsMatch } from '../utils/sanitizeOutput.js';
 import {
     ensureEntryNodesUnlocked,
@@ -518,13 +518,39 @@ export const submitCampaignSolution = async (req, res) => {
             }
         });
 
-        evaluateBadges(userId, {
-            isWinner: true,
-            fastestSolveMs: executionResult.avgTimeMs,
-            problemTopics: node.topics || [],
-        }).catch((badgeError) => {
-            console.error('[CAMPAIGN BADGES] Non-critical badge error:', badgeError.message);
-        });
+        // Badge Events
+        if (!existingNode) {
+            processAchievementEvent(userId, 'CAMPAIGN_PROGRESS', {
+                action: 'clear_node', zoneId: node.campaignRegion, nodeId, stars, isFirstSubmission: progress.totalAttempts === 1
+            }).catch(e => console.error(e));
+            
+            // If this is a boss node (Node 8 or 15 based on typical Campaign ID structure e.g. "aa_08")
+            if (nodeId.includes('08') || nodeId.includes('15')) {
+                processAchievementEvent(userId, 'CAMPAIGN_PROGRESS', {
+                    action: 'clear_boss', nodeId, stars, timeMs: executionResult.avgTimeMs, isFirstSubmission: progress.totalAttempts === 1
+                }).catch(e => console.error(e));
+            }
+        }
+        
+        if (!existingNode || isImprovement) {
+            const starsGained = !existingNode ? stars : (stars - existingNode.starsAwarded);
+            if (starsGained > 0) {
+                processAchievementEvent(userId, 'CAMPAIGN_PROGRESS', {
+                    action: 'earn_stars', stars: starsGained
+                }).catch(e => console.error(e));
+            }
+        }
+        
+        if (lootDropped) {
+             processAchievementEvent(userId, 'CAMPAIGN_PROGRESS', {
+                 action: 'loot_drop', lootDropRarity: 'rare'
+             }).catch(e => console.error(e));
+        }
+
+        processAchievementEvent(userId, 'PROBLEM_SOLVED', {
+            solveTimeSeconds: executionResult.avgTimeMs / 1000,
+            tags: node.topics || []
+        }).catch(e => console.error(e));
 
         return res.json({
             success: true,
