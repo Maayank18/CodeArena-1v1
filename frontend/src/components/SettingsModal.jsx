@@ -380,24 +380,47 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
       return;
     }
 
+    let isMounted = true;
+
     const syncProfile = async () => {
       setLoadingProfile(true);
       try {
         const { data } = await api.get('/settings/profile');
-        const freshUser = data.user;
-        setProfileForm(buildInitialProfileForm(freshUser));
-        setSecurityForm(buildInitialSecurityForm(freshUser));
-        setPreferencesForm(buildInitialPreferencesForm(freshUser));
-        onUserUpdate?.(freshUser);
+        if (!isMounted) return;
+
+        const freshUser = data?.user;
+        if (freshUser && typeof freshUser === 'object' && freshUser.username) {
+          setProfileForm(buildInitialProfileForm(freshUser));
+          setSecurityForm(buildInitialSecurityForm(freshUser));
+          setPreferencesForm(buildInitialPreferencesForm(freshUser));
+          if (typeof onUserUpdate === 'function') {
+            onUserUpdate(freshUser);
+          }
+        } else {
+          // API returned unexpected shape — use existing user prop as fallback
+          setProfileForm(buildInitialProfileForm(user));
+          setSecurityForm(buildInitialSecurityForm(user));
+          setPreferencesForm(buildInitialPreferencesForm(user));
+        }
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Unable to load settings');
+        if (!isMounted) return;
+        // Populate forms from existing user prop so the UI isn't blank
+        setProfileForm(buildInitialProfileForm(user));
+        setSecurityForm(buildInitialSecurityForm(user));
+        setPreferencesForm(buildInitialPreferencesForm(user));
+        toast.error(error?.response?.data?.message || 'Unable to load settings');
       } finally {
-        setLoadingProfile(false);
+        if (isMounted) {
+          setLoadingProfile(false);
+        }
       }
     };
 
     syncProfile();
-  }, [isOpen, onUserUpdate]);
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {

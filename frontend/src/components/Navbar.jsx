@@ -29,9 +29,9 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const handleCloseSettings = useCallback(() => {
     setIsSettingsOpen(false);
     setSettingsInitialTab('profile');
-    // If we are currently on /settings, go back to previous page
+    // If the modal was opened directly on /settings, return to a stable authenticated shell.
     if (location.pathname === '/settings') {
-      navigate(-1);
+      navigate('/dashboard', { replace: true });
     }
   }, [navigate, location.pathname]);
 
@@ -70,6 +70,10 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
   }, [navigate]);
 
   const handleUserUpdate = useCallback((nextUser) => {
+    if (!nextUser || typeof nextUser !== 'object') {
+      return;
+    }
+
     setDisplayUser(nextUser);
     onUserUpdate?.(nextUser);
   }, [onUserUpdate]);

@@ -886,25 +886,22 @@ const EditorPage = () => {
                         <div className="flex items-center gap-2">
                             {(() => {
                                 const equippedBadgeId = p?.customization?.equippedBadge;
-                                const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
-                                if (badgeData) {
-                                    const badgeImageSrc = getBadgeImage(badgeData.id);
-                                    return (
-                                        <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
-                                            {badgeData.icon ? (
-                                                (() => {
-                                                    const IconComp = badgeData.icon;
-                                                    return <IconComp className="text-white" size={10} />;
-                                                })()
-                                            ) : badgeImageSrc ? (
-                                                <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
-                                            ) : (
-                                                <Trophy size={10} className="text-accent" />
-                                            )}
-                                        </span>
-                                    );
-                                }
-                                return null;
+                                if (!equippedBadgeId) return null;
+
+                                const badgeData = getBadgeIconData(equippedBadgeId);
+                                const badgeImageSrc = getBadgeImage(equippedBadgeId);
+
+                                if (!badgeData && !badgeImageSrc) return null;
+
+                                return (
+                                    <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData?.name || equippedBadgeId}>
+                                        {badgeImageSrc ? (
+                                            <img src={badgeImageSrc} alt={badgeData?.name || equippedBadgeId} className="w-full h-full object-contain" />
+                                        ) : (
+                                            <Trophy size={10} className="text-accent" />
+                                        )}
+                                    </span>
+                                );
                             })()}
                             <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>
                             <span className={`arena-score-pill px-2 py-0.5 rounded text-[10px] font-mono shrink-0 ${

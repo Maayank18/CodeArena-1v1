@@ -293,25 +293,22 @@ const Dashboard = () => {
                         <h3 className={`text-2xl font-black ${rankInfo.color} uppercase tracking-tighter`}>
                           {(() => {
                             const equippedBadgeId = user?.customization?.equippedBadge;
-                            const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
-                            if (badgeData) {
-                              const badgeImageSrc = getBadgeImage(badgeData.id);
-                              return (
-                                <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/20 shrink-0 mr-2 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
-                                  {badgeData.icon ? (
-                                    (() => {
-                                      const IconComp = badgeData.icon;
-                                      return <IconComp className="text-white" size={16} />;
-                                    })()
-                                  ) : badgeImageSrc ? (
-                                    <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
-                                  ) : (
-                                    <Trophy size={16} className="text-accent" />
-                                  )}
-                                </span>
-                              );
-                            }
-                            return null;
+                            if (!equippedBadgeId) return null;
+
+                            const badgeData = getBadgeIconData(equippedBadgeId);
+                            const badgeImageSrc = getBadgeImage(equippedBadgeId);
+
+                            if (!badgeData && !badgeImageSrc) return null;
+
+                            return (
+                              <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/20 shrink-0 mr-2 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData?.name || equippedBadgeId}>
+                                {badgeImageSrc ? (
+                                  <img src={badgeImageSrc} alt={badgeData?.name || equippedBadgeId} className="w-full h-full object-contain" />
+                                ) : (
+                                  <Trophy size={16} className="text-accent" />
+                                )}
+                              </span>
+                            );
                           })()}{rankInfo.title}
                         </h3>
                         <span className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">

@@ -1,6 +1,8 @@
 // FILE: frontend/src/utils/badgeHelper.js
 // Frontend catalog for all 60 achievement badges with asset mappings and styles.
 
+import { normalizeBadgeKey } from './badgeAssets';
+
 // Note: We are now using local PNG assets mapped via assetName instead of lucide-react icons.
 
 export const BADGE_DEFINITIONS = [
@@ -96,6 +98,18 @@ export const GLOW_MAP = {
 
 export const CATEGORIES = ['Speed', 'Consistency', 'Combat', 'Mastery', 'Campaign'];
 
+const BADGE_LOOKUP = BADGE_DEFINITIONS.reduce((lookup, badge) => {
+    [badge.id, badge.name, badge.assetName]
+        .filter(Boolean)
+        .forEach((candidate) => {
+            lookup.set(normalizeBadgeKey(candidate), badge);
+        });
+
+    return lookup;
+}, new Map([
+    ['blitzkreign', BADGE_DEFINITIONS.find((badge) => badge.id === 'blitzkrieg')],
+]));
+
 export const getBadgeIconData = (badgeId) => {
-    return BADGE_DEFINITIONS.find(b => b.id === badgeId);
+    return BADGE_LOOKUP.get(normalizeBadgeKey(badgeId)) || null;
 };

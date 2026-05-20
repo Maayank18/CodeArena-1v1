@@ -117,25 +117,22 @@ const Leaderboard = () => {
                 <span className={`font-bold text-sm sm:text-base truncate text-[var(--text-primary)]`}>
                   {(() => {
                     const equippedBadgeId = player.customization?.equippedBadge;
-                    const badgeData = equippedBadgeId ? getBadgeIconData(equippedBadgeId) : null;
-                    if (badgeData) {
-                      const badgeImageSrc = getBadgeImage(badgeData.id);
-                      return (
-                        <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1.5 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData.name}>
-                          {badgeData.icon ? (
-                            (() => {
-                              const IconComp = badgeData.icon;
-                              return <IconComp className="text-white" size={10} />;
-                            })()
-                          ) : badgeImageSrc ? (
-                            <img src={badgeImageSrc} alt={badgeData.name} className="w-full h-full object-contain" />
-                          ) : (
-                            <Trophy size={10} className="text-accent" />
-                          )}
-                        </span>
-                      );
-                    }
-                    return null;
+                    if (!equippedBadgeId) return null;
+
+                    const badgeData = getBadgeIconData(equippedBadgeId);
+                    const badgeImageSrc = getBadgeImage(equippedBadgeId);
+
+                    if (!badgeData && !badgeImageSrc) return null;
+
+                    return (
+                      <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1.5 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData?.name || equippedBadgeId}>
+                        {badgeImageSrc ? (
+                          <img src={badgeImageSrc} alt={badgeData?.name || equippedBadgeId} className="w-full h-full object-contain" />
+                        ) : (
+                          <Trophy size={10} className="text-accent" />
+                        )}
+                      </span>
+                    );
                   })()}{player.username}
                 </span>
                 {isCurrentUser && <span className="text-[9px] bg-accent text-black px-1.5 py-0.5 rounded font-black shrink-0">YOU</span>}
