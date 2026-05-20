@@ -10,14 +10,34 @@
 // Step 1: Glob all badge image files (eager = resolved at build time, import default = URL string)
 const rawImages = import.meta.glob(
     '../assets/badges/*.{png,PNG,jpg,JPG,jpeg,JPEG,svg,SVG}',
-    { eager: true, import: 'default' }
+    { eager: true }
 );
 
 // Step 2: Build normalized dictionary
 //   '../assets/badges/arena_gladiator.png' → { 'arena_gladiator': '/assets/arena_gladiator-abc123.png' }
 const badgeAssetDict = {};
 
-Object.entries(rawImages).forEach(([path, resolvedUrl]) => {
+const resolveAssetUrl = (assetModule) => {
+    if (typeof assetModule === 'string') {
+        return assetModule;
+    }
+
+    if (assetModule && typeof assetModule === 'object' && typeof assetModule.default === 'string') {
+        return assetModule.default;
+    }
+
+    return null;
+};
+
+Object.entries(rawImages).forEach(([path, assetModule]) => {
+    const resolvedUrl = resolveAssetUrl(assetModule);
+    if (!resolvedUrl) {
+        if (import.meta.env.DEV) {
+            console.warn(`[BADGE_ASSET] Unsupported module shape for "${path}"`, assetModule);
+        }
+        return;
+    }
+
     const filename = path.split('/').pop() || '';
     const baseName = filename
         .replace(/\.[^/.]+$/, '')  // strip extension
