@@ -1,14 +1,20 @@
 // Centralized, source-of-truth badge asset loader for CodeArena 1v1
-// This binds keys directly against exact filenames to eliminate dynamic resolution issues.
 
-const rawImages = import.meta.glob('../assets/badges/*.png', { eager: true, import: 'default' });
+// Broaden glob map to catch common image formats safely and case-insensitively
+const rawImages = import.meta.glob('../assets/badges/*.{png,PNG,jpg,JPG,jpeg,JPEG,svg,SVG}', { eager: true, import: 'default' });
 
-// Create dictionary of filename -> asset URL
-const badgeAssetDict = Object.fromEntries(
-    Object.entries(rawImages).map(([path, val]) => [path.split(/[/\\]/).pop(), val])
-);
+// Create a case-insensitive dictionary mapping lowercased names to asset references
+const badgeAssetDict = {};
+Object.entries(rawImages).forEach(([path, val]) => {
+    const filename = path.split(/[/\\]/).pop().toLowerCase();
+    badgeAssetDict[filename] = val;
+    
+    // Also store a clean variant omitting the extension to provide robust lookups
+    const baseName = filename.replace(/\.[^/.]+$/, "");
+    badgeAssetDict[baseName] = val;
+});
 
-// Normalize badge keys: lowercase, trim, replace spaces and hyphens with underscores
+// Normalize badge keys uniformly across the system
 export const normalizeBadgeKey = (key) => {
     if (typeof key !== 'string') return '';
     return key
@@ -17,7 +23,7 @@ export const normalizeBadgeKey = (key) => {
         .replace(/[\s-]+/g, '_');
 };
 
-// Explicit deterministic mapping of normalized keys to exact filenames
+// Deterministic matching map of keys to target filenames
 const BADGE_ASSET_MAP = {
     archipelago_admiral: 'archipelago_admiral.png',
     arena_conqueror: 'arena_conqueror.png',
@@ -31,11 +37,11 @@ const BADGE_ASSET_MAP = {
     centurion: 'centurion.png',
     centurion_streak: 'centurion.png',
     clutch_win: 'clutch_win.png',
-    devoted_coder: 'marathon_runner.png',
+    devoted_coder: 'devoted_coder.png',
     diamond_ranked: 'diamond_ranked.png',
     dominator: 'dominator.png',
     dp_dynamo: 'dp_dynamo.png',
-    early_bird: 'getting_started.png',
+    early_bird: 'early_bird.png',
     first_blood: 'first_blood.png',
     flash: 'flash.png',
     flawless_victory: 'flawless_victory.png',
@@ -65,7 +71,7 @@ const BADGE_ASSET_MAP = {
     sirens_solver: 'sirens_solver.png',
     sort_king: 'sort_king.png',
     speed_demon: 'speed_demon.png',
-    stack_surgeon: 'array_ace.png',
+    stack_surgeon: 'stack_surgeon.png',
     star_collector: 'star_collector.png',
     string_slicer: 'string_slicer.png',
     sub_minute: 'sub_minute.png',
@@ -82,25 +88,38 @@ const BADGE_ASSET_MAP = {
 };
 
 /**
- * Resolves the URL of a badge image based on the key.
- * @param {string} badgeKey - The raw badge key/ID/name.
- * @returns {string|null} - The resolved badge image asset URL, or null if missing.
+ * Resolves the final compiled asset path using clean fallback chains.
+ * @param {string} badgeKey - Key used to look up the asset.
+ * @returns {string|null} - Resolved asset path or null.
  */
 export const getBadgeImage = (badgeKey) => {
     if (!badgeKey) return null;
-    const normalizedKey = normalizeBadgeKey(badgeKey);
-    const filename = BADGE_ASSET_MAP[normalizedKey];
+    const normalized = normalizeBadgeKey(badgeKey);
+    
+    // Check asset map first
+    let targetFile = BADGE_ASSET_MAP[normalized];
+    if (targetFile) {
+        const resolved = badgeAssetDict[targetFile.toLowerCase()] || badgeAssetDict[normalized];
+        if (resolved) return resolved;
+    }
+    
+    // Direct lookup fallback
+    const directFallback = badgeAssetDict[normalized];
+    if (directFallback) return directFallback;
 
-    if (!filename) {
-        console.warn('[BADGE_ASSET_MISSING] No filename mapping found for key:', badgeKey, 'normalized:', normalizedKey);
-        return null;
+    // Resilient fallbacks for shared or missing artwork assets
+    const sharedFallbacks = {
+        devoted_coder: 'marathon_runner.png',
+        early_bird: 'getting_started.png',
+        stack_surgeon: 'array_ace.png',
+        centurion_streak: 'centurion.png'
+    };
+    const fallbackFile = sharedFallbacks[normalized];
+    if (fallbackFile) {
+        const fallbackResolved = badgeAssetDict[fallbackFile.toLowerCase()];
+        if (fallbackResolved) return fallbackResolved;
     }
 
-    const asset = badgeAssetDict[filename];
-    if (!asset) {
-        console.warn('[BADGE_ASSET_MISSING] Asset file not found in glob map for filename:', filename, 'original key:', badgeKey);
-        return null;
-    }
-
-    return asset;
+    console.warn(`[BADGE_ASSET_RESOLVER_WARN] Asset path completely missing for key footprint: ${badgeKey}`);
+    return null;
 };

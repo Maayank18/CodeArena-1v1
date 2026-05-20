@@ -18,6 +18,16 @@ export default {
         darkHover: '#2d2d2d',
         accent: '#4aee88',
       },
+      animation: {
+        'badge-orbit': 'badgeOrbitLoop 8s linear infinite',
+      },
+      keyframes: {
+        badgeOrbitLoop: {
+          '0%': { transform: 'rotateY(0deg) rotateX(3deg)' },
+          '50%': { transform: 'rotateY(180deg) rotateX(-3deg)' },
+          '100%': { transform: 'rotateY(360deg) rotateX(3deg)' },
+        }
+      }
     },
   },
 
