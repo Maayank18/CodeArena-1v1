@@ -1021,11 +1021,7 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
                     </div>
                   )}
 
-                  {activeTab === 'badges' && (
-                    <PremiumGate requiredTier="pro" message="Upgrade to Pro to unlock and showcase your achievement badges.">
-                      <BadgesTab />
-                    </PremiumGate>
-                  )}
+                  {activeTab === 'badges' && <BadgesTab />}
 
                   {activeTab === 'customization' && (
                     <PremiumGate requiredTier="pro" message="Upgrade to Pro to unlock exclusive profile frames, banners, and advanced themes.">

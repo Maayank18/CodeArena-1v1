@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:badges": "node scripts/generate-badges.mjs"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",

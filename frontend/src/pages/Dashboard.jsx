@@ -11,6 +11,7 @@ import { Loader2, Trophy, Swords } from 'lucide-react';
 import api from '../api.js';
 import { getLevelInfo } from '../utils/levelSystem';
 import { getBadgeIconData } from '../utils/badgeHelper';
+import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
 import CustomMatchModal from '../components/CustomMatchModal';
@@ -24,8 +25,6 @@ import {
 
 const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
-
-import { getBadgeImage } from '../utils/badgeAssets';
 
 const Dashboard = () => {
   const [user, setUser] = useState(() => readStoredUser());
@@ -288,32 +287,37 @@ const Dashboard = () => {
                   </div>
 
                   <div className="col-span-2 bg-[var(--surface-elevated)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex flex-col">
-                        <h3 className={`text-2xl font-black ${rankInfo.color} uppercase tracking-tighter`}>
+                    <div className="mb-4 flex items-start justify-between gap-5">
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-3">
                           {(() => {
                             const equippedBadgeId = user?.customization?.equippedBadge;
                             if (!equippedBadgeId) return null;
 
                             const badgeData = getBadgeIconData(equippedBadgeId);
-                            const badgeImageSrc = getBadgeImage(equippedBadgeId);
-
-                            if (!badgeData && !badgeImageSrc) return null;
-
                             return (
-                              <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/20 shrink-0 mr-2 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData?.name || equippedBadgeId}>
-                                {badgeImageSrc ? (
-                                  <img src={badgeImageSrc} alt={badgeData?.name || equippedBadgeId} className="w-full h-full object-contain" />
-                                ) : (
-                                  <Trophy size={16} className="text-accent" />
-                                )}
-                              </span>
+                              <BadgeArtwork
+                                badgeId={equippedBadgeId}
+                                label={badgeData?.name || equippedBadgeId}
+                                title={badgeData?.name || equippedBadgeId}
+                                // Larger, responsive circular frame and prevent it from shrinking
+                                frameClassName="h-20 w-20 md:h-24 md:w-24 shrink-0 rounded-full overflow-hidden bg-transparent flex items-center justify-center"
+                                // Fill the circular frame and scale slightly so any thin asset stroke/background is cropped
+                                imageClassName="h-full w-full object-cover transform scale-110 drop-shadow-none"
+                                // opt-out of the default rectangular rounding so we supply our own circular crop
+                                noFrame
+                              />
                             );
-                          })()}{rankInfo.title}
-                        </h3>
-                        <span className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">
-                          Current Rank
-                        </span>
+                          })()}
+                          <div className="min-w-0">
+                            <h3 className={`truncate text-2xl font-black uppercase tracking-tighter ${rankInfo.color}`}>
+                              {rankInfo.title}
+                            </h3>
+                            <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+                              Current Rank
+                            </span>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 bg-[var(--bg-tertiary)] px-4 py-2 rounded-xl border border-[var(--border-color)]">
                         <Trophy size={18} className="text-yellow-500" />

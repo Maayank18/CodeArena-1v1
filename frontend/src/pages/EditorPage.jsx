@@ -14,8 +14,7 @@ import { Copy, Play, FileText, Code2, Terminal, Swords, Sun, Moon, Clock3, LogOu
 import Avatar from '../components/Avatar';
 import { getBadgeIconData } from '../utils/badgeHelper';
 import { Trophy } from 'lucide-react';
-
-import { getBadgeImage } from '../utils/badgeAssets';
+import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import WinningModal from '../components/WinningModal.jsx';
@@ -889,18 +888,15 @@ const EditorPage = () => {
                                 if (!equippedBadgeId) return null;
 
                                 const badgeData = getBadgeIconData(equippedBadgeId);
-                                const badgeImageSrc = getBadgeImage(equippedBadgeId);
-
-                                if (!badgeData && !badgeImageSrc) return null;
-
                                 return (
-                                    <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData?.name || equippedBadgeId}>
-                                        {badgeImageSrc ? (
-                                            <img src={badgeImageSrc} alt={badgeData?.name || equippedBadgeId} className="w-full h-full object-contain" />
-                                        ) : (
-                                            <Trophy size={10} className="text-accent" />
-                                        )}
-                                    </span>
+                                    <BadgeArtwork
+                                        badgeId={equippedBadgeId}
+                                        label={badgeData?.name || equippedBadgeId}
+                                        title={badgeData?.name || equippedBadgeId}
+                                        frameClassName="mr-1 inline-flex h-6 w-6 shrink-0 align-middle"
+                                        imageClassName="h-full w-full object-contain"
+                                        iconSize={10}
+                                    />
                                 );
                             })()}
                             <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>

@@ -7,12 +7,11 @@ import api from '../api.js';
 import { Trophy, Medal, Flame, Search, AlertCircle, Loader2 } from 'lucide-react';
 import { getLevelInfo } from '../utils/levelSystem';
 import { getBadgeIconData } from '../utils/badgeHelper'; 
+import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import Avatar from '../components/Avatar'; 
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
-
-import { getBadgeImage } from '../utils/badgeAssets';
 
 const CACHE_DURATION = 60000; // 60 seconds
 
@@ -83,7 +82,9 @@ const Leaderboard = () => {
 
   const filteredPlayers = useMemo(() => {
     const lowerFilter = filter.toLowerCase();
-    return players.filter(p => p.username.toLowerCase().includes(lowerFilter));
+    return Array.isArray(players)
+      ? players.filter((player) => String(player?.username || '').toLowerCase().includes(lowerFilter))
+      : [];
   }, [players, filter]);
 
   const getRankIcon = useCallback((rank) => {
@@ -120,18 +121,15 @@ const Leaderboard = () => {
                     if (!equippedBadgeId) return null;
 
                     const badgeData = getBadgeIconData(equippedBadgeId);
-                    const badgeImageSrc = getBadgeImage(equippedBadgeId);
-
-                    if (!badgeData && !badgeImageSrc) return null;
-
                     return (
-                      <span className="w-5 h-5 rounded flex items-center justify-center bg-black/20 shrink-0 mr-1.5 inline-flex align-middle p-0.5 border border-[var(--border-color)] overflow-hidden" title={badgeData?.name || equippedBadgeId}>
-                        {badgeImageSrc ? (
-                          <img src={badgeImageSrc} alt={badgeData?.name || equippedBadgeId} className="w-full h-full object-contain" />
-                        ) : (
-                          <Trophy size={10} className="text-accent" />
-                        )}
-                      </span>
+                      <BadgeArtwork
+                        badgeId={equippedBadgeId}
+                        label={badgeData?.name || equippedBadgeId}
+                        title={badgeData?.name || equippedBadgeId}
+                        frameClassName="mr-1.5 inline-flex h-6 w-6 shrink-0 align-middle"
+                        imageClassName="h-full w-full object-contain"
+                        iconSize={10}
+                      />
                     );
                   })()}{player.username}
                 </span>
