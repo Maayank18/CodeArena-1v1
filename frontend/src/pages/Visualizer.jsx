@@ -295,12 +295,14 @@ const Visualizer = () => {
                 setTrace(data.trace);
 
                 // ✅ TIERED USAGE CONSUMPTION
-                // Only mark as used if the user is not Premium
-                if (user?.subscriptionPlan !== 'premium') {
+                // Only mark as used if the user is not Premium/Admin
+                const isAdmin = user?.role === 'admin';
+                if (user?.subscriptionPlan !== 'premium' && !isAdmin) {
                     api.post('/visualize/consume').then(res => {
                         // Sync local state if Pro/Plus
                         const updatedUser = { ...user };
-                        if (user?.subscriptionPlan === 'free' || user?.subscriptionPlan === 'plus') {
+                        const currentPlan = user?.subscriptionPlan || 'free';
+                        if (currentPlan === 'free' || currentPlan === 'plus') {
                             if (!updatedUser.usageStats) updatedUser.usageStats = {};
                             updatedUser.usageStats.visualizerTrialUsed = true;
                         } else if (user?.subscriptionPlan === 'pro') {

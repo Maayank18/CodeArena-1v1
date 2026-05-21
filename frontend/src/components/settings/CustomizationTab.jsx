@@ -22,11 +22,20 @@ const ENTRANCE_BANNERS = [
     { id: 'neon-tokyo', name: 'Neon Tokyo', gradient: 'from-pink-600 via-fuchsia-800 to-violet-900', isExclusive: true },
 ];
 
+import dungeonsDragon from '../../assets/dungeons_dragon.png';
+import cyberPunk from '../../assets/cyber_punk.png';
+import infernoArena from '../../assets/inferno_arena.png';
+import matrixProtocol from '../../assets/matrix_protocol.png';
+import samuraiShadow from '../../assets/samurai_shadow.png';
+import frostbyte from '../../assets/frostbyte.png';
+
 const ADVANCED_THEMES = [
-    { id: 'glassmorphism', name: 'Glassmorphism', gradient: 'from-white/20 to-white/5 backdrop-blur-md border border-white/20', isPremium: true },
-    { id: 'cyberpunk', name: 'Cyberpunk Neon', gradient: 'from-fuchsia-600 via-purple-700 to-pink-600 border border-pink-500/50', isPremium: true },
-    { id: 'monochrome', name: 'Sleek Monochrome', gradient: 'from-gray-800 via-gray-900 to-black border border-gray-700', isPremium: true },
-    { id: 'deep-space', name: 'Deep Space', gradient: 'from-slate-900 via-indigo-950 to-black border border-indigo-500/30', isPremium: true },
+    { id: 'dungeons_dragon', name: 'Dungeons & Dragon', image: dungeonsDragon, isPremium: true },
+    { id: 'cyber_punk', name: 'Cyber Punk', image: cyberPunk, isPremium: true },
+    { id: 'inferno_arena', name: 'Inferno Arena', image: infernoArena, isPremium: true },
+    { id: 'matrix_protocol', name: 'Matrix Protocol', image: matrixProtocol, isPremium: true },
+    { id: 'samurai_shadow', name: 'Samurai Shadow', image: samuraiShadow, isPremium: true },
+    { id: 'frostbyte', name: 'Frostbyte', image: frostbyte, isPremium: true },
 ];
 
 const STACK_LANGUAGES = [
@@ -54,7 +63,8 @@ const CustomizationTab = () => {
 
     const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
     const plan = storedUser?.subscriptionPlan || 'free';
-    const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+    const isAdmin = storedUser?.role === 'admin';
+    const userTier = isAdmin ? 3 : (plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3);
 
     const handleExclusiveClick = (item, setter) => {
         if (item.isExclusive && userTier < 2) {
@@ -65,6 +75,20 @@ const CustomizationTab = () => {
             return;
         }
         setter(item.id);
+    };
+
+    const handleThemeClick = (theme) => {
+        if (theme.isPremium && userTier < 3) {
+            toast.error(`${theme.name} is a Premium Exclusive theme.`, {
+                icon: '👑',
+                style: { borderRadius: '10px', background: '#333', color: '#fff' }
+            });
+            return;
+        }
+        toast.success(`${theme.name} theme will be available soon!`, {
+            icon: '🎨',
+            style: { borderRadius: '10px', background: '#333', color: '#fff' }
+        });
     };
 
     useEffect(() => {
@@ -260,44 +284,54 @@ const CustomizationTab = () => {
                     </div>
                 </section>
 
-                {/* Section 5: Advanced Themes (Premium Only) */}
+                {/* Section 5: Advanced UI Themes (Premium Only) */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
                         <Palette size={18} className="text-rose-400" />
                         <h3 className="text-lg font-bold">Advanced UI Themes</h3>
-                        <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Premium</span>
+                        <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Premium Exclusive</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {ADVANCED_THEMES.map(theme => {
-                            const isLocked = userTier < 3;
+                            const isLocked = theme.isPremium && userTier < 3;
                             return (
                                 <button
                                     key={theme.id}
-                                    onClick={() => {
-                                        if (isLocked) {
-                                            toast.error(`${theme.name} is a Premium tier exclusive.`, {
-                                                icon: '🔒',
-                                                style: { borderRadius: '10px', background: '#333', color: '#fff' }
-                                            });
-                                            return;
-                                        }
-                                        toast.success(`${theme.name} applied!`);
-                                    }}
-                                    className={`relative h-28 rounded-2xl bg-gradient-to-br ${theme.gradient} border-2 border-transparent transition-all duration-300 overflow-hidden group
-                                        ${isLocked ? 'opacity-50 grayscale scale-[0.98]' : 'hover:scale-105 hover:border-white/30'}
-                                    `}
+                                    onClick={() => handleThemeClick(theme)}
+                                    className={`group relative border border-[var(--border-color)] rounded-xl overflow-hidden transition-all duration-300 hover:border-rose-500/30 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-white/90 text-center leading-tight drop-shadow-lg">{theme.name}</span>
-                                    </div>
-                                    {isLocked && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                            <div className="p-2 bg-black/60 rounded-full border border-white/10">
-                                                <Lock size={16} className="text-white/70" />
-                                            </div>
+                                    <div className="relative aspect-video overflow-hidden">
+                                        <img
+                                            src={theme.image}
+                                            alt={theme.name}
+                                            className={`w-full h-full object-cover transition-all duration-700 ${isLocked ? 'blur-[1.5px] scale-105' : 'group-hover:scale-110'}`}
+                                        />
+                                        
+                                        {/* Overlay with Name */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
+                                            <span className="text-white text-base font-bold tracking-wide">{theme.name}</span>
                                         </div>
-                                    )}
+
+                                        {/* Lock Effect for non-premium */}
+                                        {isLocked && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="bg-rose-500/20 p-3 rounded-full border border-rose-500/40 shadow-2xl backdrop-blur-md transition-transform group-hover:scale-110 duration-300">
+                                                        <Lock size={24} className="text-rose-400" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Premium Tag */}
+                                        {isLocked && (
+                                            <div className="absolute top-3 right-3">
+                                                <span className="text-[9px] bg-rose-500/90 text-white px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-lg backdrop-blur-md">
+                                                    Premium
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </button>
                             );
                         })}

@@ -187,8 +187,10 @@ const AnalyticsTab = () => {
     }
   };
 
-  const plan = JSON.parse(localStorage.getItem('codearena_user') || '{}')?.subscriptionPlan || 'free';
-  const userTier = plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3;
+  const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
+  const plan = storedUser?.subscriptionPlan || 'free';
+  const isAdmin = storedUser?.role === 'admin';
+  const userTier = isAdmin ? 3 : (plan === 'free' ? 0 : plan === 'plus' ? 1 : plan === 'pro' ? 2 : 3);
 
   return (
     <PremiumGate requiredTier="pro">

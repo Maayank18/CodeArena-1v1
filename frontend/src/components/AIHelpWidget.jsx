@@ -14,12 +14,14 @@ const getStoredUser = () => {
     }
 };
 
-const getTierFromPlan = (plan) => (
-    plan === 'premium' ? 3 :
-    plan === 'pro' ? 2 :
-    plan === 'plus' ? 1 :
-    0
-);
+const getTierFromPlan = (user) => {
+    if (user?.role === 'admin') return 3;
+    const plan = user?.subscriptionPlan || 'free';
+    if (plan === 'premium') return 3;
+    if (plan === 'pro') return 2;
+    if (plan === 'plus') return 1;
+    return 0;
+};
 
 const syncStoredUser = (updater) => {
     const currentUser = getStoredUser();
@@ -35,7 +37,7 @@ const AIHelpWidget = ({ problemTitle, currentCode, userTier }) => {
     const [response, setResponse] = useState('');
     const [activeAction, setActiveAction] = useState(null);
 
-    const resolvedTier = userTier ?? getTierFromPlan(authUser?.subscriptionPlan);
+    const resolvedTier = userTier ?? getTierFromPlan(authUser);
     const dailyLimit = AI_LIMITS_BY_TIER[resolvedTier] ?? 0;
     const helpsUsedToday = Number(authUser?.usageStats?.aiHelpToday || 0);
     const isLimitReached = helpsUsedToday >= dailyLimit;
