@@ -1,185 +1,217 @@
-🛡️ CodeArena 1v1
-
 <div align="center">
-<img src="frontend/src/assets/CodeArenaLogo.png" alt="CodeArena Logo" width="150" />
-<h1>The Ultimate Real-Time Competitive Coding Platform</h1>
-<p>
-<b>Battle friends in 1v1 coding duels with zero-latency synchronization, live execution, and instant judging.</b>
-</p>
-<a href="https://code-arena-1v1.vercel.app/">View Demo</a> •
-<a href="#-installation--setup">Installation</a> •
-<a href="#-architecture">Architecture</a>
+  <img src="frontend/src/assets/CodeArenaLogo.png" alt="CodeArena Logo" width="150" />
+  <h1>CodeArena 1v1</h1>
+  <p><strong>The real-time competitive coding platform for intense 1v1 duels.</strong></p>
+  <p>
+    <a href="https://code-arena-1v1.vercel.app/">Live Demo</a>
+    • <a href="#features">Features</a>
+    • <a href="#installation">Installation</a>
+    • <a href="#architecture">Architecture</a>
+  </p>
 </div>
 
+## Overview
 
+CodeArena 1v1 is a full-stack competitive coding platform built to deliver a polished, low-latency 1v1 coding experience.
 
-📖 Overview
--> CodeArena 1v1 is a full-stack MERN application designed to gamify the coding interview experience. It allows two developers to join a private room and solve algorithmic problems simultaneously.
--> What sets CodeArena apart is its real-time collaboration engine. Unlike standard coding platforms, you can see your opponent's cursor and code typing in real-time (read-only view), adding psychological pressure and excitement to the match.
+Players can create private rooms, face off in real-time, and solve algorithmic challenges while watching their opponent's code progress in a secure, read-only spectator mode. The platform includes live scoring, automated judging, match history, rankings, and a responsive modern UI.
 
+## Features
 
-✨ Key Features
+### Core Gameplay
 
-⚔️ The Battle Arena
-1. 1v1 Matchmaking: Create unique rooms and invite friends via Room ID.
-2. Real-Time Sync: Built with Yjs & WebSockets, enabling character-by-character synchronization ( < 30ms latency).
-3. Live Presence: See your opponent's cursor and typing live.
-4. Language Support: C++, Python, Java, and JavaScript.
-5. Code Execution: Run code against public test cases instantly.
+- Private 1v1 matchmaking using unique room IDs.
+- Real-time collaborative editor powered by Yjs and WebSockets.
+- Read-only opponent preview with live cursor tracking.
+- Fast code execution and result display.
+- Public and hidden test case evaluation.
 
+### Judging & Execution
 
-🤖 Judging & Scoring
-1. Sandboxed Runner: Integrated with Piston API to securely execute untrusted code.
-2. Auto-Judging: Validates solutions against multiple test cases (public & hidden).
-3. Sequential Testing: Robust execution pipeline prevents API rate limiting.
-4. Scoring: Earn points (+10) for every correct submission.
+- Secure sandboxed execution via Piston API.
+- Automatic multi-test validation for each submission.
+- Sequential execution flow to maintain performance and avoid API throttling.
+- Instant feedback on correctness and runtime status.
 
+### Gamification & Analytics
 
-🏆 Gamification & Stats
-1. Ranking System: Start as a Novice and climb to Grandmaster based on matches played.
-2. Match History: Detailed logs of wins, losses, and opponents stored permanently.
-3. Live Scoreboard: Instant score updates during the match.
-4. Total Users: Real-time counter of total registered users and currently online users.
+- Persistent match history with wins, losses, and opponent details.
+- Ranking system that rewards continuous play and performance.
+- Real-time score updates during matches.
+- Live counters for registered users and active players.
 
+### Platform Experience
 
-🎨 Professional UI/UX
-1. Glassmorphism Design: Modern, dark-themed UI with Tailwind CSS.
-2. Responsive: Fully optimized for desktop and large screens.
-3. Themes: Built-in Dark/Light mode toggle.
-4. Loading States: Smooth transitions and loading overlays for a premium feel.
+- Modern responsive UI built with Tailwind CSS.
+- Light / dark mode toggle for improved usability.
+- Smooth loading states, notifications, and transitions.
+- Structured dashboard for room creation, joining, and stats.
 
+## Technology Stack
 
+- Frontend: React, Vite, Tailwind CSS, CodeMirror 6
+- Real-time Collaboration: Socket.IO, Yjs, y-websocket, y-codemirror
+- Backend: Node.js, Express, Socket.IO
+- Database: MongoDB with Mongoose
+- Code Execution: Piston API integration
+- Deployment: Frontend on Vercel, Backend on Render (recommended)
 
-🛠️ Tech Stack
+## Architecture
 
-| Area         | Tech                                             |
-| ------------ | ------------------------------------------------ |
-| Frontend     | React (Vite), Tailwind CSS, CodeMirror 6         |
-| Sync / State | Socket.IO Client, Yjs, y-websocket, y-codemirror |
-| Backend      | Node.js, Express, Socket.IO Server               |
-| DB           | MongoDB (Mongoose)                               |
-| Execution    | Piston API (or your sandboxed runner)            |
-| Deployment   | Vercel (frontend), Render (backend)              |
+CodeArena separates game logic and editor synchronization into two dedicated services for scalability and stability.
 
-
-
-🧩 Architecture
-The application uses a Dual-Socket Architecture:
-1. Game Logic Socket (Port 5000): Handles room joining, starting matches, scoring, and game-over states.
-2. Collaboration Socket (Port 10000): A dedicated y-websocket server handles the high-frequency keystroke synchronization to keep the editors perfectly synced without overloading the main game logic.
+- **Game Server**: Handles authentication, room and match state, scoring, and API routes.
+- **Yjs Server**: Handles collaborative editor state, cursor presence, and real-time synchronization.
 
 ```mermaid
 graph TD
-    ClientA[Browser: Player A] -->|HTTP/REST| API[Express API]
-    ClientB[Browser: Player B] -->|HTTP/REST| API
+  BrowserA[Player A Browser] -->|HTTP / REST| API[Express API Server]
+  BrowserB[Player B Browser] -->|HTTP / REST| API
 
-    ClientA -->|"Socket.IO Events"| GameServer[Game Logic Server]
-    ClientB -->|"Socket.IO Events"| GameServer
+  BrowserA -->|Socket.IO| GameServer[Game Logic Server]
+  BrowserB -->|Socket.IO| GameServer
 
-    ClientA -->|"Yjs CRDT WebSocket"| YjsServer[Yjs Sync Server]
-    ClientB -->|"Yjs CRDT WebSocket"| YjsServer
+  BrowserA -->|Yjs WebSocket| YjsServer[Collaboration Server]
+  BrowserB -->|Yjs WebSocket| YjsServer
 
-    API --> MongoDB[(MongoDB Atlas)]
-    API --> Piston[Piston Code Runner]
+  API --> MongoDB[(MongoDB)]
+  API --> Piston[Piston Code Runner]
 ```
 
+## Installation
 
-🚀 Installation & Local Setup
-Follow these steps to run CodeArena locally.
-Prerequisites
--> Node.js (v18 or higher)
--> MongoDB Atlas Account (or local MongoDB)
+### Prerequisites
 
+- Node.js 18 or higher
+- MongoDB Atlas or local MongoDB instance
+- Git
 
+### 1. Backend Setup
 
-1. Backend Setup
+```bash
 cd backend
 npm install
+```
 
-# 1. Create a .env file
-touch .env
+Create a `.env` file in `backend/` and add:
 
-# 2. Seed the database with DSA problems (Critical Step)
-node seeder.js
-
-# 3. Start the Main Server
-npm run dev
-
-
-backend/.env content:
+```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_super_secret_key
+JWT_SECRET=your_jwt_secret
 FRONTEND_URL=http://localhost:5173
+```
 
+Seed the database with problems:
 
-2. Collaboration Server Setup (Terminal 2)
-Open a new terminal to run the Yjs sync server.
+```bash
+node seeder.js
+```
+
+Start the backend server:
+
+```bash
+npm run dev
+```
+
+### 2. Collaboration Server Setup
+
+Open a second terminal and start the Yjs sync server:
+
+```bash
 cd backend
 npm run yjs
+```
 
+### 3. Frontend Setup
 
-It should say: "running at 'localhost' on port 1234"
-3. Frontend Setup (Terminal 3)
+```bash
 cd frontend
 npm install
-npm run dev
+```
 
+Create a `.env` file in `frontend/` and add:
 
-frontend/.env content:
+```env
 VITE_API_URL=http://localhost:5000
 VITE_YJS_URL=ws://localhost:1234
+```
 
+Start the frontend server:
 
-🌍 Deployment Guide
+```bash
+npm run dev
+```
 
+Access the app at `http://localhost:5173`.
 
-Backend (Render)
--> Create a Web Service for the API (npm start).
--> Create a Separate Web Service for Yjs (npm run yjs).
--> Env Vars: MONGO_URI, JWT_SECRET, FRONTEND_URL (your Vercel link).
--> Important: For Yjs service, set PORT=10000.
+## Deployment Notes
 
+### Backend Deployment
 
-Frontend (Vercel)
-Import repository.
-Set Root Directory to frontend.
-Env Vars:
-VITE_API_URL: https://your-api.onrender.com
-VITE_YJS_URL: wss://your-yjs.onrender.com
+- Deploy the API server to a service like Render or Heroku.
+- Deploy the Yjs service separately, ensuring it has its own port.
+- Configure environment variables for both services.
 
-📸 Screenshots
-Landing Page
-A sleek entry point for users to Login or Sign Up.
-<img width="1907" height="1017" alt="image" src="https://github.com/user-attachments/assets/c7d527b1-04a2-4412-837c-e61cddbef3cc" />
+Recommended backend `.env` values:
 
+```env
+PORT=5000
+MONGO_URI=your_production_mongodb
+JWT_SECRET=your_production_jwt_secret
+FRONTEND_URL=https://your-frontend-url
+```
 
-Dashboard
-Create or Join rooms, view stats, and see live user counts.
-<img width="1909" height="1010" alt="image" src="https://github.com/user-attachments/assets/d49b0f89-c720-4fc1-9979-1cacbc87a07c" />
+For the Yjs server:
 
-The Arena
-The core battle interface with real-time code sync and live judging.
-<img width="1909" height="1006" alt="image" src="https://github.com/user-attachments/assets/0e895576-d5f9-47c0-b086-6bb89db9bbc8" />
+```env
+PORT=10000
+```
 
+### Frontend Deployment
 
-🤝 Contributing
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
+- Deploy the `frontend/` directory to Vercel or a similar static hosting provider.
+- Set the environment variables to point to your deployed backend and Yjs endpoints.
 
-Fork the Project
-Create your Feature Branch (git checkout -b feature/AmazingFeature)
-Commit your Changes (git commit -m 'Add some AmazingFeature')
-Push to the Branch (git push origin feature/AmazingFeature)
-Open a Pull Request
+Recommended frontend `.env` values:
 
+```env
+VITE_API_URL=https://your-api-url
+VITE_YJS_URL=wss://your-yjs-url
+```
 
-## 🛡️ License
-This project is licensed under a restricted **All Rights Reserved** license.  
-You may view the source, but copying or commercial use is prohibited without permission.
+## Screenshots
 
-See the [LICENSE](./LICENSE) file for full details.
+### Landing Page
 
+![Landing Page]( )
 
-<div align="center">
-Design and Developed by <b>Mayank</b>
-</div>
+### Dashboard
+
+![Dashboard]( )
+
+### Battle Arena
+
+![Battle Arena]( )
+
+## Contributing
+
+Contributions are welcome.
+
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m "Add feature"`
+4. Push to your branch: `git push origin feature/your-feature`
+5. Open a pull request.
+
+## Project Structure
+
+- `backend/` — API server, collaboration server, database models, controllers, routes, services
+- `frontend/` — React app, UI components, styles, environment configuration
+- `LICENSE` — License and usage terms
+
+## License
+
+This project is governed by the terms in the [LICENSE](./LICENSE) file.
+
+> Built and designed by **Mayank**
