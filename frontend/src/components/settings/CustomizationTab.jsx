@@ -88,9 +88,9 @@ const CustomizationTab = () => {
             return;
         }
 
-        // Frostbyte, Matrix, and Cyberpunk are implemented
-        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol' || theme.id === 'cyber_punk') {
-            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id === 'cyber_punk' ? 'cyberpunk' : theme.id;
+        // Frostbyte, Matrix, Cyberpunk, and Inferno are implemented
+        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol' || theme.id === 'cyber_punk' || theme.id === 'inferno_arena') {
+            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id === 'cyber_punk' ? 'cyberpunk' : theme.id === 'inferno_arena' ? 'inferno' : theme.id;
             if (advancedTheme === mappedId) {
                 // Already active — deactivate
                 clearAdvancedTheme();
@@ -108,6 +108,10 @@ const CustomizationTab = () => {
                 } else if (mappedId === 'cyberpunk') {
                     toast.success('Cyberpunk theme activated!', {
                         style: { borderRadius: '0px', background: '#0d0d12', color: '#00f0ff', border: '1px solid #ff003c', fontFamily: 'sans-serif' }
+                    });
+                } else if (mappedId === 'inferno') {
+                    toast.success('🔥 Inferno Arena activated!', {
+                        style: { borderRadius: '10px', background: '#0a0505', color: '#ff7b00', border: '1px solid #ff2a00', fontFamily: 'serif' }
                     });
                 } else {
                     toast.success('❄️ Frostbyte theme activated!', {
@@ -365,7 +369,8 @@ const CustomizationTab = () => {
 
                         {ADVANCED_THEMES.map(theme => {
                             const isLocked = theme.isPremium && userTier < 3;
-                            const isActive = theme.id === 'frostbyte' && advancedTheme === 'frostbyte';
+                            const mappedThemeId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id === 'cyber_punk' ? 'cyberpunk' : theme.id === 'inferno_arena' ? 'inferno' : theme.id;
+                            const isActive = advancedTheme === mappedThemeId;
                             return (
                                 <button
                                     key={theme.id}

@@ -47,6 +47,7 @@ const getInitialAdvancedTheme = () => {
   if (stored === 'frostbyte') return 'frostbyte';
   if (stored === 'matrix') return 'matrix';
   if (stored === 'cyberpunk') return 'cyberpunk';
+  if (stored === 'inferno') return 'inferno';
   return null;
 };
 
@@ -70,6 +71,7 @@ const applyThemeToDocument = (theme, advancedTheme) => {
   root.classList.toggle('theme-frostbyte', advancedTheme === 'frostbyte');
   root.classList.toggle('theme-matrix', advancedTheme === 'matrix');
   root.classList.toggle('theme-cyberpunk', advancedTheme === 'cyberpunk');
+  root.classList.toggle('theme-inferno', advancedTheme === 'inferno');
 
   if (body) {
     body.dataset.theme = resolvedTheme;
@@ -121,6 +123,7 @@ export const ThemeProvider = ({ children }) => {
         if (event.newValue === 'frostbyte') nextAdvanced = 'frostbyte';
         if (event.newValue === 'matrix') nextAdvanced = 'matrix';
         if (event.newValue === 'cyberpunk') nextAdvanced = 'cyberpunk';
+        if (event.newValue === 'inferno') nextAdvanced = 'inferno';
         setAdvancedThemeState(nextAdvanced);
         return;
       }
@@ -155,7 +158,7 @@ export const ThemeProvider = ({ children }) => {
   }, [advancedTheme]);
 
   const setAdvancedTheme = useCallback((themeId) => {
-    if (themeId === 'frostbyte' || themeId === 'matrix' || themeId === 'cyberpunk') {
+    if (themeId === 'frostbyte' || themeId === 'matrix' || themeId === 'cyberpunk' || themeId === 'inferno') {
       setAdvancedThemeState(themeId);
       // Force dark mode as the base for advanced themes
       setThemeState('dark');

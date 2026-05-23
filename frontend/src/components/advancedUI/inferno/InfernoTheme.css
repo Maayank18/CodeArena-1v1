@@ -1,0 +1,454 @@
+/* ============================================================
+   INFERNO ARENA — Premium Volcanic Battle Theme
+   Aesthetic: Molten basalt, lava cracks, drifting embers, smoke haze
+   Rule: Zero DOM restructuring. Pure CSS overrides only.
+   ============================================================ */
+
+/* ── Color Palette ── */
+:root[data-theme="dark"].theme-inferno {
+  --inf-void: #050505;
+  --inf-obsidian: #0b0b0b;
+  --inf-basalt: #141414;
+  --inf-stone: #1c1c1c;
+  --inf-slate: #252525;
+
+  --inf-ember: #c45a1a;
+  --inf-lava: #d4870a;
+  --inf-amber: #e8a020;
+  --inf-gold: #f0c040;
+  --inf-hotcore: #ffe0a0;
+
+  --inf-ember-glow: rgba(196, 90, 26, 0.35);
+  --inf-lava-glow: rgba(212, 135, 10, 0.25);
+  --inf-crack-glow: rgba(255, 120, 30, 0.15);
+
+  /* Override Global Variables */
+  --bg-primary: transparent;
+  --bg-secondary: var(--inf-obsidian);
+  --bg-tertiary: rgba(196, 90, 26, 0.03);
+  --surface-elevated: var(--inf-basalt);
+  --border-color: rgba(196, 90, 26, 0.12);
+
+  --text-primary: #e8ddd0;
+  --text-secondary: #a08870;
+  --accent: var(--inf-ember);
+  --shadow-color: var(--inf-ember-glow);
+}
+
+/* ── Base Body ── */
+body[data-theme="dark"].theme-inferno {
+  background-color: var(--inf-void);
+  color: var(--text-primary);
+}
+
+/* Volcanic stone texture with lava cracks on the body */
+.theme-inferno {
+  background-image:
+    /* Noise grain for stone/rock feel */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
+    /* Lava crack fissures — irregular thin lines with warm glow */
+    repeating-linear-gradient(
+      160deg,
+      transparent 0px, transparent 80px,
+      rgba(196, 90, 26, 0.04) 80px, rgba(196, 90, 26, 0.04) 81px,
+      transparent 81px, transparent 200px
+    ),
+    repeating-linear-gradient(
+      -30deg,
+      transparent 0px, transparent 120px,
+      rgba(212, 135, 10, 0.03) 120px, rgba(212, 135, 10, 0.03) 121px,
+      transparent 121px, transparent 300px
+    ),
+    repeating-linear-gradient(
+      75deg,
+      transparent 0px, transparent 180px,
+      rgba(180, 70, 20, 0.025) 180px, rgba(180, 70, 20, 0.025) 181px,
+      transparent 181px, transparent 400px
+    ),
+    /* Deep radial heat zones — very subtle warm spots */
+    radial-gradient(ellipse at 15% 85%, rgba(196, 90, 26, 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse at 85% 10%, rgba(212, 135, 10, 0.035) 0%, transparent 35%),
+    radial-gradient(ellipse at 50% 100%, rgba(180, 70, 20, 0.04) 0%, transparent 30%),
+    radial-gradient(ellipse at 70% 60%, rgba(196, 90, 26, 0.025) 0%, transparent 25%);
+  background-color: var(--inf-void);
+  background-attachment: fixed;
+}
+
+/* ── Typography ── */
+.theme-inferno h1, .theme-inferno h2, .theme-inferno h3 {
+  color: var(--inf-amber);
+  text-shadow: 0 1px 8px rgba(212, 135, 10, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.theme-inferno .text-glow-cyan {
+  text-shadow: 0 0 8px rgba(212, 135, 10, 0.3), 0 0 16px rgba(196, 90, 26, 0.15);
+  color: var(--inf-amber);
+}
+
+/* ── Keyframes ── */
+@keyframes inferno-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(196, 90, 26, 0.2), 0 0 12px rgba(196, 90, 26, 0.08), inset 0 0 8px rgba(196, 90, 26, 0.06);
+    border-color: rgba(196, 90, 26, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 6px rgba(196, 90, 26, 0.3), 0 0 18px rgba(196, 90, 26, 0.12), inset 0 0 12px rgba(196, 90, 26, 0.1);
+    border-color: rgba(212, 135, 10, 0.35);
+  }
+}
+
+@keyframes lava-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes ember-flicker {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes crack-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Panels (Elevated Surfaces) ── */
+.theme-inferno .bg-\[var\(--surface-elevated\)\] {
+  background:
+    /* Subtle crack lines */
+    repeating-linear-gradient(
+      135deg,
+      transparent, transparent 20px,
+      rgba(196, 90, 26, 0.025) 20px, rgba(196, 90, 26, 0.025) 21px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 30px,
+      rgba(255, 120, 30, 0.02) 30px, rgba(255, 120, 30, 0.02) 31px
+    ),
+    linear-gradient(180deg, var(--inf-basalt), var(--inf-obsidian)) !important;
+  border: 1px solid rgba(196, 90, 26, 0.2) !important;
+  border-radius: 12px !important;
+  animation: inferno-pulse 5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Lava crack pseudo-element on panels */
+.theme-inferno .bg-\[var\(--surface-elevated\)\]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 85%, rgba(196, 90, 26, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at 85% 15%, rgba(212, 135, 10, 0.06) 0%, transparent 25%);
+  pointer-events: none;
+  z-index: 0;
+  animation: crack-glow 6s ease-in-out infinite;
+}
+
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:hover {
+  border-color: rgba(212, 135, 10, 0.35) !important;
+  box-shadow: 0 0 8px rgba(196, 90, 26, 0.25), 0 0 20px rgba(196, 90, 26, 0.1) !important;
+}
+
+/* ── Sidebar ── */
+/* Sidebar wrapper — carved volcanic rock */
+.theme-inferno aside {
+  background:
+    linear-gradient(180deg, var(--inf-basalt) 0%, var(--inf-obsidian) 100%) !important;
+  border-right: 1px solid rgba(196, 90, 26, 0.12) !important;
+}
+
+/* Active sidebar link — molten highlight bar */
+.theme-inferno aside button.bg-accent {
+  background: linear-gradient(135deg, rgba(196, 90, 26, 0.25), rgba(212, 135, 10, 0.15)) !important;
+  color: var(--inf-amber) !important;
+  border: 1px solid rgba(196, 90, 26, 0.35) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 0 8px rgba(196, 90, 26, 0.2),
+    inset 0 0 6px rgba(196, 90, 26, 0.1) !important;
+  animation: none;
+}
+
+/* Inactive sidebar items */
+.theme-inferno aside button:not(.bg-accent) {
+  color: #8a7a6a !important;
+}
+.theme-inferno aside button:not(.bg-accent):hover {
+  color: var(--inf-amber) !important;
+  background: rgba(196, 90, 26, 0.06) !important;
+}
+
+/* ── Navbar ── */
+.theme-inferno nav,
+.theme-inferno .h-\[64px\],
+.theme-inferno .sm\:h-\[72px\] {
+  background:
+    linear-gradient(180deg, var(--inf-basalt), var(--inf-obsidian)) !important;
+  border-bottom: 1px solid rgba(196, 90, 26, 0.15) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(196, 90, 26, 0.08) !important;
+}
+
+/* ── Primary CTA Buttons (Create New Battle Room) ── */
+.theme-inferno button.bg-accent,
+.theme-inferno button.bg-\[var\(--text-primary\)\] {
+  background:
+    linear-gradient(90deg,
+      #8b2a0a, #c45a1a, #d4870a, #e8a020, #d4870a, #c45a1a, #8b2a0a
+    ) !important;
+  background-size: 300% 100% !important;
+  color: #fff !important;
+  font-weight: 700;
+  border: 1px solid rgba(232, 160, 32, 0.4) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 0 8px rgba(196, 90, 26, 0.3),
+    0 0 20px rgba(196, 90, 26, 0.15),
+    inset 0 1px 0 rgba(255, 224, 160, 0.15) !important;
+  animation: lava-flow 4s linear infinite;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Heated shimmer overlay on button */
+.theme-inferno button.bg-accent::after,
+.theme-inferno button.bg-\[var\(--text-primary\)\]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 224, 160, 0.12) 45%,
+    transparent 55%
+  );
+  animation: lava-flow 3s linear infinite;
+  pointer-events: none;
+}
+
+.theme-inferno button.bg-accent:hover,
+.theme-inferno button.bg-\[var\(--text-primary\)\]:hover {
+  transform: translateY(-1px) scale(1.01);
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 12px rgba(196, 90, 26, 0.45),
+    0 0 30px rgba(196, 90, 26, 0.2),
+    inset 0 1px 0 rgba(255, 224, 160, 0.2) !important;
+}
+
+/* ── Secondary Buttons ── */
+.theme-inferno button.border-accent,
+.theme-inferno button[class*="border-"] {
+  border-color: rgba(196, 90, 26, 0.25) !important;
+  color: var(--inf-amber) !important;
+}
+.theme-inferno button.border-accent:hover,
+.theme-inferno button[class*="border-"]:hover {
+  background: rgba(196, 90, 26, 0.06) !important;
+  border-color: rgba(196, 90, 26, 0.4) !important;
+}
+
+/* ── Icons & Trophy Accents ── */
+.theme-inferno .text-yellow-500,
+.theme-inferno .text-blue-500,
+.theme-inferno .text-accent {
+  color: var(--inf-lava) !important;
+  filter: drop-shadow(0 0 3px rgba(212, 135, 10, 0.3));
+}
+
+.theme-inferno .bg-blue-500\/10,
+.theme-inferno .bg-accent\/10 {
+  background-color: rgba(196, 90, 26, 0.06) !important;
+  border-color: rgba(196, 90, 26, 0.15) !important;
+}
+
+/* ── Inputs ── */
+.theme-inferno input {
+  background-color: var(--inf-obsidian) !important;
+  border: 1px solid rgba(196, 90, 26, 0.15) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+}
+.theme-inferno input::placeholder {
+  color: #6a5a4a !important;
+}
+.theme-inferno input:focus {
+  outline: none;
+  box-shadow: 0 0 6px rgba(196, 90, 26, 0.2), inset 0 0 4px rgba(196, 90, 26, 0.08) !important;
+  border-color: rgba(212, 135, 10, 0.35) !important;
+  background-color: rgba(11, 11, 11, 0.95) !important;
+}
+
+/* ── Stats Cards ── */
+.theme-inferno .bg-\[var\(--surface-elevated\)\] .text-3xl,
+.theme-inferno .bg-\[var\(--surface-elevated\)\] .text-4xl,
+.theme-inferno .bg-\[var\(--surface-elevated\)\] .text-2xl {
+  color: var(--inf-amber) !important;
+  text-shadow: 0 0 6px rgba(212, 135, 10, 0.2);
+}
+
+/* ── Consistency Calendar ── */
+.theme-inferno .consistency-calendar {
+  background:
+    linear-gradient(180deg, var(--inf-basalt), var(--inf-obsidian)) !important;
+  border: 1px solid rgba(196, 90, 26, 0.15) !important;
+  box-shadow: 0 0 8px rgba(196, 90, 26, 0.08) !important;
+  border-radius: 12px !important;
+}
+
+/* Skulls for Completed Days */
+.theme-inferno .consistency-calendar [data-status="completed"] {
+  background: rgba(196, 90, 26, 0.1) !important;
+  border: 1px solid rgba(196, 90, 26, 0.25) !important;
+  box-shadow: 0 0 6px rgba(196, 90, 26, 0.15) !important;
+  position: relative;
+}
+.theme-inferno .consistency-calendar [data-status="completed"] svg {
+  display: none !important;
+}
+.theme-inferno .consistency-calendar [data-status="completed"]::after {
+  content: "💀";
+  font-size: 14px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 3px rgba(212, 135, 10, 0.4));
+  animation: ember-flicker 3s ease-in-out infinite;
+}
+
+/* Ashes for Missed Days */
+.theme-inferno .consistency-calendar [data-status="missed"] {
+  background-color: rgba(20, 20, 20, 0.8) !important;
+  border: 1px solid rgba(60, 50, 40, 0.3) !important;
+}
+
+.theme-inferno .consistency-calendar .consistency-cta {
+  background-color: rgba(196, 90, 26, 0.04) !important;
+  border: 1px solid rgba(196, 90, 26, 0.12) !important;
+  border-radius: 8px !important;
+}
+
+/* Calendar streak badge */
+.theme-inferno .consistency-calendar .bg-orange-500\/5,
+.theme-inferno .consistency-calendar .bg-orange-500\/10 {
+  background-color: rgba(196, 90, 26, 0.08) !important;
+  border-color: rgba(196, 90, 26, 0.2) !important;
+}
+
+/* ── Progress Bar (Lava Channel) ── */
+.theme-inferno .bg-\[var\(--bg-primary\)\] {
+  background-color: transparent !important;
+}
+.theme-inferno .h-3.rounded-full.overflow-hidden {
+  border: 1px solid rgba(196, 90, 26, 0.2) !important;
+  background-color: var(--inf-obsidian) !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+}
+.theme-inferno .h-3.rounded-full.overflow-hidden > div {
+  background: linear-gradient(90deg, #8b2a0a, #c45a1a, #d4870a, #e8a020) !important;
+  box-shadow: 0 0 6px rgba(212, 135, 10, 0.3) !important;
+  border-radius: 999px;
+}
+
+/* ── Dividers & Borders ── */
+.theme-inferno hr,
+.theme-inferno .border-b {
+  border-color: rgba(196, 90, 26, 0.08) !important;
+}
+
+/* ── Dropdown Menus ── */
+.theme-inferno [class*="absolute"][class*="rounded"] {
+  background-color: var(--inf-basalt) !important;
+  border: 1px solid rgba(196, 90, 26, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 8px rgba(196, 90, 26, 0.1) !important;
+}
+
+/* ── Scrollbar ── */
+.theme-inferno ::-webkit-scrollbar {
+  width: 6px;
+}
+.theme-inferno ::-webkit-scrollbar-track {
+  background: var(--inf-void);
+}
+.theme-inferno ::-webkit-scrollbar-thumb {
+  background: rgba(196, 90, 26, 0.3);
+  border-radius: 3px;
+}
+.theme-inferno ::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 90, 26, 0.5);
+}
+
+/* ── Footer ── */
+.theme-inferno footer {
+  background: var(--inf-obsidian) !important;
+  border-top: 1px solid rgba(196, 90, 26, 0.08) !important;
+}
+
+/* ── Links ── */
+.theme-inferno a.text-accent,
+.theme-inferno .text-accent {
+  color: var(--inf-lava) !important;
+}
+
+/* ── Badges & Tags ── */
+.theme-inferno .bg-accent {
+  background-color: var(--inf-ember) !important;
+}
+.theme-inferno .text-black {
+  color: #0a0a0a !important;
+}
+
+/* ── Modal Overlays ── */
+.theme-inferno .bg-black\/50,
+.theme-inferno .bg-black\/60,
+.theme-inferno .bg-black\/70 {
+  background-color: rgba(5, 5, 5, 0.85) !important;
+}
+
+/* ── Selection ── */
+.theme-inferno ::selection {
+  background: rgba(196, 90, 26, 0.3);
+  color: #fff;
+}
+
+/* ── Smoke Haze (Viewport edges) ── */
+.theme-inferno::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: linear-gradient(
+    to top,
+    rgba(140, 50, 10, 0.06) 0%,
+    rgba(196, 90, 26, 0.03) 40%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Top-edge volcanic haze */
+.theme-inferno::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(
+    to bottom,
+    rgba(100, 40, 10, 0.04) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}

@@ -32,12 +32,12 @@
 export { FrostbyteMountain, FrostbyteParticles } from './frostbyte';
 
 // ===================
-// INFERNO EXPORTS (Coming Soon)
+// INFERNO EXPORTS
 // ===================
-// export { ... } from './inferno';
+export { InfernoEmbersBackground } from './inferno';
 
 // ===================
-// CYBERPUNK EXPORTS (Coming Soon)
+// CYBERPUNK EXPORTS
 // ===================
 // export { ... } from './cyberpunk';
 
