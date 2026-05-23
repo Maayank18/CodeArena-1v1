@@ -14,7 +14,7 @@ import Pricing from './pages/Pricing';
 import Learn from './pages/Learn';
 import Contest from './pages/Contest';
 import useTelemetry from './hooks/useTelemetry';
-import { FrostbyteParticles, FrostbyteMountain } from './components/advancedUI';
+import { FrostbyteParticles, FrostbyteMountain, MatrixRainBackground } from './components/advancedUI';
 import { useTheme } from './context/ThemeContext';
 
 function App() {
@@ -44,6 +44,11 @@ function App() {
             style={{ clipPath: 'polygon(0% 0%, 80% 0%, 40% 100%, 10% 80%)' }}
           ></div>
         </>
+      )}
+
+      {/* Matrix rain - renders only when theme is active */}
+      {advancedTheme === 'matrix' && (
+        <MatrixRainBackground forceActive={true} />
       )}
 
       {/* Main Content Layer (Z-Index fix for particles) */}

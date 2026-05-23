@@ -40,3 +40,9 @@ export { FrostbyteMountain, FrostbyteParticles } from './frostbyte';
 // CYBERPUNK EXPORTS (Coming Soon)
 // ===================
 // export { ... } from './cyberpunk';
+
+// ===================
+// MATRIX PROTOCOL EXPORTS
+// ===================
+export { MatrixRainBackground, MatrixStatNumber } from './matrix';
+

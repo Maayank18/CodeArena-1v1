@@ -1,0 +1,209 @@
+/* frontend/src/components/advancedUI/matrix/MatrixTheme.css */
+
+/* Global scope for the Matrix theme */
+:root[data-theme="dark"].theme-matrix {
+  /* Matrix Color Palette */
+  --matrix-bg-pure: #000000;
+  --matrix-bg-terminal: #0A1108;
+  --matrix-neon: #00FF41;
+  --matrix-neon-glow: rgba(0, 255, 65, 0.4);
+  --matrix-neon-glow-strong: rgba(0, 255, 65, 0.8);
+  --matrix-highlight: #008F11;
+  --matrix-text-muted: #1e5926;
+  --matrix-border: rgba(0, 255, 65, 0.3);
+
+  /* Override Global Variables */
+  --bg-primary: transparent;
+  --bg-secondary: var(--matrix-bg-terminal);
+  --bg-tertiary: rgba(0, 143, 17, 0.1);
+  --surface-elevated: rgba(10, 17, 8, 0.8);
+  --border-color: var(--matrix-border);
+  --text-primary: var(--matrix-neon);
+  --text-secondary: var(--matrix-highlight);
+  --accent: var(--matrix-neon);
+  --shadow-color: rgba(0, 255, 65, 0.1);
+
+  /* Override Fonts */
+  --font-mono: 'Fira Code', 'Courier New', 'Share Tech Mono', monospace;
+  --font-sans: 'Fira Code', 'Courier New', 'Share Tech Mono', monospace;
+}
+
+/* Base body styling when matrix is active */
+body[data-theme="dark"].theme-matrix {
+  background-color: var(--matrix-bg-pure);
+  color: var(--matrix-neon);
+  font-family: var(--font-mono);
+}
+
+/* CRT Flicker Animation */
+@keyframes crtFlicker {
+  0% { opacity: 0.98; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.9; }
+  15% { opacity: 0.95; }
+  20% { opacity: 0.98; }
+  50% { opacity: 0.99; }
+  80% { opacity: 0.97; }
+  100% { opacity: 1; }
+}
+
+/* Matrix Global Overlay & Scanlines */
+.theme-matrix body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.1) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 9999;
+  pointer-events: none;
+  animation: crtFlicker 0.15s infinite;
+  opacity: 0.3;
+}
+
+/* Subtle Vignette for CRT depth */
+.theme-matrix .matrix-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(circle, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
+}
+
+/* Hex Grid Pattern for panels/cards */
+.theme-matrix .matrix-panel {
+  background-color: var(--matrix-bg-terminal);
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0l20 10v20L20 40 0 30V10z' fill-rule='evenodd' stroke='%2300FF41' stroke-width='0.5' stroke-opacity='0.15' fill='none'/%3E%3C/svg%3E");
+  background-size: 30px 30px;
+  border: 1px solid var(--matrix-neon);
+  box-shadow: 0 0 15px var(--matrix-neon-glow), inset 0 0 10px var(--matrix-neon-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glowing text & specific overrides */
+.theme-matrix .text-glow-matrix {
+  text-shadow: 0 0 8px var(--matrix-neon-glow-strong);
+}
+
+.theme-matrix h1, 
+.theme-matrix h2, 
+.theme-matrix h3 {
+  font-family: var(--font-mono);
+  color: var(--matrix-neon);
+  text-shadow: 0 0 10px var(--matrix-neon-glow-strong);
+}
+
+/* Interactive Elements (Buttons, Inputs) */
+.theme-matrix input, 
+.theme-matrix textarea, 
+.theme-matrix select {
+  background: rgba(0, 20, 0, 0.6) !important;
+  border: 1px solid var(--matrix-neon) !important;
+  color: var(--matrix-neon) !important;
+  font-family: var(--font-mono) !important;
+  box-shadow: inset 0 0 5px var(--matrix-neon-glow);
+  caret-color: var(--matrix-neon);
+}
+
+.theme-matrix input:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--matrix-neon-glow-strong), inset 0 0 10px var(--matrix-neon-glow-strong) !important;
+}
+
+/* Blinking Cursor for inputs */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.theme-matrix .matrix-cursor::after {
+  content: '|';
+  animation: blink-cursor 1s step-end infinite;
+  color: var(--matrix-neon);
+  margin-left: 2px;
+}
+
+/* Buttons */
+.theme-matrix button {
+  font-family: var(--font-mono);
+  transition: all 0.2s ease;
+}
+
+.theme-matrix button.bg-accent {
+  background-color: var(--matrix-bg-pure) !important;
+  border: 1px solid var(--matrix-neon) !important;
+  color: var(--matrix-neon) !important;
+  box-shadow: 0 0 15px var(--matrix-neon-glow), inset 0 0 10px var(--matrix-neon-glow);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.theme-matrix button.bg-accent:hover {
+  background-color: var(--matrix-neon) !important;
+  color: var(--matrix-bg-pure) !important;
+  box-shadow: 0 0 25px var(--matrix-neon-glow-strong);
+}
+
+.theme-matrix button.text-\[var\(--bg-primary\)\] {
+  color: var(--matrix-bg-pure) !important;
+}
+
+/* Custom Scrollbar for Matrix Theme */
+.theme-matrix ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.theme-matrix ::-webkit-scrollbar-track {
+  background: var(--matrix-bg-pure);
+  border-left: 1px solid var(--matrix-border);
+}
+.theme-matrix ::-webkit-scrollbar-thumb {
+  background: var(--matrix-highlight);
+  border-radius: 0;
+}
+.theme-matrix ::-webkit-scrollbar-thumb:hover {
+  background: var(--matrix-neon);
+  box-shadow: 0 0 10px var(--matrix-neon);
+}
+
+/* -------------------------------------
+ * Consistency Calendar Matrix Styles
+ * ------------------------------------- */
+.theme-matrix .matrix-calendar-container {
+  background-color: var(--matrix-bg-pure) !important;
+  border: 1px solid var(--matrix-neon) !important;
+  box-shadow: 0 0 10px var(--matrix-neon-glow) !important;
+}
+
+.theme-matrix .matrix-calendar-container [data-status="completed"] {
+  background-color: var(--matrix-neon) !important;
+  box-shadow: 0 0 15px var(--matrix-neon-glow-strong) !important;
+  border: none !important;
+}
+
+.theme-matrix .matrix-calendar-container [data-status="completed"] svg {
+  color: var(--matrix-bg-pure) !important; /* Black icon */
+}
+
+.theme-matrix .matrix-calendar-container [data-status="pending"],
+.theme-matrix .matrix-calendar-container [data-status="missed"] {
+  background-color: transparent !important;
+  border: 1px solid var(--matrix-border) !important;
+}
+
+.theme-matrix .matrix-calendar-container .consistency-cta {
+  background-color: rgba(0, 255, 65, 0.1) !important;
+  border: 1px solid var(--matrix-neon) !important;
+  box-shadow: inset 0 0 10px var(--matrix-neon-glow) !important;
+}
+
+.theme-matrix .matrix-calendar-container .consistency-cta svg {
+  color: var(--matrix-neon) !important;
+}

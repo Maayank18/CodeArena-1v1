@@ -15,6 +15,7 @@ import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
 import { useTheme } from '../context/ThemeContext';
+import { MatrixStatNumber } from '../components/advancedUI';
 import CustomMatchModal from '../components/CustomMatchModal';
 import PremiumGate from '../components/PremiumGate.jsx';
 import {
@@ -93,8 +94,8 @@ const Dashboard = () => {
         }
 
         setUser(finalUser);
-        if (finalUser.customization?.advancedTheme === 'frostbyte') {
-          setAdvancedTheme('frostbyte');
+        if (finalUser.customization?.advancedTheme === 'frostbyte' || finalUser.customization?.advancedTheme === 'matrix') {
+          setAdvancedTheme(finalUser.customization.advancedTheme);
         } else {
           clearAdvancedTheme();
         }
@@ -197,13 +198,18 @@ const Dashboard = () => {
   }
 
   const isFrostbyte = advancedTheme === 'frostbyte';
+  const isMatrix = advancedTheme === 'matrix';
   
   // Ice block styling formulas
   const snowDecorations = "snow-cap overflow-hidden after:pointer-events-none after:absolute after:-top-4 after:-right-4 after:w-16 after:h-16 after:bg-white/10 after:blur-xl after:rotate-45";
   const iceBlockBase = `relative bg-[#060B19]/40 backdrop-blur-xl border border-cyan-300/30 shadow-[inset_0_0_20px_rgba(34,211,238,0.15),0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ${isFrostbyte ? snowDecorations : ''}`;
   const iceBlockHover = "hover:bg-cyan-900/30 hover:border-cyan-300/60 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] group";
-  const iceBlockStatic = `${iceBlockBase}`;
-  const iceBlockInteractive = `${iceBlockBase} ${iceBlockHover}`;
+  
+  const getPanelClass = (interactive = false) => {
+    if (isFrostbyte) return interactive ? `${iceBlockBase} ${iceBlockHover}` : iceBlockBase;
+    if (isMatrix) return `matrix-panel ${interactive ? 'hover:-translate-y-1 transition-transform' : ''}`;
+    return `bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_24px_48px_-28px_var(--shadow-color)] ${interactive ? 'hover:border-accent/50 transition-all' : ''}`;
+  };
 
   return (
     <div className="flex h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans">
@@ -229,7 +235,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 
                 {/* Main Action Card */}
-                <div className={`${isFrostbyte ? iceBlockStatic : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_24px_48px_-28px_var(--shadow-color)]'} p-6 md:p-8 rounded-2xl space-y-6 md:space-y-8 h-full flex flex-col justify-center`}>
+                <div className={`${getPanelClass()} p-6 md:p-8 rounded-2xl space-y-6 md:space-y-8 h-full flex flex-col justify-center`}>
                   {isFrostbyte && (
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-white/60 via-cyan-300/40 to-transparent z-10 rounded-t-2xl pointer-events-none" />
                   )}
@@ -288,9 +294,9 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className={`${isFrostbyte ? iceBlockInteractive : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50'} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20 group-hover:scale-110 transition-transform">
-                      <Swords size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : "text-blue-500"} />
+                  <div className={`${getPanelClass(true)} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 border group-hover:scale-110 transition-transform ${isMatrix ? 'bg-green-900/30 border-green-500/50' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                      <Swords size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : isMatrix ? "text-green-400 drop-shadow-[0_0_8px_rgba(0,255,65,0.8)]" : "text-blue-500"} />
                     </div>
                     <span className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2">
                       {user.stats?.matchesPlayed || 0}
@@ -298,9 +304,9 @@ const Dashboard = () => {
                     <span className="text-[var(--text-secondary)] font-medium text-sm">Matches</span>
                   </div>
 
-                  <div className={`${isFrostbyte ? iceBlockInteractive : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50'} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
-                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 border border-accent/20 group-hover:scale-110 transition-transform">
-                      <Trophy size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : "text-accent"} />
+                  <div className={`${getPanelClass(true)} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 border group-hover:scale-110 transition-transform ${isMatrix ? 'bg-green-900/30 border-green-500/50' : 'bg-accent/10 border-accent/20'}`}>
+                      <Trophy size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : isMatrix ? "text-green-400 drop-shadow-[0_0_8px_rgba(0,255,65,0.8)]" : "text-accent"} />
                     </div>
                     <span className="text-3xl md:text-4xl font-extrabold text-accent mb-2">
                       {user.stats?.wins || 0}
@@ -308,7 +314,7 @@ const Dashboard = () => {
                     <span className="text-[var(--text-secondary)] font-medium text-sm">Wins</span>
                   </div>
 
-                  <div className={`col-span-2 ${isFrostbyte ? iceBlockInteractive : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50'} p-8 rounded-2xl flex flex-col transition-all`}>
+                  <div className={`col-span-2 ${getPanelClass(true)} p-8 rounded-2xl flex flex-col transition-all`}>
                     <div className="mb-4 flex items-start justify-between gap-5">
                       <div className="min-w-0">
                         <div className="flex min-w-0 items-center gap-3">
@@ -323,9 +329,9 @@ const Dashboard = () => {
                                 label={badgeData?.name || equippedBadgeId}
                                 title={badgeData?.name || equippedBadgeId}
                                 // Larger, responsive circular frame and prevent it from shrinking
-                                frameClassName="h-20 w-20 md:h-24 md:w-24 shrink-0 rounded-full overflow-hidden bg-transparent flex items-center justify-center"
+                                frameClassName={`h-20 w-20 md:h-24 md:w-24 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isMatrix ? 'bg-black border border-[#00FF41] shadow-[0_0_15px_rgba(0,255,65,0.4)]' : 'bg-transparent'}`}
                                 // Fill the circular frame and scale slightly so any thin asset stroke/background is cropped
-                                imageClassName="h-full w-full object-cover transform scale-110 drop-shadow-none"
+                                imageClassName={`h-full w-full object-cover transform scale-110 drop-shadow-none ${isMatrix ? 'brightness-125 sepia hue-rotate-[70deg] saturate-200' : ''}`}
                                 // opt-out of the default rectangular rounding so we supply our own circular crop
                                 noFrame
                               />
@@ -341,8 +347,8 @@ const Dashboard = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 bg-[var(--bg-tertiary)] px-4 py-2 rounded-xl border border-[var(--border-color)]">
-                        <Trophy size={18} className="text-yellow-500" />
+                      <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isMatrix ? 'bg-black border-[#00FF41] shadow-[inset_0_0_10px_rgba(0,255,65,0.2)]' : 'bg-[var(--bg-tertiary)] border-[var(--border-color)]'}`}>
+                        <Trophy size={18} className={isMatrix ? "text-[#00FF41]" : "text-yellow-500"} />
                         <span className="text-xl font-mono font-black text-[var(--text-primary)]">
                           {user.rating || 1000}
                         </span>

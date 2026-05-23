@@ -88,21 +88,28 @@ const CustomizationTab = () => {
             return;
         }
 
-        // Frostbyte is the only implemented advanced theme
-        if (theme.id === 'frostbyte') {
-            if (advancedTheme === 'frostbyte') {
+        // Frostbyte and Matrix are implemented
+        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol') {
+            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id;
+            if (advancedTheme === mappedId) {
                 // Already active — deactivate
                 clearAdvancedTheme();
-                toast.success('Frostbyte theme deactivated', {
+                toast.success(`${theme.name} theme deactivated`, {
                     icon: '🌙',
                     style: { borderRadius: '10px', background: '#333', color: '#fff' }
                 });
             } else {
                 // Activate
-                setAdvancedTheme('frostbyte');
-                toast.success('❄️ Frostbyte theme activated!', {
-                    style: { borderRadius: '10px', background: '#060B19', color: '#e0f2fe', border: '1px solid rgba(34,211,238,0.3)' }
-                });
+                setAdvancedTheme(mappedId);
+                if (mappedId === 'matrix') {
+                    toast.success('Matrix Protocol activated.', {
+                        style: { borderRadius: '0px', background: '#0A1108', color: '#00FF41', border: '1px solid #00FF41', fontFamily: 'monospace' }
+                    });
+                } else {
+                    toast.success('❄️ Frostbyte theme activated!', {
+                        style: { borderRadius: '10px', background: '#060B19', color: '#e0f2fe', border: '1px solid rgba(34,211,238,0.3)' }
+                    });
+                }
             }
             return;
         }

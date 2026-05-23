@@ -98,7 +98,7 @@ const ConsistencyCalendar = ({ className = "" }) => {
   }
 
   return (
-    <div className={`bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 shadow-xl dark:shadow-2xl transition-all hover:border-gray-200 dark:hover:border-white/10 ${className} ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''}`}>
+    <div className={`consistency-calendar bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 shadow-xl dark:shadow-2xl transition-all hover:border-gray-200 dark:hover:border-white/10 ${className} ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''} ${advancedTheme === 'matrix' ? 'matrix-calendar-container' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-5 px-1">
         <div>
@@ -139,6 +139,7 @@ const ConsistencyCalendar = ({ className = "" }) => {
               }
               ${day.isToday && day.status !== 'completed' ? 'ring-1 ring-inset ring-accent/30 dark:ring-accent/50 bg-accent/5' : ''}
             `}
+            data-status={day.status}
           >
             {day.status === 'completed' ? (
               <Trophy size={14} className="text-black dark:text-black fill-current animate-bounce-subtle" />
@@ -150,7 +151,7 @@ const ConsistencyCalendar = ({ className = "" }) => {
       </div>
 
       {/* Daily Action CTA Section */}
-      <div className="rounded-2xl bg-gray-50 dark:bg-black/30 p-3 border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 transition-colors">
+      <div className="consistency-cta rounded-2xl bg-gray-50 dark:bg-black/30 p-3 border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 transition-colors">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-accent/10 p-2 text-accent">
             <Trophy size={16} className="fill-current" />
