@@ -3,24 +3,31 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { useTheme } from '../context/ThemeContext';
 
-export default function FrostbyteParticles() {
+let isParticlesInitialized = false;
+
+export default function FrostbyteParticles({ forceActive = false, containerId = "tsparticles", className = "fixed inset-0 pointer-events-none z-[0]" }) {
   const { advancedTheme } = useTheme();
   const [init, setInit] = useState(false);
 
   useEffect(() => {
+    if (isParticlesInitialized) {
+      setInit(true);
+      return;
+    }
     initParticlesEngine(async (engine) => {
       await loadSlim(engine);
     }).then(() => {
+      isParticlesInitialized = true;
       setInit(true);
     });
   }, []);
 
-  if (!init || advancedTheme !== 'frostbyte') return null;
+  if (!init || (!forceActive && advancedTheme !== 'frostbyte')) return null;
 
   return (
     <Particles
-      id="tsparticles"
-      className="fixed inset-0 pointer-events-none z-[0]"
+      id={containerId}
+      className={className}
       options={{
         background: { color: { value: "transparent" } },
         fpsLimit: 60,

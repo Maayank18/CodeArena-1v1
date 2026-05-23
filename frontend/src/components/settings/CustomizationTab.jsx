@@ -155,6 +155,7 @@ const CustomizationTab = () => {
                 tagline,
                 signatureStack,
                 entranceBanner,
+                advancedTheme,
             });
             if (res.data?.success) {
                 toast.success('Customization saved!');

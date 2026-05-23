@@ -379,6 +379,10 @@ const userSchema = new mongoose.Schema({
             type: String,
             default: '',
         },
+        advancedTheme: {
+            type: String,
+            default: '',
+        },
     },
 
     // ── Custom Matchmaking Quotas ──────────────────────────────────

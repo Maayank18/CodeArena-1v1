@@ -19,6 +19,7 @@ import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import WinningModal from '../components/WinningModal.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import FrostbyteParticles from '../components/FrostbyteParticles.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 import { resolveBackendOrigin } from '../api.js';
@@ -250,7 +251,7 @@ const EditorPage = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
 
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme, advancedTheme } = useTheme();
     
     const storedUser = (() => {
         try {
@@ -875,9 +876,12 @@ const EditorPage = () => {
 
     const PaneHeader = ({ side }) => {
         const p = clients.find(c => c.side === side);
+        const paneThemeClass = p?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte' : '';
+        const paneIsDark = isDark || paneThemeClass === 'theme-frostbyte';
+
         return (
-            <div className={`arena-pane-header p-3 flex justify-between items-center border-b shrink-0 h-16 ${
-                isDark ? 'bg-[#2d2d2d] border-[#3e3e42]' : 'bg-stone-100 border-stone-300'
+            <div className={`arena-pane-header relative z-10 p-3 flex justify-between items-center border-b shrink-0 h-16 ${
+                paneIsDark ? 'bg-[var(--surface-elevated)] border-[var(--border-color)]' : 'bg-stone-100 border-stone-300'
             }`}>
                 <div className="flex items-center gap-3 overflow-hidden">
                     <Avatar username={p?.username} src={p?.avatar} avatarFrame={p?.customization?.avatarFrame} className="h-8 w-8 flex-shrink-0" />
@@ -899,12 +903,12 @@ const EditorPage = () => {
                                     />
                                 );
                             })()}
-                            <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>
+                            <span className={`arena-pane-title font-bold text-sm truncate max-w-[100px] ${paneIsDark ? 'text-white' : 'text-slate-900'}`}>{p?.username || 'Waiting...'}</span>
                             <span className={`arena-score-pill px-2 py-0.5 rounded text-[10px] font-mono shrink-0 ${
-                                isDark ? 'bg-black/50 text-green-400' : 'bg-white text-emerald-600 border border-emerald-200'
+                                paneIsDark ? 'bg-black/50 text-accent' : 'bg-white text-emerald-600 border border-emerald-200'
                             }`}>{scores[p?.username] || 0} pts</span>
                         </div>
-                        <span className={`text-[9px] truncate italic ${isDark ? 'text-gray-500' : 'text-slate-500'}`}>{p?.customization?.tagline || 'Coding...'}</span>
+                        <span className={`text-[9px] truncate italic ${paneIsDark ? 'text-gray-500' : 'text-slate-500'}`}>{p?.customization?.tagline || 'Coding...'}</span>
                     </div>
                     {mySide === side && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
                 </div>
@@ -912,7 +916,7 @@ const EditorPage = () => {
                     <div className="flex items-center gap-2">
                         <select 
                             className={`arena-lang-select text-xs p-1 rounded border outline-none cursor-pointer ${
-                                isDark
+                                paneIsDark
                                     ? 'bg-[#3e3e42] text-white border-[#555]'
                                     : 'bg-white text-slate-800 border-stone-300'
                             }`} 
@@ -1032,9 +1036,12 @@ const EditorPage = () => {
                 </div>
             ) : (
                 <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3">
-                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'}`}>
+                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 relative ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'} ${clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
+                    {clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' && (
+                        <FrostbyteParticles forceActive={true} containerId="tsparticles-left" className="absolute inset-0 pointer-events-none z-[0] mix-blend-screen opacity-60" />
+                    )}
                     <PaneHeader side="left" />
-                    <div className="relative flex-1 min-h-0 overflow-hidden">
+                    <div className="relative flex-1 min-h-0 overflow-hidden z-10">
                         {ydocRef.current && providerRef.current && <CodeEditor side="left" isReadOnly={mySide !== 'left'} ydoc={ydocRef.current} provider={providerRef.current} language={mySide === 'left' ? language : 'cpp'} />}
                     </div>
                 </div>
@@ -1133,9 +1140,12 @@ const EditorPage = () => {
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-3 ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'}`}>
+                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-3 relative ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'} ${clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
+                    {clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' && (
+                        <FrostbyteParticles forceActive={true} containerId="tsparticles-right" className="absolute inset-0 pointer-events-none z-[0] mix-blend-screen opacity-60" />
+                    )}
                     <PaneHeader side="right" />
-                    <div className="relative flex-1 min-h-0 overflow-hidden">
+                    <div className="relative flex-1 min-h-0 overflow-hidden z-10">
                         {ydocRef.current && providerRef.current && <CodeEditor side="right" isReadOnly={mySide !== 'right'} ydoc={ydocRef.current} provider={providerRef.current} language={mySide === 'right' ? language : 'cpp'} />}
                     </div>
                 </div>

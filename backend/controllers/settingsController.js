@@ -532,7 +532,7 @@ const VALID_STACK_LANGUAGES = [
 export const updateCustomization = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { avatarFrame, tagline, signatureStack, entranceBanner, equippedBadge } = req.body;
+        const { avatarFrame, tagline, signatureStack, entranceBanner, equippedBadge, advancedTheme } = req.body;
 
         const update = {};
 
@@ -578,6 +578,10 @@ export const updateCustomization = async (req, res) => {
                 }
             }
             update['customization.equippedBadge'] = sanitized;
+        }
+
+        if (advancedTheme !== undefined) {
+            update['customization.advancedTheme'] = typeof advancedTheme === 'string' ? advancedTheme.trim() : '';
         }
 
         if (Object.keys(update).length === 0) {
