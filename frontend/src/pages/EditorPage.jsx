@@ -1111,7 +1111,7 @@ const EditorPage = () => {
                                     isDark={isDark}
                                     roomId={roomId}
                                     currentCode={ydocRef.current?.getText(`code-${mySide}`)?.toString() || ''}
-                                    userTier={authUser?.role === 'admin' ? 3 : (userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3)}
+                                    userTier={storedUser?.role === 'admin' ? 3 : (userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3)}
                                     initialHelpsUsed={aiHelpsUsed}
                                 />
                                 {runResults && <div className={`mt-6 pt-4 border-t ${isDark ? 'border-[#3e3e42]' : 'border-stone-300'}`}><TestCaseResults results={runResults} /></div>}
