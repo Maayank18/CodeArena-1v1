@@ -98,7 +98,7 @@ const ConsistencyCalendar = ({ className = "" }) => {
   }
 
   return (
-    <div className={`consistency-calendar bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 shadow-xl dark:shadow-2xl transition-all hover:border-gray-200 dark:hover:border-white/10 ${className} ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''} ${advancedTheme === 'matrix' ? 'matrix-calendar-container' : ''}`}>
+    <div className={`consistency-calendar bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/5 rounded-3xl p-4 shadow-xl dark:shadow-2xl transition-all hover:border-gray-200 dark:hover:border-white/10 ${className} ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''} ${advancedTheme === 'matrix' ? 'matrix-calendar-container' : ''} ${advancedTheme === 'cyberpunk' ? 'cyberpunk-calendar-container' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-5 px-1">
         <div>

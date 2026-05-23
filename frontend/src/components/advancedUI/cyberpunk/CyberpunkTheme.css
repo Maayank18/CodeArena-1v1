@@ -1,0 +1,249 @@
+/* frontend/src/components/advancedUI/cyberpunk/CyberpunkTheme.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
+/* Global scope for the Cyberpunk theme */
+:root[data-theme="dark"].theme-cyberpunk {
+  /* Cyberpunk Color Palette */
+  --cp-bg-deep: #0d0d12;
+  --cp-bg-panel: rgba(13, 13, 18, 0.85);
+  --cp-cyan: #00f0ff;
+  --cp-magenta: #ff003c;
+  --cp-green: #00ff66;
+  
+  --cp-cyan-glow: rgba(0, 240, 255, 0.4);
+  --cp-magenta-glow: rgba(255, 0, 60, 0.4);
+  --cp-green-glow: rgba(0, 255, 102, 0.4);
+
+  --cp-border-dim: rgba(0, 240, 255, 0.2);
+
+  /* Override Global Variables */
+  --bg-primary: transparent; /* Let the canvas and body bg show through */
+  --bg-secondary: var(--cp-bg-panel);
+  --bg-tertiary: rgba(0, 240, 255, 0.05);
+  --surface-elevated: var(--cp-bg-panel);
+  --border-color: var(--cp-border-dim);
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: var(--cp-cyan);
+  --accent: var(--cp-cyan);
+  --shadow-color: var(--cp-cyan-glow);
+
+  /* Fonts */
+  --font-sans: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-display: 'Orbitron', sans-serif;
+}
+
+/* Base body styling */
+body[data-theme="dark"].theme-cyberpunk {
+  background-color: var(--cp-bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Cyberpunk specific text glow */
+.theme-cyberpunk .text-glow-cyan {
+  text-shadow: 0 0 10px var(--cp-cyan-glow), 0 0 20px var(--cp-cyan-glow);
+  color: var(--cp-cyan);
+}
+
+.theme-cyberpunk .text-glow-magenta {
+  text-shadow: 0 0 10px var(--cp-magenta-glow), 0 0 20px var(--cp-magenta-glow);
+  color: var(--cp-magenta);
+}
+
+.theme-cyberpunk .text-glow-green {
+  text-shadow: 0 0 10px var(--cp-green-glow), 0 0 20px var(--cp-green-glow);
+  color: var(--cp-green);
+}
+
+/* Headings */
+.theme-cyberpunk h1, 
+.theme-cyberpunk h2, 
+.theme-cyberpunk h3,
+.theme-cyberpunk h4 {
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+/* Dashboard Panels - Chamfered Corners */
+.theme-cyberpunk .bg-\[var\(--surface-elevated\)\] {
+  clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+  border: 1px solid var(--cp-cyan) !important;
+  box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1) !important;
+  background: var(--cp-bg-panel) !important;
+  position: relative;
+}
+
+/* Cyber-glitch hover effect for panels */
+.theme-cyberpunk .bg-\[var\(--surface-elevated\)\]:hover {
+  box-shadow: inset 0 0 30px rgba(0, 240, 255, 0.2), 0 0 15px var(--cp-cyan-glow) !important;
+  border-color: #fff !important;
+}
+
+/* Numbers / Stats */
+.theme-cyberpunk .text-3xl, 
+.theme-cyberpunk .text-4xl, 
+.theme-cyberpunk .text-xl {
+  font-family: var(--font-mono);
+  letter-spacing: 2px;
+}
+
+/* Apply specific glowing colors to the stat grids based on icon colors */
+/* Matches */
+.theme-cyberpunk .text-blue-500 {
+  color: var(--cp-cyan) !important;
+  text-shadow: 0 0 10px var(--cp-cyan-glow);
+}
+.theme-cyberpunk .bg-blue-500\/10 {
+  background-color: rgba(0, 240, 255, 0.1) !important;
+  border-color: var(--cp-cyan) !important;
+  box-shadow: 0 0 10px var(--cp-cyan-glow);
+}
+
+/* Wins */
+.theme-cyberpunk .text-accent {
+  color: var(--cp-magenta) !important;
+  text-shadow: 0 0 10px var(--cp-magenta-glow);
+}
+.theme-cyberpunk .bg-accent\/10 {
+  background-color: rgba(255, 0, 60, 0.1) !important;
+  border-color: var(--cp-magenta) !important;
+  box-shadow: 0 0 10px var(--cp-magenta-glow);
+}
+
+/* Rank / ELO */
+.theme-cyberpunk .text-yellow-500 {
+  color: var(--cp-cyan) !important;
+}
+
+/* Primary Action Buttons */
+.theme-cyberpunk button.bg-accent {
+  background-color: var(--cp-green) !important;
+  color: #000 !important;
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  border: none !important;
+  box-shadow: 0 0 15px var(--cp-green-glow);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.theme-cyberpunk button.bg-accent:hover {
+  background-color: #fff !important;
+  box-shadow: 0 0 25px var(--cp-green-glow), 0 0 10px #fff;
+  transform: scale(1.02);
+}
+
+/* Inputs */
+.theme-cyberpunk input {
+  background-color: rgba(0, 240, 255, 0.05) !important;
+  border: 1px solid var(--cp-cyan) !important;
+  color: var(--cp-cyan) !important;
+  font-family: var(--font-mono);
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.theme-cyberpunk input:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--cp-cyan-glow), inset 0 0 5px var(--cp-cyan-glow) !important;
+  background-color: rgba(0, 240, 255, 0.1) !important;
+}
+
+/* Join Button */
+.theme-cyberpunk button.bg-\[var\(--text-primary\)\] {
+  background-color: var(--cp-magenta) !important;
+  color: #000 !important;
+  font-family: var(--font-display);
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  box-shadow: 0 0 15px var(--cp-magenta-glow);
+}
+.theme-cyberpunk button.bg-\[var\(--text-primary\)\]:hover {
+  background-color: #fff !important;
+  box-shadow: 0 0 20px var(--cp-magenta-glow), 0 0 10px #fff;
+}
+
+/* Sidebar Active Link */
+.theme-cyberpunk aside button.bg-accent {
+  background-color: var(--cp-cyan) !important;
+  color: #000 !important;
+  box-shadow: 0 0 15px var(--cp-cyan-glow) !important;
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+/* Consistency Calendar Overrides */
+.theme-cyberpunk .cyberpunk-calendar-container {
+  background-color: var(--cp-bg-deep) !important;
+  border: 1px solid var(--cp-cyan) !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1) !important;
+  border-radius: 0 !important;
+  clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+}
+
+/* Completed Days (Isometric cube look) */
+.theme-cyberpunk .cyberpunk-calendar-container [data-status="completed"] {
+  background: linear-gradient(135deg, var(--cp-cyan) 0%, #008899 100%) !important;
+  box-shadow: 0 0 10px var(--cp-cyan-glow), inset 2px 2px 5px rgba(255,255,255,0.5) !important;
+  border-radius: 2px !important; /* Sharp edges */
+  transform: rotate(45deg) scale(0.8); /* Diamond shape */
+  border: none !important;
+}
+.theme-cyberpunk .cyberpunk-calendar-container [data-status="completed"] svg {
+  color: #000 !important;
+  transform: rotate(-45deg); /* Keep icon straight */
+}
+
+/* Pending / Missed Days */
+.theme-cyberpunk .cyberpunk-calendar-container [data-status="pending"],
+.theme-cyberpunk .cyberpunk-calendar-container [data-status="missed"] {
+  background-color: transparent !important;
+  border: 1px dotted var(--cp-border-dim) !important;
+  border-radius: 50% !important;
+}
+
+/* Daily Target CTA */
+.theme-cyberpunk .cyberpunk-calendar-container .consistency-cta {
+  background-color: rgba(0, 240, 255, 0.05) !important;
+  border: 1px solid var(--cp-cyan) !important;
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+/* Progress Bar Stream */
+.theme-cyberpunk .bg-\[var\(--bg-primary\)\] {
+  background-color: transparent !important;
+}
+.theme-cyberpunk .h-3.rounded-full.overflow-hidden {
+  border-radius: 0 !important;
+  border: 1px solid var(--cp-cyan) !important;
+  background-color: rgba(0, 240, 255, 0.05) !important;
+  position: relative;
+}
+.theme-cyberpunk .h-3.rounded-full.overflow-hidden > div {
+  background: linear-gradient(90deg, transparent, var(--cp-cyan)) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 10px var(--cp-cyan-glow) !important;
+}
+
+/* Scrollbar */
+.theme-cyberpunk ::-webkit-scrollbar {
+  width: 6px;
+}
+.theme-cyberpunk ::-webkit-scrollbar-track {
+  background: var(--cp-bg-deep);
+  border-left: 1px solid var(--cp-border-dim);
+}
+.theme-cyberpunk ::-webkit-scrollbar-thumb {
+  background: var(--cp-magenta);
+}
+.theme-cyberpunk ::-webkit-scrollbar-thumb:hover {
+  background: var(--cp-cyan);
+  box-shadow: 0 0 10px var(--cp-cyan-glow);
+}

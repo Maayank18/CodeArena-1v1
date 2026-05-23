@@ -45,4 +45,5 @@ export { FrostbyteMountain, FrostbyteParticles } from './frostbyte';
 // MATRIX PROTOCOL EXPORTS
 // ===================
 export { MatrixRainBackground, MatrixStatNumber } from './matrix';
+export { CyberpunkBackground } from './cyberpunk';
 

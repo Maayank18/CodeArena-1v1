@@ -88,9 +88,9 @@ const CustomizationTab = () => {
             return;
         }
 
-        // Frostbyte and Matrix are implemented
-        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol') {
-            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id;
+        // Frostbyte, Matrix, and Cyberpunk are implemented
+        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol' || theme.id === 'cyber_punk') {
+            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id === 'cyber_punk' ? 'cyberpunk' : theme.id;
             if (advancedTheme === mappedId) {
                 // Already active — deactivate
                 clearAdvancedTheme();
@@ -104,6 +104,10 @@ const CustomizationTab = () => {
                 if (mappedId === 'matrix') {
                     toast.success('Matrix Protocol activated.', {
                         style: { borderRadius: '0px', background: '#0A1108', color: '#00FF41', border: '1px solid #00FF41', fontFamily: 'monospace' }
+                    });
+                } else if (mappedId === 'cyberpunk') {
+                    toast.success('Cyberpunk theme activated!', {
+                        style: { borderRadius: '0px', background: '#0d0d12', color: '#00f0ff', border: '1px solid #ff003c', fontFamily: 'sans-serif' }
                     });
                 } else {
                     toast.success('❄️ Frostbyte theme activated!', {

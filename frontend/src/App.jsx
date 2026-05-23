@@ -14,7 +14,7 @@ import Pricing from './pages/Pricing';
 import Learn from './pages/Learn';
 import Contest from './pages/Contest';
 import useTelemetry from './hooks/useTelemetry';
-import { FrostbyteParticles, FrostbyteMountain, MatrixRainBackground } from './components/advancedUI';
+import { FrostbyteParticles, FrostbyteMountain, MatrixRainBackground, CyberpunkBackground } from './components/advancedUI';
 import { useTheme } from './context/ThemeContext';
 
 function App() {
@@ -49,6 +49,11 @@ function App() {
       {/* Matrix rain - renders only when theme is active */}
       {advancedTheme === 'matrix' && (
         <MatrixRainBackground forceActive={true} />
+      )}
+
+      {/* Cyberpunk background - renders only when theme is active */}
+      {advancedTheme === 'cyberpunk' && (
+        <CyberpunkBackground forceActive={true} />
       )}
 
       {/* Main Content Layer (Z-Index fix for particles) */}
