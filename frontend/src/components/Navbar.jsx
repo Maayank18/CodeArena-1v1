@@ -11,7 +11,7 @@ import { getLevelInfo } from '../utils/levelSystem';
 const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme, advancedTheme } = useTheme();
+  const { theme, toggleTheme, advancedTheme, clearAdvancedTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(user);
