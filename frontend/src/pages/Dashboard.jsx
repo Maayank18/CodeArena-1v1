@@ -28,7 +28,7 @@ const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
-  const { advancedTheme } = useTheme();
+  const { advancedTheme, setAdvancedTheme, clearAdvancedTheme } = useTheme();
   const [user, setUser] = useState(() => readStoredUser());
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,6 +93,11 @@ const Dashboard = () => {
         }
 
         setUser(finalUser);
+        if (finalUser.customization?.advancedTheme === 'frostbyte') {
+          setAdvancedTheme('frostbyte');
+        } else {
+          clearAdvancedTheme();
+        }
         localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
           data: finalUser,
           timestamp: Date.now()
@@ -103,15 +108,16 @@ const Dashboard = () => {
     };
     
     syncUserAndData();
-  }, [location.state, navigate]);
+  }, [location.state, navigate, setAdvancedTheme, clearAdvancedTheme]);
 
   // ✅ OPTIMIZED: Memoized handlers
   const handleLogout = useCallback(() => {
     localStorage.removeItem('codearena_user');
     localStorage.removeItem(DASHBOARD_CACHE_KEY);
+    clearAdvancedTheme();
     toast.success('Logged out successfully');
     navigate('/');
-  }, [navigate]);
+  }, [navigate, clearAdvancedTheme]);
 
   // ✅ FIXED: Using the specific property extracted from user to match inferred dependencies
   const username = user?.username;

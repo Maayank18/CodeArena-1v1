@@ -83,9 +83,10 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
     setIsMenuOpen(false);
     localStorage.removeItem('codearena_user');
     localStorage.removeItem('dashboard_profile_cache');
+    clearAdvancedTheme();
     toast.success('Password updated. Please sign in again.');
     navigate('/login');
-  }, [navigate]);
+  }, [navigate, clearAdvancedTheme]);
 
   return (
     <>

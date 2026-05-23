@@ -39,6 +39,10 @@ const getInitialAdvancedTheme = () => {
   if (typeof window === 'undefined') {
     return null;
   }
+  const userStr = window.localStorage.getItem('codearena_user');
+  if (!userStr) {
+    return null;
+  }
   const stored = window.localStorage.getItem(ADVANCED_THEME_KEY);
   return stored === 'frostbyte' ? 'frostbyte' : null;
 };
