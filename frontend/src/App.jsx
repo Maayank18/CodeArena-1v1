@@ -14,8 +14,7 @@ import Pricing from './pages/Pricing';
 import Learn from './pages/Learn';
 import Contest from './pages/Contest';
 import useTelemetry from './hooks/useTelemetry';
-import FrostbyteParticles from './components/FrostbyteParticles';
-import FrostbyteMountain from './components/FrostbyteMountain';
+import { FrostbyteParticles, FrostbyteMountain } from './components/advancedUI';
 import { useTheme } from './context/ThemeContext';
 
 function App() {

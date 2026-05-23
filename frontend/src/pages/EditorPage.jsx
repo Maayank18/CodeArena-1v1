@@ -19,7 +19,7 @@ import TestCaseResults from '../components/TestCaseResults';
 import ProblemMarkdown from '../components/ProblemMarkdown';
 import WinningModal from '../components/WinningModal.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import FrostbyteParticles from '../components/FrostbyteParticles.jsx';
+import { FrostbyteParticles } from '../components/advancedUI';
 import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 import { resolveBackendOrigin } from '../api.js';
