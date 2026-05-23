@@ -11,7 +11,7 @@ import { getLevelInfo } from '../utils/levelSystem';
 const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, advancedTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(user);
@@ -137,23 +137,38 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
             <span>Upgrade</span>
           </button>
 
-          <button
-            onClick={toggleTheme}
-            className="
-              p-2 rounded-full transition-colors
-              focus:outline-none focus:ring-2 focus:ring-accent
-              text-gray-500 dark:text-[var(--text-secondary)]
-              hover:text-gray-800 dark:hover:text-[var(--text-primary)]
-              hover:bg-[var(--bg-tertiary)] dark:hover:bg-[var(--bg-primary)]
-            "
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            {theme === 'dark' ? (
-              <Sun size={20} className="sm:h-[22px] sm:w-[22px]" />
-            ) : (
-              <Moon size={20} className="sm:h-[22px] sm:w-[22px]" />
-            )}
-          </button>
+          {/* Theme Toggle / Frostbyte Indicator */}
+          {advancedTheme === 'frostbyte' ? (
+            <button
+              onClick={() => {
+                navigate('/settings');
+                window.dispatchEvent(new CustomEvent('codearena:open-settings', { detail: { tab: 'customization' } }));
+              }}
+              className="frostbyte-indicator"
+              title="Frostbyte theme active — click to manage"
+            >
+              <span>❄️</span>
+              <span className="hidden sm:inline">Frostbyte</span>
+            </button>
+          ) : (
+            <button
+              onClick={toggleTheme}
+              className="
+                p-2 rounded-full transition-colors
+                focus:outline-none focus:ring-2 focus:ring-accent
+                text-gray-500 dark:text-[var(--text-secondary)]
+                hover:text-gray-800 dark:hover:text-[var(--text-primary)]
+                hover:bg-[var(--bg-tertiary)] dark:hover:bg-[var(--bg-primary)]
+              "
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? (
+                <Sun size={20} className="sm:h-[22px] sm:w-[22px]" />
+              ) : (
+                <Moon size={20} className="sm:h-[22px] sm:w-[22px]" />
+              )}
+            </button>
+          )}
 
           <div className="h-6 w-px bg-gray-200 dark:bg-[var(--border-color)] sm:h-8" />
 

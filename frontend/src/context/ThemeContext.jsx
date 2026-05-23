@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const STORAGE_KEY = 'ca_theme';
+const ADVANCED_THEME_KEY = 'ca_advanced_theme';
 const DEFAULT_THEME = 'dark';
 
 const ThemeContext = createContext({
@@ -8,6 +9,9 @@ const ThemeContext = createContext({
   isDark: true,
   toggleTheme: () => {},
   setTheme: () => {},
+  advancedTheme: null,
+  setAdvancedTheme: () => {},
+  clearAdvancedTheme: () => {},
 });
 
 const getSystemTheme = () => {
@@ -31,19 +35,32 @@ const getInitialTheme = () => {
   return getSystemTheme();
 };
 
-const applyThemeToDocument = (theme) => {
+const getInitialAdvancedTheme = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const stored = window.localStorage.getItem(ADVANCED_THEME_KEY);
+  return stored === 'frostbyte' ? 'frostbyte' : null;
+};
+
+const applyThemeToDocument = (theme, advancedTheme) => {
   if (typeof document === 'undefined') {
     return;
   }
 
   const root = document.documentElement;
   const body = document.body;
-  const resolvedTheme = theme === 'light' ? 'light' : 'dark';
+
+  // When advanced theme is active, force dark mode
+  const resolvedTheme = advancedTheme ? 'dark' : (theme === 'light' ? 'light' : 'dark');
   const isDark = resolvedTheme === 'dark';
 
   root.classList.toggle('dark', isDark);
   root.dataset.theme = resolvedTheme;
   root.style.colorScheme = resolvedTheme;
+
+  // Apply/remove advanced theme class
+  root.classList.toggle('theme-frostbyte', advancedTheme === 'frostbyte');
 
   if (body) {
     body.dataset.theme = resolvedTheme;
@@ -53,14 +70,20 @@ const applyThemeToDocument = (theme) => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(getInitialTheme);
+  const [advancedTheme, setAdvancedThemeState] = useState(getInitialAdvancedTheme);
 
   useEffect(() => {
-    applyThemeToDocument(theme);
+    applyThemeToDocument(theme, advancedTheme);
 
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(STORAGE_KEY, theme);
+      if (advancedTheme) {
+        window.localStorage.setItem(ADVANCED_THEME_KEY, advancedTheme);
+      } else {
+        window.localStorage.removeItem(ADVANCED_THEME_KEY);
+      }
     }
-  }, [theme]);
+  }, [theme, advancedTheme]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -72,6 +95,9 @@ export const ThemeProvider = ({ children }) => {
       : null;
 
     const handleSystemThemeChange = (event) => {
+      // Don't respond to system theme changes when advanced theme is active
+      if (advancedTheme) return;
+
       const storedTheme = window.localStorage.getItem(STORAGE_KEY);
       if (storedTheme === 'dark' || storedTheme === 'light') {
         return;
@@ -81,6 +107,12 @@ export const ThemeProvider = ({ children }) => {
     };
 
     const handleStorageChange = (event) => {
+      if (event.key === ADVANCED_THEME_KEY) {
+        const nextAdvanced = event.newValue === 'frostbyte' ? 'frostbyte' : null;
+        setAdvancedThemeState(nextAdvanced);
+        return;
+      }
+
       if (event.key !== STORAGE_KEY) {
         return;
       }
@@ -96,24 +128,41 @@ export const ThemeProvider = ({ children }) => {
       mediaQuery?.removeEventListener?.('change', handleSystemThemeChange);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [advancedTheme]);
 
   const setTheme = useCallback((nextTheme) => {
+    if (advancedTheme) return; // No-op when advanced theme is active
     if (nextTheme === 'dark' || nextTheme === 'light') {
       setThemeState(nextTheme);
     }
-  }, []);
+  }, [advancedTheme]);
 
   const toggleTheme = useCallback(() => {
+    if (advancedTheme) return; // No-op when advanced theme is active
     setThemeState((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+  }, [advancedTheme]);
+
+  const setAdvancedTheme = useCallback((themeId) => {
+    if (themeId === 'frostbyte') {
+      setAdvancedThemeState('frostbyte');
+      // Force dark mode as the base
+      setThemeState('dark');
+    }
+  }, []);
+
+  const clearAdvancedTheme = useCallback(() => {
+    setAdvancedThemeState(null);
   }, []);
 
   const value = useMemo(() => ({
     theme,
-    isDark: theme === 'dark',
+    isDark: theme === 'dark' || Boolean(advancedTheme),
     toggleTheme,
     setTheme,
-  }), [setTheme, theme, toggleTheme]);
+    advancedTheme,
+    setAdvancedTheme,
+    clearAdvancedTheme,
+  }), [setTheme, theme, toggleTheme, advancedTheme, setAdvancedTheme, clearAdvancedTheme]);
 
   return (
     <ThemeContext.Provider value={value}>

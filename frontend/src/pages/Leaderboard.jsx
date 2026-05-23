@@ -12,6 +12,7 @@ import Avatar from '../components/Avatar';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
+import { useTheme } from '../context/ThemeContext';
 
 const CACHE_DURATION = 60000; // 60 seconds
 
@@ -31,6 +32,7 @@ const STACK_COLORS = {
 };
 
 const Leaderboard = () => {
+  const { advancedTheme } = useTheme();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -95,13 +97,24 @@ const Leaderboard = () => {
   }, []);
 
   const playerRows = useMemo(() => {
+    const isFrostbyte = advancedTheme === 'frostbyte';
+    
     return filteredPlayers.map((player, index) => {
       const rank = index + 1;
       const { title, color, hex } = getLevelInfo(player.rating || 1000);
       const isCurrentUser = player.username === user.username;
 
+      const snowDecorations = "overflow-hidden after:pointer-events-none after:absolute after:-top-4 after:-right-4 after:w-16 after:h-16 after:bg-white/10 after:blur-xl after:rotate-45";
+      
+      const rowClasses = isFrostbyte
+        ? `relative grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center group cursor-default rounded-xl bg-[#060B19]/40 backdrop-blur-xl border border-cyan-300/30 shadow-[inset_0_0_20px_rgba(34,211,238,0.15),0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 hover:bg-cyan-900/30 hover:border-cyan-300/60 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] ${snowDecorations} ${isCurrentUser ? 'border-l-4 border-l-cyan-400' : ''}`
+        : `grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center hover:bg-[var(--bg-tertiary)] transition-colors group cursor-default ${isCurrentUser ? 'bg-accent/5 border-l-4 border-l-accent' : ''}`;
+
       return (
-        <div key={player._id || index} className={`grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 items-center hover:bg-[var(--bg-tertiary)] transition-colors group cursor-default ${isCurrentUser ? 'bg-accent/5 border-l-4 border-l-accent' : ''}`}>
+        <div key={player._id || index} className={rowClasses}>
+          {isFrostbyte && rank === 1 && (
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-white/60 via-cyan-300/40 to-transparent z-10 rounded-t-xl" />
+          )}
           <div className="col-span-2 sm:col-span-1 flex justify-center items-center">
             {getRankIcon(rank)}
           </div>
@@ -163,7 +176,7 @@ const Leaderboard = () => {
         </div>
       );
     });
-  }, [filteredPlayers, user.username, getRankIcon]);
+  }, [filteredPlayers, user.username, getRankIcon, advancedTheme]);
 
   return (
     <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans">
@@ -174,7 +187,10 @@ const Leaderboard = () => {
           <div className="max-w-5xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-4xl font-black tracking-tight uppercase flex items-center gap-3">
+                <h1 className={advancedTheme === 'frostbyte'
+                  ? "text-2xl sm:text-4xl mb-2 flex items-center gap-3 text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-100 to-cyan-500 drop-shadow-[0_2px_10px_rgba(255,255,255,0.3)] font-bold tracking-wider"
+                  : "text-2xl sm:text-4xl font-black tracking-tight uppercase flex items-center gap-3"
+                }>
                   <Flame className="text-orange-500 fill-orange-500 animate-pulse" size={28} /> Leaderboard
                 </h1>
                 <p className="text-[var(--text-secondary)] mt-2 text-sm sm:text-base">Top coding warriors of the current season.</p>
@@ -188,15 +204,18 @@ const Leaderboard = () => {
                 />
               </div>
             </div>
-            <div className="bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-[0_24px_48px_-28px_var(--shadow-color)]">
-              <div className="grid grid-cols-12 gap-2 sm:gap-4 p-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]/50 text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider items-center">
+            {/* The table/list container */}
+            <div className={advancedTheme === 'frostbyte' ? 'snow-cap' : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-[0_24px_48px_-28px_var(--shadow-color)]'}>
+              <div className={advancedTheme === 'frostbyte' 
+                ? "grid grid-cols-12 gap-2 sm:gap-4 p-4 text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider items-center mb-2" 
+                : "grid grid-cols-12 gap-2 sm:gap-4 p-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]/50 text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider items-center"}>
                 <div className="col-span-2 sm:col-span-1 text-center">Rank</div>
                 <div className="col-span-7 sm:col-span-5 pl-2">Player</div>
                 <div className="col-span-2 hidden sm:block text-center">Level</div>
                 <div className="col-span-2 hidden md:block text-center">Matches</div>
                 <div className="col-span-3 sm:col-span-2 text-right pr-2">Score</div>
               </div>
-              <div className="divide-y divide-[var(--border-color)]/50">
+              <div className={advancedTheme === 'frostbyte' ? "space-y-3" : "divide-y divide-[var(--border-color)]/50"}>
                 {loading ? <div className="py-20 flex flex-col items-center justify-center"><Loader2 className="animate-spin text-accent mb-4" size={32} /><p className="text-[var(--text-secondary)] font-bold animate-pulse">Loading rankings...</p></div> : filteredPlayers.length > 0 ? playerRows : <div className="p-12 flex flex-col items-center justify-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-primary)]/50 m-4"><AlertCircle size={48} className="mb-4 opacity-20" /><p className="font-bold uppercase tracking-widest text-xs">{filter ? 'No players found' : 'No data available'}</p></div>}
               </div>
             </div>

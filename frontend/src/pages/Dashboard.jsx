@@ -14,6 +14,7 @@ import { getBadgeIconData } from '../utils/badgeHelper';
 import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
+import { useTheme } from '../context/ThemeContext';
 import CustomMatchModal from '../components/CustomMatchModal';
 import PremiumGate from '../components/PremiumGate.jsx';
 import {
@@ -27,6 +28,7 @@ const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
+  const { advancedTheme } = useTheme();
   const [user, setUser] = useState(() => readStoredUser());
   const navigate = useNavigate();
   const location = useLocation();
@@ -182,11 +184,20 @@ const Dashboard = () => {
   // ✅ Guard clause with loading state
   if (!user) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-accent" size={40} />
       </div>
     );
   }
+
+  const isFrostbyte = advancedTheme === 'frostbyte';
+  
+  // Ice block styling formulas
+  const snowDecorations = "snow-cap overflow-hidden after:pointer-events-none after:absolute after:-top-4 after:-right-4 after:w-16 after:h-16 after:bg-white/10 after:blur-xl after:rotate-45";
+  const iceBlockBase = `relative bg-[#060B19]/40 backdrop-blur-xl border border-cyan-300/30 shadow-[inset_0_0_20px_rgba(34,211,238,0.15),0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ${isFrostbyte ? snowDecorations : ''}`;
+  const iceBlockHover = "hover:bg-cyan-900/30 hover:border-cyan-300/60 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] group";
+  const iceBlockStatic = `${iceBlockBase}`;
+  const iceBlockInteractive = `${iceBlockBase} ${iceBlockHover}`;
 
   return (
     <div className="flex h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans">
@@ -199,7 +210,10 @@ const Dashboard = () => {
           <div className="min-h-full flex flex-col">
             <div className="max-w-4xl mx-auto p-4 md:p-8 flex-1 w-full">
               
-              <h1 className="text-2xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2 tracking-tight">
+              <h1 className={isFrostbyte 
+                ? "text-2xl md:text-4xl mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-100 to-cyan-500 drop-shadow-[0_2px_10px_rgba(255,255,255,0.3)] font-bold tracking-wider" 
+                : "text-2xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2 tracking-tight"
+              }>
                 Ready to Battle, {user.username}?
               </h1>
               <p className="text-[var(--text-secondary)] mb-8 md:mb-12 text-sm md:text-lg">
@@ -208,9 +222,11 @@ const Dashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 
-                {/* Legacy Bright Theme Hero Card Surface (for quick reversal): bg-[var(--bg-secondary)] */}
-                <div className="bg-[var(--surface-elevated)] p-6 md:p-8 rounded-2xl border border-[var(--border-color)] shadow-[0_24px_48px_-28px_var(--shadow-color)] space-y-6 md:space-y-8 h-full flex flex-col justify-center">
-                  
+                {/* Main Action Card */}
+                <div className={`${isFrostbyte ? iceBlockStatic : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_24px_48px_-28px_var(--shadow-color)]'} p-6 md:p-8 rounded-2xl space-y-6 md:space-y-8 h-full flex flex-col justify-center`}>
+                  {isFrostbyte && (
+                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-white/60 via-cyan-300/40 to-transparent z-10 rounded-t-2xl pointer-events-none" />
+                  )}
                   <div>
                     <label className="text-xs md:text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3 block">
                       Join Existing Room
@@ -266,9 +282,9 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20">
-                      <Swords size={24} className="text-blue-500" />
+                  <div className={`${isFrostbyte ? iceBlockInteractive : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50'} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20 group-hover:scale-110 transition-transform">
+                      <Swords size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : "text-blue-500"} />
                     </div>
                     <span className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] mb-2">
                       {user.stats?.matchesPlayed || 0}
@@ -276,9 +292,9 @@ const Dashboard = () => {
                     <span className="text-[var(--text-secondary)] font-medium text-sm">Matches</span>
                   </div>
 
-                  <div className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center py-8 shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 border border-accent/20">
-                      <Trophy size={24} className="text-accent" />
+                  <div className={`${isFrostbyte ? iceBlockInteractive : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50'} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
+                    <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4 border border-accent/20 group-hover:scale-110 transition-transform">
+                      <Trophy size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : "text-accent"} />
                     </div>
                     <span className="text-3xl md:text-4xl font-extrabold text-accent mb-2">
                       {user.stats?.wins || 0}
@@ -286,7 +302,7 @@ const Dashboard = () => {
                     <span className="text-[var(--text-secondary)] font-medium text-sm">Wins</span>
                   </div>
 
-                  <div className="col-span-2 bg-[var(--surface-elevated)] p-8 rounded-2xl border border-[var(--border-color)] flex flex-col shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50 transition-colors">
+                  <div className={`col-span-2 ${isFrostbyte ? iceBlockInteractive : 'bg-[var(--surface-elevated)] border border-[var(--border-color)] shadow-[0_20px_40px_-28px_var(--shadow-color)] hover:border-accent/50'} p-8 rounded-2xl flex flex-col transition-all`}>
                     <div className="mb-4 flex items-start justify-between gap-5">
                       <div className="min-w-0">
                         <div className="flex min-w-0 items-center gap-3">

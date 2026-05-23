@@ -9,10 +9,12 @@ import api from '../api.js';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { HISTORY_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
+import { useTheme } from '../context/ThemeContext';
 
 const CACHE_DURATION = 60000; // 60 seconds
 
 const History = () => {
+    const { advancedTheme } = useTheme();
     const [history, setHistory] = useState([]);
     const [user, setUser] = useState(() => readStoredUser());
     const [loading, setLoading] = useState(true);
@@ -121,13 +123,24 @@ const History = () => {
                 statusColor = 'bg-red-500/10 text-red-500 border-red-500/20';
             }
 
+            const isFrostbyte = advancedTheme === 'frostbyte';
+
+            const snowDecorations = "overflow-hidden after:pointer-events-none after:absolute after:-top-4 after:-right-4 after:w-16 after:h-16 after:bg-white/10 after:blur-xl after:rotate-45";
+
+            const containerClasses = isFrostbyte
+                ? `relative bg-[#060B19]/40 backdrop-blur-xl border border-cyan-300/30 shadow-[inset_0_0_20px_rgba(34,211,238,0.15),0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 hover:bg-cyan-900/30 hover:border-cyan-300/60 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] flex items-center justify-between p-4 rounded-xl group ${snowDecorations} ${isDisqualified ? '!border-orange-500/50' : ''}`
+                : `bg-[var(--bg-secondary)] p-4 rounded-xl border flex items-center justify-between hover:border-accent transition-all shadow-sm group ${
+                    isDisqualified ? 'border-orange-500/30' : 'border-[var(--border-color)]'
+                }`;
+
             return (
                 <div 
                     key={match._id || idx} 
-                    className={`bg-[var(--bg-secondary)] p-4 rounded-xl border flex items-center justify-between hover:border-accent transition-all shadow-sm group ${
-                        isDisqualified ? 'border-orange-500/30' : 'border-[var(--border-color)]'
-                    }`}
+                    className={containerClasses}
                 >
+                    {isFrostbyte && idx === 0 && (
+                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-white/60 via-cyan-300/40 to-transparent z-10 rounded-t-xl" />
+                    )}
                     {/* Status Badge */}
                     <div className="flex items-center gap-3 md:gap-6">
                         <div className={`h-10 w-10 md:h-12 md:w-12 rounded-lg flex items-center justify-center font-black text-lg md:text-xl border shrink-0 ${statusColor}`}>
@@ -177,7 +190,7 @@ const History = () => {
                 </div>
             );
         });
-    }, [history, user]);
+    }, [history, user, advancedTheme]);
 
     return (
         <div className="flex h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans">
@@ -190,7 +203,10 @@ const History = () => {
                     <div className="max-w-4xl mx-auto">
                         
                         {/* Header */}
-                        <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 flex items-center gap-3">
+                        <h2 className={advancedTheme === 'frostbyte'
+                            ? "text-2xl md:text-3xl mb-6 md:mb-8 flex items-center gap-3 text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-100 to-cyan-500 drop-shadow-[0_2px_10px_rgba(255,255,255,0.3)] font-bold tracking-wider"
+                            : "text-2xl md:text-3xl font-bold mb-6 md:mb-8 flex items-center gap-3"
+                        }>
                             <HistoryIcon className="text-accent" />
                             Match History
                         </h2>
@@ -208,7 +224,7 @@ const History = () => {
                                 <p className="text-sm opacity-60">Join a battle to start your legacy!</p>
                             </div>
                         ) : (
-                            <div className="space-y-3 md:space-y-4">
+                            <div className={`space-y-3 md:space-y-4 ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''}`}>
                                 {matchElements}
                             </div>
                         )}

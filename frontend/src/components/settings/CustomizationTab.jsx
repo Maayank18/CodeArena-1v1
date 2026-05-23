@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PremiumGate from '../PremiumGate';
-import { Loader2, Check, Save, Palette, Code2, Type, ImageIcon, Lock } from 'lucide-react';
+import { Loader2, Check, Save, Palette, Code2, Type, ImageIcon, Lock, Snowflake } from 'lucide-react';
 import api from '../../api';
 import toast from 'react-hot-toast';
+import { useTheme } from '../../context/ThemeContext';
 
 const AVATAR_FRAMES = [
     { id: 'none', name: 'Default', preview: 'border-[var(--border-color)]', ring: '', isExclusive: false },
@@ -54,6 +55,7 @@ const STACK_LANGUAGES = [
 ];
 
 const CustomizationTab = () => {
+    const { advancedTheme, setAdvancedTheme, clearAdvancedTheme } = useTheme();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [avatarFrame, setAvatarFrame] = useState('none');
@@ -85,6 +87,27 @@ const CustomizationTab = () => {
             });
             return;
         }
+
+        // Frostbyte is the only implemented advanced theme
+        if (theme.id === 'frostbyte') {
+            if (advancedTheme === 'frostbyte') {
+                // Already active — deactivate
+                clearAdvancedTheme();
+                toast.success('Frostbyte theme deactivated', {
+                    icon: '🌙',
+                    style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                });
+            } else {
+                // Activate
+                setAdvancedTheme('frostbyte');
+                toast.success('❄️ Frostbyte theme activated!', {
+                    style: { borderRadius: '10px', background: '#060B19', color: '#e0f2fe', border: '1px solid rgba(34,211,238,0.3)' }
+                });
+            }
+            return;
+        }
+
+        // Other themes coming soon
         toast.success(`${theme.name} theme will be available soon!`, {
             icon: '🎨',
             style: { borderRadius: '10px', background: '#333', color: '#fff' }
@@ -287,18 +310,61 @@ const CustomizationTab = () => {
                 {/* Section 5: Advanced UI Themes (Premium Only) */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
-                        <Palette size={18} className="text-rose-400" />
+                        <Palette size={18} className={advancedTheme === 'frostbyte' ? 'text-cyan-400' : 'text-rose-400'} />
                         <h3 className="text-lg font-bold">Advanced UI Themes</h3>
-                        <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Premium Exclusive</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${
+                            advancedTheme === 'frostbyte'
+                                ? 'bg-cyan-500/20 text-cyan-400'
+                                : 'bg-rose-500/20 text-rose-400'
+                        }`}>
+                            {advancedTheme === 'frostbyte' ? '❄️ Frostbyte Active' : 'Premium Exclusive'}
+                        </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Explicit Default Theme Card */}
+                        <button
+                            onClick={() => {
+                                clearAdvancedTheme();
+                                toast.success('Restored default theme', {
+                                    icon: '🔄',
+                                    style: { borderRadius: '10px', background: '#333', color: '#fff' }
+                                });
+                            }}
+                            className={`group relative border rounded-xl overflow-hidden transition-all duration-300 ${
+                                !advancedTheme || advancedTheme === 'default'
+                                    ? 'border-accent ring-2 ring-accent/30 shadow-[0_0_20px_rgba(34,197,94,0.15)]'
+                                    : 'border-[var(--border-color)] hover:border-accent/30 cursor-pointer'
+                            }`}
+                        >
+                            <div className="relative aspect-video bg-[var(--bg-secondary)] flex items-center justify-center">
+                                <Palette size={48} className="text-[var(--text-secondary)] opacity-20 group-hover:scale-110 transition-transform duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-white text-base font-bold tracking-wide">Default Theme</span>
+                                        {(!advancedTheme || advancedTheme === 'default') && (
+                                            <span className="text-[9px] bg-accent text-black px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
+                                                <Check size={10} /> Active
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
                         {ADVANCED_THEMES.map(theme => {
                             const isLocked = theme.isPremium && userTier < 3;
+                            const isActive = theme.id === 'frostbyte' && advancedTheme === 'frostbyte';
                             return (
                                 <button
                                     key={theme.id}
                                     onClick={() => handleThemeClick(theme)}
-                                    className={`group relative border border-[var(--border-color)] rounded-xl overflow-hidden transition-all duration-300 hover:border-rose-500/30 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                    className={`group relative border rounded-xl overflow-hidden transition-all duration-300 ${
+                                        isActive
+                                            ? 'border-cyan-400/50 ring-2 ring-cyan-400/30 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                            : isLocked
+                                                ? 'border-[var(--border-color)] cursor-not-allowed'
+                                                : 'border-[var(--border-color)] hover:border-rose-500/30 cursor-pointer'
+                                    }`}
                                 >
                                     <div className="relative aspect-video overflow-hidden">
                                         <img
@@ -309,7 +375,17 @@ const CustomizationTab = () => {
                                         
                                         {/* Overlay with Name */}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
-                                            <span className="text-white text-base font-bold tracking-wide">{theme.name}</span>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-white text-base font-bold tracking-wide">{theme.name}</span>
+                                                {isActive && (
+                                                    <span className="text-[9px] bg-cyan-500 text-black px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
+                                                        <Snowflake size={10} /> Active
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {isActive && (
+                                                <span className="text-cyan-300 text-[10px] mt-1 font-medium">Click to deactivate</span>
+                                            )}
                                         </div>
 
                                         {/* Lock Effect for non-premium */}

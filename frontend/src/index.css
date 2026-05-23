@@ -428,3 +428,441 @@ input:focus-visible {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FROSTBYTE ADVANCED PREMIUM THEME
+   Icy Glacier / Cyber-Frost aesthetic
+   Applied when .theme-frostbyte is on <html>
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. CSS VARIABLE OVERRIDES ─────────────────────────────────────────────── */
+.theme-frostbyte {
+  --bg-primary: #020617;
+  --bg-secondary: #060B19;
+  --bg-tertiary: #0a1228;
+  --surface-elevated: rgba(6, 11, 25, 0.65);
+  --text-primary: #e0f2fe;
+  --text-secondary: #7dd3fc;
+  --border-color: rgba(34, 211, 238, 0.18);
+  --shadow-color: rgba(34, 211, 238, 0.06);
+  --overlay-scrim: rgba(2, 6, 23, 0.88);
+  --overlay-panel: rgba(6, 11, 25, 0.92);
+}
+
+/* ── 2. GLOBAL BACKGROUND — Deep Icy Abyss ────────────────────────────────── */
+.theme-frostbyte body,
+.theme-frostbyte #root {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(6, 182, 212, 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(14, 165, 233, 0.06), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 10% 80%, rgba(56, 189, 248, 0.04), transparent 50%),
+    #020617;
+}
+
+/* Force all primary backgrounds to be transparent to reveal the particles and root background */
+.theme-frostbyte .bg-\[var\(--bg-primary\)\] {
+  background: transparent !important;
+}
+
+/* ── 3. SURFACE PANELS — Glassmorphism Formula ─────────────────────────────── */
+.theme-frostbyte .bg-\[var\(--surface-elevated\)\],
+.theme-frostbyte .bg-\[var\(--bg-secondary\)\] {
+  background: rgba(6, 11, 25, 0.5) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(34, 211, 238, 0.18) !important;
+  box-shadow:
+    inset 0 0 30px rgba(34, 211, 238, 0.04),
+    0 0 20px rgba(34, 211, 238, 0.03);
+}
+
+/* ── 4. GLASS EFFECT OVERRIDE ──────────────────────────────────────────────── */
+.theme-frostbyte .glass-effect {
+  background: rgba(6, 11, 25, 0.55) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(34, 211, 238, 0.2) !important;
+  box-shadow:
+    inset 0 0 40px rgba(34, 211, 238, 0.05),
+    0 8px 32px rgba(34, 211, 238, 0.06);
+}
+
+/* ── 5. NEON TYPOGRAPHY — Bloom Effect ─────────────────────────────────────── */
+.theme-frostbyte h1,
+.theme-frostbyte h2 {
+  color: #e0f2fe;
+  text-shadow:
+    0 0 10px rgba(34, 211, 238, 0.25),
+    0 0 30px rgba(34, 211, 238, 0.1);
+}
+
+.theme-frostbyte .text-accent,
+.theme-frostbyte .text-\[var\(--text-primary\)\] {
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.15);
+}
+
+/* Stats numbers get extra glow */
+.theme-frostbyte .text-3xl,
+.theme-frostbyte .text-4xl,
+.theme-frostbyte .font-mono.font-black {
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+}
+
+/* ── 6. ACCENT COLOR OVERRIDE — Cyan instead of Green ──────────────────────── */
+.theme-frostbyte .bg-accent {
+  background: linear-gradient(135deg, #0891b2, #0284c7) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+  text-shadow: none;
+}
+
+.theme-frostbyte .bg-accent:hover {
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
+  filter: brightness(1.1);
+}
+
+.theme-frostbyte .text-accent {
+  color: #22d3ee !important;
+}
+
+.theme-frostbyte .border-accent,
+.theme-frostbyte .border-accent\/50,
+.theme-frostbyte .border-accent\/30,
+.theme-frostbyte .border-accent\/20 {
+  border-color: rgba(34, 211, 238, 0.3) !important;
+}
+
+.theme-frostbyte .bg-accent\/10,
+.theme-frostbyte .bg-accent\/5 {
+  background: rgba(34, 211, 238, 0.08) !important;
+}
+
+.theme-frostbyte .shadow-green-900\/20 {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.2) !important;
+}
+
+.theme-frostbyte .text-glow-accent {
+  text-shadow: 0 0 15px rgba(34, 211, 238, 0.5) !important;
+}
+
+.theme-frostbyte .text-glow-green {
+  text-shadow: 0 0 15px rgba(34, 211, 238, 0.5) !important;
+}
+
+/* ── 7. HOVER STATES — Icy Intensification ─────────────────────────────────── */
+.theme-frostbyte .hover\:border-accent\/50:hover,
+.theme-frostbyte .hover\:border-accent:hover {
+  border-color: rgba(34, 211, 238, 0.5) !important;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
+}
+
+/* ── 8. GLOW EFFECTS OVERRIDE ──────────────────────────────────────────────── */
+.theme-frostbyte .glow-blue {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.3) !important;
+}
+
+.theme-frostbyte .glow-green {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.3) !important;
+}
+
+.theme-frostbyte .glow-amber {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3) !important;
+}
+
+/* ── 9. WIN/LOSS BADGE FROSTBYTE OVERRIDES ──────────────────────────────────── */
+.theme-frostbyte .bg-green-500\/10 {
+  background: rgba(34, 211, 238, 0.1) !important;
+}
+
+.theme-frostbyte .text-green-500,
+.theme-frostbyte .text-green-400 {
+  color: #22d3ee !important;
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+}
+
+.theme-frostbyte .border-green-500\/20 {
+  border-color: rgba(34, 211, 238, 0.2) !important;
+}
+
+/* ── 10. SCROLLBAR — Icy Cyan ──────────────────────────────────────────────── */
+.theme-frostbyte ::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+.theme-frostbyte ::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+}
+
+.theme-frostbyte ::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.35);
+}
+
+.theme-frostbyte .custom-scrollbar {
+  scrollbar-color: rgba(34, 211, 238, 0.2) #020617;
+}
+
+/* ── 11. ORGANIC SNOW ACCUMULATION CAP ─────────────────────────────────────── */
+.snow-cap {
+  position: relative;
+}
+
+.snow-cap::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -2px;
+  right: -2px;
+  height: 12px;
+  background-image: 
+    radial-gradient(circle at 10% 40%, rgba(255, 255, 255, 0.9) 3px, transparent 4px),
+    radial-gradient(circle at 25% 60%, rgba(255, 255, 255, 0.95) 4px, transparent 5px),
+    radial-gradient(circle at 45% 30%, rgba(226, 232, 240, 0.9) 3px, transparent 4px),
+    radial-gradient(circle at 65% 50%, rgba(255, 255, 255, 1) 5px, transparent 6px),
+    radial-gradient(circle at 85% 40%, rgba(248, 250, 252, 0.8) 3px, transparent 4px),
+    radial-gradient(circle at 95% 70%, rgba(255, 255, 255, 0.9) 2px, transparent 3px);
+  background-size: 60px 10px; /* Repeats the fluffy pattern */
+  background-repeat: repeat-x;
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.4));
+  z-index: 10;
+  pointer-events: none;
+  border-radius: 8px 8px 0 0;
+}
+
+/* ── 11. SIDEBAR — Frostbyte Active Item ───────────────────────────────────── */
+.theme-frostbyte aside .bg-accent {
+  background: linear-gradient(135deg, #0891b2, #0e7490) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+/* Green ping dot becomes cyan */
+.theme-frostbyte .bg-green-500 {
+  background: #22d3ee !important;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+.theme-frostbyte .animate-ping.bg-green-500 {
+  background: #22d3ee !important;
+}
+
+/* ── 12. NAVBAR — Frostbyte Styling ────────────────────────────────────────── */
+.theme-frostbyte nav.sticky {
+  background: rgba(6, 11, 25, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(34, 211, 238, 0.12) !important;
+  box-shadow: 0 1px 20px rgba(34, 211, 238, 0.04);
+}
+
+/* ── 13. LEADERBOARD TOP-3 ENHANCEMENTS ────────────────────────────────────── */
+/* These use nth-child because leaderboard rows are generated as a flat list */
+
+/* ── 14. CONSISTENCY CALENDAR OVERRIDE ─────────────────────────────────────── */
+.theme-frostbyte .bg-white.dark\:bg-\[\#1a1a1a\] {
+  background: rgba(6, 11, 25, 0.6) !important;
+  backdrop-filter: blur(12px);
+  border-color: rgba(34, 211, 238, 0.12) !important;
+}
+
+/* Calendar completed nodes */
+.theme-frostbyte .bg-green-500:not(.animate-ping) {
+  background: linear-gradient(135deg, #06b6d4, #0284c7) !important;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+}
+
+/* ── 15. SETTINGS MODAL FROSTBYTE ──────────────────────────────────────────── */
+.theme-frostbyte .bg-emerald-500 {
+  background: linear-gradient(135deg, #0891b2, #0284c7) !important;
+}
+
+.theme-frostbyte .text-emerald-400,
+.theme-frostbyte .text-emerald-300 {
+  color: #22d3ee !important;
+}
+
+.theme-frostbyte .border-emerald-500\/30 {
+  border-color: rgba(34, 211, 238, 0.3) !important;
+}
+
+.theme-frostbyte .bg-emerald-500\/10 {
+  background: rgba(34, 211, 238, 0.08) !important;
+}
+
+.theme-frostbyte .shadow-emerald-500\/10 {
+  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.1) !important;
+}
+
+.theme-frostbyte .shadow-emerald-500\/20 {
+  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.2) !important;
+}
+
+/* ── 16. CAMPAIGN OVERRIDE ─────────────────────────────────────────────────── */
+.theme-frostbyte .dark\:bg-\[\#060810\] {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(6, 182, 212, 0.1), transparent 70%),
+    #020617 !important;
+}
+
+/* ── 17. VISUALIZER OVERRIDE ───────────────────────────────────────────────── */
+.theme-frostbyte .viz-root[data-theme='dark'] {
+  --vz-bg-primary: #020617;
+  --vz-bg-secondary: #060B19;
+  --vz-bg-hover: #0a1228;
+  --vz-border: rgba(34, 211, 238, 0.18);
+  --vz-text-primary: #e0f2fe;
+  --vz-text-muted: #7dd3fc;
+  --vz-accent: #22d3ee;
+  --vz-accent-glow: rgba(34, 211, 238, 0.4);
+  --vz-badge-bg: rgba(34, 211, 238, 0.1);
+  --vz-slider-track: rgba(34, 211, 238, 0.15);
+}
+
+/* ── 18. FOCUS STATES ──────────────────────────────────────────────────────── */
+.theme-frostbyte button:focus-visible,
+.theme-frostbyte input:focus-visible {
+  outline-color: #22d3ee;
+}
+
+.theme-frostbyte input:focus {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+}
+
+/* ── 19. RANGE SLIDER — Frostbyte ──────────────────────────────────────────── */
+.theme-frostbyte input[type="range"]::-webkit-slider-track {
+  background: rgba(34, 211, 238, 0.15);
+}
+
+.theme-frostbyte input[type="range"]::-webkit-slider-thumb {
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+.theme-frostbyte input[type="range"]::-moz-range-track {
+  background: rgba(34, 211, 238, 0.15);
+}
+
+.theme-frostbyte input[type="range"]::-moz-range-thumb {
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+/* ── 20. SELECTION COLOR ───────────────────────────────────────────────────── */
+.theme-frostbyte ::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: #e0f2fe;
+}
+
+/* ── 21. TOASTER OVERRIDE ──────────────────────────────────────────────────── */
+.theme-frostbyte [data-sonner-toaster],
+.theme-frostbyte .go4109123758 {
+  --toast-bg: #060B19 !important;
+  --toast-border: rgba(34, 211, 238, 0.2) !important;
+}
+
+/* ── 22. PREMIUM GATE OVERRIDE ─────────────────────────────────────────────── */
+.theme-frostbyte .bg-\[\#161618\] {
+  background: rgba(6, 11, 25, 0.95) !important;
+  border: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+/* ── 23. FROSTBYTE INDICATOR BADGE ─────────────────────────────────────────── */
+.frostbyte-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #7dd3fc;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.frostbyte-indicator:hover {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.35);
+  color: #bae6fd;
+}
+
+/* ── 24. SNOWFLAKE FLOAT ANIMATION ─────────────────────────────────────────── */
+@keyframes snowflake-float {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes frost-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(34, 211, 238, 0.4);
+  }
+}
+
+.animate-frost-pulse {
+  animation: frost-pulse 3s ease-in-out infinite;
+}
+
+/* ── 25. MOBILE BOTTOM NAV FROSTBYTE ───────────────────────────────────────── */
+.theme-frostbyte nav.fixed.bottom-0 {
+  background: rgba(6, 11, 25, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(34, 211, 238, 0.12) !important;
+}
+
+.theme-frostbyte .fixed.bottom-16 {
+  background: rgba(6, 11, 25, 0.8) !important;
+  backdrop-filter: blur(12px);
+  border-color: rgba(34, 211, 238, 0.1) !important;
+}
+
+/* ── 26. YELLOW/UPGRADE BUTTONS — Icy Override ─────────────────────────────── */
+.theme-frostbyte .text-yellow-400 {
+  color: #38bdf8 !important;
+}
+
+.theme-frostbyte .text-yellow-500 {
+  color: #38bdf8 !important;
+}
+
+.theme-frostbyte .border-yellow-500\/20 {
+  border-color: rgba(56, 189, 248, 0.2) !important;
+}
+
+.theme-frostbyte .bg-yellow-500\/10 {
+  background: rgba(56, 189, 248, 0.08) !important;
+}
+
+/* ── 27. CARD HOVER SHIMMER ────────────────────────────────────────────────── */
+@keyframes frost-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.theme-frostbyte .rounded-2xl:hover {
+  transition: all 0.3s ease;
+}

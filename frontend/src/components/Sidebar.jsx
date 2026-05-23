@@ -4,8 +4,10 @@ import { io } from 'socket.io-client';
 import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye, Map } from 'lucide-react';
 import ConsistencyCalendar from './ConsistencyCalendar';
 import { getStoredAuthToken, resolveBackendOrigin } from '../api.js';
+import { useTheme } from '../context/ThemeContext';
 
 const Sidebar = () => {
+  const { advancedTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ live: 0, total: 0 });
@@ -78,7 +80,7 @@ const Sidebar = () => {
   return (
     <>
       {/* Legacy Bright Theme Sidebar Surface (for quick reversal): bg-[var(--bg-secondary)] */}
-      <aside className="hidden h-full w-64 flex-col border-r border-[var(--border-color)] bg-[var(--surface-elevated)] py-6 md:flex">
+      <aside className={`hidden h-full w-64 flex-col border-r border-[var(--border-color)] bg-[var(--surface-elevated)] py-6 md:flex ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''}`}>
         <div className="mb-6 px-4">
           <h3 className="px-2 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Main Menu</h3>
         </div>
