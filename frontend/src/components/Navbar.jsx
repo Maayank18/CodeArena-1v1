@@ -173,7 +173,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
           <div className="h-6 w-px bg-gray-200 dark:bg-[var(--border-color)] sm:h-8" />
 
-          <div className="relative flex items-center gap-3 sm:gap-4">
+          <div className="relative flex items-center gap-3 sm:gap-4 z-[60] pointer-events-auto">
             <button
               type="button"
               onClick={(event) => {

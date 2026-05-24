@@ -115,7 +115,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* ── Panels (Elevated Surfaces) ── */
-.theme-inferno .bg-\[var\(--surface-elevated\)\] {
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute) {
   background:
     /* Subtle crack lines */
     repeating-linear-gradient(
@@ -137,7 +137,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* Lava crack pseudo-element on panels */
-.theme-inferno .bg-\[var\(--surface-elevated\)\]::before {
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -149,7 +149,7 @@ body[data-theme="dark"].theme-inferno {
   animation: crack-glow 6s ease-in-out infinite;
 }
 
-.theme-inferno .bg-\[var\(--surface-elevated\)\]:hover {
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute):hover {
   border-color: rgba(212, 135, 10, 0.35) !important;
   box-shadow: 0 0 8px rgba(196, 90, 26, 0.25), 0 0 20px rgba(196, 90, 26, 0.1) !important;
 }
@@ -191,6 +191,11 @@ body[data-theme="dark"].theme-inferno {
     linear-gradient(180deg, var(--inf-basalt), var(--inf-obsidian)) !important;
   border-bottom: 1px solid rgba(196, 90, 26, 0.15) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(196, 90, 26, 0.08) !important;
+  overflow: visible !important; /* Ensure dropdowns aren't clipped */
+}
+
+.theme-inferno aside {
+  overflow: visible !important; /* Ensure tooltips aren't clipped */
 }
 
 /* ── Primary CTA Buttons (Create New Battle Room) ── */
@@ -419,7 +424,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* ── Smoke Haze (Viewport edges) ── */
-.theme-inferno::after {
+.theme-inferno #root::after {
   content: "";
   position: fixed;
   bottom: 0;
@@ -437,7 +442,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* Top-edge volcanic haze */
-.theme-inferno::before {
+.theme-inferno #root::before {
   content: "";
   position: fixed;
   top: 0;
@@ -451,4 +456,21 @@ body[data-theme="dark"].theme-inferno {
   );
   pointer-events: none;
   z-index: 0;
+}
+
+/* ── Premium Mobile Layouts & Navigation ── */
+@media (max-width: 768px) {
+  .theme-inferno nav.fixed.bottom-0 {
+    background: rgba(11, 11, 11, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(196, 90, 26, 0.15) !important;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .theme-inferno .fixed.bottom-16 {
+    background: rgba(11, 11, 11, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border-color: rgba(196, 90, 26, 0.12) !important;
+  }
 }

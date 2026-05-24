@@ -48,7 +48,7 @@ body[data-theme="dark"].theme-matrix {
 }
 
 /* Matrix Global Overlay & Scanlines */
-.theme-matrix body::after {
+.theme-matrix #root::after {
   content: " ";
   display: block;
   position: fixed;
@@ -206,4 +206,21 @@ body[data-theme="dark"].theme-matrix {
 
 .theme-matrix .matrix-calendar-container .consistency-cta svg {
   color: var(--matrix-neon) !important;
+}
+
+/* ── Premium Mobile Layouts & Navigation ── */
+@media (max-width: 768px) {
+  .theme-matrix nav.fixed.bottom-0 {
+    background: rgba(10, 17, 8, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: var(--matrix-border) !important;
+    box-shadow: 0 -2px 10px var(--matrix-neon-glow) !important;
+  }
+
+  .theme-matrix .fixed.bottom-16 {
+    background: rgba(10, 17, 8, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border-color: rgba(0, 255, 65, 0.15) !important;
+  }
 }

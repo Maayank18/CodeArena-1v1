@@ -195,6 +195,11 @@ body[data-theme="dark"].theme-samurai {
     linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
   border-bottom: 1px solid rgba(139, 26, 26, 0.12) !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(139, 26, 26, 0.06) !important;
+  overflow: visible !important; /* Ensure dropdowns aren't clipped */
+}
+
+.theme-samurai aside {
+  overflow: visible !important; /* Ensure tooltips aren't clipped */
 }
 
 /* ── Primary CTA Buttons (Deep Crimson Warrior Seal) ── */
@@ -421,7 +426,7 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* ── Mist Haze (Viewport edges) ── */
-.theme-samurai::after {
+.theme-samurai #root::after {
   content: "";
   position: fixed;
   bottom: 0;
@@ -439,7 +444,7 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* Top mist */
-.theme-samurai::before {
+.theme-samurai #root::before {
   content: "";
   position: fixed;
   top: 0;
@@ -455,7 +460,19 @@ body[data-theme="dark"].theme-samurai {
   z-index: 0;
 }
 
-/* Hide Sidebar Live Users Block to prevent layout shifts */
-.theme-samurai aside .mt-auto {
-  display: none !important;
+/* ── Premium Mobile Layouts & Navigation ── */
+@media (max-width: 768px) {
+  .theme-samurai nav.fixed.bottom-0 {
+    background: rgba(10, 10, 12, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(139, 26, 26, 0.15) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .theme-samurai .fixed.bottom-16 {
+    background: rgba(10, 10, 12, 0.8) !important;
+    backdrop-filter: blur(12px);
+    border-color: rgba(139, 26, 26, 0.1) !important;
+  }
 }
