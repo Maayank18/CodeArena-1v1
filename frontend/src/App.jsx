@@ -14,7 +14,7 @@ import Pricing from './pages/Pricing';
 import Learn from './pages/Learn';
 import Contest from './pages/Contest';
 import useTelemetry from './hooks/useTelemetry';
-import { FrostbyteParticles, FrostbyteMountain, MatrixRainBackground, CyberpunkBackground, InfernoEmbersBackground } from './components/advancedUI';
+import { FrostbyteParticles, FrostbyteMountain, MatrixRainBackground, CyberpunkBackground, InfernoEmbersBackground, SamuraiLeavesBackground } from './components/advancedUI';
 import { useTheme } from './context/ThemeContext';
 
 function App() {
@@ -59,6 +59,11 @@ function App() {
       {/* Inferno background - renders only when theme is active */}
       {advancedTheme === 'inferno' && (
         <InfernoEmbersBackground forceActive={true} />
+      )}
+
+      {/* Samurai background - renders only when theme is active */}
+      {advancedTheme === 'samurai' && (
+        <SamuraiLeavesBackground forceActive={true} />
       )}
 
       {/* Main Content Layer (Z-Index fix for particles) */}

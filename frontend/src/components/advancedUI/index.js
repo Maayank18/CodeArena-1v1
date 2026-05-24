@@ -47,3 +47,8 @@ export { InfernoEmbersBackground } from './inferno';
 export { MatrixRainBackground, MatrixStatNumber } from './matrix';
 export { CyberpunkBackground } from './cyberpunk';
 
+// ===================
+// SAMURAI SHADOW EXPORTS
+// ===================
+export { SamuraiLeavesBackground } from './samurai';
+

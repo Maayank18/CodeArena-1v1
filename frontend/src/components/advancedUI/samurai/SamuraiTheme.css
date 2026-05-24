@@ -1,0 +1,461 @@
+/* ============================================================
+   SAMURAI SHADOW — Premium Dark Warrior Battle Theme
+   Aesthetic: Shadow dojo, dark lacquer, ink, blood crimson, steel
+   Rule: Zero DOM restructuring. Pure CSS overrides only.
+   ============================================================ */
+
+/* ── Color Palette ── */
+:root[data-theme="dark"].theme-samurai {
+  --sam-void: #050506;
+  --sam-ink: #0a0a0c;
+  --sam-charcoal: #121215;
+  --sam-wood: #1a1818;
+  --sam-slate: #222020;
+
+  --sam-crimson: #8b1a1a;
+  --sam-blood: #a02020;
+  --sam-ember: #c03030;
+  --sam-maroon: #6a1515;
+  --sam-steel: #b0aaa0;
+  --sam-silver: #d0ccc4;
+  --sam-ivory: #e8e0d4;
+
+  --sam-crimson-glow: rgba(139, 26, 26, 0.3);
+  --sam-blood-glow: rgba(160, 32, 32, 0.2);
+  --sam-steel-glow: rgba(176, 170, 160, 0.1);
+
+  /* Override Global Variables */
+  --bg-primary: transparent;
+  --bg-secondary: var(--sam-ink);
+  --bg-tertiary: rgba(139, 26, 26, 0.03);
+  --surface-elevated: var(--sam-charcoal);
+  --border-color: rgba(139, 26, 26, 0.1);
+
+  --text-primary: var(--sam-ivory);
+  --text-secondary: #8a8078;
+  --accent: var(--sam-crimson);
+  --shadow-color: var(--sam-crimson-glow);
+}
+
+/* ── Base Body ── */
+body[data-theme="dark"].theme-samurai {
+  background-color: var(--sam-void);
+  color: var(--text-primary);
+}
+
+/* Dark brushed wood / stone textured background with a central cinematic glowing moon */
+.theme-samurai {
+  background-image:
+    /* Subtle noise grain for wood/stone texture */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
+    /* Faint wood grain lines */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 60px,
+      rgba(139, 26, 26, 0.015) 60px, rgba(139, 26, 26, 0.015) 61px,
+      transparent 61px, transparent 180px
+    ),
+    repeating-linear-gradient(
+      88deg,
+      transparent 0px, transparent 100px,
+      rgba(100, 80, 60, 0.012) 100px, rgba(100, 80, 60, 0.012) 101px,
+      transparent 101px, transparent 250px
+    ),
+    /* Soft vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
+    
+    /* === THE MOON === */
+    /* Inner Bright Core */
+    radial-gradient(300px circle at 50% 40%, rgba(255, 250, 240, 0.25) 0%, rgba(230, 235, 245, 0.12) 40%, transparent 80%),
+    /* Soft Atmospheric Diffused Glow */
+    radial-gradient(600px circle at 50% 40%, rgba(200, 210, 230, 0.08) 0%, rgba(180, 190, 210, 0.04) 50%, transparent 90%),
+    /* Elliptical Mist/Cloud Shadows across the moon */
+    radial-gradient(800px 200px ellipse at 50% 45%, rgba(5, 5, 6, 0.4) 0%, transparent 70%),
+    radial-gradient(1200px 300px ellipse at 50% 35%, rgba(10, 10, 12, 0.3) 0%, transparent 80%),
+    /* Vast Moonlight Halo */
+    radial-gradient(1200px circle at 50% 40%, rgba(150, 170, 200, 0.03) 0%, transparent 70%),
+    
+    /* Additional faint red depth zones */
+    radial-gradient(ellipse at 20% 80%, rgba(139, 26, 26, 0.025) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 20%, rgba(139, 26, 26, 0.015) 0%, transparent 35%);
+  background-color: var(--sam-void);
+  background-attachment: fixed;
+}
+
+/* ── Typography ── */
+.theme-samurai h1, .theme-samurai h2, .theme-samurai h3 {
+  color: var(--sam-ivory);
+  text-shadow: 0 1px 6px rgba(139, 26, 26, 0.15);
+  letter-spacing: 0.3px;
+  font-family: "Georgia", "Times New Roman", serif;
+}
+
+.theme-samurai .text-glow-cyan {
+  text-shadow: 0 0 6px rgba(139, 26, 26, 0.2), 0 0 12px rgba(139, 26, 26, 0.1);
+  color: var(--sam-silver);
+}
+
+/* ── Keyframes ── */
+@keyframes samurai-pulse {
+  0%, 100% {
+    box-shadow: 0 0 3px rgba(139, 26, 26, 0.15), 0 0 10px rgba(139, 26, 26, 0.05), inset 0 0 6px rgba(139, 26, 26, 0.04);
+    border-color: rgba(139, 26, 26, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 5px rgba(139, 26, 26, 0.22), 0 0 14px rgba(139, 26, 26, 0.08), inset 0 0 8px rgba(139, 26, 26, 0.06);
+    border-color: rgba(160, 32, 32, 0.25);
+  }
+}
+
+@keyframes blade-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shadow-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* ── Panels (Elevated Surfaces) ── */
+.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute) {
+  background:
+    /* Subtle lacquer grain */
+    repeating-linear-gradient(
+      180deg,
+      transparent, transparent 25px,
+      rgba(139, 26, 26, 0.012) 25px, rgba(139, 26, 26, 0.012) 26px
+    ),
+    linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
+  border: 1px solid rgba(139, 26, 26, 0.15) !important;
+  border-radius: 10px !important;
+  animation: samurai-pulse 6s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Inner shadow glow on panels */
+.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 90%, rgba(139, 26, 26, 0.05) 0%, transparent 25%),
+    radial-gradient(circle at 90% 10%, rgba(176, 170, 160, 0.03) 0%, transparent 20%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):hover {
+  border-color: rgba(139, 26, 26, 0.28) !important;
+  box-shadow: 0 0 6px rgba(139, 26, 26, 0.18), 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-1px);
+  transition: all 0.3s ease;
+}
+
+/* ── Sidebar (Lacquered Wood Panel) ── */
+.theme-samurai aside {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent, transparent 40px,
+      rgba(80, 50, 30, 0.02) 40px, rgba(80, 50, 30, 0.02) 41px
+    ),
+    linear-gradient(180deg, var(--sam-charcoal) 0%, var(--sam-ink) 100%) !important;
+  border-right: 1px solid rgba(139, 26, 26, 0.1) !important;
+}
+
+/* Active sidebar — crimson glow bar */
+.theme-samurai aside button.bg-accent {
+  background: linear-gradient(135deg, rgba(139, 26, 26, 0.2), rgba(160, 32, 32, 0.12)) !important;
+  color: var(--sam-silver) !important;
+  border: 1px solid rgba(139, 26, 26, 0.3) !important;
+  border-left: 3px solid var(--sam-crimson) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 0 6px rgba(139, 26, 26, 0.15),
+    inset 0 0 4px rgba(139, 26, 26, 0.08) !important;
+}
+
+/* Inactive sidebar items */
+.theme-samurai aside button:not(.bg-accent) {
+  color: #7a7068 !important;
+}
+.theme-samurai aside button:not(.bg-accent):hover {
+  color: var(--sam-silver) !important;
+  background: rgba(139, 26, 26, 0.04) !important;
+}
+
+/* ── Navbar (Dark Lacquer Metal) ── */
+.theme-samurai nav,
+.theme-samurai .h-\[64px\],
+.theme-samurai .sm\:h-\[72px\] {
+  background:
+    linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
+  border-bottom: 1px solid rgba(139, 26, 26, 0.12) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(139, 26, 26, 0.06) !important;
+}
+
+/* ── Primary CTA Buttons (Deep Crimson Warrior Seal) ── */
+.theme-samurai button.bg-accent,
+.theme-samurai button.bg-\[var\(--text-primary\)\] {
+  background:
+    linear-gradient(90deg,
+      #4a0e0e, #6a1515, #8b1a1a, #a02020, #8b1a1a, #6a1515, #4a0e0e
+    ) !important;
+  background-size: 300% 100% !important;
+  color: var(--sam-ivory) !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(160, 32, 32, 0.4) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 0 6px rgba(139, 26, 26, 0.25),
+    0 0 16px rgba(139, 26, 26, 0.1),
+    inset 0 1px 0 rgba(208, 204, 196, 0.08) !important;
+  animation: blade-shimmer 5s linear infinite;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Steel shimmer on button */
+.theme-samurai button.bg-accent::after,
+.theme-samurai button.bg-\[var\(--text-primary\)\]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(208, 204, 196, 0.06) 45%,
+    transparent 55%
+  );
+  animation: blade-shimmer 4s linear infinite;
+  pointer-events: none;
+}
+
+.theme-samurai button.bg-accent:hover,
+.theme-samurai button.bg-\[var\(--text-primary\)\]:hover {
+  transform: translateY(-1px) scale(1.01);
+  filter: brightness(1.12);
+  box-shadow:
+    0 0 10px rgba(139, 26, 26, 0.35),
+    0 0 24px rgba(139, 26, 26, 0.15),
+    inset 0 1px 0 rgba(208, 204, 196, 0.1) !important;
+}
+
+/* ── Secondary Buttons ── */
+.theme-samurai button.border-accent,
+.theme-samurai button[class*="border-"] {
+  border-color: rgba(139, 26, 26, 0.2) !important;
+  color: var(--sam-silver) !important;
+}
+.theme-samurai button.border-accent:hover,
+.theme-samurai button[class*="border-"]:hover {
+  background: rgba(139, 26, 26, 0.05) !important;
+  border-color: rgba(139, 26, 26, 0.35) !important;
+}
+
+/* ── Icons & Trophy Accents ── */
+.theme-samurai .text-yellow-500,
+.theme-samurai .text-blue-500,
+.theme-samurai .text-accent {
+  color: var(--sam-steel) !important;
+  filter: drop-shadow(0 0 2px rgba(139, 26, 26, 0.2));
+}
+
+.theme-samurai .bg-blue-500\/10,
+.theme-samurai .bg-accent\/10 {
+  background-color: rgba(139, 26, 26, 0.05) !important;
+  border-color: rgba(139, 26, 26, 0.12) !important;
+}
+
+/* ── Inputs (Embedded in dark lacquer) ── */
+.theme-samurai input {
+  background-color: var(--sam-ink) !important;
+  border: 1px solid rgba(139, 26, 26, 0.12) !important;
+  color: var(--sam-ivory) !important;
+  border-radius: 6px !important;
+}
+.theme-samurai input::placeholder {
+  color: #5a5048 !important;
+}
+.theme-samurai input:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(139, 26, 26, 0.15), inset 0 0 3px rgba(139, 26, 26, 0.06) !important;
+  border-color: rgba(139, 26, 26, 0.3) !important;
+  background-color: rgba(10, 10, 12, 0.95) !important;
+}
+
+/* ── Stats Cards Numbers ── */
+.theme-samurai .bg-\[var\(--surface-elevated\)\] .text-3xl,
+.theme-samurai .bg-\[var\(--surface-elevated\)\] .text-4xl,
+.theme-samurai .bg-\[var\(--surface-elevated\)\] .text-2xl {
+  color: var(--sam-silver) !important;
+  text-shadow: 0 0 4px rgba(139, 26, 26, 0.15);
+}
+
+/* ── Consistency Calendar (Shrine Panel) ── */
+.theme-samurai .consistency-calendar {
+  background:
+    linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
+  border: 1px solid rgba(139, 26, 26, 0.1) !important;
+  box-shadow: 0 0 6px rgba(139, 26, 26, 0.06) !important;
+  border-radius: 10px !important;
+}
+
+/* Katana marks for completed days */
+.theme-samurai .consistency-calendar [data-status="completed"] {
+  background: rgba(139, 26, 26, 0.12) !important;
+  border: 1px solid rgba(139, 26, 26, 0.25) !important;
+  box-shadow: 0 0 4px rgba(139, 26, 26, 0.12) !important;
+  position: relative;
+}
+.theme-samurai .consistency-calendar [data-status="completed"] svg {
+  display: none !important;
+}
+.theme-samurai .consistency-calendar [data-status="completed"]::after {
+  content: "⚔️";
+  font-size: 12px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 2px rgba(139, 26, 26, 0.3));
+  animation: shadow-breathe 4s ease-in-out infinite;
+}
+
+/* Missed days */
+.theme-samurai .consistency-calendar [data-status="missed"] {
+  background-color: rgba(18, 18, 21, 0.8) !important;
+  border: 1px solid rgba(60, 55, 50, 0.2) !important;
+}
+
+.theme-samurai .consistency-calendar .consistency-cta {
+  background-color: rgba(139, 26, 26, 0.03) !important;
+  border: 1px solid rgba(139, 26, 26, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+/* Calendar streak badge */
+.theme-samurai .consistency-calendar .bg-orange-500\/5,
+.theme-samurai .consistency-calendar .bg-orange-500\/10 {
+  background-color: rgba(139, 26, 26, 0.06) !important;
+  border-color: rgba(139, 26, 26, 0.15) !important;
+}
+
+/* ── Progress Bar (Shadow Gauge) ── */
+.theme-samurai .bg-\[var\(--bg-primary\)\] {
+  background-color: transparent !important;
+}
+.theme-samurai .h-3.rounded-full.overflow-hidden {
+  border: 1px solid rgba(139, 26, 26, 0.15) !important;
+  background-color: var(--sam-ink) !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+}
+.theme-samurai .h-3.rounded-full.overflow-hidden > div {
+  background: linear-gradient(90deg, #4a0e0e, #6a1515, #8b1a1a, #a02020) !important;
+  box-shadow: 0 0 4px rgba(139, 26, 26, 0.25) !important;
+  border-radius: 999px;
+}
+
+/* ── Dividers ── */
+.theme-samurai hr,
+.theme-samurai .border-b {
+  border-color: rgba(139, 26, 26, 0.06) !important;
+}
+
+/* ── Dropdown Menus ── */
+.theme-samurai [class*="absolute"][class*="rounded"] {
+  background-color: var(--sam-charcoal) !important;
+  border: 1px solid rgba(139, 26, 26, 0.12) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 6px rgba(139, 26, 26, 0.08) !important;
+}
+
+/* ── Scrollbar ── */
+.theme-samurai ::-webkit-scrollbar {
+  width: 5px;
+}
+.theme-samurai ::-webkit-scrollbar-track {
+  background: var(--sam-void);
+}
+.theme-samurai ::-webkit-scrollbar-thumb {
+  background: rgba(139, 26, 26, 0.25);
+  border-radius: 3px;
+}
+.theme-samurai ::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 26, 26, 0.4);
+}
+
+/* ── Footer ── */
+.theme-samurai footer {
+  background: var(--sam-ink) !important;
+  border-top: 1px solid rgba(139, 26, 26, 0.06) !important;
+}
+
+/* ── Links ── */
+.theme-samurai a.text-accent,
+.theme-samurai .text-accent {
+  color: var(--sam-steel) !important;
+}
+
+/* ── Badges ── */
+.theme-samurai .bg-accent {
+  background-color: var(--sam-crimson) !important;
+}
+
+/* ── Modals ── */
+.theme-samurai .bg-black\/50,
+.theme-samurai .bg-black\/60,
+.theme-samurai .bg-black\/70 {
+  background-color: rgba(5, 5, 6, 0.88) !important;
+}
+
+/* ── Selection ── */
+.theme-samurai ::selection {
+  background: rgba(139, 26, 26, 0.3);
+  color: #fff;
+}
+
+/* ── Mist Haze (Viewport edges) ── */
+.theme-samurai::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 12, 0.6) 0%,
+    rgba(139, 26, 26, 0.02) 40%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Top mist */
+.theme-samurai::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 12, 0.4) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hide Sidebar Live Users Block to prevent layout shifts */
+.theme-samurai aside .mt-auto {
+  display: none !important;
+}

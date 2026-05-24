@@ -88,9 +88,9 @@ const CustomizationTab = () => {
             return;
         }
 
-        // Frostbyte, Matrix, Cyberpunk, and Inferno are implemented
-        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol' || theme.id === 'cyber_punk' || theme.id === 'inferno_arena') {
-            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id === 'cyber_punk' ? 'cyberpunk' : theme.id === 'inferno_arena' ? 'inferno' : theme.id;
+        // Frostbyte, Matrix, Cyberpunk, Inferno, and Samurai are implemented
+        if (theme.id === 'frostbyte' || theme.id === 'matrix_protocol' || theme.id === 'cyber_punk' || theme.id === 'inferno_arena' || theme.id === 'samurai_shadow') {
+            const mappedId = theme.id === 'matrix_protocol' ? 'matrix' : theme.id === 'cyber_punk' ? 'cyberpunk' : theme.id === 'inferno_arena' ? 'inferno' : theme.id === 'samurai_shadow' ? 'samurai' : theme.id;
             if (advancedTheme === mappedId) {
                 // Already active — deactivate
                 clearAdvancedTheme();
@@ -112,6 +112,10 @@ const CustomizationTab = () => {
                 } else if (mappedId === 'inferno') {
                     toast.success('🔥 Inferno Arena activated!', {
                         style: { borderRadius: '10px', background: '#0a0505', color: '#ff7b00', border: '1px solid #ff2a00', fontFamily: 'serif' }
+                    });
+                } else if (mappedId === 'samurai') {
+                    toast.success('⚔️ Samurai Shadow activated!', {
+                        style: { borderRadius: '8px', background: '#0a0a0c', color: '#e8e0d4', border: '1px solid #8b1a1a', fontFamily: 'serif' }
                     });
                 } else {
                     toast.success('❄️ Frostbyte theme activated!', {

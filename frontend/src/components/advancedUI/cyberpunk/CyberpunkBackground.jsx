@@ -39,8 +39,8 @@ const CyberpunkBackground = ({ forceActive = false }) => {
       
       <div className="absolute bottom-10 left-10 flex flex-col items-start gap-1 font-mono text-[10px] text-[#ff003c] opacity-30 select-none">
         <span>ERR_TRACE: BUFFER_UNDERRUN</span>
-        <span>> REBOOTING NEURAL_LINK...</span>
-        <span>> CONNECTION ESTABLISHED</span>
+        <span>{'> REBOOTING NEURAL_LINK...'}</span>
+        <span>{'> CONNECTION ESTABLISHED'}</span>
       </div>
 
       {/* Vignette Shadow */}
