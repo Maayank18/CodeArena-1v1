@@ -107,7 +107,7 @@ const Sidebar = () => {
         </div>
 
         <div className="flex-grow flex flex-col justify-center py-4">
-          <ConsistencyCalendar className="mx-3 hidden xl:block" />
+          <ConsistencyCalendar className="mx-3 hidden lg:block" />
         </div>
 
         <div className="mt-auto px-4 pb-8">

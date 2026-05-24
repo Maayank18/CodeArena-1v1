@@ -135,17 +135,16 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme, advancedTheme]);
 
+  // Handle system theme changes separately, keeping advancedTheme as a dependency
+  // but WITHOUT triggering syncAdvancedThemeFromStoredUser
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
+    if (typeof window === 'undefined') return undefined;
 
     const mediaQuery = typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-color-scheme: dark)')
       : null;
 
     const handleSystemThemeChange = (event) => {
-      // Don't respond to system theme changes when advanced theme is active
       if (advancedTheme) return;
 
       const storedTheme = window.localStorage.getItem(STORAGE_KEY);
@@ -155,6 +154,17 @@ export const ThemeProvider = ({ children }) => {
 
       setThemeState(event.matches ? 'dark' : 'light');
     };
+
+    mediaQuery?.addEventListener?.('change', handleSystemThemeChange);
+
+    return () => {
+      mediaQuery?.removeEventListener?.('change', handleSystemThemeChange);
+    };
+  }, [advancedTheme]);
+
+  // Handle storage and user updates. ONLY depends on syncAdvancedThemeFromStoredUser.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
 
     const handleStorageChange = (event) => {
       if (event.key === 'codearena_user') {
@@ -180,17 +190,15 @@ export const ThemeProvider = ({ children }) => {
       syncAdvancedThemeFromStoredUser(event.detail);
     };
 
-    mediaQuery?.addEventListener?.('change', handleSystemThemeChange);
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('codearena:user-updated', handleUserUpdated);
     syncAdvancedThemeFromStoredUser();
 
     return () => {
-      mediaQuery?.removeEventListener?.('change', handleSystemThemeChange);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('codearena:user-updated', handleUserUpdated);
     };
-  }, [advancedTheme, syncAdvancedThemeFromStoredUser]);
+  }, [syncAdvancedThemeFromStoredUser]);
 
   const setTheme = useCallback((nextTheme) => {
     if (advancedTheme) return; // No-op when advanced theme is active

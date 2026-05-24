@@ -88,7 +88,7 @@ const CustomizationTab = () => {
   };
 
   const handleThemeClick = (theme) => {
-    if (theme.isPremium && userTier < 3) {
+    if (theme.isPremium && userTier < 2) {
       toast.error(`${theme.name} is a Premium Exclusive theme.`, {
         icon: '👑',
         style: { borderRadius: '10px', background: '#333', color: '#fff' },
@@ -351,7 +351,7 @@ const CustomizationTab = () => {
           </button>
 
           {ADVANCED_THEME_DEFINITIONS.map((theme) => {
-            const isLocked = theme.isPremium && userTier < 3;
+            const isLocked = theme.isPremium && userTier < 2;
             const isActive = advancedTheme === theme.id;
             return (
               <button
