@@ -69,7 +69,7 @@ body[data-theme="dark"].theme-cyberpunk {
 }
 
 /* Dashboard Panels - Chamfered Corners */
-.theme-cyberpunk .bg-\[var\(--surface-elevated\)\]:not(.absolute) {
+.theme-cyberpunk .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav) {
   clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
   border: 1px solid var(--cp-cyan) !important;
   box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1) !important;
@@ -77,15 +77,15 @@ body[data-theme="dark"].theme-cyberpunk {
   position: relative;
 }
 
-/* Ensure Navbar and Sidebar don't clip dropdowns/tooltips */
-.theme-cyberpunk nav, 
+/* Ensure the top navbar and desktop sidebar don't clip dropdowns/tooltips */
+.theme-cyberpunk nav.sticky.top-0,
 .theme-cyberpunk aside {
   clip-path: none !important;
   overflow: visible !important;
 }
 
 /* Cyber-glitch hover effect for panels */
-.theme-cyberpunk .bg-\[var\(--surface-elevated\)\]:not(.absolute):hover {
+.theme-cyberpunk .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav):hover {
   box-shadow: inset 0 0 30px rgba(0, 240, 255, 0.2), 0 0 15px var(--cp-cyan-glow) !important;
   border-color: #fff !important;
 }
@@ -127,7 +127,7 @@ body[data-theme="dark"].theme-cyberpunk {
 }
 
 /* Primary Action Buttons */
-.theme-cyberpunk button.bg-accent {
+.theme-cyberpunk .dashboard-primary-cta {
   background-color: var(--cp-green) !important;
   color: #000 !important;
   font-family: var(--font-display);
@@ -141,7 +141,7 @@ body[data-theme="dark"].theme-cyberpunk {
   transition: all 0.2s ease;
 }
 
-.theme-cyberpunk button.bg-accent:hover {
+.theme-cyberpunk .dashboard-primary-cta:hover {
   background-color: #fff !important;
   box-shadow: 0 0 25px var(--cp-green-glow), 0 0 10px #fff;
   transform: scale(1.02);
@@ -163,7 +163,7 @@ body[data-theme="dark"].theme-cyberpunk {
 }
 
 /* Join Button */
-.theme-cyberpunk button.bg-\[var\(--text-primary\)\] {
+.theme-cyberpunk .dashboard-join-cta {
   background-color: var(--cp-magenta) !important;
   color: #000 !important;
   font-family: var(--font-display);
@@ -171,9 +171,38 @@ body[data-theme="dark"].theme-cyberpunk {
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   box-shadow: 0 0 15px var(--cp-magenta-glow);
 }
-.theme-cyberpunk button.bg-\[var\(--text-primary\)\]:hover {
+.theme-cyberpunk .dashboard-join-cta:hover {
   background-color: #fff !important;
   box-shadow: 0 0 20px var(--cp-magenta-glow), 0 0 10px #fff;
+}
+
+.theme-cyberpunk .mobile-bottom-nav,
+.theme-cyberpunk .mobile-sidebar-status {
+  clip-path: none !important;
+}
+
+.theme-cyberpunk .mobile-bottom-nav .mobile-nav-button,
+.theme-cyberpunk .mobile-sidebar-status .mobile-upgrade-button {
+  clip-path: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: var(--font-sans) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.theme-cyberpunk .dashboard-secondary-cta {
+  border: 1px solid var(--cp-cyan) !important;
+  color: var(--cp-cyan) !important;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  box-shadow: 0 0 10px var(--cp-cyan-glow);
+}
+
+.theme-cyberpunk .dashboard-secondary-cta:hover {
+  background-color: rgba(0, 240, 255, 0.08) !important;
+  box-shadow: 0 0 16px var(--cp-cyan-glow), 0 0 8px rgba(255, 255, 255, 0.25);
 }
 
 /* Sidebar Active Link */
@@ -256,7 +285,7 @@ body[data-theme="dark"].theme-cyberpunk {
 }
 
 /* ── Premium Mobile Layouts & Navigation ── */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .theme-cyberpunk nav.fixed.bottom-0 {
     background: rgba(13, 13, 18, 0.85) !important;
     backdrop-filter: blur(16px);

@@ -15,7 +15,6 @@ import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import ChatWidget from '../components/ChatWIdget.jsx';
 import ConsistencyCalendar from '../components/ConsistencyCalendar';
 import { useTheme } from '../context/ThemeContext';
-import { MatrixStatNumber } from '../components/advancedUI';
 import CustomMatchModal from '../components/CustomMatchModal';
 import PremiumGate from '../components/PremiumGate.jsx';
 import {
@@ -29,7 +28,7 @@ const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
-  const { advancedTheme, setAdvancedTheme, clearAdvancedTheme } = useTheme();
+  const { advancedTheme, clearAdvancedTheme } = useTheme();
   const [user, setUser] = useState(() => readStoredUser());
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,6 +78,7 @@ const Dashboard = () => {
             const cachedUser = mergeUserProfile(storedUser, data);
             setUser(cachedUser);
             localStorage.setItem('codearena_user', JSON.stringify(cachedUser));
+            window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: cachedUser }));
           }
         } catch (e) {
           console.error("[CACHE] Parse error:", e);
@@ -94,11 +94,6 @@ const Dashboard = () => {
         }
 
         setUser(finalUser);
-        if (finalUser.customization?.advancedTheme === 'frostbyte' || finalUser.customization?.advancedTheme === 'matrix') {
-          setAdvancedTheme(finalUser.customization.advancedTheme);
-        } else {
-          clearAdvancedTheme();
-        }
         localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
           data: finalUser,
           timestamp: Date.now()
@@ -109,7 +104,7 @@ const Dashboard = () => {
     };
     
     syncUserAndData();
-  }, [location.state, navigate, setAdvancedTheme, clearAdvancedTheme]);
+  }, [location.state, navigate]);
 
   // ✅ OPTIMIZED: Memoized handlers
   const handleLogout = useCallback(() => {
@@ -232,7 +227,7 @@ const Dashboard = () => {
                 Join a room or create a new one to challenge a friend.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 
                 {/* Main Action Card */}
                 <div className={`${getPanelClass()} p-6 md:p-8 rounded-2xl space-y-6 md:space-y-8 h-full flex flex-col justify-center`}>
@@ -243,7 +238,7 @@ const Dashboard = () => {
                     <label className="text-xs md:text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3 block">
                       Join Existing Room
                     </label>
-                    <div className="flex gap-2 md:gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row md:gap-3">
                       <input 
                         type="text" 
                         value={roomIdInput}
@@ -257,7 +252,7 @@ const Dashboard = () => {
                       <button 
                         onClick={handleJoinRoom} 
                         disabled={isNavigating || !roomIdInput.trim()} 
-                        className="px-4 md:px-6 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-primary)] font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="dashboard-join-cta px-4 md:px-6 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-primary)] font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap sm:self-auto"
                         aria-label="Join Room"
                       >
                         Join
@@ -274,7 +269,7 @@ const Dashboard = () => {
                   <button 
                     onClick={createRoom} 
                     disabled={isNavigating} 
-                    className="w-full py-4 rounded-xl bg-accent text-black font-extrabold text-base md:text-lg hover:bg-[#3bd175] transition-all shadow-lg shadow-green-900/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="dashboard-primary-cta w-full py-4 rounded-xl bg-accent text-black font-extrabold text-base md:text-lg hover:bg-[#3bd175] transition-all shadow-lg shadow-green-900/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Create New Room"
                   >
                     Create New Battle Room
@@ -284,7 +279,7 @@ const Dashboard = () => {
                     <button
                       onClick={() => setShowCustomModal(true)}
                       disabled={isNavigating}
-                      className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-accent/30 text-accent font-bold text-sm hover:bg-accent/10 hover:border-accent/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="dashboard-secondary-cta w-full mt-3 py-2.5 rounded-xl bg-transparent border border-accent/30 text-accent font-bold text-sm hover:bg-accent/10 hover:border-accent/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       aria-label="Create Custom Battle Room"
                     >
                       <Swords size={16} />
@@ -293,7 +288,7 @@ const Dashboard = () => {
                   </PremiumGate>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 sm:gap-5">
                   <div className={`${getPanelClass(true)} p-6 rounded-2xl flex flex-col items-center justify-center py-8 transition-all`}>
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 border group-hover:scale-110 transition-transform ${isMatrix ? 'bg-green-900/30 border-green-500/50' : 'bg-blue-500/10 border-blue-500/20'}`}>
                       <Swords size={24} className={isFrostbyte ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" : isMatrix ? "text-green-400 drop-shadow-[0_0_8px_rgba(0,255,65,0.8)]" : "text-blue-500"} />

@@ -209,7 +209,7 @@ body[data-theme="dark"].theme-matrix {
 }
 
 /* ── Premium Mobile Layouts & Navigation ── */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .theme-matrix nav.fixed.bottom-0 {
     background: rgba(10, 17, 8, 0.85) !important;
     backdrop-filter: blur(16px);

@@ -115,7 +115,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* ── Panels (Elevated Surfaces) ── */
-.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute) {
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav) {
   background:
     /* Subtle crack lines */
     repeating-linear-gradient(
@@ -137,7 +137,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* Lava crack pseudo-element on panels */
-.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute)::before {
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -149,7 +149,7 @@ body[data-theme="dark"].theme-inferno {
   animation: crack-glow 6s ease-in-out infinite;
 }
 
-.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute):hover {
+.theme-inferno .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav):hover {
   border-color: rgba(212, 135, 10, 0.35) !important;
   box-shadow: 0 0 8px rgba(196, 90, 26, 0.25), 0 0 20px rgba(196, 90, 26, 0.1) !important;
 }
@@ -184,9 +184,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* ── Navbar ── */
-.theme-inferno nav,
-.theme-inferno .h-\[64px\],
-.theme-inferno .sm\:h-\[72px\] {
+.theme-inferno nav.sticky.top-0 {
   background:
     linear-gradient(180deg, var(--inf-basalt), var(--inf-obsidian)) !important;
   border-bottom: 1px solid rgba(196, 90, 26, 0.15) !important;
@@ -199,8 +197,8 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* ── Primary CTA Buttons (Create New Battle Room) ── */
-.theme-inferno button.bg-accent,
-.theme-inferno button.bg-\[var\(--text-primary\)\] {
+.theme-inferno .dashboard-primary-cta,
+.theme-inferno .dashboard-join-cta {
   background:
     linear-gradient(90deg,
       #8b2a0a, #c45a1a, #d4870a, #e8a020, #d4870a, #c45a1a, #8b2a0a
@@ -222,8 +220,8 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* Heated shimmer overlay on button */
-.theme-inferno button.bg-accent::after,
-.theme-inferno button.bg-\[var\(--text-primary\)\]::after {
+.theme-inferno .dashboard-primary-cta::after,
+.theme-inferno .dashboard-join-cta::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -237,8 +235,8 @@ body[data-theme="dark"].theme-inferno {
   pointer-events: none;
 }
 
-.theme-inferno button.bg-accent:hover,
-.theme-inferno button.bg-\[var\(--text-primary\)\]:hover {
+.theme-inferno .dashboard-primary-cta:hover,
+.theme-inferno .dashboard-join-cta:hover {
   transform: translateY(-1px) scale(1.01);
   filter: brightness(1.15);
   box-shadow:
@@ -247,14 +245,23 @@ body[data-theme="dark"].theme-inferno {
     inset 0 1px 0 rgba(255, 224, 160, 0.2) !important;
 }
 
+.theme-inferno .mobile-bottom-nav .mobile-nav-button,
+.theme-inferno .mobile-sidebar-status .mobile-upgrade-button {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  animation: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
 /* ── Secondary Buttons ── */
-.theme-inferno button.border-accent,
-.theme-inferno button[class*="border-"] {
+.theme-inferno .dashboard-secondary-cta {
   border-color: rgba(196, 90, 26, 0.25) !important;
   color: var(--inf-amber) !important;
 }
-.theme-inferno button.border-accent:hover,
-.theme-inferno button[class*="border-"]:hover {
+.theme-inferno .dashboard-secondary-cta:hover {
   background: rgba(196, 90, 26, 0.06) !important;
   border-color: rgba(196, 90, 26, 0.4) !important;
 }
@@ -459,7 +466,7 @@ body[data-theme="dark"].theme-inferno {
 }
 
 /* ── Premium Mobile Layouts & Navigation ── */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .theme-inferno nav.fixed.bottom-0 {
     background: rgba(11, 11, 11, 0.85) !important;
     backdrop-filter: blur(16px);

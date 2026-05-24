@@ -1,8 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { SUPPORTED_ADVANCED_THEME_IDS, getAdvancedThemeIdFromUser } from '../utils/advancedThemes';
 
 const STORAGE_KEY = 'ca_theme';
 const ADVANCED_THEME_KEY = 'ca_advanced_theme';
 const DEFAULT_THEME = 'dark';
+
+const isSupportedAdvancedTheme = (themeId) => SUPPORTED_ADVANCED_THEME_IDS.includes(themeId);
 
 const ThemeContext = createContext({
   theme: DEFAULT_THEME,
@@ -39,17 +42,19 @@ const getInitialAdvancedTheme = () => {
   if (typeof window === 'undefined') {
     return null;
   }
-  const userStr = window.localStorage.getItem('codearena_user');
-  if (!userStr) {
-    return null;
+
+  try {
+    const storedUser = JSON.parse(window.localStorage.getItem('codearena_user') || 'null');
+    const userTheme = getAdvancedThemeIdFromUser(storedUser);
+    if (userTheme) {
+      return userTheme;
+    }
+  } catch {
+    // Fall back to the dedicated theme storage key below.
   }
+
   const stored = window.localStorage.getItem(ADVANCED_THEME_KEY);
-  if (stored === 'frostbyte') return 'frostbyte';
-  if (stored === 'matrix') return 'matrix';
-  if (stored === 'cyberpunk') return 'cyberpunk';
-  if (stored === 'inferno') return 'inferno';
-  if (stored === 'samurai') return 'samurai';
-  return null;
+  return isSupportedAdvancedTheme(stored) ? stored : null;
 };
 
 const applyThemeToDocument = (theme, advancedTheme) => {
@@ -84,6 +89,38 @@ const applyThemeToDocument = (theme, advancedTheme) => {
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(getInitialTheme);
   const [advancedTheme, setAdvancedThemeState] = useState(getInitialAdvancedTheme);
+
+  const syncAdvancedThemeFromStoredUser = useCallback((nextUser) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const resolveUser = () => {
+      if (nextUser && typeof nextUser === 'object') {
+        return nextUser;
+      }
+
+      try {
+        return JSON.parse(window.localStorage.getItem('codearena_user') || 'null');
+      } catch {
+        return null;
+      }
+    };
+
+    const resolvedTheme = getAdvancedThemeIdFromUser(resolveUser());
+    setAdvancedThemeState((currentTheme) => {
+      if (resolvedTheme === currentTheme) {
+        return currentTheme;
+      }
+
+      if (resolvedTheme) {
+        return resolvedTheme;
+      }
+
+      const fallbackStoredTheme = window.localStorage.getItem(ADVANCED_THEME_KEY);
+      return isSupportedAdvancedTheme(fallbackStoredTheme) ? fallbackStoredTheme : null;
+    });
+  }, []);
 
   useEffect(() => {
     applyThemeToDocument(theme, advancedTheme);
@@ -120,13 +157,13 @@ export const ThemeProvider = ({ children }) => {
     };
 
     const handleStorageChange = (event) => {
+      if (event.key === 'codearena_user') {
+        syncAdvancedThemeFromStoredUser();
+        return;
+      }
+
       if (event.key === ADVANCED_THEME_KEY) {
-        let nextAdvanced = null;
-        if (event.newValue === 'frostbyte') nextAdvanced = 'frostbyte';
-        if (event.newValue === 'matrix') nextAdvanced = 'matrix';
-        if (event.newValue === 'cyberpunk') nextAdvanced = 'cyberpunk';
-        if (event.newValue === 'inferno') nextAdvanced = 'inferno';
-        if (event.newValue === 'samurai') nextAdvanced = 'samurai';
+        const nextAdvanced = isSupportedAdvancedTheme(event.newValue) ? event.newValue : null;
         setAdvancedThemeState(nextAdvanced);
         return;
       }
@@ -139,14 +176,21 @@ export const ThemeProvider = ({ children }) => {
       setThemeState(nextTheme);
     };
 
+    const handleUserUpdated = (event) => {
+      syncAdvancedThemeFromStoredUser(event.detail);
+    };
+
     mediaQuery?.addEventListener?.('change', handleSystemThemeChange);
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('codearena:user-updated', handleUserUpdated);
+    syncAdvancedThemeFromStoredUser();
 
     return () => {
       mediaQuery?.removeEventListener?.('change', handleSystemThemeChange);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('codearena:user-updated', handleUserUpdated);
     };
-  }, [advancedTheme]);
+  }, [advancedTheme, syncAdvancedThemeFromStoredUser]);
 
   const setTheme = useCallback((nextTheme) => {
     if (advancedTheme) return; // No-op when advanced theme is active
@@ -161,7 +205,7 @@ export const ThemeProvider = ({ children }) => {
   }, [advancedTheme]);
 
   const setAdvancedTheme = useCallback((themeId) => {
-    if (themeId === 'frostbyte' || themeId === 'matrix' || themeId === 'cyberpunk' || themeId === 'inferno' || themeId === 'samurai') {
+    if (isSupportedAdvancedTheme(themeId)) {
       setAdvancedThemeState(themeId);
       // Force dark mode as the base for advanced themes
       setThemeState('dark');

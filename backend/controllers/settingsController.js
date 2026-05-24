@@ -67,7 +67,7 @@ const buildSettingsPayload = (user) => ({
     },
     subscriptionPlan: user.subscriptionPlan || 'free',
     badges: user.badges || [],
-    customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark' },
+    customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark', advancedTheme: '' },
     emailVerified: Boolean(user.emailVerified),
     emailVerifiedAt: user.emailVerifiedAt || null,
 });
@@ -528,6 +528,7 @@ const VALID_STACK_LANGUAGES = [
     'javascript', 'typescript', 'python', 'java', 'cpp', 'c', 'csharp',
     'go', 'rust', 'ruby', 'swift', 'kotlin', 'php', 'scala', 'dart',
 ];
+const VALID_ADVANCED_THEMES = ['', 'frostbyte', 'matrix', 'cyberpunk', 'inferno', 'samurai'];
 
 export const updateCustomization = async (req, res) => {
     try {
@@ -581,7 +582,11 @@ export const updateCustomization = async (req, res) => {
         }
 
         if (advancedTheme !== undefined) {
-            update['customization.advancedTheme'] = typeof advancedTheme === 'string' ? advancedTheme.trim() : '';
+            const sanitizedAdvancedTheme = typeof advancedTheme === 'string' ? advancedTheme.trim() : '';
+            if (!VALID_ADVANCED_THEMES.includes(sanitizedAdvancedTheme)) {
+                return res.status(400).json({ success: false, message: 'Invalid advanced theme' });
+            }
+            update['customization.advancedTheme'] = sanitizedAdvancedTheme;
         }
 
         if (Object.keys(update).length === 0) {
@@ -673,6 +678,7 @@ export const getUserCustomization = async (req, res) => {
                 tagline: 'Novice',
                 signatureStack: [],
                 entranceBanner: 'default-dark',
+                advancedTheme: '',
             },
             badges: user.badges || [],
         });

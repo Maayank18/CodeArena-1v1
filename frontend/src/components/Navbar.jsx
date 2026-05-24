@@ -7,6 +7,7 @@ import Avatar from './Avatar';
 import SettingsModal from './SettingsModal.jsx';
 import { useTheme } from '../context/ThemeContext';
 import { getLevelInfo } from '../utils/levelSystem';
+import { getAdvancedThemeMeta } from '../utils/advancedThemes';
 
 const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
@@ -16,8 +17,8 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(user);
   const [settingsInitialTab, setSettingsInitialTab] = useState('profile');
+  const activeAdvancedTheme = getAdvancedThemeMeta(advancedTheme);
 
-  // ✅ SYNC MODAL WITH URL
   useEffect(() => {
     if (location.pathname === '/settings') {
       setIsSettingsOpen(true);
@@ -29,21 +30,22 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const handleCloseSettings = useCallback(() => {
     setIsSettingsOpen(false);
     setSettingsInitialTab('profile');
-    // If the modal was opened directly on /settings, return to a stable authenticated shell.
+
     if (location.pathname === '/settings') {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate, location.pathname]);
 
   useEffect(() => {
-    const handleOpenSettings = (e) => {
-      const targetTab = e.detail?.tab || 'profile';
+    const handleOpenSettings = (event) => {
+      const targetTab = event.detail?.tab || 'profile';
       setSettingsInitialTab(targetTab);
       setIsSettingsOpen(true);
       if (location.pathname !== '/settings') {
         navigate('/settings');
       }
     };
+
     window.addEventListener('codearena:open-settings', handleOpenSettings);
     return () => window.removeEventListener('codearena:open-settings', handleOpenSettings);
   }, [navigate, location.pathname]);
@@ -88,9 +90,13 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
     navigate('/login');
   }, [navigate, clearAdvancedTheme]);
 
+  const openCustomizationSettings = useCallback(() => {
+    navigate('/settings');
+    window.dispatchEvent(new CustomEvent('codearena:open-settings', { detail: { tab: 'customization' } }));
+  }, [navigate]);
+
   return (
     <>
-      {/* Legacy Bright Theme Navbar Surface (for quick reversal): bg-white dark:bg-[var(--bg-secondary)] */}
       <nav
         className="
           h-[64px] sm:h-[72px]
@@ -113,7 +119,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
         <div className="flex items-center gap-3 sm:gap-8">
           <button
-            onClick={() => toast('Contests coming soon!', { 
+            onClick={() => toast('Contests coming soon!', {
               icon: <Trophy size={18} className="text-yellow-500" />,
               style: {
                 borderRadius: '12px',
@@ -121,10 +127,10 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
                 color: 'var(--text-primary)',
                 border: '1px solid var(--border-color)',
                 fontSize: '14px',
-                fontWeight: '600'
-              }
+                fontWeight: '600',
+              },
             })}
-            className="hidden items-center gap-2 text-sm font-bold text-[var(--text-secondary)] transition-all cursor-pointer hover:text-[var(--text-primary)] hover:underline sm:flex"
+            className="hidden items-center gap-2 text-sm font-bold text-[var(--text-secondary)] transition-all cursor-pointer hover:text-[var(--text-primary)] hover:underline lg:flex"
           >
             <Trophy size={16} />
             <span>Contest</span>
@@ -132,24 +138,22 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 
           <button
             onClick={() => navigate('/pricing')}
-            className="hidden items-center gap-2 text-sm font-bold text-yellow-400 transition-all cursor-pointer hover:text-yellow-300 hover:underline sm:flex"
+            className="hidden items-center gap-2 text-sm font-bold text-yellow-400 transition-all cursor-pointer hover:text-yellow-300 hover:underline lg:flex"
           >
             <Zap size={16} className="fill-current" />
             <span>Upgrade</span>
           </button>
 
-          {/* Theme Toggle / Frostbyte Indicator */}
-          {advancedTheme === 'frostbyte' ? (
+          {activeAdvancedTheme ? (
             <button
-              onClick={() => {
-                navigate('/settings');
-                window.dispatchEvent(new CustomEvent('codearena:open-settings', { detail: { tab: 'customization' } }));
-              }}
-              className="frostbyte-indicator"
-              title="Frostbyte theme active — click to manage"
+              onClick={openCustomizationSettings}
+              className={activeAdvancedTheme.badgeClassName}
+              title={`${activeAdvancedTheme.name} theme active - click to manage`}
             >
-              <span>❄️</span>
-              <span className="hidden sm:inline">Frostbyte</span>
+              <span className="advanced-theme-indicator-icon" aria-hidden="true">
+                {activeAdvancedTheme.icon}
+              </span>
+              <span className="hidden lg:inline">{activeAdvancedTheme.name}</span>
             </button>
           ) : (
             <button
@@ -188,18 +192,20 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
                 className="h-8 w-8 ring-2 ring-transparent transition-all sm:h-10 sm:w-10"
               />
 
-              <div className="hidden flex-col sm:flex">
+              <div className="hidden flex-col xl:flex">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="max-w-[120px] truncate text-sm font-bold leading-none text-gray-800 dark:text-[var(--text-primary)] sm:text-base">
                     {displayUser?.username || 'Guest'}
                   </span>
                   {displayUser?.subscriptionPlan && displayUser.subscriptionPlan !== 'free' && (
                     <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md shadow-sm ${
-                        displayUser.subscriptionPlan === 'plus' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                        displayUser.subscriptionPlan === 'pro' ? 'bg-accent/10 text-accent border border-accent/20 text-glow-accent' :
-                        'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                      displayUser.subscriptionPlan === 'plus'
+                        ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                        : displayUser.subscriptionPlan === 'pro'
+                          ? 'bg-accent/10 text-accent border border-accent/20 text-glow-accent'
+                          : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                     }`}>
-                        {displayUser.subscriptionPlan}
+                      {displayUser.subscriptionPlan}
                     </span>
                   )}
                 </div>
@@ -209,7 +215,6 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
               </div>
             </button>
 
-            {/* Legacy Bright Theme Dropdown Surface (for quick reversal): bg-white dark:bg-[var(--bg-secondary)] */}
             <div
               className={`
                 absolute right-0 top-full z-50 mt-3 w-48 rounded-xl border py-2 shadow-2xl transition-all duration-200

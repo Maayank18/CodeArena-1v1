@@ -119,7 +119,7 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* ── Panels (Elevated Surfaces) ── */
-.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute) {
+.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav) {
   background:
     /* Subtle lacquer grain */
     repeating-linear-gradient(
@@ -136,7 +136,7 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* Inner shadow glow on panels */
-.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute)::before {
+.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -147,7 +147,7 @@ body[data-theme="dark"].theme-samurai {
   z-index: 0;
 }
 
-.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):hover {
+.theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav):hover {
   border-color: rgba(139, 26, 26, 0.28) !important;
   box-shadow: 0 0 6px rgba(139, 26, 26, 0.18), 0 4px 16px rgba(0, 0, 0, 0.4) !important;
   transform: translateY(-1px);
@@ -188,9 +188,7 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* ── Navbar (Dark Lacquer Metal) ── */
-.theme-samurai nav,
-.theme-samurai .h-\[64px\],
-.theme-samurai .sm\:h-\[72px\] {
+.theme-samurai nav.sticky.top-0 {
   background:
     linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
   border-bottom: 1px solid rgba(139, 26, 26, 0.12) !important;
@@ -203,8 +201,8 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* ── Primary CTA Buttons (Deep Crimson Warrior Seal) ── */
-.theme-samurai button.bg-accent,
-.theme-samurai button.bg-\[var\(--text-primary\)\] {
+.theme-samurai .dashboard-primary-cta,
+.theme-samurai .dashboard-join-cta {
   background:
     linear-gradient(90deg,
       #4a0e0e, #6a1515, #8b1a1a, #a02020, #8b1a1a, #6a1515, #4a0e0e
@@ -227,8 +225,8 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* Steel shimmer on button */
-.theme-samurai button.bg-accent::after,
-.theme-samurai button.bg-\[var\(--text-primary\)\]::after {
+.theme-samurai .dashboard-primary-cta::after,
+.theme-samurai .dashboard-join-cta::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -242,8 +240,8 @@ body[data-theme="dark"].theme-samurai {
   pointer-events: none;
 }
 
-.theme-samurai button.bg-accent:hover,
-.theme-samurai button.bg-\[var\(--text-primary\)\]:hover {
+.theme-samurai .dashboard-primary-cta:hover,
+.theme-samurai .dashboard-join-cta:hover {
   transform: translateY(-1px) scale(1.01);
   filter: brightness(1.12);
   box-shadow:
@@ -252,14 +250,23 @@ body[data-theme="dark"].theme-samurai {
     inset 0 1px 0 rgba(208, 204, 196, 0.1) !important;
 }
 
+.theme-samurai .mobile-bottom-nav .mobile-nav-button,
+.theme-samurai .mobile-sidebar-status .mobile-upgrade-button {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  animation: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
 /* ── Secondary Buttons ── */
-.theme-samurai button.border-accent,
-.theme-samurai button[class*="border-"] {
+.theme-samurai .dashboard-secondary-cta {
   border-color: rgba(139, 26, 26, 0.2) !important;
   color: var(--sam-silver) !important;
 }
-.theme-samurai button.border-accent:hover,
-.theme-samurai button[class*="border-"]:hover {
+.theme-samurai .dashboard-secondary-cta:hover {
   background: rgba(139, 26, 26, 0.05) !important;
   border-color: rgba(139, 26, 26, 0.35) !important;
 }
@@ -461,7 +468,7 @@ body[data-theme="dark"].theme-samurai {
 }
 
 /* ── Premium Mobile Layouts & Navigation ── */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .theme-samurai nav.fixed.bottom-0 {
     background: rgba(10, 10, 12, 0.85) !important;
     backdrop-filter: blur(16px);
