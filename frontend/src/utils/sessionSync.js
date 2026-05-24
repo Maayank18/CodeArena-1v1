@@ -47,7 +47,11 @@ export const refreshCurrentUserProfile = async () => {
     });
 
     const mergedUser = mergeUserProfile(storedUser, response.data);
-    localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
-    window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
+    
+    if (JSON.stringify(storedUser) !== JSON.stringify(mergedUser)) {
+        localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
+        window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
+    }
+    
     return mergedUser;
 };

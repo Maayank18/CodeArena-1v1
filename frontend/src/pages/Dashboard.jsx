@@ -77,8 +77,11 @@ const Dashboard = () => {
             shouldFetch = false;
             const cachedUser = mergeUserProfile(storedUser, data);
             setUser(cachedUser);
-            localStorage.setItem('codearena_user', JSON.stringify(cachedUser));
-            window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: cachedUser }));
+            
+            if (JSON.stringify(storedUser) !== JSON.stringify(cachedUser)) {
+              localStorage.setItem('codearena_user', JSON.stringify(cachedUser));
+              window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: cachedUser }));
+            }
           }
         } catch (e) {
           console.error("[CACHE] Parse error:", e);
