@@ -19,11 +19,10 @@
  * ---
  * THEME ROADMAP:
  * ✅ Frostbyte - IMPLEMENTED (Icy glacial aesthetic with particles & mountains)
- * ⏳ Inferno - Coming soon (Fiery volcanic theme)
- * ⏳ Cyberpunk - Coming soon (Neon digital theme)
- * ⏳ Matrix Protocol - Coming soon (Green rain aesthetic)
- * ⏳ Samurai Shadow - Coming soon (Dark feudal aesthetic)
- * ⏳ D&D - Coming soon (Fantasy dungeon aesthetic)
+ * ✅ Inferno - IMPLEMENTED (Fiery volcanic theme)
+ * ✅ Cyberpunk - IMPLEMENTED (Neon digital theme)
+ * ✅ Matrix Protocol - IMPLEMENTED (Green rain aesthetic)
+ * ✅ Samurai Shadow - IMPLEMENTED (Dark feudal aesthetic)
  */
 
 // ===================

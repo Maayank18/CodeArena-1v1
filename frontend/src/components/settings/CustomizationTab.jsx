@@ -23,7 +23,6 @@ const ENTRANCE_BANNERS = [
     { id: 'neon-tokyo', name: 'Neon Tokyo', gradient: 'from-pink-600 via-fuchsia-800 to-violet-900', isExclusive: true },
 ];
 
-import dungeonsDragon from '../../assets/dungeons_dragon.png';
 import cyberPunk from '../../assets/cyber_punk.png';
 import infernoArena from '../../assets/inferno_arena.png';
 import matrixProtocol from '../../assets/matrix_protocol.png';
@@ -31,7 +30,6 @@ import samuraiShadow from '../../assets/samurai_shadow.png';
 import frostbyte from '../../assets/frostbyte.png';
 
 const ADVANCED_THEMES = [
-    { id: 'dungeons_dragon', name: 'Dungeons & Dragon', image: dungeonsDragon, isPremium: true },
     { id: 'cyber_punk', name: 'Cyber Punk', image: cyberPunk, isPremium: true },
     { id: 'inferno_arena', name: 'Inferno Arena', image: infernoArena, isPremium: true },
     { id: 'matrix_protocol', name: 'Matrix Protocol', image: matrixProtocol, isPremium: true },
