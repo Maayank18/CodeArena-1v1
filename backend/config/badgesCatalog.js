@@ -258,8 +258,9 @@ export const BADGES_CATALOG = [
         rarity: 'Common',
         description: 'Win your first perfect battle against a real opponent only.',
         assetName: 'first_blood.png',
-        unlockType: BADGE_TYPES.COUNT_TOTAL_WINS,
+        unlockType: BADGE_TYPES.MATCH_FINISH_CONDITION,
         requiredValue: 1,
+        metadata: { condition: 'all_problems_solved' },
         aliases: []
     },
     {

@@ -323,7 +323,7 @@ api.interceptors.response.use(
         }
 
         if (response.config.method !== 'get') {
-            invalidateCache((key) => key.includes('/notes'));
+            invalidateCache((key) => key.includes('/notes') || key.includes('/settings') || key.includes('/users/profile'));
         }
 
         // 3. ✅ LOGGING (dev only)

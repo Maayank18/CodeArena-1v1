@@ -329,7 +329,7 @@ const Dashboard = () => {
                                 // Larger, responsive circular frame and prevent it from shrinking
                                 frameClassName={`h-20 w-20 md:h-24 md:w-24 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isMatrix ? 'bg-black border border-[#00FF41] shadow-[0_0_15px_rgba(0,255,65,0.4)]' : 'bg-transparent'}`}
                                 // Fill the circular frame and scale slightly so any thin asset stroke/background is cropped
-                                imageClassName={`h-full w-full object-cover transform scale-110 drop-shadow-none ${isMatrix ? 'brightness-125 sepia hue-rotate-[70deg] saturate-200' : ''}`}
+                                imageClassName={`h-full w-full object-cover transform scale-110 drop-shadow-none`}
                                 // opt-out of the default rectangular rounding so we supply our own circular crop
                                 noFrame
                               />

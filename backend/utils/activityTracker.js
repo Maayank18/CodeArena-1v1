@@ -1,5 +1,6 @@
 // backend/utils/activityTracker.js
 import User from '../models/User.js';
+import { processAchievementEvent } from '../services/achievementEngine.js';
 
 /**
  * Records user activity for consistency tracking and streak calculation.
@@ -48,6 +49,9 @@ export const recordActivity = async (userId) => {
             user.lastActiveDate = today;
             user.markModified('activityLog');
             await user.save();
+
+            // Dispatch streak event
+            processAchievementEvent(userId, 'STREAK_UPDATED', { currentStreak: user.currentStreak }).catch(e => console.error('[ACHIEVEMENT] STREAK eval error:', e.message));
         }
     } catch (error) {
         console.error('[ACTIVITY_TRACKER] Error recording activity:', error);

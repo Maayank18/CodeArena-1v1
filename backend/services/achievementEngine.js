@@ -91,18 +91,15 @@ export const processAchievementEvent = async (userId, eventType, eventData = {})
             let progressObj = getOrInitializeProgress(user, badge.key);
             if (progressObj.unlocked) continue; // Skip if already unlocked
 
+            const beforeState = JSON.stringify(progressObj);
             let justUnlocked = false;
 
             // ─── STREAK & CALENDAR BADGES ─────────────────────────────────────
             if (badge.unlockType === BADGE_TYPES.ACTIVITY_STREAK && eventType === 'STREAK_UPDATED') {
-                const { currentStreak, isSolveStreak } = eventData;
+                const { currentStreak } = eventData;
                 
-                // Devoted coder requires a solve streak
-                if (badge.metadata?.condition === 'solve_streak') {
-                    if (isSolveStreak) {
-                        justUnlocked = setProgressAndCheckUnlock(progressObj, badge.requiredValue, currentStreak);
-                    }
-                } else {
+                // Devoted coder requires a solve streak (handled in PROBLEM_SOLVED)
+                if (badge.metadata?.condition !== 'solve_streak') {
                     // Regular activity streak
                     justUnlocked = setProgressAndCheckUnlock(progressObj, badge.requiredValue, currentStreak);
                 }
@@ -189,7 +186,37 @@ export const processAchievementEvent = async (userId, eventType, eventData = {})
 
             // ─── PROBLEM SOLVING & SPEED BADGES ──────────────────────────────
             if (eventType === 'PROBLEM_SOLVED') {
-                const { solveTimeSeconds, tags } = eventData;
+                const { solveTimeSeconds, tags, problemId } = eventData;
+
+                // Problem Deduplication
+                if (problemId) {
+                    if (!progressObj.metadata) progressObj.metadata = {};
+                    if (!progressObj.metadata.solvedProblemIds) progressObj.metadata.solvedProblemIds = [];
+                    const pidStr = problemId.toString();
+                    if (progressObj.metadata.solvedProblemIds.includes(pidStr)) {
+                        continue; // Skip deduplicated event
+                    }
+                    progressObj.metadata.solvedProblemIds.push(pidStr);
+                }
+
+                // Solve Streak (e.g. Devoted Coder)
+                if (badge.unlockType === BADGE_TYPES.ACTIVITY_STREAK && badge.metadata?.condition === 'solve_streak') {
+                    const today = new Date().toDateString();
+                    if (!progressObj.metadata) progressObj.metadata = {};
+                    const lastSolve = progressObj.metadata.lastSolveDate;
+                    if (lastSolve !== today) {
+                        const yesterday = new Date(Date.now() - 86400000).toDateString();
+                        let solveStreak = progressObj.metadata.solveStreak || 0;
+                        if (lastSolve === yesterday) {
+                            solveStreak += 1;
+                        } else {
+                            solveStreak = 1;
+                        }
+                        progressObj.metadata.lastSolveDate = today;
+                        progressObj.metadata.solveStreak = solveStreak;
+                        justUnlocked = setProgressAndCheckUnlock(progressObj, badge.requiredValue, solveStreak);
+                    }
+                }
 
                 if (badge.unlockType === BADGE_TYPES.TIME_BASED_SOLVE) {
                     if (solveTimeSeconds <= badge.metadata.maxSolveTimeSeconds) {
@@ -201,7 +228,6 @@ export const processAchievementEvent = async (userId, eventType, eventData = {})
                     // Check if problem tags intersect with badge requirement
                     const hasTag = tags.some(t => badge.metadata?.tags?.includes(t.toLowerCase()));
                     if (hasTag) {
-                        // Deduplication is handled by caller passing exact newly solved problem IDs
                         justUnlocked = incrementAndCheckUnlock(progressObj, badge.requiredValue);
                     }
                 }
@@ -226,10 +252,16 @@ export const processAchievementEvent = async (userId, eventType, eventData = {})
                                 progressObj.unlocked = true;
                                 progressObj.unlockedAt = new Date();
                             }
-                        } else if (badge.metadata.countType === 'nodes' && action === 'clear_node') {
-                            justUnlocked = incrementAndCheckUnlock(progressObj, badge.requiredValue);
-                        } else if (action === 'clear_node' && badge.metadata.zoneId === zoneId) {
-                            justUnlocked = incrementAndCheckUnlock(progressObj, badge.requiredValue);
+                        } else if (action === 'clear_node') {
+                            // Node deduplication
+                            if (!progressObj.metadata) progressObj.metadata = {};
+                            if (!progressObj.metadata.clearedNodes) progressObj.metadata.clearedNodes = [];
+                            if (!progressObj.metadata.clearedNodes.includes(nodeId)) {
+                                progressObj.metadata.clearedNodes.push(nodeId);
+                                if (badge.metadata.countType === 'nodes' || badge.metadata.zoneId === zoneId) {
+                                    justUnlocked = incrementAndCheckUnlock(progressObj, badge.requiredValue);
+                                }
+                            }
                         }
                     }
 
@@ -265,8 +297,8 @@ export const processAchievementEvent = async (userId, eventType, eventData = {})
                 }
             }
 
-            // Detect if progress was changed
-            if (progressObj.progress > 0 || justUnlocked) {
+            // Detect if progress was changed using stringification (handles resets to 0 and nested metadata updates)
+            if (JSON.stringify(progressObj) !== beforeState) {
                 modified = true;
             }
         }
@@ -287,6 +319,7 @@ export const processAchievementEvent = async (userId, eventType, eventData = {})
         }
 
         if (modified) {
+            user.markModified('achievementProgress');
             await user.save();
         }
 

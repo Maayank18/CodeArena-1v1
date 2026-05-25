@@ -667,6 +667,21 @@ const EditorPage = () => {
             });
         };
 
+        const handleBadgesUnlocked = (data) => {
+            if (data.userId === storedUser?._id && data.badges && data.badges.length > 0) {
+                data.badges.forEach(badge => {
+                    const badgeName = badge.displayName || badge.name || badge.key || 'Mystery Badge';
+                    toast.success(
+                        <div className="flex flex-col gap-1">
+                            <span className="font-bold text-accent">Achievement Unlocked! 🏆</span>
+                            <span className="text-sm text-white">{badgeName}</span>
+                        </div>,
+                        { duration: 6000, position: 'top-center', style: { background: '#111', border: '1px solid rgba(255,255,255,0.1)' } }
+                    );
+                });
+            }
+        };
+
         socket.on('room_joined', handleRoomJoined);
         socket.on('player_joined', handlePlayerJoined);
         socket.on('new_round', handleNewRound);
@@ -675,6 +690,7 @@ const EditorPage = () => {
         socket.on('room_full', handleRoomFull);
         socket.on('error', handleError);
         socket.on('cheat_warning', handleCheatWarning);
+        socket.on('badges_unlocked', handleBadgesUnlocked);
 
         return () => {
             socket.off('connect');
@@ -689,6 +705,7 @@ const EditorPage = () => {
             socket.off('room_full');
             socket.off('error');
             socket.off('cheat_warning');
+            socket.off('badges_unlocked');
             socket.disconnect();
             socketRef.current = null;
             if (providerRef.current) {

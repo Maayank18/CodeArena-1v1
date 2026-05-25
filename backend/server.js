@@ -1580,6 +1580,10 @@ const handleGameEnd = async (roomId, room) => {
                     myScore: p1Data.score,
                     opponentSubmissions: room.firstRoundFirstSolverUsername === p1Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p1Data.username] || 0) === 0) ? 0 : 1,
                     allSolvedCorrectly: p1Data.score === 10 * (room.totalRounds || 0)
+                }).then(res => {
+                    if (res && res.newlyUnlocked?.length > 0) {
+                        io.to(roomId).emit('badges_unlocked', { userId: user1Doc._id, badges: res.newlyUnlocked });
+                    }
                 }).catch(e => console.error('[ACHIEVEMENT] P1 eval error:', e.message));
             }
             if (user2Doc?._id && p2Data && outcome?.p2) {
@@ -1593,6 +1597,10 @@ const handleGameEnd = async (roomId, room) => {
                     myScore: p2Data.score,
                     opponentSubmissions: room.firstRoundFirstSolverUsername === p2Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p2Data.username] || 0) === 0) ? 0 : 1,
                     allSolvedCorrectly: p2Data.score === 10 * (room.totalRounds || 0)
+                }).then(res => {
+                    if (res && res.newlyUnlocked?.length > 0) {
+                        io.to(roomId).emit('badges_unlocked', { userId: user2Doc._id, badges: res.newlyUnlocked });
+                    }
                 }).catch(e => console.error('[ACHIEVEMENT] P2 eval error:', e.message));
             }
         } catch (badgeErr) {
@@ -2178,6 +2186,25 @@ io.on('connection', async (socket) => {
           
           io.to(roomId).emit('score_update', room.scores);
           console.log(`[GAME] 🎯 ${username} completed round ${room.round} in ${roomId}`);
+
+          // Evaluate PROBLEM_SOLVED achievement
+          try {
+              const currentProblemId = room.problemIds[room.round - 1];
+              const solvedProblem = await Problem.findById(currentProblemId).select('topics').lean();
+              if (solvedProblem && socket.data.user?._id) {
+                  processAchievementEvent(socket.data.user._id, 'PROBLEM_SOLVED', {
+                      solveTimeSeconds: (solveTimeMs || 0) / 1000,
+                      tags: solvedProblem.topics || [],
+                      problemId: currentProblemId
+                  }).then(res => {
+                      if (res && res.newlyUnlocked?.length > 0) {
+                          io.to(roomId).emit('badges_unlocked', { userId: socket.data.user._id, badges: res.newlyUnlocked });
+                      }
+                  }).catch(e => console.error('[ACHIEVEMENT] PROBLEM_SOLVED eval error:', e.message));
+              }
+          } catch (badgeErr) {
+              console.error('[ACHIEVEMENT] Non-critical error fetching problem for badges:', badgeErr.message);
+          }
 
           // First player to complete
           if (room.roundCompletions.size === 1) { 

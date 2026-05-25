@@ -55,66 +55,57 @@ const BadgeShowcaseModal = ({ badge, onClose }) => {
 
         <div className="mb-6 flex h-52 w-52 items-center justify-center" style={{ perspective: '1200px' }}>
           <div className="animate-badge-orbit relative h-full w-full" style={{ transformStyle: 'preserve-3d' }}>
-            {/* Layered stack to create a subtle 3D extrusion while keeping the existing flip/orbit */}
-            <div className="absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
-              <div className="relative h-full w-full" style={{ transformStyle: 'preserve-3d' }}>
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    transform: 'translateZ(-22px) scale(0.99)',
-                    filter: 'brightness(0.55) saturate(0.75)',
-                    opacity: 0.92,
-                    backfaceVisibility: 'hidden',
-                  }}
-                >
-                  <BadgeArtwork
-                    badgeId={badge.key}
-                    label={badge.displayName || badge.name}
-                    frameClassName="h-full w-full"
-                    imageClassName="h-full w-full object-cover"
-                    noFrame
-                  />
-                </div>
-
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    transform: 'translateZ(-8px) scale(0.995)',
-                    filter: 'brightness(0.78) saturate(0.9)',
-                    opacity: 0.98,
-                    backfaceVisibility: 'hidden',
-                  }}
-                >
-                  <BadgeArtwork
-                    badgeId={badge.key}
-                    label={badge.displayName || badge.name}
-                    frameClassName="h-full w-full"
-                    imageClassName="h-full w-full object-cover"
-                    noFrame
-                  />
-                </div>
-
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    transform: 'translateZ(0px) scale(1)',
-                    backfaceVisibility: 'hidden',
-                  }}
-                >
-                  <BadgeArtwork
-                    badgeId={badge.key}
-                    label={badge.displayName || badge.name}
-                    frameClassName="h-full w-full"
-                    imageClassName="h-full w-full object-contain drop-shadow-[0_26px_48px_rgba(0,0,0,0.6)]"
-                    noFrame
-                  />
-                </div>
-              </div>
+            {/* Thick 3D metallic extrusion layers */}
+            <div className="absolute inset-0" style={{ transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}>
+              {Array.from({ length: 16 }).map((_, i) => {
+                const isFront = i === 0;
+                const isBack = i === 15;
+                const zOffset = -i * 1.5;
+                const scale = 1 - (i * 0.0015);
+                // Darken inner layers to simulate a metallic carved rim
+                const brightness = isFront ? 1 : Math.max(0.4, 0.85 - i * 0.035);
+                
+                return (
+                  <div
+                    key={i}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      transform: `translateZ(${zOffset}px) scale(${scale})`,
+                      filter: `brightness(${brightness}) ${isBack ? 'drop-shadow(0 25px 35px rgba(0,0,0,0.9))' : ''}`,
+                      backfaceVisibility: 'hidden',
+                      transformStyle: 'preserve-3d',
+                    }}
+                  >
+                    <BadgeArtwork
+                      badgeId={badge.key}
+                      label={badge.displayName || badge.name}
+                      frameClassName="h-full w-full"
+                      imageClassName={`h-full w-full object-contain ${isFront ? 'drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]' : ''}`}
+                      noFrame
+                    />
+                    
+                    {/* Metallic Gloss/Glare Overlay strictly on the front face */}
+                    {isFront && (
+                      <div 
+                        className="absolute inset-0 rounded-[3rem]"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 65%, rgba(255,255,255,0.2) 100%)',
+                          mixBlendMode: 'overlay',
+                          boxShadow: 'inset 0 4px 6px rgba(255,255,255,0.5), inset 0 -4px 6px rgba(0,0,0,0.5)',
+                          backfaceVisibility: 'hidden',
+                          transform: 'translateZ(1px)',
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
+            {/* The Back Face Vault */}
             <div
-              className="absolute inset-0 rounded-[2rem] border border-white/10 bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-2xl"
-              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              className="absolute inset-0 rounded-[3rem] border-2 border-white/20 bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-2xl"
+              style={{ backfaceVisibility: 'hidden', transform: 'translateZ(-24px) rotateY(180deg) scale(0.98)' }}
             >
               <div className="flex h-full flex-col items-center justify-center gap-3">
                 <div className="rounded-full border border-white/10 bg-white/5 p-4">
