@@ -163,14 +163,21 @@ export const createCustomRoom = async (req, res) => {
                 });
             }
 
-            const currentUsage = isCustomReq ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
-            const limit = isCustomReq ? limits.customMatches : limits.matches;
-            const matchType = isCustomReq ? 'custom ' : 'normal ';
+            const customUsage = userDoc.usageStats.customMatchesToday || 0;
+            const totalUsage = (userDoc.usageStats.matchesToday || 0) + customUsage;
 
-            if (currentUsage >= limit) {
+            if (totalUsage >= limits.matches) {
                 return res.status(403).json({
                     success: false,
-                    message: `Daily ${matchType}match limit reached (${limit}/day). Upgrade for more!`,
+                    message: `Daily total match limit reached (${limits.matches}/day). Upgrade for more!`,
+                    code: 'LIMIT_REACHED'
+                });
+            }
+
+            if (isCustomReq && customUsage >= limits.customMatches) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
                     code: 'LIMIT_REACHED'
                 });
             }
@@ -264,14 +271,21 @@ export const joinCustomRoom = async (req, res) => {
                 });
             }
 
-            const currentUsage = isCustomReq ? userDoc.usageStats.customMatchesToday : userDoc.usageStats.matchesToday;
-            const limit = isCustomReq ? limits.customMatches : limits.matches;
-            const matchType = isCustomReq ? 'custom ' : 'normal ';
+            const customUsage = userDoc.usageStats.customMatchesToday || 0;
+            const totalUsage = (userDoc.usageStats.matchesToday || 0) + customUsage;
 
-            if (currentUsage >= limit) {
+            if (totalUsage >= limits.matches) {
                 return res.status(403).json({
                     success: false,
-                    message: `Daily ${matchType}match limit reached (${limit}/day). Upgrade for more!`,
+                    message: `Daily total match limit reached (${limits.matches}/day). Upgrade for more!`,
+                    code: 'LIMIT_REACHED'
+                });
+            }
+
+            if (isCustomReq && customUsage >= limits.customMatches) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Daily custom match limit reached (${limits.customMatches}/day). Upgrade for more!`,
                     code: 'LIMIT_REACHED'
                 });
             }

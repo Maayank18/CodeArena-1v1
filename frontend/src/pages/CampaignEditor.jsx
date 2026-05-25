@@ -635,9 +635,33 @@ const CampaignEditor = () => {
         </div>
       </div>
 
-      <div className="sm:hidden flex items-center border-t border-slate-200 dark:border-gray-800/50 bg-white dark:bg-[#07090f]/80 shrink-0">
-        <button onClick={() => setMobileTab('problem')} className={`flex-1 py-2.5 text-xs font-bold border-b-2 ${mobileTab === 'problem' ? 'border-cyan-500 text-cyan-500' : 'border-transparent'}`}>Problem</button>
-        <button onClick={() => setMobileTab('editor')} className={`flex-1 py-2.5 text-xs font-bold border-b-2 ${mobileTab === 'editor' ? 'border-cyan-500 text-cyan-500' : 'border-transparent'}`}>Editor</button>
+      <div className="sm:hidden flex items-center justify-between border-t border-slate-200 dark:border-gray-800/50 bg-white dark:bg-[#07090f]/80 shrink-0 w-full h-12">
+        <div className="flex flex-1 h-full">
+          <button onClick={() => setMobileTab('problem')} className={`flex-1 h-full flex items-center justify-center text-[11px] font-bold uppercase tracking-widest border-b-2 transition-colors ${mobileTab === 'problem' ? 'border-cyan-500 text-cyan-500 bg-cyan-500/5' : 'border-transparent text-slate-500 dark:text-gray-400'}`}>
+            Problem
+          </button>
+          <button onClick={() => setMobileTab('editor')} className={`flex-1 h-full flex items-center justify-center text-[11px] font-bold uppercase tracking-widest border-b-2 transition-colors ${mobileTab === 'editor' ? 'border-cyan-500 text-cyan-500 bg-cyan-500/5' : 'border-transparent text-slate-500 dark:text-gray-400'}`}>
+            Editor
+          </button>
+        </div>
+        <div className="flex items-center gap-2 px-3 border-l border-slate-200 dark:border-gray-800/50 h-full bg-slate-50 dark:bg-[#0a0d14]">
+          <button 
+            onClick={() => { setMobileTab('editor'); handleRun(); }} 
+            disabled={isBusy || !code.trim()} 
+            className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-200 dark:bg-gray-800 text-slate-700 dark:text-gray-300 disabled:opacity-50"
+            title="Run Code"
+          >
+            {isRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} className="ml-0.5" />}
+          </button>
+          <button 
+            onClick={() => { setMobileTab('editor'); handleSubmit(); }} 
+            disabled={isBusy || !code.trim()} 
+            className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500 text-black shadow-md shadow-cyan-500/20 disabled:opacity-50"
+            title="Submit Code"
+          >
+            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} className="mr-0.5" />}
+          </button>
+        </div>
       </div>
 
       <SuccessModal

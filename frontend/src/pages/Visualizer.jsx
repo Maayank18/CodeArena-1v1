@@ -16,6 +16,7 @@ import ControlBar from '../components/Visualizer/ControlBar';
 import api from '../api.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import TeaserModal from '../components/TeaserModal';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 // ─── ALGORITHM EXAMPLES ──────────────────────────────────────────────────────
 const EXAMPLES = {
@@ -181,36 +182,114 @@ const SPEED_OPTIONS = [
 const DEFAULT_SPEED_INDEX = 1; // 1× = 800ms
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
+const VISUALIZER_STYLES = `
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .viz-root[data-theme='dark'] {
+        --vz-bg-primary: #0d1117;
+        --vz-bg-secondary: #161b22;
+        --vz-bg-hover: #1f2937;
+        --vz-border: #30363d;
+        --vz-text-primary: #f0f6fc;
+        --vz-text-muted: #8b949e;
+        --vz-accent: #2f81f7;
+        --vz-accent-glow: rgba(47, 129, 247, 0.4);
+        --vz-badge-bg: rgba(47, 129, 247, 0.1);
+        --vz-slider-track: rgba(255, 255, 255, 0.2);
+    }
+    .viz-root[data-theme='light'] {
+        --vz-bg-primary: #ffffff;
+        --vz-bg-secondary: #f6f8fa;
+        --vz-bg-hover: #eff2f5;
+        --vz-border: #d0d7de;
+        --vz-text-primary: #24292f;
+        --vz-text-muted: #57606a;
+        --vz-accent: #0969da;
+        --vz-accent-glow: rgba(9, 105, 218, 0.3);
+        --vz-badge-bg: rgba(9, 105, 218, 0.1);
+        --vz-slider-track: rgba(0, 0, 0, 0.1);
+    }
+
+    .vz-bg-p { background: var(--vz-bg-primary); }
+    .vz-bg-s { background: var(--vz-bg-secondary); }
+    .vz-border { border-color: var(--vz-border); }
+    .vz-text { color: var(--vz-text-primary); }
+    .vz-muted { color: var(--vz-text-muted); }
+
+    .vz-segmented-control {
+        display: flex;
+        padding: 2px;
+        border-radius: 8px;
+        background: var(--vz-bg-primary);
+        border: 1px solid var(--vz-border);
+    }
+    .vz-segmented-control button {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+    .vz-segmented-control button.active {
+        background: var(--vz-accent);
+        color: #fff;
+        box-shadow: 0 2px 6px var(--vz-accent-glow);
+    }
+    .vz-segmented-control button:not(.active) {
+        color: var(--vz-text-muted);
+    }
+
+    :root {
+        --vz-cell-size: 56px;
+        --vz-cell-font: 1.1rem;
+        --vz-stack-width: 96px;
+    }
+    @media (max-width: 640px) {
+        :root {
+            --vz-cell-size: 42px;
+            --vz-cell-font: 0.85rem;
+            --vz-stack-width: 80px;
+        }
+    }
+    @media (max-width: 400px) {
+        :root {
+            --vz-cell-size: 36px;
+            --vz-cell-font: 0.75rem;
+            --vz-stack-width: 70px;
+        }
+    }
+
+    .anim-dropdown { animation: fadeSlideIn 0.18s ease forwards; }
+`;
+
 const Visualizer = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     
-    // Auth state
-    const [user, setUser] = useState(() => {
-        try {
-            const stored = localStorage.getItem('codearena_user');
-            return stored ? JSON.parse(stored) : null;
-        } catch {
-            return null;
-        }
-    });
+    const { user, isHydrated, clearSession, updateSession } = useAuthSession();
 
     // Logout handler
     const handleLogout = useCallback(() => {
-        localStorage.removeItem('codearena_user');
+        clearSession({
+            clearDerived: true,
+            eventDetail: { redirectTo: '/', replace: true },
+        });
         toast.success('Logged out successfully');
-        navigate('/');
-    }, [navigate]);
+    }, [clearSession]);
 
     // Auth check
     useEffect(() => {
-        const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
-        if (!storedUser) {
-            navigate('/login');
-        } else {
-            setUser(storedUser);
+        if (!isHydrated) {
+            return;
         }
-    }, [navigate]);
+
+        if (!user) {
+            navigate('/login');
+        }
+    }, [isHydrated, navigate, user]);
 
     // ── Core state ────────────────────────────────────────────────────────────
     const [code, setCode]               = useState(EXAMPLES.bubbleSort.code);
@@ -296,22 +375,21 @@ const Visualizer = () => {
 
                 // ✅ TIERED USAGE CONSUMPTION
                 // Only mark as used if the user is not Premium/Admin
-                const isAdmin = user?.role === 'admin';
-                if (user?.subscriptionPlan !== 'premium' && !isAdmin) {
-                    api.post('/visualize/consume').then(res => {
-                        // Sync local state if Pro/Plus
-                        const updatedUser = { ...user };
-                        const currentPlan = user?.subscriptionPlan || 'free';
-                        if (currentPlan === 'free' || currentPlan === 'plus') {
-                            if (!updatedUser.usageStats) updatedUser.usageStats = {};
-                            updatedUser.usageStats.visualizerTrialUsed = true;
-                        } else if (user?.subscriptionPlan === 'pro') {
-                            if (!updatedUser.usageStats) updatedUser.usageStats = {};
-                            updatedUser.usageStats.visualizationsToday = res.data.visualizationsToday;
-                        }
-                        localStorage.setItem('codearena_user', JSON.stringify(updatedUser));
-                        setUser(updatedUser);
-                    }).catch(() => {});
+                if (data.user) {
+                    updateSession(data.user, {
+                        clearDerived: false,
+                        dispatch: true,
+                    });
+                } else if (data.usage && user) {
+                    updateSession({
+                        usageStats: {
+                            ...(user.usageStats || {}),
+                            ...data.usage,
+                        },
+                    }, {
+                        clearDerived: false,
+                        dispatch: true,
+                    });
                 }
                 
                 // If the backend sent an error inside the trace, jump to it
@@ -338,13 +416,9 @@ const Visualizer = () => {
         } finally {
             setLoading(false);
         }
-    }, [pause]);
+    }, [pause, updateSession, user]);
 
     // No auto-run on mount — wait for user interaction to avoid accidental trial consumption
-    useEffect(() => {
-        // Just show default state
-    }, []); 
-
     const handleRun = useCallback(() => {
         if (!code.trim()) return toast.error('Please write some code first!');
         setMobileTab('visualizer');
@@ -405,94 +479,10 @@ const Visualizer = () => {
                 message="You've used your free visualization! Upgrade to Pro to visualize endless algorithms and data structures."
             />
             {/* Inject scoped CSS variables for both themes */}
-            <style>{`
-                @keyframes fadeSlideIn {
-                    from { opacity: 0; transform: translateY(-8px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                
-                /* Theme Variables */
-                .viz-root[data-theme='dark'] {
-                    --vz-bg-primary: #0d1117;
-                    --vz-bg-secondary: #161b22;
-                    --vz-bg-hover: #1f2937;
-                    --vz-border: #30363d;
-                    --vz-text-primary: #f0f6fc;
-                    --vz-text-muted: #8b949e;
-                    --vz-accent: #2f81f7;
-                    --vz-accent-glow: rgba(47, 129, 247, 0.4);
-                    --vz-badge-bg: rgba(47, 129, 247, 0.1);
-                    --vz-slider-track: rgba(255, 255, 255, 0.2);
-                }
-                .viz-root[data-theme='light'] {
-                    --vz-bg-primary: #ffffff;
-                    --vz-bg-secondary: #f6f8fa;
-                    --vz-bg-hover: #eff2f5;
-                    --vz-border: #d0d7de;
-                    --vz-text-primary: #24292f;
-                    --vz-text-muted: #57606a;
-                    --vz-accent: #0969da;
-                    --vz-accent-glow: rgba(9, 105, 218, 0.3);
-                    --vz-badge-bg: rgba(9, 105, 218, 0.1);
-                    --vz-slider-track: rgba(0, 0, 0, 0.1);
-                }
-
-                .vz-bg-p { background: var(--vz-bg-primary); }
-                .vz-bg-s { background: var(--vz-bg-secondary); }
-
-                .vz-border { border-color: var(--vz-border); }
-                .vz-text { color: var(--vz-text-primary); }
-                .vz-muted { color: var(--vz-text-muted); }
-                
-                .vz-segmented-control {
-                    display: flex;
-                    padding: 2px;
-                    border-radius: 8px;
-                    background: var(--vz-bg-primary);
-                    border: 1px solid var(--vz-border);
-                }
-                .vz-segmented-control button {
-                    padding: 4px 10px;
-                    border-radius: 6px;
-                    font-size: 10px;
-                    font-weight: 700;
-                    transition: all 0.2s ease;
-                }
-                .vz-segmented-control button.active {
-                    background: var(--vz-accent);
-                    color: #fff;
-                    box-shadow: 0 2px 6px var(--vz-accent-glow);
-                }
-                .vz-segmented-control button:not(.active) {
-                    color: var(--vz-text-muted);
-                }
-                
-                /* Responsive Visualization Cell Sizes */
-                :root {
-                    --vz-cell-size: 56px;
-                    --vz-cell-font: 1.1rem;
-                    --vz-stack-width: 96px;
-                }
-                @media (max-width: 640px) {
-                    :root {
-                        --vz-cell-size: 42px;
-                        --vz-cell-font: 0.85rem;
-                        --vz-stack-width: 80px;
-                    }
-                }
-                @media (max-width: 400px) {
-                    :root {
-                        --vz-cell-size: 36px;
-                        --vz-cell-font: 0.75rem;
-                        --vz-stack-width: 70px;
-                    }
-                }
-                
-                .anim-dropdown { animation: fadeSlideIn 0.18s ease forwards; }
-    `}</style>
+            <style>{VISUALIZER_STYLES}</style>
 
             {/* ── NAVBAR (from parent project) ───────────────────────────── */}
-            <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
+            <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
 
             {/* ── TOP BAR ────────────────────────────────────────────────── */}
             <TopBar

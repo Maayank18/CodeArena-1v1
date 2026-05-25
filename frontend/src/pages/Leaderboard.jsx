@@ -11,7 +11,7 @@ import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import Avatar from '../components/Avatar'; 
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
+import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/authSessionStorage.js';
 import { useTheme } from '../context/ThemeContext';
 
 const CACHE_DURATION = 60000; // 60 seconds

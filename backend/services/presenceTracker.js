@@ -62,6 +62,10 @@ function attachPresenceTracking(io) {
         });
 
         // — Graceful cleanup on disconnect —————————————————
+        socket.on('leave_admin_room', () => {
+            socket.leave('admin_room');
+        });
+
         socket.on('disconnect', () => {
             activeUsers.delete(socket.id);
         });

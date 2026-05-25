@@ -17,19 +17,22 @@ import ConsistencyCalendar from '../components/ConsistencyCalendar';
 import { useTheme } from '../context/ThemeContext';
 import CustomMatchModal from '../components/CustomMatchModal';
 import PremiumGate from '../components/PremiumGate.jsx';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 import {
-  DASHBOARD_CACHE_KEY,
   mergeUserProfile,
-  readStoredUser,
   refreshCurrentUserProfile,
 } from '../utils/sessionSync.js';
+import {
+  DASHBOARD_CACHE_KEY,
+  readStoredUser,
+} from '../utils/authSessionStorage.js';
 
 const CACHE_DURATION = 60000; // 60 seconds
 const buildCustomRoomAuthKey = (roomId) => `codearena_custom_room_auth_${roomId}`;
 
 const Dashboard = () => {
   const { advancedTheme, clearAdvancedTheme } = useTheme();
-  const [user, setUser] = useState(() => readStoredUser());
+  const { user, isHydrated, clearSession, updateSession, refreshSession } = useAuthSession();
   const navigate = useNavigate();
   const location = useLocation();
   const [roomIdInput, setRoomIdInput] = useState('');
@@ -37,36 +40,31 @@ const Dashboard = () => {
   const [loadingText, setLoadingText] = useState('');
   const [showCustomModal, setShowCustomModal] = useState(false);
 
-  // ✅ OPTIMIZED: Memoize rank calculation
   const rankInfo = useMemo(() => {
     return getLevelInfo(user?.rating || 1000);
   }, [user?.rating]);
-
-  // Listen for real-time user customization updates
+  const lastSyncKeyRef = React.useRef('');
   useEffect(() => {
-    const handleUserUpdate = (e) => {
-      if (e.detail) {
-        setUser(e.detail);
-      }
-    };
-    window.addEventListener('codearena:user-updated', handleUserUpdate);
-    return () => window.removeEventListener('codearena:user-updated', handleUserUpdate);
-  }, []);
+    if (!isHydrated) {
+      return;
+    }
 
-  // ✅ OPTIMIZED: Fetch user data with proper error handling
-  useEffect(() => {
+    if (!user?.username) {
+      navigate('/login');
+      return;
+    }
+
+    const syncKey = `${user.username}:${Boolean(location.state?.forceProfileRefresh)}`;
+    if (lastSyncKeyRef.current === syncKey) {
+      return;
+    }
+    lastSyncKeyRef.current = syncKey;
+
+    let cancelled = false;
+
     const syncUserAndData = async () => {
-      const storedUser = readStoredUser();
-      if (!storedUser) { 
-        navigate('/login'); 
-        return; 
-      }
-      
-      setUser(storedUser);
-
       const shouldForceRefresh = Boolean(location.state?.forceProfileRefresh);
       const cache = shouldForceRefresh ? null : localStorage.getItem(DASHBOARD_CACHE_KEY);
-      let shouldFetch = true;
       
       if (cache) {
         try {
@@ -74,29 +72,26 @@ const Dashboard = () => {
           const age = Date.now() - timestamp;
           
           if (age < CACHE_DURATION) {
-            shouldFetch = false;
-            const cachedUser = mergeUserProfile(storedUser, data);
-            setUser(cachedUser);
-            
-            if (JSON.stringify(storedUser) !== JSON.stringify(cachedUser)) {
-              localStorage.setItem('codearena_user', JSON.stringify(cachedUser));
-              window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: cachedUser }));
+            const cachedUser = mergeUserProfile(user, data);
+            if (!cancelled && JSON.stringify(user) !== JSON.stringify(cachedUser)) {
+              updateSession(cachedUser, {
+                clearDerived: false,
+                dispatch: true,
+              });
             }
+            return;
           }
         } catch (e) {
           console.error("[CACHE] Parse error:", e);
         }
       }
 
-      if (!shouldFetch) return;
-
       try {
-        const finalUser = await refreshCurrentUserProfile();
-        if (!finalUser) {
+        const finalUser = await refreshSession();
+        if (!finalUser || cancelled) {
           return;
         }
 
-        setUser(finalUser);
         localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify({
           data: finalUser,
           timestamp: Date.now()
@@ -107,18 +102,20 @@ const Dashboard = () => {
     };
     
     syncUserAndData();
-  }, [location.state, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isHydrated, location.state, navigate, refreshSession, updateSession, user]);
 
-  // ✅ OPTIMIZED: Memoized handlers
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('codearena_user');
-    localStorage.removeItem(DASHBOARD_CACHE_KEY);
     clearAdvancedTheme();
+    clearSession({
+      clearDerived: true,
+      eventDetail: { redirectTo: '/', replace: true },
+    });
     toast.success('Logged out successfully');
-    navigate('/');
-  }, [navigate, clearAdvancedTheme]);
+  }, [clearAdvancedTheme, clearSession]);
 
-  // ✅ FIXED: Using the specific property extracted from user to match inferred dependencies
   const username = user?.username;
 
   const handleJoinRoom = useCallback(() => {
@@ -186,8 +183,7 @@ const Dashboard = () => {
     }
   }, [navigate, username]);
 
-  // ✅ Guard clause with loading state
-  if (!user) {
+  if (!isHydrated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-accent" size={40} />
@@ -214,7 +210,7 @@ const Dashboard = () => {
       <Sidebar />
       
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
+        <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
         
         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] pb-32 md:pb-0 w-full relative">
           <div className="min-h-full flex flex-col">

@@ -827,10 +827,102 @@ attachPresenceTracking(io);
 // ✅ IN-MEMORY STORAGE
 const rooms = new Map();
 const roomTimers = new Map();
+const disconnectGraceTimers = new Map();
+const connectedSocketsByUsername = new Map();
+const publicProblemCache = new Map();
+const PUBLIC_PROBLEM_CACHE_TTL = 5 * 60 * 1000;
+const SITE_STATS_TTL = 30 * 1000;
+const siteStatsCache = {
+  totalUsers: 0,
+  timestamp: 0,
+};
 
 // ✅ PROBLEM CACHE (5 min TTL)
 const problemCache = new Map();
 const PROBLEM_CACHE_TTL = 5 * 60 * 1000;
+
+const getDisconnectGraceKey = (roomId, username) => `${roomId}:${String(username || '').trim().toLowerCase()}`;
+
+const registerConnectedSocket = (socket) => {
+  const username = socket.data?.user?.username;
+  if (!username) return;
+
+  const key = String(username).trim().toLowerCase();
+  const activeSockets = connectedSocketsByUsername.get(key) || new Set();
+  activeSockets.add(socket.id);
+  connectedSocketsByUsername.set(key, activeSockets);
+};
+
+const unregisterConnectedSocket = (socket) => {
+  const username = socket.data?.user?.username;
+  if (!username) return;
+
+  const key = String(username).trim().toLowerCase();
+  const activeSockets = connectedSocketsByUsername.get(key);
+  if (!activeSockets) return;
+
+  activeSockets.delete(socket.id);
+  if (activeSockets.size === 0) {
+    connectedSocketsByUsername.delete(key);
+    return;
+  }
+
+  connectedSocketsByUsername.set(key, activeSockets);
+};
+
+const getCachedTotalUsers = async () => {
+  if (siteStatsCache.timestamp && (Date.now() - siteStatsCache.timestamp) < SITE_STATS_TTL) {
+    return siteStatsCache.totalUsers;
+  }
+
+  siteStatsCache.totalUsers = await User.countDocuments();
+  siteStatsCache.timestamp = Date.now();
+  return siteStatsCache.totalUsers;
+};
+
+const emitSiteStats = async (targetSocket = null) => {
+  try {
+    const payload = {
+      live: connectedSocketsByUsername.size,
+      total: await getCachedTotalUsers(),
+    };
+
+    if (targetSocket) {
+      targetSocket.emit('site_stats', payload);
+      return;
+    }
+
+    io.emit('site_stats', payload);
+  } catch (error) {
+    console.error('[SOCKET] Stats error:', error);
+  }
+};
+
+const getCachedPublicProblem = async (problemId) => {
+  if (!problemId) return null;
+
+  const cacheKey = String(problemId);
+  const cached = publicProblemCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < PUBLIC_PROBLEM_CACHE_TTL) {
+    return cached.problem;
+  }
+
+  const problem = await Problem.findById(problemId)
+    .select('-goldenSolution')
+    .lean();
+  const publicProblem = toPublicProblem(problem);
+
+  if (!publicProblem) {
+    publicProblemCache.delete(cacheKey);
+    return null;
+  }
+
+  publicProblemCache.set(cacheKey, {
+    problem: publicProblem,
+    timestamp: Date.now(),
+  });
+  return publicProblem;
+};
 
 const loadBattleProblemIdsForRoom = async ({ count = 2, topics = [] } = {}) => {
   const normalizedTopics = [...new Set(
@@ -1725,15 +1817,8 @@ io.on('connection', async (socket) => {
 
   // Send initial stats
   try {
-    const totalUsers = await User.countDocuments();
-    const uniqueUsersSet = new Set();
-    for (const s of io.sockets.sockets.values()) {
-      const uname = s.data?.user?.username;
-      if (uname) uniqueUsersSet.add(uname.toLowerCase());
-    }
-    const statsData = { live: uniqueUsersSet.size, total: totalUsers };
-    socket.emit('site_stats', statsData);
-    socket.broadcast.emit('site_stats', statsData);
+    registerConnectedSocket(socket);
+    await emitSiteStats();
   } catch (err) { 
     console.error('[SOCKET] Stats error:', err); 
   }
@@ -1816,8 +1901,15 @@ io.on('connection', async (socket) => {
       }
 
       // ✅ DAILY MATCH AND AI USAGE
-      const isActuallyCustom = roomId.startsWith('C-') || (rooms.has(roomId) && rooms.get(roomId).isCustom) || (await Room.exists({ roomId, isCustom: true }));
+      let persistentCustomRoom = null;
+      if (!rooms.has(roomId) && roomId.startsWith('C-')) {
+        persistentCustomRoom = await Room.findOne({ roomId, isCustom: true })
+          .select('roomId status players customSettings quotaChargedAt problems activatedAt currentRound winner aiHelpsUsed')
+          .lean();
+      }
+      const isActuallyCustom = roomId.startsWith('C-') || (rooms.has(roomId) && rooms.get(roomId).isCustom) || Boolean(persistentCustomRoom);
       const userDoc = await User.findById(authUser._id);
+      let shouldChargeUsage = false;
       
       if (userDoc) {
           if (typeof userDoc.checkAndResetDailyStats === 'function') {
@@ -1857,34 +1949,38 @@ io.on('connection', async (socket) => {
           let playerAlreadyIn = false;
           if (rooms.has(roomId)) {
              playerAlreadyIn = rooms.get(roomId).players.some(p => p.username === username);
+          } else if (persistentCustomRoom) {
+             playerAlreadyIn = (persistentCustomRoom.players || []).some((player) =>
+               String(player.userId) === String(authUser._id) ||
+               String(player.username || '').toLowerCase() === String(username || '').toLowerCase()
+             );
           }
 
           if (!playerAlreadyIn) {
+              const customUsage = userDoc.usageStats.customMatchesToday || 0;
+              const totalUsage = (userDoc.usageStats.matchesToday || 0) + customUsage;
+
+              if (limits.matches !== Infinity && totalUsage >= limits.matches) {
+                  socket.emit('error', { message: `Daily total match limit reached (${limits.matches}/day). Upgrade for more!`, code: 'LIMIT_REACHED' });
+                  return;
+              }
+
               if (isActuallyCustom) {
+                  if (plan === 'free') {
+                      socket.emit('error', { message: 'Custom matches require Plus tier or higher. Upgrade to unlock!', code: 'PREMIUM_REQUIRED' });
+                      return;
+                  }
                   const limit = limits.customMatches;
-                  if (limit !== Infinity && userDoc.usageStats.customMatchesToday >= limit) {
+                  if (limit !== Infinity && customUsage >= limit) {
                       socket.emit('error', { message: 'Daily custom match limit reached.', code: 'LIMIT_REACHED' });
                       return;
                   }
-                  userDoc.usageStats.customMatchesToday += 1;
-              } else {
-                  const limit = limits.matches;
-                  if (limit !== Infinity && userDoc.usageStats.matchesToday >= limit) {
-                      socket.emit('error', { message: 'Daily normal match limit reached.', code: 'LIMIT_REACHED' });
-                      return;
-                  }
-                  userDoc.usageStats.matchesToday += 1;
               }
-              await userDoc.save();
+              shouldChargeUsage = true;
           }
       }
 
-      let persistentCustomRoom = null;
       if (!rooms.has(roomId)) {
-        persistentCustomRoom = await Room.findOne({ roomId, isCustom: true })
-          .select('roomId status players customSettings quotaChargedAt problems activatedAt currentRound winner aiHelpsUsed')
-          .lean();
-
         if (persistentCustomRoom) {
           if (!joinToken) {
             socket.emit('error', { message: 'Custom room authorization is required.' });
@@ -1982,14 +2078,17 @@ io.on('connection', async (socket) => {
 
       const room = rooms.get(roomId);
       
-      // Sync aiHelpsUsed from DB on every join/reconnect to stay consistent
-      try {
-        const dbRoom = await Room.findOne({ roomId }).select('aiHelpsUsed').lean();
-        if (dbRoom && dbRoom.aiHelpsUsed) {
-          room.aiHelpsUsed = dbRoom.aiHelpsUsed;
+      if (persistentCustomRoom?.aiHelpsUsed) {
+        room.aiHelpsUsed = persistentCustomRoom.aiHelpsUsed;
+      } else {
+        try {
+          const dbRoom = await Room.findOne({ roomId }).select('aiHelpsUsed').lean();
+          if (dbRoom && dbRoom.aiHelpsUsed) {
+            room.aiHelpsUsed = dbRoom.aiHelpsUsed;
+          }
+        } catch (err) {
+          console.error('[ROOM] Failed to sync aiHelpsUsed from DB:', err.message);
         }
-      } catch (err) {
-        console.error('[ROOM] Failed to sync aiHelpsUsed from DB:', err.message);
       }
 
       const remainingTime = room.startTime
@@ -2018,6 +2117,16 @@ io.on('connection', async (socket) => {
         room.players[playerIndex].customization = authUser.customization;
         side = room.players[playerIndex].side;
         isReconnect = true;
+        const graceKey = getDisconnectGraceKey(roomId, username);
+        if (disconnectGraceTimers.has(graceKey)) {
+          clearTimeout(disconnectGraceTimers.get(graceKey));
+          disconnectGraceTimers.delete(graceKey);
+        }
+        io.to(roomId).emit('player_connection_state', {
+          roomId,
+          username,
+          connected: true,
+        });
         console.log(`[ROOM] 🔄 ${username} reconnected to ${roomId}`);
       } else {
         // New player
@@ -2040,6 +2149,15 @@ io.on('connection', async (socket) => {
         room.scores[username] = room.scores[username] || 0;
         room.submissionCountByUser[username] = room.submissionCountByUser[username] || 0;
         console.log(`[ROOM] ➕ ${username} joined ${roomId} as ${side}`);
+      }
+
+      if (!isReconnect && userDoc && shouldChargeUsage) {
+        if (isActuallyCustom) {
+          userDoc.usageStats.customMatchesToday += 1;
+        } else {
+          userDoc.usageStats.matchesToday += 1;
+        }
+        await userDoc.save();
       }
 
       socket.join(roomId);
@@ -2085,9 +2203,7 @@ io.on('connection', async (socket) => {
 
       const currentProblemId = room.problemIds[room.round - 1];
       let problem = currentProblemId
-        ? await Problem.findById(currentProblemId)
-            .select('-goldenSolution')
-            .lean()
+        ? await getCachedPublicProblem(currentProblemId)
         : null;
 
       if (!problem && !room.isCustom) {
@@ -2102,17 +2218,15 @@ io.on('connection', async (socket) => {
 
         room.problemIds = fallbackProblemIds;
         room.totalRounds = fallbackProblemIds.length;
-        problem = await Problem.findById(room.problemIds[room.round - 1])
-          .select('-goldenSolution')
-          .lean();
+        problem = await getCachedPublicProblem(room.problemIds[room.round - 1]);
       }
-
-      problem = toPublicProblem(problem);
 
       if (room.isGameActive && !problem) {
         socket.emit('error', { message: 'Failed to load a valid Battle Arena problem.' });
         return;
       }
+
+      room.currentProblem = problem || null;
 
       socket.emit('room_joined', {
         roomId, side, username,
@@ -2190,7 +2304,7 @@ io.on('connection', async (socket) => {
           // Evaluate PROBLEM_SOLVED achievement
           try {
               const currentProblemId = room.problemIds[room.round - 1];
-              const solvedProblem = await Problem.findById(currentProblemId).select('topics').lean();
+              const solvedProblem = room.currentProblem || await getCachedPublicProblem(currentProblemId);
               if (solvedProblem && socket.data.user?._id) {
                   processAchievementEvent(socket.data.user._id, 'PROBLEM_SOLVED', {
                       solveTimeSeconds: (solveTimeMs || 0) / 1000,
@@ -2215,9 +2329,7 @@ io.on('connection', async (socket) => {
                   room.roundStartAt = Date.now();
                   
                   const nextProblemId = room.problemIds[room.round - 1];
-                  let nextProblem = await Problem.findById(nextProblemId)
-                    .select('-goldenSolution')
-                    .lean();
+                  let nextProblem = await getCachedPublicProblem(nextProblemId);
 
                   if (!nextProblem) {
                     const fallbackProblemIds = await loadBattleProblemIdsForRoom({
@@ -2232,17 +2344,14 @@ io.on('connection', async (socket) => {
                     }
 
                     room.problemIds = fallbackProblemIds;
-                    nextProblem = await Problem.findById(room.problemIds[room.round - 1])
-                      .select('-goldenSolution')
-                      .lean();
+                    nextProblem = await getCachedPublicProblem(room.problemIds[room.round - 1]);
                   }
-
-                  nextProblem = toPublicProblem(nextProblem);
 
                   if (!nextProblem) {
                     io.to(roomId).emit('error', { message: 'Failed to load the next Battle Arena problem.' });
                     return;
                   }
+                  room.currentProblem = nextProblem;
                   
                   io.to(roomId).emit('new_round', {
                       round: room.round, 
@@ -2305,13 +2414,35 @@ io.on('connection', async (socket) => {
             const player = room.players[playerIndex];
             console.log(`[DISCONNECT] Player ${player.username} left room ${roomId} (socket: ${socket.id})`);
             
-            // If the game is currently active, we MUST resolve it!
             if (room.isGameActive && !room.resolutionResult && !room.isResolving) {
-                // The opponent wins by default due to disconnect
-                const opponent = room.players.find(p => p.id !== socket.id);
-                const winnerUsername = opponent ? opponent.username : null;
-                console.log(`[DISCONNECT] Active game in room ${roomId}. Winner by default: ${winnerUsername || 'Draw'}`);
-                await resolveMatch(roomId, winnerUsername, 'forfeit', room);
+                const graceKey = getDisconnectGraceKey(roomId, player.username);
+                io.to(roomId).emit('player_connection_state', {
+                    roomId,
+                    username: player.username,
+                    connected: false,
+                });
+
+                if (disconnectGraceTimers.has(graceKey)) {
+                    clearTimeout(disconnectGraceTimers.get(graceKey));
+                }
+
+                disconnectGraceTimers.set(graceKey, setTimeout(async () => {
+                    disconnectGraceTimers.delete(graceKey);
+                    const latestRoom = rooms.get(roomId);
+                    if (!latestRoom || latestRoom.resolutionResult || latestRoom.isResolving || !latestRoom.isGameActive) {
+                        return;
+                    }
+
+                    const disconnectedPlayer = latestRoom.players.find((entry) => entry.username === player.username);
+                    if (disconnectedPlayer?.id && disconnectedPlayer.id !== socket.id) {
+                        return;
+                    }
+
+                    const opponent = latestRoom.players.find((entry) => entry.username !== player.username);
+                    const winnerUsername = opponent ? opponent.username : null;
+                    console.log(`[DISCONNECT] Active game in room ${roomId}. Winner by default: ${winnerUsername || 'Draw'}`);
+                    await resolveMatch(roomId, winnerUsername, 'forfeit', latestRoom);
+                }, 10000));
             }
             break;
         }
@@ -2322,14 +2453,8 @@ io.on('connection', async (socket) => {
     try {
       console.log(`[SOCKET] ❌ Disconnected: ${socket.id} (${reason})`);
       
-      // Update stats
-      const uniqueUsersSet = new Set();
-      for (const s of io.sockets.sockets.values()) {
-        const uname = s.data?.user?.username;
-        if (uname) uniqueUsersSet.add(uname.toLowerCase());
-      }
-      const statsData = { live: uniqueUsersSet.size };
-      io.emit('site_stats', statsData);
+      unregisterConnectedSocket(socket);
+      await emitSiteStats();
       
       // Cleanup rate limits for this socket
       for (const key of socketRateLimits.keys()) {

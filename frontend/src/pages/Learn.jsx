@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import PremiumGate from '../components/PremiumGate';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 const Learn = () => {
-    const [user, setUser] = useState(null);
+    const { user, isHydrated, clearSession, updateSession } = useAuthSession();
     const navigate = useNavigate();
 
     useEffect(() => {
-        const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
-        if (!storedUser) { 
-            navigate('/login'); 
-            return; 
+        if (!isHydrated) {
+            return;
         }
-        setUser(storedUser);
-    }, [navigate]);
+
+        if (!user) {
+            navigate('/login'); 
+        }
+    }, [isHydrated, navigate, user]);
 
     const handleLogout = () => {
-        localStorage.removeItem('codearena_user');
-        navigate('/');
+        clearSession({
+            clearDerived: true,
+            eventDetail: { redirectTo: '/', replace: true },
+        });
     };
 
     return (
@@ -28,7 +32,7 @@ const Learn = () => {
             <Sidebar />
             
             <div className="flex-1 flex flex-col min-w-0 h-full relative">
-                <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
+                <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
                 
                 <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] pb-32 md:pb-0 w-full relative p-4 md:p-8">
                     <div className="max-w-6xl mx-auto h-full flex flex-col">
@@ -42,7 +46,7 @@ const Learn = () => {
                         </div>
 
                         <div className="flex-1">
-                            <PremiumGate requiredTier="pro">
+                            <PremiumGate requiredTier="plus">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {[1, 2, 3, 4, 5, 6].map(i => (
                                         <div key={i} className="bg-[var(--surface-elevated)] p-6 rounded-2xl border border-[var(--border-color)]">

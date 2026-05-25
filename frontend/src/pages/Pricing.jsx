@@ -11,62 +11,110 @@ import {
   ShieldCheck,
   Star,
   Zap,
+  ChevronDown,
+  ChevronUp,
+  User,
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import ChatWidget from '../components/ChatWIdget';
 import SubscriptionModal from '../components/SubscriptionModal';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
+
+const FEATURES_FREE = [
+  'Cody AI Chatbot Access (2/day)',
+  '3x Normal Matches per day',
+  'Access to match history',
+  'Access to leaderboards',
+  '1 free trial of Visualizer',
+  '1 free trial of Campaign Mode',
+  'Community support',
+];
+
+const FEATURES_PLUS = [
+  '7 Matches/day (Max 3 Custom)',
+  'Cody AI Chatbot Access (3/day)',
+  'In-code Editor AI (3/day)',
+  'In-editor personal notes',
+  'Access to Learn section',
+  'Everything in Free Plan',
+];
+
+const FEATURES_PRO = [
+  '14 Matches/day (Max 6 Custom)',
+  'Code visualizer access (5/day)',
+  'Cody AI Chatbot Access (8/day)',
+  'In-code Editor AI (7/day)',
+  'Access to analytics & insights',
+  'Exclusive badge options',
+  'Profile customization (Basic)',
+  'Everything in Plus Plan',
+];
+
+const FEATURES_PREMIUM = [
+  'Unlimited 1v1 Matches',
+  'Unlimited Custom Matches',
+  'Unlimited Cody AI Chatbot',
+  'In-code Editor AI (15/day)',
+  'Campaign mode access',
+  'Contest participation',
+  'Weekly report generation',
+  'Advanced UI profile customization',
+  'Everything in Pro Plan',
+];
+
+const FeatureList = ({ features, iconColor, fontClass = "font-semibold" }) => {
+  const [expanded, setExpanded] = useState(false);
+  const visibleFeatures = expanded ? features : features.slice(0, 3);
+  
+  return (
+    <div className="flex-1 flex flex-col mb-10">
+      <ul className="space-y-4 flex-1">
+        {visibleFeatures.map((feature, idx) => (
+          <li key={idx} className="flex items-center gap-3">
+            <CheckCircle2 size={18} className={`${iconColor} shrink-0`} />
+            <span className={`text-[var(--text-primary)] text-sm ${fontClass}`}>{feature}</span>
+          </li>
+        ))}
+      </ul>
+      {features.length > 3 && (
+        <button 
+          onClick={() => setExpanded(!expanded)}
+          className={`mt-4 flex items-center gap-1 text-xs font-bold uppercase tracking-wider hover:opacity-80 transition-opacity ${iconColor}`}
+        >
+          {expanded ? (
+            <><ChevronUp size={14} /> View Less</>
+          ) : (
+            <><ChevronDown size={14} /> View All {features.length} Features</>
+          )}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const Pricing = () => {
-  const [user, setUser] = useState(null);
+  const { user, isHydrated, clearSession, updateSession } = useAuthSession();
   const [modalConfig, setModalConfig] = useState({ isOpen: false, plan: null });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('codearena_user'));
-
-    if (!storedUser) {
-      navigate('/login');
+    if (!isHydrated) {
       return;
     }
 
-    setUser(storedUser);
-  }, [navigate]);
+    if (!user) {
+      navigate('/login');
+    }
+  }, [isHydrated, navigate, user]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('codearena_user');
+    clearSession({
+      clearDerived: true,
+      eventDetail: { redirectTo: '/', replace: true },
+    });
     toast.success('Logged out successfully');
-    navigate('/');
-  }, [navigate]);
-
-  const featuresPlus = [
-    '100 1v1 battle/month',
-    'Access to all code languages',
-    'Custom battle rooms',
-    'In-editor personal notes',
-    'Access to your match history',
-    'Access to leaderboards',
-  ];
-
-  const featuresPro = [
-    'Everything in Plus',
-    'Code visualization tool',
-    'Access to learn section',
-    'Analytics and insights',
-    'Priority matchmaking',
-    'Exclusive badges',
-    'Profile customization',
-  ];
-
-  const featuresPremium = [
-    'Everything in Pro',
-    'Campaign Mode access',
-    'Full AI support',
-    'Advanced theme optimization',
-    'Contest participation',
-    'Weekly report generation',
-    'Community support',
-  ];
+  }, [clearSession]);
 
   const openPlanModal = useCallback((planType) => {
     const configs = {
@@ -74,7 +122,7 @@ const Pricing = () => {
         planId: 'plus',
         name: 'PLUS',
         basePrice: 49,
-        features: featuresPlus,
+        features: FEATURES_PLUS,
         color: '#22c55e',
         icon: Star,
       },
@@ -82,7 +130,7 @@ const Pricing = () => {
         planId: 'pro',
         name: 'PRO',
         basePrice: 99,
-        features: featuresPro,
+        features: FEATURES_PRO,
         color: '#4aee88',
         icon: Crown,
       },
@@ -90,16 +138,16 @@ const Pricing = () => {
         planId: 'premium',
         name: 'PREMIUM',
         basePrice: 149,
-        features: featuresPremium,
+        features: FEATURES_PREMIUM,
         color: '#a855f7',
         icon: Diamond,
       },
     };
 
     setModalConfig({ isOpen: true, plan: configs[planType] });
-  }, [featuresPlus, featuresPro, featuresPremium]);
+  }, []);
 
-  if (!user) {
+  if (!isHydrated || !user) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <Loader2 className="animate-spin text-accent" size={40} />
@@ -112,7 +160,7 @@ const Pricing = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
+        <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
 
         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[var(--bg-primary)] w-full relative pb-20 md:pb-0">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
@@ -173,7 +221,44 @@ const Pricing = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch pt-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 gap-y-12 xl:gap-y-8 items-stretch pt-8">
+                {/* FREE PLAN */}
+                <div className="bg-[var(--bg-secondary)] p-8 rounded-[2.5rem] border border-[var(--border-color)] flex flex-col hover:border-gray-500/30 hover:shadow-[0_20px_50px_-20px_rgba(156,163,175,0.15)] transition-all duration-500 relative group">
+                  <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <User size={80} className="text-gray-400" />
+                  </div>
+
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-14 h-14 rounded-2xl bg-gray-500/10 flex items-center justify-center border border-gray-500/10 group-hover:scale-110 transition-transform duration-500">
+                      <User className="text-gray-400 fill-current" size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-400 tracking-tight">FREE</h3>
+                      <p className="text-[var(--text-secondary)] text-xs font-medium uppercase tracking-widest">Basic</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-baseline mb-2">
+                    <span className="text-5xl font-black text-[var(--text-primary)] whitespace-nowrap">Rs. 0</span>
+                    <span className="text-[var(--text-secondary)] font-bold ml-1">/mo</span>
+                  </div>
+
+                  <div className="mb-8">
+                    <span className="inline-block bg-gray-500/10 text-gray-400 text-[10px] font-black px-3 py-1 rounded-full border border-gray-500/20 uppercase tracking-tighter">
+                      Default Tier
+                    </span>
+                  </div>
+
+                  <FeatureList features={FEATURES_FREE} iconColor="text-gray-400" />
+
+                  <button
+                    disabled
+                    className="w-full py-4 rounded-2xl border-2 border-gray-500/20 text-gray-500 font-black bg-gray-500/5 text-sm transition-all duration-300 cursor-not-allowed opacity-70"
+                  >
+                    {(!user?.subscriptionPlan || user?.subscriptionPlan === 'free') ? 'Current Plan' : 'Free Tier'}
+                  </button>
+                </div>
+
                 <div className="bg-[var(--bg-secondary)] p-8 rounded-[2.5rem] border border-[var(--border-color)] flex flex-col hover:border-green-500/30 hover:shadow-[0_20px_50px_-20px_rgba(34,197,94,0.15)] transition-all duration-500 relative group">
                   <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity">
                     <Star size={80} className="text-green-500" />
@@ -200,14 +285,7 @@ const Pricing = () => {
                     </span>
                   </div>
 
-                  <ul className="space-y-4 mb-10 flex-1">
-                    {featuresPlus.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3">
-                        <CheckCircle2 size={18} className="text-green-500 shrink-0" />
-                        <span className="text-[var(--text-primary)] text-sm font-semibold">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <FeatureList features={FEATURES_PLUS} iconColor="text-green-500" />
 
                   <button
                     onClick={() => openPlanModal('plus')}
@@ -217,7 +295,7 @@ const Pricing = () => {
                   </button>
                 </div>
 
-                <div className="relative group lg:-mt-6 lg:mb-6">
+                <div className="relative group">
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-black px-6 py-2 rounded-full text-[10px] font-black tracking-[0.2em] flex items-center gap-2 shadow-2xl shadow-accent/40 z-30 animate-bounce-slow">
                     <Star size={12} className="fill-current" /> MOST POPULAR
                   </div>
@@ -247,18 +325,11 @@ const Pricing = () => {
                         </span>
                       </div>
 
-                      <ul className="space-y-4 mb-10 flex-1 relative z-10">
-                        {featuresPro.map((feature, idx) => (
-                          <li key={idx} className="flex items-center gap-3">
-                            <CheckCircle2 size={18} className="text-accent shrink-0 drop-shadow-sm" />
-                            <span className="text-[var(--text-primary)] text-sm font-bold">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <FeatureList features={FEATURES_PRO} iconColor="text-accent" fontClass="font-bold" />
 
                       <button
                         onClick={() => openPlanModal('pro')}
-                        className="w-full py-5 rounded-2xl bg-accent text-black font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(74,238,136,0.3)] hover:shadow-[0_15px_40px_rgba(74,238,136,0.5)] relative z-10"
+                        className="w-full py-4 rounded-2xl bg-accent text-black font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(74,238,136,0.3)] hover:shadow-[0_15px_40px_rgba(74,238,136,0.5)] relative z-10"
                       >
                         Upgrade to Pro Now
                       </button>
@@ -292,14 +363,7 @@ const Pricing = () => {
                     </span>
                   </div>
 
-                  <ul className="space-y-4 mb-10 flex-1">
-                    {featuresPremium.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3">
-                        <CheckCircle2 size={18} className="text-purple-500 shrink-0" />
-                        <span className="text-[var(--text-primary)] text-sm font-semibold">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <FeatureList features={FEATURES_PREMIUM} iconColor="text-purple-500" />
 
                   <button
                     onClick={() => openPlanModal('premium')}

@@ -5,23 +5,9 @@ import { useThemeColors } from './useThemeColors';
 const MatrixViz = memo(({ data, pointers }) => {
     const colors = useThemeColors();
     const isLight = colors.bgPrimary === '#fafaf9';
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
-        return (
-            <div
-                className="p-8 border-2 border-dashed rounded-xl flex items-center justify-center opacity-70"
-                style={{
-                    borderColor: colors.borderStrong,
-                    background: isLight ? 'rgba(255,255,255,0.88)' : 'rgba(13,17,23,0.5)',
-                }}
-            >
-                <span className="font-mono text-xs" style={{ color: colors.textMuted }}>Empty Matrix</span>
-            </div>
-        );
-    }
-
-    const rows = data.length;
-    const cols = data[0]?.length || 0;
+    const hasMatrixData = Array.isArray(data) && data.length > 0;
+    const rows = hasMatrixData ? data.length : 0;
+    const cols = hasMatrixData ? data[0]?.length || 0 : 0;
 
     const { cellSize, fontSize, gapSize } = useMemo(() => {
         const totalCells = rows * cols;
@@ -56,6 +42,20 @@ const MatrixViz = memo(({ data, pointers }) => {
             },
         };
     }, [pointers]);
+
+    if (!hasMatrixData) {
+        return (
+            <div
+                className="p-8 border-2 border-dashed rounded-xl flex items-center justify-center opacity-70"
+                style={{
+                    borderColor: colors.borderStrong,
+                    background: isLight ? 'rgba(255,255,255,0.88)' : 'rgba(13,17,23,0.5)',
+                }}
+            >
+                <span className="font-mono text-xs" style={{ color: colors.textMuted }}>Empty Matrix</span>
+            </div>
+        );
+    }
 
     return (
         <div

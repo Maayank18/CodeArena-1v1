@@ -72,34 +72,34 @@ export const getUsageLimits = (planOrUser) => {
     switch (plan) {
         case 'plus':
             limits = { 
-                chat: 10, 
-                matches: 5, 
+                chat: 3, 
+                matches: 7, 
                 customMatches: 3,
                 visualizations: 0,
-                aiHelp: 1
+                aiHelp: 3
             };
             break;
         case 'pro':
             limits = { 
-                chat: 50, 
-                matches: Infinity, 
-                customMatches: 15,
-                visualizations: 10,
-                aiHelp: 3
+                chat: 8, 
+                matches: 14, 
+                customMatches: 6,
+                visualizations: 5,
+                aiHelp: 7
             };
             break;
         case 'premium':
             limits = { 
-                chat: Infinity, 
+                chat: 20, 
                 matches: Infinity, 
                 customMatches: Infinity,
                 visualizations: Infinity,
-                aiHelp: 7
+                aiHelp: 15
             };
             break;
         default: // Novice / Free
             limits = { 
-                chat: 7, 
+                chat: 2, 
                 matches: 3, 
                 customMatches: 0,
                 visualizations: 0,

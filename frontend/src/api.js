@@ -100,6 +100,10 @@
 // FILE: frontend/src/api.js
 // PRODUCTION-OPTIMIZED VERSION
 import axios from 'axios';
+import {
+    clearStoredUser,
+    readStoredUser,
+} from './utils/authSessionStorage.js';
 
 // ✅ CONFIGURATION
 const CONFIG = {
@@ -115,6 +119,7 @@ const requestCache = new Map();
 
 // ✅ PENDING REQUESTS (opt-in dedupe only)
 const pendingRequests = new Map();
+const pendingGetRequests = new Map();
 const DEFAULT_PRODUCTION_API_ORIGIN = 'https://codearena-1v1.onrender.com';
 
 const AUTH_FLOW_ENDPOINTS = new Set([
@@ -131,16 +136,8 @@ const isLocalhostLike = (value = '') => /localhost|127\.0\.0\.1/i.test(String(va
 
 const normalizeBackendOrigin = (url) => (url || '').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
 
-const getStoredUser = () => {
-    try {
-        return JSON.parse(localStorage.getItem('codearena_user') || '{}');
-    } catch {
-        return {};
-    }
-};
-
 export const getStoredAuthToken = () => {
-    const user = getStoredUser();
+    const user = readStoredUser() || {};
     return typeof user?.token === 'string' ? user.token.trim() : '';
 };
 
@@ -192,6 +189,18 @@ const buildRequestKey = (config) => {
     return `${method}:${url}:${params}:${data}`;
 };
 
+const createDeferred = () => {
+    let resolve;
+    let reject;
+
+    const promise = new Promise((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+
+    return { promise, resolve, reject };
+};
+
 const shouldDedupeRequest = (config) => (
     Boolean(config?.meta?.dedupe) && config?.method && config.method !== 'get'
 );
@@ -208,6 +217,30 @@ const invalidateCache = (predicate) => {
             requestCache.delete(key);
         }
     }
+};
+
+const getMutationInvalidationMatcher = (url = '') => {
+    if (url.startsWith('/settings')) {
+        return (key) => key.includes('/settings') || key.includes('/users/profile') || key.includes('/payments/mine');
+    }
+
+    if (url.startsWith('/payments')) {
+        return (key) => key.includes('/payments/mine') || key.includes('/settings/profile') || key.includes('/users/profile');
+    }
+
+    if (url.startsWith('/users/profile')) {
+        return (key) => key.includes('/users/profile') || key.includes('/settings/profile');
+    }
+
+    if (url.startsWith('/notes')) {
+        return (key) => key.includes('/notes');
+    }
+
+    if (url.startsWith('/rooms')) {
+        return (key) => key.includes('/rooms');
+    }
+
+    return () => false;
 };
 
 const normalizeApiBase = (url) => {
@@ -257,7 +290,7 @@ api.interceptors.request.use(
 
         // 2. ✅ CHECK CACHE for GET requests
         if (shouldUseGetCache(config)) {
-            const cacheKey = `${config.url}?${JSON.stringify(config.params || {})}`;
+            const cacheKey = `${config.url}?${stableStringify(config.params || {})}`;
             const cached = requestCache.get(cacheKey);
             
             if (cached && (Date.now() - cached.timestamp) < CONFIG.cacheDuration) {
@@ -271,6 +304,28 @@ api.interceptors.request.use(
                     config,
                 });
             }
+        }
+
+        if (config.method === 'get' && !config.adapter) {
+            const requestKey = buildRequestKey(config);
+            config.meta = { ...(config.meta || {}), requestKey };
+
+            const pendingGet = pendingGetRequests.get(requestKey);
+            if (pendingGet) {
+                config.adapter = () => pendingGet.promise.then((response) => ({
+                    data: response.data,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers,
+                    config,
+                    request: response.request,
+                }));
+                return config;
+            }
+
+            const deferred = createDeferred();
+            pendingGetRequests.set(requestKey, deferred);
+            config.meta.ownsGetRequest = true;
         }
 
         // 3. ✅ PREVENT DUPLICATE NON-GET REQUESTS ONLY WHEN A CALLER OPTS IN
@@ -303,7 +358,7 @@ api.interceptors.response.use(
     (response) => {
         // 1. ✅ CACHE SUCCESSFUL GET RESPONSES
         if (shouldUseGetCache(response.config)) {
-            const cacheKey = `${response.config.url}?${JSON.stringify(response.config.params || {})}`;
+            const cacheKey = `${response.config.url}?${stableStringify(response.config.params || {})}`;
             requestCache.set(cacheKey, {
                 data: response.data,
                 timestamp: Date.now()
@@ -323,7 +378,13 @@ api.interceptors.response.use(
         }
 
         if (response.config.method !== 'get') {
-            invalidateCache((key) => key.includes('/notes') || key.includes('/settings') || key.includes('/users/profile'));
+            invalidateCache(getMutationInvalidationMatcher(response.config.url));
+        }
+
+        if (response.config.meta?.ownsGetRequest) {
+            const deferred = pendingGetRequests.get(response.config.meta.requestKey);
+            deferred?.resolve(response);
+            pendingGetRequests.delete(response.config.meta.requestKey);
         }
 
         // 3. ✅ LOGGING (dev only)
@@ -342,6 +403,12 @@ api.interceptors.response.use(
             pendingRequests.delete(requestKey);
         }
 
+        if (config?.meta?.ownsGetRequest) {
+            const deferred = pendingGetRequests.get(config.meta.requestKey);
+            deferred?.reject(error);
+            pendingGetRequests.delete(config.meta.requestKey);
+        }
+
         // ✅ HANDLE CANCELLED REQUESTS
         if (axios.isCancel(error)) {
             console.log('[API] Request cancelled:', error.message);
@@ -357,11 +424,15 @@ api.interceptors.response.use(
             });
             if (!isAuthFlowRequest(config)) {
                 console.log('[API] 401 Unauthorized - clearing auth');
-                localStorage.removeItem('codearena_user');
-                
-                if (!window.location.pathname.includes('/login')) {
-                    window.location.href = '/login';
-                }
+                clearStoredUser({
+                    clearDerived: true,
+                    dispatch: true,
+                    eventDetail: {
+                        redirectTo: '/login',
+                        replace: true,
+                        state: { sessionExpired: true },
+                    },
+                });
             }
             return Promise.reject(error);
         }

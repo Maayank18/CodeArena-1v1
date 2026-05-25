@@ -1,22 +1,26 @@
 import api from '../api.js';
+import {
+    DASHBOARD_CACHE_KEY,
+    HISTORY_CACHE_KEY,
+    LEADERBOARD_CACHE_KEY,
+    clearDerivedUserCacheEntries,
+    mergeStoredUser,
+    readStoredUser,
+} from './authSessionStorage.js';
 
-export const DASHBOARD_CACHE_KEY = 'dashboard_profile_cache';
-export const HISTORY_CACHE_KEY = 'history_cache';
-export const LEADERBOARD_CACHE_KEY = 'leaderboard_cache';
+export {
+    DASHBOARD_CACHE_KEY,
+    HISTORY_CACHE_KEY,
+    LEADERBOARD_CACHE_KEY,
+    clearDerivedUserCacheEntries,
+    mergeStoredUser,
+    readStoredUser,
+};
 
 const DEFAULT_STATS = {
     matchesPlayed: 0,
     wins: 0,
     losses: 0,
-};
-
-export const readStoredUser = () => {
-    try {
-        const rawUser = localStorage.getItem('codearena_user');
-        return rawUser ? JSON.parse(rawUser) : null;
-    } catch {
-        return null;
-    }
 };
 
 export const mergeUserProfile = (storedUser, serverUser) => ({
@@ -27,10 +31,7 @@ export const mergeUserProfile = (storedUser, serverUser) => ({
 });
 
 export const clearDerivedUserCaches = () => {
-    [DASHBOARD_CACHE_KEY, HISTORY_CACHE_KEY, LEADERBOARD_CACHE_KEY].forEach((key) => {
-        localStorage.removeItem(key);
-    });
-
+    clearDerivedUserCacheEntries();
     api.clearCache?.();
 };
 
@@ -47,11 +48,13 @@ export const refreshCurrentUserProfile = async () => {
     });
 
     const mergedUser = mergeUserProfile(storedUser, response.data);
-    
+
     if (JSON.stringify(storedUser) !== JSON.stringify(mergedUser)) {
-        localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
-        window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
+        mergeStoredUser(mergedUser, {
+            clearDerived: true,
+            dispatch: true,
+        });
     }
-    
+
     return mergedUser;
 };

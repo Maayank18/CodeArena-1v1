@@ -7,20 +7,27 @@ let isParticlesInitialized = false;
 
 export default function FrostbyteParticles({ forceActive = false, containerId = "tsparticles", className = "fixed inset-0 pointer-events-none z-[0]" }) {
   const { advancedTheme } = useTheme();
-  const [init, setInit] = useState(false);
+  const [init, setInit] = useState(() => isParticlesInitialized);
 
   useEffect(() => {
-    if (isParticlesInitialized) {
-      setInit(true);
+    if (init) {
       return;
     }
+
+    let isMounted = true;
     initParticlesEngine(async (engine) => {
       await loadSlim(engine);
     }).then(() => {
       isParticlesInitialized = true;
-      setInit(true);
+      if (isMounted) {
+        setInit(true);
+      }
     });
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [init]);
 
   if (!init || (!forceActive && advancedTheme !== 'frostbyte')) return null;
 

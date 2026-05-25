@@ -536,6 +536,7 @@ export const updateCustomization = async (req, res) => {
         const { avatarFrame, tagline, signatureStack, entranceBanner, equippedBadge, advancedTheme } = req.body;
 
         const update = {};
+        let userDoc = null;
 
         if (avatarFrame !== undefined) {
             if (!VALID_AVATAR_FRAMES.includes(avatarFrame)) {
@@ -567,13 +568,16 @@ export const updateCustomization = async (req, res) => {
         if (equippedBadge !== undefined) {
             const sanitized = typeof equippedBadge === 'string' ? equippedBadge.trim() : '';
             if (sanitized !== '') {
-                // Fetch the user's earned badges to verify they unlocked it
-                const userObj = await User.findById(userId).select('badges role').lean();
-                if (!userObj) {
+                userDoc = await User.findById(userId)
+                    .select('badges role')
+                    .lean();
+
+                if (!userDoc) {
                     return res.status(404).json({ success: false, message: 'User not found' });
                 }
-                const earnedBadges = userObj.badges || [];
-                const isAdmin = userObj.role === 'admin';
+
+                const earnedBadges = userDoc.badges || [];
+                const isAdmin = userDoc.role === 'admin';
                 if (!earnedBadges.includes(sanitized) && !isAdmin) {
                     return res.status(400).json({ success: false, message: 'You must earn this badge before you can equip it' });
                 }
@@ -627,6 +631,12 @@ export const getUserBadges = async (req, res) => {
 
         const earnedBadges = user.badges || [];
         const achievementProgress = user.achievementProgress || [];
+        const earnedBadgeSet = new Set(earnedBadges);
+        const progressByBadgeKey = new Map(
+            achievementProgress
+                .filter((entry) => entry?.badgeKey)
+                .map((entry) => [entry.badgeKey, entry])
+        );
         
         const byCategory = BADGES_CATALOG.reduce((acc, badge) => {
             if (!acc[badge.category]) {
@@ -634,8 +644,8 @@ export const getUserBadges = async (req, res) => {
             }
 
             acc[badge.category].total += 1;
-            const prog = achievementProgress.find(p => p.badgeKey === badge.key);
-            if ((prog && prog.unlocked) || earnedBadges.includes(badge.key)) {
+            const prog = progressByBadgeKey.get(badge.key);
+            if ((prog && prog.unlocked) || earnedBadgeSet.has(badge.key)) {
                 acc[badge.category].earned += 1;
             }
 

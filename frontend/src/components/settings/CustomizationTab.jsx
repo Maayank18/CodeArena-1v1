@@ -170,6 +170,7 @@ const CustomizationTab = () => {
         const mergedUser = { ...currentStoredUser, ...nextUser };
 
         localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
+        localStorage.removeItem('dashboard_profile_cache');
         window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
       }
     } catch (err) {

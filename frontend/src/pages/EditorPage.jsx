@@ -24,10 +24,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SpiralNotebookWidget from '../components/SpiralNotebookWidget.jsx';
 import { resolveBackendOrigin } from '../api.js';
 import { outputsMatch, sanitizeOutput } from '../utils/outputMatching.js';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 import {
     clearDerivedUserCaches,
     refreshCurrentUserProfile,
 } from '../utils/sessionSync.js';
+import { safeParseJson } from '../utils/authSessionStorage.js';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:5000';
 const isLocalhostLike = (value = '') => /localhost|127\.0\.0\.1/i.test(String(value));
@@ -169,21 +171,33 @@ const normalizeGameOverPayload = (data, currentUsername) => {
 const Timer = React.memo(({ initialTime, socket }) => {
     const [timeLeft, setTimeLeft] = useState(initialTime);
     const intervalRef = useRef(null);
+    const timeLeftRef = useRef(initialTime);
 
     useEffect(() => {
         if (initialTime !== null && initialTime !== undefined) {
             setTimeLeft(initialTime);
+            timeLeftRef.current = initialTime;
         }
     }, [initialTime]);
 
     useEffect(() => {
-        if (timeLeft === null || timeLeft === undefined) return;
-        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
+        if (initialTime === null || initialTime === undefined) return;
 
         intervalRef.current = setInterval(() => {
             setTimeLeft(prev => {
-                if (prev === null || prev === undefined || prev <= 0) return 0;
-                return prev - 1;
+                if (prev === null || prev === undefined || prev <= 0) {
+                    timeLeftRef.current = 0;
+                    return 0;
+                }
+
+                const nextValue = prev - 1;
+                timeLeftRef.current = nextValue;
+                return nextValue;
             });
         }, 1000);
 
@@ -193,17 +207,21 @@ const Timer = React.memo(({ initialTime, socket }) => {
                 intervalRef.current = null;
             }
         };
-    }, [timeLeft]);
+    }, [initialTime]);
 
     useEffect(() => {
         if (!socket) return;
         const handleSyncTime = (serverTime) => {
-            const diff = Math.abs(serverTime - (timeLeft || 0));
-            if (diff > 2) setTimeLeft(serverTime);
+            const currentValue = timeLeftRef.current ?? 0;
+            const diff = Math.abs(serverTime - currentValue);
+            if (diff > 2) {
+                timeLeftRef.current = serverTime;
+                setTimeLeft(serverTime);
+            }
         };
         socket.on('sync_time', handleSyncTime);
         return () => socket.off('sync_time', handleSyncTime);
-    }, [socket, timeLeft]);
+    }, [socket]);
 
     const formatTime = (s) => {
         if (s === null || s === undefined) return '--:--';
@@ -250,29 +268,23 @@ const EditorPage = () => {
     const location = useLocation();
     const { roomId } = useParams();
     const navigate = useNavigate();
+    const { user: sessionUser, isHydrated, updateSession } = useAuthSession();
 
     const { theme, toggleTheme, advancedTheme } = useTheme();
-    
-    const storedUser = (() => {
-        try {
-            return JSON.parse(localStorage.getItem('codearena_user') || '{}');
-        } catch {
-            return {};
-        }
-    })();
 
-    const storedCustomJoin = (() => {
+    const storedCustomJoin = useMemo(() => {
         try {
-            return JSON.parse(localStorage.getItem(buildCustomRoomAuthKey(roomId)) || '{}');
+            return safeParseJson(localStorage.getItem(buildCustomRoomAuthKey(roomId)), {}) || {};
         } catch {
             return {};
         }
-    })();
-    const username = location.state?.username ?? storedUser?.username ?? '';
+    }, [roomId]);
+
+    const username = location.state?.username ?? sessionUser?.username ?? '';
     const joinToken = location.state?.joinToken ?? storedCustomJoin?.joinToken ?? '';
     const isValidRoomId = typeof roomId === 'string' && roomId.trim().length >= 3;
-    const userRole = storedUser?.role?.toLowerCase() || 'user';
-    const userPlan = storedUser?.subscriptionPlan?.toLowerCase() || 'free';
+    const userRole = sessionUser?.role?.toLowerCase() || 'user';
+    const userPlan = sessionUser?.subscriptionPlan?.toLowerCase() || 'free';
     const hasCustomizationAccess = userRole === 'admin' || CUSTOMIZATION_ACCESS_TIERS.has(userPlan);
     const isDark = theme === 'dark';
 
@@ -316,10 +328,19 @@ const EditorPage = () => {
     const providerRef = useRef(null);
     const activeEditorContextRef = useRef(null);
     const problemContainerRef = useRef(null);
+    const sessionUserRef = useRef(sessionUser);
+    const runRequestIdRef = useRef(0);
+    const submitRequestIdRef = useRef(0);
+    const previewSyncTimeoutRef = useRef(null);
     const problemLabel = problem ? `Q${round}/${totalRounds}: ${problem.title}` : (roomId?.startsWith('C-') && clients.length < 2 ? 'Waiting for Challenger...' : 'Loading...');
     const shouldCompactTimer = problemLabel.length > 30;
     const notebookSide = mySide === 'left' ? 'right' : 'left';
     const boilerplates = useMemo(() => normalizeEditorBoilerplates(problem), [problem]);
+    const [currentCodePreview, setCurrentCodePreview] = useState('');
+
+    useEffect(() => {
+        sessionUserRef.current = sessionUser;
+    }, [sessionUser]);
 
     // ✅ Robust Entrance Animation Control
     useEffect(() => {
@@ -346,16 +367,6 @@ const EditorPage = () => {
     }, [runResults]);
 
     useEffect(() => {
-        // Sync profile to ensure subscription plan is up-to-date
-        api.get('/settings/profile').then(({ data }) => {
-            if (data?.user) {
-                const existing = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-                const merged = { ...existing, ...data.user };
-                localStorage.setItem('codearena_user', JSON.stringify(merged));
-                window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: merged }));
-            }
-        }).catch(() => {});
-
         if (!ydocRef.current) {
             ydocRef.current = new Y.Doc();
         }
@@ -473,9 +484,43 @@ const EditorPage = () => {
     }, [language, mySide, persistArenaDraft, problem?._id]);
 
     useEffect(() => {
+        if (!mySide || !ydocRef.current) {
+            setCurrentCodePreview('');
+            return undefined;
+        }
+
+        const sideText = ydocRef.current.getText(`code-${mySide}`);
+        const syncPreview = () => {
+            const nextCode = sideText.toString();
+            if (previewSyncTimeoutRef.current) {
+                window.clearTimeout(previewSyncTimeoutRef.current);
+            }
+
+            previewSyncTimeoutRef.current = window.setTimeout(() => {
+                setCurrentCodePreview((currentValue) => currentValue === nextCode ? currentValue : nextCode);
+            }, 120);
+        };
+
+        syncPreview();
+        sideText.observe(syncPreview);
+
+        return () => {
+            if (previewSyncTimeoutRef.current) {
+                window.clearTimeout(previewSyncTimeoutRef.current);
+                previewSyncTimeoutRef.current = null;
+            }
+            sideText.unobserve(syncPreview);
+        };
+    }, [mySide, problem?._id]);
+
+    useEffect(() => {
+        if (!isHydrated) {
+            return undefined;
+        }
+
         if (!username || !isValidRoomId) {
             navigate('/login');
-            return;
+            return undefined;
         }
 
         roomHydratedRef.current = false;
@@ -498,7 +543,7 @@ const EditorPage = () => {
             reconnectionDelayMax: 5000,
             timeout: 20000,
             auth: {
-                token: storedUser?.token || ''
+                token: sessionUser?.token || ''
             }
         });
         
@@ -572,7 +617,8 @@ const EditorPage = () => {
             }
 
             if (data.aiHelpsUsed) {
-                const myHelps = data.aiHelpsUsed[storedUser?._id] || data.aiHelpsUsed[username] || 0;
+                const currentSessionUser = sessionUserRef.current;
+                const myHelps = data.aiHelpsUsed[currentSessionUser?._id] || data.aiHelpsUsed[username] || 0;
                 setAiHelpsUsed(myHelps);
             }
             
@@ -604,6 +650,22 @@ const EditorPage = () => {
         };
 
         const handleScoreUpdate = (newScores) => setScores(newScores);
+        const handlePlayerConnectionState = ({ username: affectedUsername, connected }) => {
+            setClients((currentPlayers) => currentPlayers.map((player) => (
+                player.username === affectedUsername
+                    ? { ...player, connected }
+                    : player
+            )));
+
+            if (affectedUsername && affectedUsername !== username) {
+                toast[connected ? 'success' : 'error'](
+                    connected
+                        ? `${affectedUsername} reconnected`
+                        : `${affectedUsername} disconnected. Waiting 10s before forfeit.`,
+                    { duration: connected ? 2000 : 4000 }
+                );
+            }
+        };
         
         const handleGameOver = (data) => {
             const safeGameOverData = normalizeGameOverPayload(data, username);
@@ -626,21 +688,27 @@ const EditorPage = () => {
                 if (history.length > 50) history.length = 50;
                 localStorage.setItem('codearena_history', JSON.stringify(history));
 
-                const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-                if (storedUser.username) {
-                    if (!storedUser.stats) storedUser.stats = { matchesPlayed: 0, wins: 0, losses: 0 };
-                    storedUser.stats.matchesPlayed += 1;
-                    if (safeGameOverData.winner === myName) storedUser.stats.wins += 1;
-                    else if (safeGameOverData.winner !== "Draw") storedUser.stats.losses += 1;
-                    
-                    if (safeGameOverData.eloChanges) {
-                        const myEloUpdate = Object.values(safeGameOverData.eloChanges).find(p => p.username === myName);
-                        if (myEloUpdate) {
-                            storedUser.rating = myEloUpdate.newRating;
-                            storedUser.seasonScore = (storedUser.seasonScore || 0) + (myEloUpdate.seasonPoints || 0);
-                        }
-                    }
-                    localStorage.setItem('codearena_user', JSON.stringify(storedUser));
+                const currentSessionUser = sessionUserRef.current;
+                if (currentSessionUser?.username) {
+                    const nextStats = {
+                        matchesPlayed: (currentSessionUser.stats?.matchesPlayed || 0) + 1,
+                        wins: (currentSessionUser.stats?.wins || 0) + (safeGameOverData.winner === myName ? 1 : 0),
+                        losses: (currentSessionUser.stats?.losses || 0) + (safeGameOverData.winner !== myName && safeGameOverData.winner !== "Draw" ? 1 : 0),
+                    };
+                    const myEloUpdate = safeGameOverData.eloChanges
+                        ? Object.values(safeGameOverData.eloChanges).find((player) => player.username === myName)
+                        : null;
+
+                    updateSession({
+                        stats: nextStats,
+                        ...(myEloUpdate ? {
+                            rating: myEloUpdate.newRating,
+                            seasonScore: (currentSessionUser.seasonScore || 0) + (myEloUpdate.seasonPoints || 0),
+                        } : {}),
+                    }, {
+                        clearDerived: true,
+                        dispatch: true,
+                    });
                 }
                 clearDerivedUserCaches();
             } catch (e) { console.error("Failed to save game stats:", e); }
@@ -668,7 +736,7 @@ const EditorPage = () => {
         };
 
         const handleBadgesUnlocked = (data) => {
-            if (data.userId === storedUser?._id && data.badges && data.badges.length > 0) {
+            if (data.userId === sessionUserRef.current?._id && data.badges && data.badges.length > 0) {
                 data.badges.forEach(badge => {
                     const badgeName = badge.displayName || badge.name || badge.key || 'Mystery Badge';
                     toast.success(
@@ -686,7 +754,9 @@ const EditorPage = () => {
         socket.on('player_joined', handlePlayerJoined);
         socket.on('new_round', handleNewRound);
         socket.on('score_update', handleScoreUpdate);
+        socket.on('player_connection_state', handlePlayerConnectionState);
         socket.on('game_over', handleGameOver);
+        socket.on('match_ended', handleGameOver);
         socket.on('room_full', handleRoomFull);
         socket.on('error', handleError);
         socket.on('cheat_warning', handleCheatWarning);
@@ -701,7 +771,9 @@ const EditorPage = () => {
             socket.off('player_joined');
             socket.off('new_round');
             socket.off('score_update');
+            socket.off('player_connection_state');
             socket.off('game_over');
+            socket.off('match_ended');
             socket.off('room_full');
             socket.off('error');
             socket.off('cheat_warning');
@@ -717,21 +789,21 @@ const EditorPage = () => {
             } catch (e) {}
             clearDerivedUserCaches();
         };
-    }, [roomId, navigate, username, isValidRoomId, joinToken, storedUser?._id, storedUser?.token, hasCustomizationAccess]);
+    }, [roomId, navigate, username, isValidRoomId, joinToken, sessionUser?.token, hasCustomizationAccess, isHydrated, updateSession]);
 
     // ✅ ANTI-CHEAT
     useEffect(() => {
         if (!socketRef.current || gameOverData) return;
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                socketRef.current.emit('cheating_detected', { roomId, username: location.state?.username, reason: "Window Switching" });
+                socketRef.current.emit('cheating_detected', { roomId, username, reason: "Window Switching" });
             }
         };
         const handlePaste = (e) => {
             const pastedData = e.clipboardData.getData('text');
             if (pastedData.length > 50) {
                 e.preventDefault();
-                socketRef.current.emit('cheating_detected', { roomId, username: location.state?.username, reason: "Massive Code Paste" });
+                socketRef.current.emit('cheating_detected', { roomId, username, reason: "Massive Code Paste" });
                 toast.error("Large code pasting is not allowed!", { icon: '🚫', duration: 3000 });
             }
         };
@@ -741,7 +813,7 @@ const EditorPage = () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange);
             window.removeEventListener("paste", handlePaste);
         };
-    }, [roomId, location.state, gameOverData]);
+    }, [gameOverData, roomId, username]);
 
     useEffect(() => {
         if (problem || arenaUnavailableMessage || roomLoadError || gameOverData) return undefined;
@@ -799,6 +871,7 @@ const EditorPage = () => {
     const runCode = useCallback(async () => {
         if (debounceTimerRef.current || !problem || !ydocRef.current) return;
         setIsRunning(true);
+        const requestId = ++runRequestIdRef.current;
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
         if (!code.trim()) { 
             toast.error("Code is empty!"); setIsRunning(false); return; 
@@ -810,6 +883,9 @@ const EditorPage = () => {
             for (const [index, tc] of publicCases.entries()) {
                 try {
                     const response = await api.post('/run', { language, code, stdin: tc.input, isArena: true });
+                    if (requestId !== runRequestIdRef.current) {
+                        return;
+                    }
                     const actual = sanitizeOutput(response.data.stdout || '');
                     const expected = sanitizeOutput(tc.output || '');
                     const stderr = sanitizeOutput(response.data.stderr || response.data.error || '');
@@ -827,6 +903,9 @@ const EditorPage = () => {
                         passed
                     });
                 } catch (err) {
+                    if (requestId !== runRequestIdRef.current) {
+                        return;
+                    }
                     const errorMessage = err.response?.data?.message || "Execution Error";
                     newResults.push({
                         type: 'error',
@@ -841,34 +920,51 @@ const EditorPage = () => {
                     });
                 }
             }
-            setRunResults(newResults);
+            if (requestId === runRequestIdRef.current) {
+                setRunResults(newResults);
+            }
         } catch {
             toast.error("Execution Failed");
-        } finally { setIsRunning(false); }
+        } finally {
+            if (requestId === runRequestIdRef.current) {
+                setIsRunning(false);
+            }
+        }
     }, [problem, language, mySide]);
 
     const submitCode = useCallback(async () => {
         if (debounceTimerRef.current || !problem || !ydocRef.current || !socketRef.current) return;
         setIsRunning(true);
+        const requestId = ++submitRequestIdRef.current;
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
         if (!code.trim()) {
             toast.error("Code is empty!"); setIsRunning(false); return;
         }
-        socketRef.current.emit('code_submitted', { roomId, username: location.state?.username });
+        socketRef.current.emit('code_submitted', { roomId, username });
         debounceTimerRef.current = setTimeout(() => { debounceTimerRef.current = null; }, 3000);
         try {
             const response = await api.post('/run/submit', { language, code, problemId: problem._id, isArena: true });
+            if (requestId !== submitRequestIdRef.current) {
+                return;
+            }
             setRunResults(response.data.results || []);
             if (response.data.allPassed) {
                 toast.success("✅ Correct! +10 Points", { icon: '🏆' });
-                socketRef.current.emit('level_completed', { roomId, username: location.state?.username });
+                socketRef.current.emit('level_completed', { roomId, username });
             } else {
                 toast.error(`❌ Incorrect Solution`);
             }
         } catch (error) {
+            if (requestId !== submitRequestIdRef.current) {
+                return;
+            }
             toast.error(error.response?.data?.message || "Submission Error");
-        } finally { setIsRunning(false); }
-    }, [problem, language, mySide, roomId, location.state]);
+        } finally {
+            if (requestId === submitRequestIdRef.current) {
+                setIsRunning(false);
+            }
+        }
+    }, [problem, language, mySide, roomId, username]);
 
     useEffect(() => {
         if (problem && sessionNoteTitle === "Arena Battle Match") {
@@ -876,7 +972,15 @@ const EditorPage = () => {
         }
     }, [problem, sessionNoteTitle]);
 
-    if (!location.state) return <Navigate to="/" replace />;
+    if (!isHydrated) {
+        return (
+            <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (!username) return <Navigate to="/login" replace />;
 
     if (arenaUnavailableMessage || roomLoadError) {
         return (
@@ -925,7 +1029,9 @@ const EditorPage = () => {
                                 paneIsDark ? 'bg-black/50 text-accent' : 'bg-white text-emerald-600 border border-emerald-200'
                             }`}>{scores[p?.username] || 0} pts</span>
                         </div>
-                        <span className={`text-[9px] truncate italic ${paneIsDark ? 'text-gray-500' : 'text-slate-500'}`}>{p?.customization?.tagline || 'Coding...'}</span>
+                        <span className={`text-[9px] truncate italic ${paneIsDark ? 'text-gray-500' : 'text-slate-500'}`}>
+                            {p?.connected === false ? 'Reconnecting...' : (p?.customization?.tagline || 'Coding...')}
+                        </span>
                     </div>
                     {mySide === side && <span className="text-accent text-[9px] font-black bg-accent/10 px-1 rounded border border-accent/40">YOU</span>}
                 </div>
@@ -1127,8 +1233,8 @@ const EditorPage = () => {
                                     titlePrefix={round}
                                     isDark={isDark}
                                     roomId={roomId}
-                                    currentCode={ydocRef.current?.getText(`code-${mySide}`)?.toString() || ''}
-                                    userTier={storedUser?.role === 'admin' ? 3 : (userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3)}
+                                    currentCode={currentCodePreview}
+                                    userTier={userRole === 'admin' ? 3 : (userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3)}
                                     initialHelpsUsed={aiHelpsUsed}
                                 />
                                 {runResults && <div className={`mt-6 pt-4 border-t ${isDark ? 'border-[#3e3e42]' : 'border-stone-300'}`}><TestCaseResults results={runResults} /></div>}

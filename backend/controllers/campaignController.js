@@ -20,6 +20,8 @@ import { recordActivity } from '../utils/activityTracker.js';
 let mapCache = null;
 let mapCacheTime = 0;
 const MAP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let orderedNodeCache = null;
+let orderedNodeCacheTime = 0;
 const NODE_ID_PATTERN = /node-(\d+)$/i;
 
 const parseCampaignNodeOrder = (campaignNodeId) => {
@@ -184,14 +186,51 @@ const ensureRootNodesUnlockedForNewUsers = (progress, entryNodeIds) => {
     return { changed: false, progress: safeProgress };
 };
 
+const getCachedOrderedCampaignNodes = async () => {
+    if (orderedNodeCache && (Date.now() - orderedNodeCacheTime) < MAP_CACHE_TTL) {
+        return orderedNodeCache;
+    }
+
+    const orderedNodes = await Problem.find({ type: 'campaign' })
+        .select('campaignRegion campaignNodeId')
+        .lean();
+    
+    orderedNodes.sort(compareCampaignProblems);
+
+    orderedNodeCache = orderedNodes.filter((entry) => entry?.campaignNodeId);
+    orderedNodeCacheTime = Date.now();
+    return orderedNodeCache;
+};
+
 // ────────────────────────────────────────────────────────────────────────────
 // GET /api/campaign/map
 // Returns full static map. Heavily cached.
 // ────────────────────────────────────────────────────────────────────────────
 export const getCampaignMap = async (req, res) => {
     try {
-        const problems = await Problem.find({ type: 'campaign' });
-        return res.status(200).json(problems);
+        if (mapCache && (Date.now() - mapCacheTime) < MAP_CACHE_TTL) {
+            return res.status(200).json(mapCache);
+        }
+
+        const problems = await Problem.find({ type: 'campaign' })
+            .select('_id title slug difficulty timeLimit constraints campaignRegion campaignNodeId')
+            .lean();
+            
+        problems.sort(compareCampaignProblems);
+        const nodes = buildCampaignProblemNodes(problems);
+        const sanitizedMap = sanitizeMapData(nodes);
+        const responsePayload = {
+            success: true,
+            map: sanitizedMap.nodes,
+            nodes: sanitizedMap.nodes,
+            grouped: sanitizedMap.grouped,
+            meta: sanitizedMap.meta,
+        };
+
+        mapCache = responsePayload;
+        mapCacheTime = Date.now();
+
+        return res.status(200).json(responsePayload);
     } catch (error) {
         console.error('[CAMPAIGN MAP] Failed to fetch campaign problems:', error);
         return res.status(500).json({
@@ -467,12 +506,7 @@ export const submitCampaignSolution = async (req, res) => {
 
         // ✅ FIX: DECOUPLED UNLOCK LOGIC 
         // We now check for new unlocks on EVERY successful pass (first-time OR improvement)
-        const allNodes = await Problem.find({ type: 'campaign' })
-            .select('campaignRegion campaignNodeId')
-            .lean();
-        const orderedNodes = allNodes
-            .filter((entry) => entry?.campaignNodeId)
-            .sort(compareCampaignProblems);
+        const orderedNodes = await getCachedOrderedCampaignNodes();
         const currentNodeIndex = orderedNodes.findIndex((entry) => entry.campaignNodeId === nodeId);
         const nextNodeId = currentNodeIndex >= 0
             ? orderedNodes[currentNodeIndex + 1]?.campaignNodeId

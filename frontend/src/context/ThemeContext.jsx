@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { SUPPORTED_ADVANCED_THEME_IDS, getAdvancedThemeIdFromUser } from '../utils/advancedThemes';
+import { readStoredUser, safeParseJson } from '../utils/authSessionStorage.js';
 
 const STORAGE_KEY = 'ca_theme';
 const ADVANCED_THEME_KEY = 'ca_advanced_theme';
@@ -43,14 +44,10 @@ const getInitialAdvancedTheme = () => {
     return null;
   }
 
-  try {
-    const storedUser = JSON.parse(window.localStorage.getItem('codearena_user') || 'null');
-    const userTheme = getAdvancedThemeIdFromUser(storedUser);
-    if (userTheme) {
-      return userTheme;
-    }
-  } catch {
-    // Fall back to the dedicated theme storage key below.
+  const storedUser = readStoredUser();
+  const userTheme = getAdvancedThemeIdFromUser(storedUser);
+  if (userTheme) {
+    return userTheme;
   }
 
   const stored = window.localStorage.getItem(ADVANCED_THEME_KEY);
@@ -100,11 +97,7 @@ export const ThemeProvider = ({ children }) => {
         return nextUser;
       }
 
-      try {
-        return JSON.parse(window.localStorage.getItem('codearena_user') || 'null');
-      } catch {
-        return null;
-      }
+      return safeParseJson(window.localStorage.getItem('codearena_user'), null);
     };
 
     const resolvedTheme = getAdvancedThemeIdFromUser(resolveUser());
@@ -192,7 +185,6 @@ export const ThemeProvider = ({ children }) => {
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('codearena:user-updated', handleUserUpdated);
-    syncAdvancedThemeFromStoredUser();
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);

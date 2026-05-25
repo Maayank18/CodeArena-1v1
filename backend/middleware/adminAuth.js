@@ -42,7 +42,7 @@ export const isAdmin = async (req, res, next) => {
         }
 
         const user = await User.findById(decoded.id)
-            .select('_id username usernameLower email')
+            .select('_id username usernameLower email role')
             .lean();
 
         if (!user) {
@@ -54,8 +54,10 @@ export const isAdmin = async (req, res, next) => {
 
         const adminUsername = (process.env.ADMIN_USERNAME || 'Maya').trim().toLowerCase();
         const currentUsername = (user.usernameLower || user.username || '').trim().toLowerCase();
+        const isRoleAdmin = user.role === 'admin';
+        const isLegacyAdmin = currentUsername === adminUsername;
 
-        if (currentUsername !== adminUsername) {
+        if (!isRoleAdmin && !isLegacyAdmin) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied: admin privileges required',
@@ -67,6 +69,7 @@ export const isAdmin = async (req, res, next) => {
             _id: user._id,
             username: user.username,
             email: user.email,
+            role: user.role,
             isAdmin: true,
         };
 

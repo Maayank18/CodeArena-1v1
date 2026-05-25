@@ -8,7 +8,7 @@ import { History as HistoryIcon, Trophy, Loader2, TrendingUp, TrendingDown } fro
 import api from '../api.js';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { HISTORY_CACHE_KEY, readStoredUser } from '../utils/sessionSync.js';
+import { HISTORY_CACHE_KEY, readStoredUser } from '../utils/authSessionStorage.js';
 import { useTheme } from '../context/ThemeContext';
 
 const CACHE_DURATION = 60000; // 60 seconds

@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { CreditCard, Download, ShieldCheck, Zap, Sparkles, Loader2, History } from 'lucide-react';
 import api from '../../api.js';
 import toast from 'react-hot-toast';
+import { useAuthSession } from '../../context/AuthSessionContext.jsx';
 
 const BillingTab = () => {
+  const { user } = useAuthSession();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-  const activePlan = (user.subscriptionPlan || 'free').toLowerCase();
+  const activePlan = (user?.subscriptionPlan || 'free').toLowerCase();
 
   const planMeta = {
     free: { name: 'Free Tier', price: 'Rs. 0', desc: 'Standard access to 1v1 arenas', color: 'from-gray-600 to-gray-500', badgeColor: 'bg-gray-500/10 text-gray-400 border border-gray-500/20' },
@@ -38,7 +39,7 @@ const BillingTab = () => {
   const handleDownload = async (transactionId) => {
     try {
       toast.loading('Generating invoice PDF...', { id: 'pdf-toast' });
-      const response = await api.get(`/payments/invoice/${transactionId}/download`, {
+      const response = await api.get(`/payments/${transactionId}/invoice`, {
         responseType: 'blob', // CRITICAL for PDFs
       });
       
@@ -80,7 +81,7 @@ const BillingTab = () => {
           <div className="text-left md:text-right space-y-1 shrink-0">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Subscription Cost</p>
             <p className="text-3xl font-black text-white tracking-tighter">{meta.price}</p>
-            {activePlan !== 'free' && user.subscriptionExpiry && (
+            {activePlan !== 'free' && user?.subscriptionExpiry && (
               <p className="text-[10px] text-gray-500 font-medium tracking-wider pt-1">
                 Expires on: {new Date(user.subscriptionExpiry).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
               </p>

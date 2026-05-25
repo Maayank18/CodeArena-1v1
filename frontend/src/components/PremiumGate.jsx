@@ -1,40 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Crown, Lock, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 const PremiumGate = ({ requiredTier = 'pro', compact = false, message, className = '', children }) => {
     const navigate = useNavigate();
-    
-    const [user, setUser] = useState(() => {
-        try {
-            return JSON.parse(localStorage.getItem('codearena_user') || '{}');
-        } catch {
-            return {};
-        }
-    });
-
-    useEffect(() => {
-        const handleUserUpdate = (e) => {
-            setUser(e.detail || {});
-        };
-        window.addEventListener('codearena:user-updated', handleUserUpdate);
-        
-        const handleStorage = (e) => {
-            if (e.key === 'codearena_user') {
-                try {
-                    setUser(JSON.parse(e.newValue || '{}'));
-                } catch {
-                    // ignore
-                }
-            }
-        };
-        window.addEventListener('storage', handleStorage);
-        
-        return () => {
-            window.removeEventListener('codearena:user-updated', handleUserUpdate);
-            window.removeEventListener('storage', handleStorage);
-        };
-    }, []);
+    const { user } = useAuthSession();
 
     const userRole = user?.role?.toLowerCase() || 'user';
     const userPlan = user?.subscriptionPlan?.toLowerCase() || 'free';

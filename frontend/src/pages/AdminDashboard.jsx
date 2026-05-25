@@ -16,6 +16,7 @@ import api from '../api';
 import toast from 'react-hot-toast';
 import LiveUsersTable from '../components/LiveUsersTable';
 import { CAMPAIGN_REGIONS } from '../data/campaignConfig';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -72,18 +73,44 @@ const normalizeProblemTopic = (value) => (
         : ''
 );
 
-const readStoredUser = () => {
-    try {
-        const raw = localStorage.getItem('codearena_user');
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-};
-
 const resolveAdminUsername = () => (
     String(import.meta.env.VITE_ADMIN_USERNAME || 'Maya').trim().toLowerCase()
 );
+
+const ADMIN_TAB_DATASETS = {
+    overview: ['stats', 'users', 'matches', 'problems', 'recentActivity'],
+    live: ['stats'],
+    users: ['users'],
+    matches: ['matches'],
+    problems: ['problems'],
+    leaderboard: ['users'],
+    payments: ['payments'],
+    analytics: ['stats', 'hourlyActivity', 'recentActivity'],
+    system: ['stats', 'systemHealth'],
+};
+
+const loadAdminDataset = (dataset, username) => {
+    switch (dataset) {
+        case 'stats':
+            return api.post('/admin/stats', { username });
+        case 'users':
+            return api.post('/admin/users', { username, limit: 500 });
+        case 'recentActivity':
+            return api.post('/admin/activity/recent', { username });
+        case 'hourlyActivity':
+            return api.post('/admin/activity/hourly', { username });
+        case 'problems':
+            return api.post('/admin/problems', { username });
+        case 'matches':
+            return api.post('/admin/matches', { username, limit: 500 });
+        case 'systemHealth':
+            return api.post('/admin/system/health', { username }).catch(() => ({ data: null }));
+        case 'payments':
+            return api.get('/payments/admin/transactions', { params: { status: 'all' } }).catch(() => ({ data: { transactions: [] } }));
+        default:
+            return Promise.resolve({ data: null });
+    }
+};
 
 const SPINNER_SIZE_CLASS_MAP = {
     4: 'h-4 w-4',
@@ -200,6 +227,7 @@ const Paginator = ({ page, total, perPage, onChange }) => {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 const AdminDashboard = () => {
+    const { user, isHydrated } = useAuthSession();
     const [adminUser, setAdminUser]             = useState(null);
     const [stats, setStats]                     = useState(null);
     const [users, setUsers]                     = useState([]);
@@ -254,53 +282,104 @@ const AdminDashboard = () => {
 
     const navigate = useNavigate();
     const refreshInterval = useRef(null);
+    const loadedTabsRef = useRef(new Set());
+
+    const isAdminUser = useMemo(() => {
+        if (!user) return false;
+        if (user.role === 'admin') return true;
+
+        const adminUsername = resolveAdminUsername();
+        return String(user.username || '').trim().toLowerCase() === adminUsername;
+    }, [user]);
+
+    const applyDatasetResult = useCallback((dataset, payload) => {
+        switch (dataset) {
+            case 'stats':
+                setStats(payload);
+                break;
+            case 'users':
+                setUsers(payload?.users || []);
+                break;
+            case 'recentActivity':
+                setRecentActivity(payload || { matches: [], users: [] });
+                break;
+            case 'hourlyActivity':
+                setHourlyActivity(payload?.hourlyActivity || []);
+                break;
+            case 'problems':
+                setProblems(payload?.problems || []);
+                break;
+            case 'matches':
+                setMatches(payload?.matches || []);
+                break;
+            case 'systemHealth':
+                setSystemHealth(payload || null);
+                break;
+            case 'payments':
+                setPayments(payload?.transactions || []);
+                break;
+            default:
+                break;
+        }
+    }, []);
 
     // ── AUTH CHECK ──────────────────────────────────────────────
     useEffect(() => {
-        const stored = readStoredUser();
-        if (!stored) { navigate('/login'); return; }
-        const adminUsername = resolveAdminUsername();
-        if (String(stored.username || '').trim().toLowerCase() !== adminUsername) {
-            toast.error('Access Denied: Admin privileges required');
-            navigate('/dashboard'); return;
+        if (!isHydrated) {
+            return;
         }
-        setAdminUser(stored);
-        fetchAll(stored.username);
 
-        // Auto-refresh every 30s
-        refreshInterval.current = setInterval(() => fetchLiveStats(stored.username), 30000);
-        return () => clearInterval(refreshInterval.current);
-    }, [navigate]);
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+
+        if (!isAdminUser) {
+            toast.error('Access Denied: Admin privileges required');
+            navigate('/dashboard');
+            return;
+        }
+
+        setAdminUser(user);
+    }, [isAdminUser, isHydrated, navigate, user]);
 
     // ── DATA FETCHING ────────────────────────────────────────────
-    const fetchAll = async (username) => {
-        setLoading(true);
+    const fetchTabData = useCallback(async (tabId, {
+        force = false,
+        showLoading = false,
+        username = adminUser?.username,
+    } = {}) => {
+        if (!username) return;
+
+        if (!force && loadedTabsRef.current.has(tabId)) {
+            return;
+        }
+
+        const datasets = ADMIN_TAB_DATASETS[tabId] || ADMIN_TAB_DATASETS.overview;
+
+        if (showLoading) {
+            setLoading(true);
+        }
+
         try {
-            const [statsRes, usersRes, activityRes, hourlyRes, problemsRes, matchesRes, healthRes, paymentsRes] = await Promise.all([
-                api.post('/admin/stats',              { username }),
-                api.post('/admin/users',              { username, limit: 500 }),
-                api.post('/admin/activity/recent',    { username }),
-                api.post('/admin/activity/hourly',    { username }),
-                api.post('/admin/problems',           { username }),
-                api.post('/admin/matches',            { username, limit: 500 }),
-                api.post('/admin/system/health',      { username }).catch(() => ({ data: null })),
-                api.get('/payments/admin/transactions', { params: { status: 'all' } }).catch(() => ({ data: { transactions: [] } }))
-            ]);
-            setStats(statsRes.data);
-            setUsers(usersRes.data.users || []);
-            setRecentActivity(activityRes.data);
-            setHourlyActivity(hourlyRes.data.hourlyActivity || []);
-            setProblems(problemsRes.data.problems || []);
-            setMatches(matchesRes.data.matches || []);
-            setSystemHealth(healthRes.data);
-            setPayments(paymentsRes.data?.transactions || []);
+            const responses = await Promise.all(
+                datasets.map((dataset) => loadAdminDataset(dataset, username))
+            );
+
+            datasets.forEach((dataset, index) => {
+                applyDatasetResult(dataset, responses[index]?.data);
+            });
+
+            loadedTabsRef.current.add(tabId);
         } catch (err) {
             console.error(err);
             toast.error('Failed to load admin data');
         } finally {
-            setLoading(false);
+            if (showLoading) {
+                setLoading(false);
+            }
         }
-    };
+    }, [adminUser?.username, applyDatasetResult]);
 
     const fetchLiveStats = async (username) => {
         try {
@@ -310,6 +389,35 @@ const AdminDashboard = () => {
             console.warn('Failed to fetch live admin stats:', error);
         }
     };
+
+    useEffect(() => {
+        if (!adminUser?.username) {
+            return;
+        }
+
+        fetchTabData(activeTab, {
+            force: false,
+            showLoading: !loadedTabsRef.current.has(activeTab),
+            username: adminUser.username,
+        });
+    }, [activeTab, adminUser?.username, fetchTabData]);
+
+    useEffect(() => {
+        if (!adminUser?.username) {
+            return undefined;
+        }
+
+        refreshInterval.current = setInterval(() => fetchLiveStats(adminUser.username), 30000);
+        return () => clearInterval(refreshInterval.current);
+    }, [adminUser?.username]);
+
+    const fetchAll = useCallback(async (username = adminUser?.username, options = {}) => {
+        await fetchTabData(options.tabId || activeTab, {
+            force: options.force ?? true,
+            showLoading: options.showLoading ?? false,
+            username,
+        });
+    }, [activeTab, adminUser?.username, fetchTabData]);
 
     const handleRefresh = async () => {
         setRefreshing(true);

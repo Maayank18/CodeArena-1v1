@@ -13,8 +13,10 @@ import {
 import toast from 'react-hot-toast';
 import api from '../api';
 import paymentQr from '../assets/payment-QR.png';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 const SubscriptionModal = ({ isOpen, onClose, plan }) => {
+  const { user, updateSession } = useAuthSession();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionComplete, setSubmissionComplete] = useState(false);
@@ -31,22 +33,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
     agreedToTC: false,
   });
 
-  const user = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-  const email = user.email || 'user@example.com';
-
-  const syncFreshProfile = async () => {
-    try {
-      const response = await api.get('/settings/profile');
-      if (response.data?.success && response.data?.user) {
-        const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-        const mergedUser = { ...storedUser, ...response.data.user };
-        localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
-        window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
-      }
-    } catch (error) {
-      console.error('[PROFILE SYNC ERROR]', error);
-    }
-  };
+  const email = user?.email || 'user@example.com';
 
   useEffect(() => {
     if (!isOpen) {
@@ -88,8 +75,7 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
     };
 
     checkPendingRequests();
-    syncFreshProfile();
-  }, [isOpen, user.fullName, user.phone]);
+  }, [isOpen, user?.fullName, user?.phone]);
 
   const pricing = useMemo(() => {
     const basePrice = Number(plan?.basePrice || 0);
@@ -125,7 +111,6 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
     if (isSubmitting) {
       return;
     }
-    await syncFreshProfile();
     onClose();
   };
 
@@ -164,7 +149,6 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
       // Update allTransactions with newly submitted one
       setAllTransactions(prev => [response.data.transaction, ...prev.filter(t => t.status !== 'pending')]);
       
-      await syncFreshProfile();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit payment request');
     } finally {

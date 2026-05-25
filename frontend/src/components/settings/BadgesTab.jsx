@@ -6,6 +6,7 @@ import api from '../../api';
 import BadgeArtwork from '../badges/BadgeArtwork.jsx';
 import { BADGE_DEFINITIONS, CATEGORIES, GLOW_MAP } from '../../utils/badgeHelper';
 import { normalizeBadgeKey } from '../../utils/badgeAssets';
+import { useAuthSession } from '../../context/AuthSessionContext.jsx';
 
 const GLOW_COLOR_MAP = {
   cyan: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',
@@ -310,19 +311,19 @@ const BadgeCard = ({ badge, equippedBadge, handleEquipBadge, isAdmin, onTriggerS
 
 const BadgesTab = () => {
   const navigate = useNavigate();
+  const { user, updateSession } = useAuthSession();
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [achievementProgress, setAchievementProgress] = useState([]);
   const [catalog, setCatalog] = useState(BADGE_DEFINITIONS);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [equippedBadge, setEquippedBadge] = useState('');
   const [showcaseTarget, setShowcaseTarget] = useState(null);
 
-  const storedUser = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-  const plan = (storedUser?.subscriptionPlan || 'free').toLowerCase();
+  const plan = (user?.subscriptionPlan || 'free').toLowerCase();
   const userTier = getPlanTier(plan);
-  const isAdmin = storedUser?.role === 'admin';
+  const isAdmin = user?.role === 'admin';
   const hasBadgeAccess = userTier >= 2 || isAdmin;
+  const equippedBadge = user?.customization?.equippedBadge || '';
 
   useEffect(() => {
     const fetchBadges = async () => {
@@ -345,9 +346,31 @@ const BadgesTab = () => {
     fetchBadges();
   }, []);
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-    setEquippedBadge(stored.customization?.equippedBadge || '');
+  const earnedBadgeSet = useMemo(
+    () => new Set((earnedBadges || []).map((badge) => normalizeBadgeKey(badge))),
+    [earnedBadges]
+  );
+
+  const progressByBadgeKey = useMemo(() => {
+    const nextMap = new Map();
+    for (const progress of achievementProgress || []) {
+      const key = normalizeBadgeKey(progress?.badgeKey || progress?.id);
+      if (key) {
+        nextMap.set(key, progress);
+      }
+    }
+    return nextMap;
+  }, [achievementProgress]);
+
+  const frontendBadgeByKey = useMemo(() => {
+    const nextMap = new Map();
+    for (const badge of BADGE_DEFINITIONS) {
+      const normalizedId = normalizeBadgeKey(badge.id);
+      const normalizedKey = normalizeBadgeKey(badge.key);
+      if (normalizedId) nextMap.set(normalizedId, badge);
+      if (normalizedKey) nextMap.set(normalizedKey, badge);
+    }
+    return nextMap;
   }, []);
 
   const handleEquipBadge = async (badgeId) => {
@@ -366,17 +389,16 @@ const BadgesTab = () => {
     try {
       const res = await api.put('/settings/customization', { equippedBadge: newEquipped });
       if (res.data?.success) {
-        setEquippedBadge(newEquipped);
         toast.success(isCurrentlyEquipped ? 'Badge unequipped successfully.' : 'Badge equipped successfully.');
-
-        const currentStored = JSON.parse(localStorage.getItem('codearena_user') || '{}');
-        const nextUser = res.data.user || {
-          ...currentStored,
-          customization: { ...currentStored.customization, equippedBadge: newEquipped },
-        };
-        const mergedUser = { ...currentStored, ...nextUser };
-        localStorage.setItem('codearena_user', JSON.stringify(mergedUser));
-        window.dispatchEvent(new CustomEvent('codearena:user-updated', { detail: mergedUser }));
+        updateSession(res.data.user || {
+          customization: {
+            ...(user?.customization || {}),
+            equippedBadge: newEquipped,
+          },
+        }, {
+          clearDerived: true,
+          dispatch: true,
+        });
       }
     } catch (err) {
       toast.error('Failed to update equipped badge.');
@@ -388,22 +410,15 @@ const BadgesTab = () => {
 
     return normalizedCatalog.map((catalogItem) => {
       const identifier = catalogItem.key || catalogItem.id;
-
-      const frontendDef = BADGE_DEFINITIONS.find((badge) =>
-        normalizeBadgeKey(badge.id) === normalizeBadgeKey(identifier) ||
-        normalizeBadgeKey(badge.key) === normalizeBadgeKey(identifier)
-      ) || {};
-
-      const progressDef = achievementProgress.find((progress) =>
-        normalizeBadgeKey(progress.badgeKey) === normalizeBadgeKey(identifier) ||
-        normalizeBadgeKey(progress.id) === normalizeBadgeKey(identifier)
-      ) || {};
+      const normalizedIdentifier = normalizeBadgeKey(identifier);
+      const frontendDef = frontendBadgeByKey.get(normalizedIdentifier) || {};
+      const progressDef = progressByBadgeKey.get(normalizedIdentifier) || {};
 
       let progress = progressDef.progress || 0;
       let unlocked = !!progressDef.unlocked;
       const unlockedAt = progressDef.unlockedAt || null;
 
-      if (earnedBadges.some((badge) => normalizeBadgeKey(badge) === normalizeBadgeKey(identifier))) {
+      if (earnedBadgeSet.has(normalizedIdentifier)) {
         unlocked = true;
       }
 
@@ -428,7 +443,7 @@ const BadgesTab = () => {
         completionPercent: Math.min((progress / requiredValue) * 100, 100),
       };
     });
-  }, [achievementProgress, catalog, earnedBadges, isAdmin]);
+  }, [catalog, earnedBadgeSet, frontendBadgeByKey, isAdmin, progressByBadgeKey]);
 
   const activeTotal = mergedBadges.length;
   const unlockedTotalCount = mergedBadges.filter((badge) => badge.unlocked).length;

@@ -20,7 +20,7 @@ export const executeVisualization = async (req, res) => {
     const isAdmin = req.user?.role === 'admin';
 
     // ── Tiered Quota Enforcement ─────────────────────────────────────────
-    const usage = user.usageStats || {};
+    const usage = user?.usageStats || {};
     
     if (!isAdmin && userTier < 3) {
         if (userTier < 2) {
@@ -56,6 +56,17 @@ export const executeVisualization = async (req, res) => {
         // Check for hard errors in the trace itself (runtime errors)
         const runtimeError = traceData.find(step => step.type === 'error');
         
+        if (user) {
+            if (!isAdmin && userTier < 3) {
+                if (userTier < 2) {
+                    user.usageStats.visualizerTrialUsed = true;
+                } else if (userTier === 2) {
+                    user.usageStats.visualizationsToday = (user.usageStats.visualizationsToday || 0) + 1;
+                }
+                await user.save();
+            }
+        }
+
         res.json({ 
             success: true, 
             trace: traceData,
@@ -63,7 +74,14 @@ export const executeVisualization = async (req, res) => {
                 totalSteps: traceData.length,
                 hasError: !!runtimeError,
                 error: runtimeError?.error
-            }
+            },
+            usage: user?.usageStats || null,
+            user: user ? {
+                _id: user._id,
+                role: user.role,
+                subscriptionPlan: user.subscriptionPlan,
+                usageStats: user.usageStats,
+            } : null,
         });
 
     } catch (error) {
@@ -96,32 +114,16 @@ export const executeVisualization = async (req, res) => {
  */
 export const consumeVisualization = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        const user = await User.findById(req.user._id)
+            .select('_id role subscriptionPlan usageStats')
+            .lean();
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const tiers = { free: 0, plus: 1, pro: 2, premium: 3 };
-        const userTier = tiers[user.subscriptionPlan || 'free'];
-
-        const isAdmin = user.role === 'admin';
-
-        // ✅ PREMIUM/ADMIN BYPASS: No increment needed
-        if (isAdmin || userTier >= 3) {
-            return res.json({ success: true, message: 'Unlimited usage recorded' });
-        }
-
-        if (userTier < 2) {
-            // Free/Plus: Mark trial as used
-            user.usageStats.visualizerTrialUsed = true;
-        } else if (userTier === 2) {
-            // Pro: Increment daily count
-            user.usageStats.visualizationsToday = (user.usageStats.visualizationsToday || 0) + 1;
-        }
-
-        await user.save();
-        res.json({ 
-            success: true, 
-            message: 'Usage recorded',
-            visualizationsToday: user.usageStats.visualizationsToday 
+        res.json({
+            success: true,
+            message: 'Visualizer usage already recorded by /visualize/run',
+            usage: user.usageStats || {},
+            user,
         });
     } catch (error) {
         console.error('[VISUALIZER] Usage recording error:', error);

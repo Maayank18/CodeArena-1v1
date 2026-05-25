@@ -8,11 +8,13 @@ import SettingsModal from './SettingsModal.jsx';
 import { useTheme } from '../context/ThemeContext';
 import { getLevelInfo } from '../utils/levelSystem';
 import { getAdvancedThemeMeta } from '../utils/advancedThemes';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme, advancedTheme, clearAdvancedTheme } = useTheme();
+  const { clearSession } = useAuthSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [displayUser, setDisplayUser] = useState(user);
@@ -83,12 +85,16 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
   const handleRequireReauth = useCallback(() => {
     setIsSettingsOpen(false);
     setIsMenuOpen(false);
-    localStorage.removeItem('codearena_user');
-    localStorage.removeItem('dashboard_profile_cache');
     clearAdvancedTheme();
     toast.success('Password updated. Please sign in again.');
-    navigate('/login');
-  }, [navigate, clearAdvancedTheme]);
+    clearSession({
+      clearDerived: true,
+      eventDetail: {
+        redirectTo: '/login',
+        replace: true,
+      },
+    });
+  }, [clearAdvancedTheme, clearSession]);
 
   const openCustomizationSettings = useCallback(() => {
     navigate('/settings');

@@ -9,6 +9,7 @@ import SkillTreeModal from '../components/Campaign/SkillTreeModal';
 import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
 import api from '../api';
 import toast from 'react-hot-toast';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 import {
   ROOT_CAMPAIGN_NODE_ID,
   shouldLockCampaignAfterTrial,
@@ -81,13 +82,7 @@ const Campaign = () => {
   const [showSkillTree, setShowSkillTree] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('codearena_user') || '{}');
-    } catch {
-      return {};
-    }
-  });
+  const { user, isHydrated, clearSession, updateSession } = useAuthSession();
 
   const incomingProgress = location.state?.newProgress ?? null;
   const nodes = useMemo(() => mapData?.nodes ?? [], [mapData]);
@@ -144,6 +139,10 @@ const Campaign = () => {
   );
 
   useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     if (!user || Object.keys(user).length === 0) {
       toast.error('Please log in to access the campaign');
       navigate('/');
@@ -157,7 +156,7 @@ const Campaign = () => {
     return () => {
       cancelledRef.current = true;
     };
-  }, [fetchCampaignData, incomingProgress, navigate, user]);
+  }, [fetchCampaignData, incomingProgress, isHydrated, navigate, user]);
 
   useEffect(() => {
     if (!shouldLockCampaignAfterTrial(user, progress)) {
@@ -197,11 +196,13 @@ const Campaign = () => {
   }, []);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('codearena_user');
-    navigate('/');
-  }, [navigate]);
+    clearSession({
+      clearDerived: true,
+      eventDetail: { redirectTo: '/', replace: true },
+    });
+  }, [clearSession]);
 
-  if (loading) {
+  if (!isHydrated || loading) {
     return (
       <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col items-center justify-center gap-5">
         <div className="text-6xl select-none" style={{ animation: 'bounce 1s infinite' }}>
@@ -217,7 +218,7 @@ const Campaign = () => {
 
   return (
     <div className="h-[100dvh] bg-slate-50 dark:bg-[#060810] flex flex-col overflow-hidden">
-      <Navbar user={user} onLogout={handleLogout} onUserUpdate={setUser} />
+      <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
 
       <CampaignHUD progress={progress} onOpenSkillTree={() => setShowSkillTree(true)}>
         <button

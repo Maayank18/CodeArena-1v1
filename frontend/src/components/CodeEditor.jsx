@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
@@ -48,6 +48,14 @@ const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, languag
   }, [language]);
 
   const editorTheme = theme === 'dark' ? vscodeDark : softLightEditorTheme;
+  const extensions = useMemo(() => ([
+    languageExtension,
+    yCollab(ytext, provider?.awareness, { undoManager }),
+  ]), [languageExtension, provider?.awareness, undoManager, ytext]);
+
+  useEffect(() => () => {
+    undoManager.destroy();
+  }, [undoManager]);
 
   return (
     <>
@@ -61,35 +69,25 @@ const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, languag
         className="min-h-0 flex-1 overflow-hidden text-xs sm:text-sm md:text-base"
         height="100%"
         theme={editorTheme}
-        extensions={[
-          languageExtension,
-          yCollab(ytext, provider?.awareness, { undoManager }),
-        ]}
+        extensions={extensions}
         readOnly={isReadOnly}
         basicSetup={{
           lineNumbers: true,
           highlightActiveLineGutter: true,
-          highlightSpecialChars: true,
           history: true,
           drawSelection: true,
-          dropCursor: true,
           allowMultipleSelections: true,
           indentOnInput: true,
           syntaxHighlighting: true,
           bracketMatching: true,
           closeBrackets: true,
           autocompletion: true,
-          rectangularSelection: true,
-          crosshairCursor: true,
           highlightActiveLine: true,
           highlightSelectionMatches: true,
           closeBracketsKeymap: true,
           defaultKeymap: true,
-          searchKeymap: true,
           historyKeymap: true,
-          foldKeymap: true,
           completionKeymap: true,
-          lintKeymap: true,
         }}
       />
     </div>

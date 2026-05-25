@@ -1,72 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import { Swords, History, Trophy, BookOpen, Globe, Zap, Eye, Map } from 'lucide-react';
 import ConsistencyCalendar from './ConsistencyCalendar';
-import { getStoredAuthToken, resolveBackendOrigin } from '../api.js';
 import { useTheme } from '../context/ThemeContext';
+import { useAppSocket } from '../context/AppSocketContext.jsx';
 
 const Sidebar = () => {
   const { advancedTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ live: 0, total: 0 });
-
-  useEffect(() => {
-    const socketUrl = resolveBackendOrigin();
-    const token = getStoredAuthToken();
-
-    const fetchStats = async () => {
-      try {
-        const response = await fetch(`${socketUrl.replace(/\/$/, '')}/api/stats`);
-        if (!response.ok) {
-          return;
-        }
-
-        const data = await response.json();
-        if (data) {
-          setStats((prev) => ({
-            ...prev,
-            live: data.live || 0,
-            total: data.total || 0,
-          }));
-        }
-      } catch (error) {
-        console.error('Stats fetch failed', error);
-      }
-    };
-
-    fetchStats();
-
-    if (!token) {
-      return undefined;
-    }
-
-    const socket = io(socketUrl, {
-      transports: ['websocket'],
-      upgrade: false,
-      reconnectionAttempts: 5,
-      auth: {
-        token,
-      },
-    });
-
-    socket.on('site_stats', (data) => {
-      if (!data) {
-        return;
-      }
-
-      setStats((prev) => ({
-        live: typeof data.live === 'number' ? data.live : prev.live,
-        total: typeof data.total === 'number' ? data.total : prev.total,
-      }));
-    });
-
-    return () => {
-      socket.off('site_stats');
-      socket.disconnect();
-    };
-  }, []);
+  const { stats } = useAppSocket();
 
   const menu = [
     { name: 'Battle', mobileLabel: 'Battle', desktopLabel: 'Battle Arena', icon: Swords, path: '/dashboard' },

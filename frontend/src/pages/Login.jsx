@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import api, { isApiRequestCancelled } from '../api.js';
 import { Logo } from '../components/Logo.jsx';
+import { useAuthSession } from '../context/AuthSessionContext.jsx';
 
 const initialFormData = {
     fullName: '',
@@ -63,14 +64,8 @@ const getResetPasswordError = (password) => {
     return null;
 };
 
-const clearClientAuthState = () => {
-    localStorage.removeItem('codearena_user');
-    localStorage.removeItem('dashboard_profile_cache');
-    localStorage.removeItem('leaderboard_cache');
-    localStorage.removeItem('history_cache');
-};
-
 const Login = () => {
+    const { clearSession, replaceSession, isAuthenticated } = useAuthSession();
     const [isRegister, setIsRegister] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -81,6 +76,12 @@ const Login = () => {
     const navigate = useNavigate();
 
     const isRecoveryMode = recoveryStep !== '';
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     useEffect(() => {
         if (!isRecoveryMode) {
@@ -253,11 +254,9 @@ const Login = () => {
             }
 
 
-            clearClientAuthState();
-            localStorage.setItem('codearena_user', JSON.stringify(data));
-
+            replaceSession(data, { clearDerived: true, dispatch: true });
             toast.success(data.message || `Welcome, ${data.username}!`, { duration: 3000 });
-            window.setTimeout(() => navigate('/dashboard'), 500);
+            navigate('/dashboard', { replace: true });
         } catch (error) {
             if (isApiRequestCancelled(error)) {
                 if (import.meta.env.DEV) {
@@ -369,7 +368,10 @@ const Login = () => {
                 console.log('[AUTH UI] reset-password response', data);
             }
 
-            clearClientAuthState();
+            clearSession({
+                clearDerived: true,
+                dispatch: false,
+            });
             resetRecoveryState(recoveryData.email);
             setFormData((prev) => ({
                 ...prev,
@@ -383,7 +385,7 @@ const Login = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [recoveryData, recoveryPasswordError, resetRecoveryState]);
+    }, [clearSession, recoveryData, recoveryPasswordError, resetRecoveryState]);
 
     const handleResendOtp = useCallback(async () => {
         if (recoveryData.resendAvailableIn > 0) {
