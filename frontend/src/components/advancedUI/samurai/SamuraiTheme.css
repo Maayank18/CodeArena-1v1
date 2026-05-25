@@ -22,14 +22,15 @@
 
   --sam-crimson-glow: rgba(139, 26, 26, 0.3);
   --sam-blood-glow: rgba(160, 32, 32, 0.2);
+
   --sam-steel-glow: rgba(176, 170, 160, 0.1);
 
   /* Override Global Variables */
   --bg-primary: transparent;
-  --bg-secondary: var(--sam-ink);
+  --bg-secondary: rgba(10, 10, 12, 0.25);
   --bg-tertiary: rgba(139, 26, 26, 0.03);
-  --surface-elevated: var(--sam-charcoal);
-  --border-color: rgba(139, 26, 26, 0.1);
+  --surface-elevated: rgba(18, 18, 21, 0.35); /* Translucent base */
+  --border-color: rgba(139, 26, 26, 0.15);
 
   --text-primary: var(--sam-ivory);
   --text-secondary: #8a8078;
@@ -43,41 +44,8 @@ body[data-theme="dark"].theme-samurai {
   color: var(--text-primary);
 }
 
-/* Dark brushed wood / stone textured background with a central cinematic glowing moon */
+/* Replaced by SamuraiLeavesBackground.jsx image layer */
 .theme-samurai {
-  background-image:
-    /* Subtle noise grain for wood/stone texture */
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"),
-    /* Faint wood grain lines */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 60px,
-      rgba(139, 26, 26, 0.015) 60px, rgba(139, 26, 26, 0.015) 61px,
-      transparent 61px, transparent 180px
-    ),
-    repeating-linear-gradient(
-      88deg,
-      transparent 0px, transparent 100px,
-      rgba(100, 80, 60, 0.012) 100px, rgba(100, 80, 60, 0.012) 101px,
-      transparent 101px, transparent 250px
-    ),
-    /* Soft vignette */
-    radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
-    
-    /* === THE MOON === */
-    /* Inner Bright Core */
-    radial-gradient(300px circle at 50% 40%, rgba(255, 250, 240, 0.25) 0%, rgba(230, 235, 245, 0.12) 40%, transparent 80%),
-    /* Soft Atmospheric Diffused Glow */
-    radial-gradient(600px circle at 50% 40%, rgba(200, 210, 230, 0.08) 0%, rgba(180, 190, 210, 0.04) 50%, transparent 90%),
-    /* Elliptical Mist/Cloud Shadows across the moon */
-    radial-gradient(800px 200px ellipse at 50% 45%, rgba(5, 5, 6, 0.4) 0%, transparent 70%),
-    radial-gradient(1200px 300px ellipse at 50% 35%, rgba(10, 10, 12, 0.3) 0%, transparent 80%),
-    /* Vast Moonlight Halo */
-    radial-gradient(1200px circle at 50% 40%, rgba(150, 170, 200, 0.03) 0%, transparent 70%),
-    
-    /* Additional faint red depth zones */
-    radial-gradient(ellipse at 20% 80%, rgba(139, 26, 26, 0.025) 0%, transparent 40%),
-    radial-gradient(ellipse at 80% 20%, rgba(139, 26, 26, 0.015) 0%, transparent 35%);
   background-color: var(--sam-void);
   background-attachment: fixed;
 }
@@ -120,15 +88,18 @@ body[data-theme="dark"].theme-samurai {
 
 /* ── Panels (Elevated Surfaces) ── */
 .theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav) {
-  background:
+  background-color: transparent !important;
+  background-image:
     /* Subtle lacquer grain */
     repeating-linear-gradient(
       180deg,
       transparent, transparent 25px,
       rgba(139, 26, 26, 0.012) 25px, rgba(139, 26, 26, 0.012) 26px
     ),
-    linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
-  border: 1px solid rgba(139, 26, 26, 0.15) !important;
+    linear-gradient(180deg, rgba(18, 18, 21, 0.15), rgba(10, 10, 12, 0.4)) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(139, 26, 26, 0.2) !important;
   border-radius: 10px !important;
   animation: samurai-pulse 6s ease-in-out infinite;
   position: relative;
@@ -148,22 +119,25 @@ body[data-theme="dark"].theme-samurai {
 }
 
 .theme-samurai .bg-\[var\(--surface-elevated\)\]:not(.absolute):not(nav):not(aside):not(.mobile-bottom-nav):hover {
-  border-color: rgba(139, 26, 26, 0.28) !important;
-  box-shadow: 0 0 6px rgba(139, 26, 26, 0.18), 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(139, 26, 26, 0.35) !important;
+  box-shadow: 0 0 8px rgba(139, 26, 26, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4) !important;
   transform: translateY(-1px);
   transition: all 0.3s ease;
 }
 
 /* ── Sidebar (Lacquered Wood Panel) ── */
 .theme-samurai aside {
-  background:
+  background-color: transparent !important;
+  background-image:
     repeating-linear-gradient(
       180deg,
       transparent, transparent 40px,
       rgba(80, 50, 30, 0.02) 40px, rgba(80, 50, 30, 0.02) 41px
     ),
-    linear-gradient(180deg, var(--sam-charcoal) 0%, var(--sam-ink) 100%) !important;
-  border-right: 1px solid rgba(139, 26, 26, 0.1) !important;
+    linear-gradient(180deg, rgba(18, 18, 21, 0.1) 0%, rgba(10, 10, 12, 0.35) 100%) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-right: 1px solid rgba(139, 26, 26, 0.15) !important;
 }
 
 /* Active sidebar — crimson glow bar */
@@ -189,9 +163,12 @@ body[data-theme="dark"].theme-samurai {
 
 /* ── Navbar (Dark Lacquer Metal) ── */
 .theme-samurai nav.sticky.top-0 {
-  background:
-    linear-gradient(180deg, var(--sam-charcoal), var(--sam-ink)) !important;
-  border-bottom: 1px solid rgba(139, 26, 26, 0.12) !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(180deg, rgba(18, 18, 21, 0.2), rgba(10, 10, 12, 0.5)) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(139, 26, 26, 0.15) !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(139, 26, 26, 0.06) !important;
   overflow: visible !important; /* Ensure dropdowns aren't clipped */
 }

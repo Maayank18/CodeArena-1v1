@@ -192,7 +192,7 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
                 className="h-8 w-8 ring-2 ring-transparent transition-all sm:h-10 sm:w-10"
               />
 
-              <div className="hidden flex-col xl:flex">
+              <div className="hidden flex-col sm:flex text-left">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="max-w-[120px] truncate text-sm font-bold leading-none text-gray-800 dark:text-[var(--text-primary)] sm:text-base">
                     {displayUser?.username || 'Guest'}
