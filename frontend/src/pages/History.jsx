@@ -165,9 +165,9 @@ const History = () => {
                     <div className="text-right pl-4 flex flex-col items-end justify-center">
                         <div className="flex items-baseline gap-1">
                             <span className={`font-mono font-bold text-lg md:text-xl ${
-                                isWin ? 'text-green-400' : 'text-[var(--text-primary)]'
+                                myData.seasonPointsGained > 0 ? 'text-green-400' : (myData.seasonPointsGained < 0 ? 'text-red-500' : 'text-[var(--text-primary)]')
                             }`}>
-                                {myData.score}
+                                {myData.seasonPointsGained > 0 ? '+' : ''}{myData.seasonPointsGained}
                             </span>
                             <span className="text-[10px] md:text-xs text-[var(--text-secondary)] uppercase tracking-wide">
                                 pts

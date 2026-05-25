@@ -139,6 +139,14 @@ export const getUserProfile = async (req, res) => {
         // ✅ SAFETY: Ensure stats exists
         user.stats = user.stats || { matchesPlayed: 0, wins: 0, losses: 0 };
         
+        const rank = await User.countDocuments({
+            $or: [
+                { seasonScore: { $gt: user.seasonScore || 0 } },
+                { seasonScore: user.seasonScore || 0, rating: { $gt: user.rating || 1000 } }
+            ]
+        }) + 1;
+        user.stats.rank = rank;
+        
         // Ensure RBAC fields exist
         user.role = user.role || 'user';
         user.subscriptionPlan = user.subscriptionPlan || 'free';

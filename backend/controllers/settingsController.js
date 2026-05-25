@@ -41,36 +41,48 @@ const isValidDataImage = (value) => {
     return payloadSize > 0 && payloadSize <= MAX_AVATAR_SIZE_BYTES;
 };
 
-const buildSettingsPayload = (user) => ({
-    _id: user._id,
-    username: user.username,
-    fullName: user.fullName,
-    email: user.email,
-    phone: user.phone,
-    avatar: user.avatar,
-    bio: user.bio || '',
-    preferences: {
-        emailNotifications: Boolean(user.preferences?.emailNotifications),
-        marketingUpdates: Boolean(user.preferences?.marketingUpdates),
-    },
-    rating: user.rating,
-    seasonScore: user.seasonScore,
-    stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
-    usageStats: user.usageStats || {
-        chatQueriesToday: 0,
-        matchesToday: 0,
-        customMatchesToday: 0,
-        visualizationsToday: 0,
-        visualizerTrialUsed: false,
-        aiHelpToday: 0,
-        lastResetDate: null,
-    },
-    subscriptionPlan: user.subscriptionPlan || 'free',
-    badges: user.badges || [],
-    customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark', advancedTheme: '' },
-    emailVerified: Boolean(user.emailVerified),
-    emailVerifiedAt: user.emailVerifiedAt || null,
-});
+const buildSettingsPayload = async (user) => {
+    const payload = {
+        _id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+        bio: user.bio || '',
+        preferences: {
+            emailNotifications: Boolean(user.preferences?.emailNotifications),
+            marketingUpdates: Boolean(user.preferences?.marketingUpdates),
+        },
+        rating: user.rating,
+        seasonScore: user.seasonScore,
+        stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
+        usageStats: user.usageStats || {
+            chatQueriesToday: 0,
+            matchesToday: 0,
+            customMatchesToday: 0,
+            visualizationsToday: 0,
+            visualizerTrialUsed: false,
+            aiHelpToday: 0,
+            lastResetDate: null,
+        },
+        subscriptionPlan: user.subscriptionPlan || 'free',
+        badges: user.badges || [],
+        customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark', advancedTheme: '' },
+        emailVerified: Boolean(user.emailVerified),
+        emailVerifiedAt: user.emailVerifiedAt || null,
+    };
+
+    const rank = await User.countDocuments({
+        $or: [
+            { seasonScore: { $gt: user.seasonScore || 0 } },
+            { seasonScore: user.seasonScore || 0, rating: { $gt: user.rating || 1000 } }
+        ]
+    }) + 1;
+    
+    payload.stats.rank = rank;
+    return payload;
+};
 
 const validateUsername = (username) => {
     if (!username) {
@@ -117,7 +129,7 @@ export const getSettingsProfile = async (req, res) => {
 
         return res.json({
             success: true,
-            user: buildSettingsPayload(user),
+            user: await buildSettingsPayload(user),
         });
     } catch (error) {
         console.error('GET SETTINGS PROFILE ERROR:', error.message);
@@ -171,7 +183,7 @@ export const updateProfileSettings = async (req, res) => {
         return res.json({
             success: true,
             message: 'Profile settings updated successfully.',
-            user: buildSettingsPayload(updatedUser),
+            user: await buildSettingsPayload(updatedUser),
         });
     } catch (error) {
         console.error('UPDATE SETTINGS PROFILE ERROR:', error.message);
@@ -366,7 +378,7 @@ export const verifySettingsOtp = async (req, res) => {
             success: true,
             message: 'Sensitive settings updated successfully.',
             requiresReauth: Boolean(pendingPasswordHash || legacyPendingPassword),
-            user: buildSettingsPayload(user),
+            user: await buildSettingsPayload(user),
         });
     } catch (error) {
         console.error('VERIFY SETTINGS OTP ERROR:', error.message);
@@ -512,7 +524,7 @@ export const verifyEmailAddress = async (req, res) => {
             message: pendingType === 'email_change' 
                 ? 'Email changed and verified successfully.' 
                 : 'Email verified successfully.',
-            user: buildSettingsPayload(user),
+            user: await buildSettingsPayload(user),
         });
     } catch (error) {
         console.error('VERIFY EMAIL ERROR:', error);
@@ -611,7 +623,7 @@ export const updateCustomization = async (req, res) => {
             success: true,
             message: 'Customization saved.',
             customization: updatedUser.customization,
-            user: buildSettingsPayload(updatedUser),
+            user: await buildSettingsPayload(updatedUser),
         });
     } catch (error) {
         console.error('UPDATE CUSTOMIZATION ERROR:', error.message);
