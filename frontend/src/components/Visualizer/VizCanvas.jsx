@@ -252,7 +252,32 @@ const VizCanvas = memo(({ variables }) => {
             if (!thisVal.__id || !complexIds.has(thisVal.__id)) complex.push(['Active Object', thisVal]);
         }
 
-        return { complexVars: complex, simpleVars: simple, pointers: ptrs, isEmpty: complex.length === 0 && simple.length === 0 };
+        // ── Single Renderer Isolation Logic ──
+        // To prevent mixing multiple render modes (e.g., Array boxes alongside a Tree),
+        // we categorize the complex variables and choose ONLY ONE canonical renderer mode.
+        const treeVars = [];
+        const graphVars = [];
+        const linkedListVars = [];
+        const arrayVars = [];
+        const fallbackVars = [];
+
+        complex.forEach(([name, value]) => {
+            if (isTreeNode(value)) treeVars.push([name, value]);
+            else if (isAdjacencyList(value)) graphVars.push([name, value]);
+            else if (isLinkedListNode(value) || (value && value.head && isLinkedListNode(value.head))) linkedListVars.push([name, value]);
+            else if (Array.isArray(value) || (value && value.stack) || (value && (value.queue || value.items))) arrayVars.push([name, value]);
+            else fallbackVars.push([name, value]);
+        });
+
+        // Determine the canonical renderer mode strictly in priority order
+        let activeComplexVars = [];
+        if (graphVars.length > 0) activeComplexVars = graphVars;
+        else if (treeVars.length > 0) activeComplexVars = treeVars;
+        else if (linkedListVars.length > 0) activeComplexVars = linkedListVars;
+        else if (arrayVars.length > 0) activeComplexVars = arrayVars;
+        else activeComplexVars = fallbackVars;
+
+        return { complexVars: activeComplexVars, simpleVars: simple, pointers: ptrs, isEmpty: activeComplexVars.length === 0 && simple.length === 0 };
     }, [variables]);
 
     if (!variables) return <EmptyState />;

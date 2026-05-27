@@ -439,9 +439,9 @@ function instrumentJs(code) {
 
     for (const { pos, line, scopeVars } of inserts) {
         // Build capture list only from vars visible at this scope
-        // Use typeof guard for safety (TDZ, conditional declarations)
+        // Wrap each evaluation in a try-catch to safely handle TDZ ReferenceErrors
         const captureList = scopeVars
-            .map(v => `["${v}", typeof ${v} !== 'undefined' ? ${v} : undefined]`)
+            .map(v => `["${v}", (() => { try { return ${v}; } catch(e) { return undefined; } })()]`)
             .join(',');
 
         const snippet = `;__snapshot(${line}, () => [${captureList}]);`;
