@@ -315,6 +315,7 @@ const userSchema = new mongoose.Schema({
         customMatchesToday: { type: Number, default: 0 },
         visualizationsToday: { type: Number, default: 0 },
         visualizerTrialUsed: { type: Boolean, default: false },
+        campaignTrialUsed: { type: Boolean, default: false },
         aiHelpToday: { type: Number, default: 0 },
         lastResetDate: { type: Date, default: Date.now }
     },

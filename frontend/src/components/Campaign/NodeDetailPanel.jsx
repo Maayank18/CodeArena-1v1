@@ -63,11 +63,11 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 20 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            className="fixed inset-0 z-[101] flex items-end justify-center p-0 sm:items-center sm:p-6"
+            className="fixed inset-0 z-[101] flex items-center justify-center p-4 sm:p-6"
             onClick={onClose}
           >
             <div
-              className="relative z-[101] w-full max-w-md md:max-w-lg bg-white dark:bg-[#0F172A] border border-gray-100 dark:border-gray-700 rounded-t-[28px] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[88dvh] sm:max-h-[min(84vh,720px)] transition-colors"
+              className="relative z-[101] w-full max-w-[420px] md:max-w-[480px] bg-white dark:bg-[#0F172A] border border-gray-100 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[82dvh] sm:max-h-[min(84vh,720px)] transition-colors"
               onClick={(event) => event.stopPropagation()}
               style={{ boxShadow: isDark ? `0 30px 80px ${accentColor}22` : `0 20px 60px rgba(0,0,0,0.15)` }}
             >
@@ -158,29 +158,32 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                   </div>
                 )}
 
-                {hasProblemData && node.rewards && (
+                {hasProblemData && (
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">
                       Rewards
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[
-                        { s: 1, kp: node.rewards.oneStarKP },
-                        { s: 2, kp: node.rewards.twoStarKP },
-                        { s: 3, kp: node.rewards.threeStarKP },
+                        { s: 0, kp: -5 },
+                        { s: 1, kp: 3 },
+                        { s: 2, kp: 7 },
+                        { s: 3, kp: 15 },
                       ].map((r) => (
                         <div
                           key={r.s}
-                          className="flex flex-col items-center p-2 bg-gray-50 dark:bg-slate-950/45 rounded-lg border border-gray-100 dark:border-slate-800/80"
+                          className={`flex flex-col items-center p-2 rounded-lg border ${r.kp < 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30' : 'bg-gray-50 dark:bg-slate-950/45 border-gray-100 dark:border-slate-800/80'}`}
                         >
                           <div className="flex gap-0.5 mb-0.5">
-                            {[1, 2, 3].map((i) => (
-                              <span key={i} style={{ fontSize: 9, color: i <= r.s ? '#fbbf24' : '#374151' }}>★</span>
+                            {r.s === 0 ? (
+                               <span style={{ fontSize: 9, color: isDark ? '#374151' : '#d1d5db' }}>★</span>
+                            ) : [1, 2, 3].map((i) => (
+                              <span key={i} style={{ fontSize: 9, color: i <= r.s ? '#fbbf24' : isDark ? '#374151' : '#d1d5db' }}>★</span>
                             ))}
                           </div>
                           <div className="flex items-center gap-0.5">
-                            <Zap size={9} className="text-cyan-400" />
-                            <span className="text-[11px] font-black text-cyan-400">{r.kp}</span>
+                            <Zap size={9} className={r.kp < 0 ? 'text-red-400' : 'text-cyan-400'} />
+                            <span className={`text-[11px] font-black ${r.kp < 0 ? 'text-red-400' : 'text-cyan-400'}`}>{r.kp}</span>
                           </div>
                         </div>
                       ))}
@@ -188,16 +191,16 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
                   </div>
                 )}
 
-                {hasProblemData && node.starThresholds && (
+                {hasProblemData && (
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">
                       Star Thresholds
                     </p>
                     <div className="space-y-1.5">
                       {[
-                        { s: 1, label: 'Pass all test cases' },
-                        { s: 2, label: `Avg time < ${node.starThresholds.twoStarTimeMs}ms` },
-                        { s: 3, label: `Avg time < ${node.starThresholds.threeStarTimeMs}ms` },
+                        { s: 3, label: 'Pass in 1 attempt' },
+                        { s: 2, label: 'Pass in 2 attempts' },
+                        { s: 1, label: 'Pass in 3 attempts' },
                       ].map((r) => (
                         <div key={r.s} className="flex items-center gap-2 text-[11px]">
                           <div className="flex gap-0.5 shrink-0">

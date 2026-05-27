@@ -88,7 +88,7 @@ const JourneyTab = () => (
     {[
       { icon:'🔓', t:'Linear Progression',   d:'Complete Node N to unlock Node N+1. No skipping allowed anywhere in a zone.' },
       { icon:'🗺️', t:'Zone Unlocking',       d:'A Zone only unlocks after the previous Zone\'s final Boss (Node 15) is defeated.' },
-      { icon:'⭐', t:'Star Ratings',          d:'Each node awards 1–3 stars based on execution speed. Stars feed your KP total.' },
+      { icon:'⭐', t:'Star Ratings',          d:'Each node awards 0–3 stars based on your number of attempts. Stars feed your KP total.' },
       { icon:'🔁', t:'Replay Anytime',        d:'Completed nodes can be replayed to earn more stars and boost your KP.' },
     ].map((item, i) => (
       <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-100 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-800/50">
@@ -184,17 +184,20 @@ const EconomyTab = () => {
       {/* Earning rates */}
       <div>
         <p className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-2">How to Earn KP</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {[
-            { stars:1, range:'10–50 KP',  label:'1 Star: Pass all cases' },
-            { stars:2, range:'20–80 KP',  label:'2 Stars: Beat 2★ time' },
-            { stars:3, range:'35–120 KP', label:'3 Stars: Optimal speed' },
+            { stars:0, range:'-5 KP',  label:'0 Stars: 4+ attempts' },
+            { stars:1, range:'3 KP',  label:'1 Star: 3 attempts' },
+            { stars:2, range:'7 KP',  label:'2 Stars: 2 attempts' },
+            { stars:3, range:'15 KP', label:'3 Stars: 1 attempt' },
           ].map(r => (
-            <div key={r.stars} className="p-3 text-center bg-slate-50 dark:bg-gray-900/60 border border-slate-100 dark:border-gray-800/50 rounded-xl">
+            <div key={r.stars} className={`p-3 text-center rounded-xl border ${r.stars === 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30' : 'bg-slate-50 dark:bg-gray-900/60 border-slate-100 dark:border-gray-800/50'}`}>
               <div className="flex justify-center gap-0.5 mb-1">
-                {[1,2,3].map(i => <span key={i} style={{fontSize:10,color:i<=r.stars?'#fbbf24': isDark ? '#374151' : '#e2e8f0'}}>★</span>)}
+                {r.stars === 0 ? (
+                  <span style={{fontSize:10,color: isDark ? '#374151' : '#e2e8f0'}}>★</span>
+                ) : [1,2,3].map(i => <span key={i} style={{fontSize:10,color:i<=r.stars?'#fbbf24': isDark ? '#374151' : '#e2e8f0'}}>★</span>)}
               </div>
-              <div className="font-black text-sm text-accent">{r.range}</div>
+              <div className={`font-black text-sm ${r.stars === 0 ? 'text-red-500' : 'text-accent'}`}>{r.range}</div>
               <div className="text-[9px] text-slate-500 dark:text-gray-600 mt-0.5 leading-snug">{r.label}</div>
             </div>
           ))}
@@ -227,7 +230,7 @@ const CampaignGuideModal = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
           style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(14px)' }}
           onClick={e => e.target === e.currentTarget && onClose()}
         >
@@ -238,10 +241,10 @@ const CampaignGuideModal = ({ isOpen, onClose }) => {
             transition={{ type: 'spring', damping: 26, stiffness: 240 }}
             className={`
               bg-white dark:bg-[#090b12]
-              border-t sm:border border-slate-200 dark:border-gray-800/60
-              rounded-t-2xl sm:rounded-2xl
-              w-full sm:max-w-[90vw] sm:w-[560px]
-              max-h-[85dvh] sm:max-h-[88dvh]
+              border border-slate-200 dark:border-gray-800/60
+              rounded-2xl
+              w-full max-w-[480px] sm:max-w-[560px]
+              max-h-[80dvh] sm:max-h-[88dvh]
               flex flex-col overflow-hidden shadow-2xl
             `}
           >

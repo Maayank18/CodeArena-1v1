@@ -176,7 +176,7 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
           style={{ background: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(0,0,0,0.6)', backdropFilter: 'blur(14px)' }}
           onClick={e => e.target === e.currentTarget && onClose()}
         >
@@ -187,10 +187,10 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
             transition={{ type: 'spring', damping: 26, stiffness: 240 }}
             className={`
               bg-white dark:bg-[#090b12]
-              border-t sm:border border-slate-200 dark:border-gray-800/60
-              rounded-t-2xl sm:rounded-2xl
-              w-full sm:max-w-[90vw] sm:w-[620px]
-              max-h-[85dvh] sm:max-h-[88dvh]
+              border border-slate-200 dark:border-gray-800/60
+              rounded-2xl
+              w-full max-w-[480px] sm:max-w-[620px]
+              max-h-[80dvh] sm:max-h-[88dvh]
               flex flex-col overflow-hidden shadow-2xl
             `}
           >

@@ -166,7 +166,7 @@ const ResultRow = ({ result, index }) => {
   );
 };
 
-const ProblemPanel = ({ node, existingBest, isDark, currentCode }) => {
+const ProblemPanel = ({ node, existingBest, currentAttempt, isDark, currentCode }) => {
   const problem = node?.problemId;
   if (!problem) return null;
   return (
@@ -183,6 +183,9 @@ const ProblemPanel = ({ node, existingBest, isDark, currentCode }) => {
                   Boss
                 </span>
               )}
+              <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-400">
+                Attempt: {currentAttempt}
+              </span>
               {existingBest && (
                 <div className="mt-2 w-full flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 dark:border-amber-800/30 dark:bg-amber-950/20">
                   <StarDisplay stars={existingBest.starsAwarded} total={3} size="sm" />
@@ -298,6 +301,7 @@ const CampaignEditor = () => {
   const [showResults,  setShowResults]  = useState(false);
   const [isNotesOpen,  setIsNotesOpen]  = useState(false);
 
+  const [currentAttempt, setCurrentAttempt] = useState(1);
   const [failCount,      setFailCount]      = useState(0);
   const [showSage,       setShowSage]       = useState(false);
   const [sageShouldShow, setSageShouldShow] = useState(false);
@@ -344,6 +348,7 @@ const CampaignEditor = () => {
           const n = data.node;
           setNode(n);
           setExistingBest(data.existingCompletion || null);
+          setCurrentAttempt(data.currentAttempt || 1);
           setStartTime(Date.now());
 
           // 1. Recover the last used language for THIS node
@@ -362,6 +367,12 @@ const CampaignEditor = () => {
       } catch (err) {
         console.log(err);
         if (cancelled) return;
+
+        if (err?.response?.status === 403 && err?.response?.data?.code === 'TRIAL_EXPIRED') {
+            setShowTeaserModal(true);
+            return;
+        }
+
         setLoadError(
           err?.response?.status === 404 || err?.response?.status === 403
             ? 'Problem not found. Return to Campaign.'
@@ -509,6 +520,7 @@ const CampaignEditor = () => {
         }
       else {
         setFailCount(f => f + 1);
+        setCurrentAttempt(a => a + 1);
         setLastFailedCode(code);
         setLastError(normResults.find(r => !r.passed)?.stderr || 'Wrong Answer');
         if (data.sageShouldTrigger || failCount + 1 >= 3) setSageShouldShow(true);
@@ -617,7 +629,7 @@ const CampaignEditor = () => {
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col sm:flex-row">
         {mobileTab === 'problem' ? (
           <div className="flex-1 h-full sm:w-2/5 border-r border-slate-200 dark:border-gray-800/40">
-            <ProblemPanel node={node} existingBest={existingBest} isDark={isDark} currentCode={code} />
+            <ProblemPanel node={node} existingBest={existingBest} currentAttempt={currentAttempt} isDark={isDark} currentCode={code} />
           </div>
         ) : null}
         

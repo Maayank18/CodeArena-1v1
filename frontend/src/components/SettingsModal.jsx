@@ -749,7 +749,6 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
               ) : (
                 <div className="mx-auto max-w-2xl min-h-full flex flex-col">
                   {activeTab === 'profile' && (
-                    <PremiumGate requiredTier="pro" message="Upgrade to Pro to customize your profile.">
                     <div className="space-y-8 animate-fade-in">
                       <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
                         <div className="group relative">
@@ -834,7 +833,6 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
                         </button>
                       </div>
                     </div>
-                    </PremiumGate>
                   )}
 
                   {activeTab === 'analytics' && (

@@ -1066,7 +1066,7 @@ const EditorPage = () => {
     };
 
     return (
-        <div className="arena-shell relative h-screen w-screen overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]" data-theme={theme}>
+        <div className="arena-shell relative h-screen w-full overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]" data-theme={theme}>
             
             {/* ✅ PREMIUM MATCH ENTRANCE BANNER (Framer Motion) */}
             <AnimatePresence>

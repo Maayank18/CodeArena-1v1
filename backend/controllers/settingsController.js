@@ -430,11 +430,26 @@ export const requestEmailVerificationOtp = async (req, res) => {
         };
         await user.save();
 
-        await sendEmailVerificationOtp(
-            targetEmail,
-            user.fullName || user.username,
-            otp
-        );
+        try {
+            await sendEmailVerificationOtp(
+                targetEmail,
+                user.fullName || user.username,
+                otp,
+                AUTH_LIMITS.otpExpiryMinutes
+            );
+        } catch (emailError) {
+            user.otpCode = null;
+            user.otpExpiry = null;
+            user.otpAttemptCount = 0;
+            user.pendingUpdates = {};
+            await user.save();
+            
+            console.error('EMAIL VERIFICATION DELIVERY ERROR:', emailError);
+            return res.status(emailError?.status || 500).json({ 
+                success: false, 
+                message: emailError?.message || 'Unable to send verification code.' 
+            });
+        }
 
         return res.json({
             success: true,
@@ -443,7 +458,7 @@ export const requestEmailVerificationOtp = async (req, res) => {
         });
     } catch (error) {
         console.error('REQUEST EMAIL VERIFICATION ERROR:', error);
-        return res.status(500).json({ success: false, message: 'Unable to send verification code.' });
+        return res.status(500).json({ success: false, message: 'Unable to start email verification process.' });
     }
 };
 

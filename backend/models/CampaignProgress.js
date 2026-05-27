@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 const completedNodeSchema = new mongoose.Schema({
     nodeId:       { type: String, required: true },
-    starsAwarded: { type: Number, min: 1, max: 3, required: true },
+    starsAwarded: { type: Number, min: 0, max: 3, required: true },
     bestTimeMs:   { type: Number },
     attempts:     { type: Number, default: 1 },
     language:     { type: String },

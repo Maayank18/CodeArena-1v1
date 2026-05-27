@@ -1,18 +1,18 @@
 // backend/services/starCalculator.js
 // Pure function — no DB calls, fully testable
 
-export const calculateStars = (executionTimeMs, thresholds) => {
-    const { twoStarTimeMs, threeStarTimeMs } = thresholds;
-
-    if (executionTimeMs <= threeStarTimeMs) return 3;
-    if (executionTimeMs <= twoStarTimeMs)   return 2;
-    return 1;
+export const calculateStars = (attempts) => {
+    if (attempts === 1) return 3;
+    if (attempts === 2) return 2;
+    if (attempts === 3) return 1;
+    return 0;
 };
 
-export const calculateKP = (stars, rewards) => {
-    if (stars === 3) return rewards.threeStarKP;
-    if (stars === 2) return rewards.twoStarKP;
-    return rewards.oneStarKP;
+export const calculateKP = (stars) => {
+    if (stars === 3) return 15;
+    if (stars === 2) return 7;
+    if (stars === 1) return 3;
+    return -5;
 };
 
 // Called when a node is re-attempted (user already has stars)

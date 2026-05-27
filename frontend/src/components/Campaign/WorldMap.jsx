@@ -699,7 +699,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
       <div
         ref={scrollRef}
         data-campaign-scroll
-        className="absolute inset-0 overflow-y-auto"
+        className="absolute inset-0 overflow-auto"
         style={{
           scrollbarWidth: 'none',
           WebkitOverflowScrolling: 'touch',
@@ -711,17 +711,24 @@ const WorldMapScene = React.memo(function WorldMapScene({
         }}
       >
         <div
-          className="relative mx-auto"
           style={{
-            width: ZONE_W,
+            width: Math.max(viewportWidth, ZONE_W * mapScale),
             height: scaledCanvasHeight,
-            transform: `translate3d(0,0,0) scale(${mapScale})`,
-            transformOrigin: 'top center',
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
-            
+            position: 'relative',
+            margin: '0 auto',
           }}
         >
+          <div
+            className="absolute top-0 left-1/2"
+            style={{
+              width: ZONE_W,
+              height: scaledCanvasHeight,
+              transform: `translateX(-50%) scale(${mapScale})`,
+              transformOrigin: 'top center',
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
+            }}
+          >
           <svg
             className="absolute inset-0 pointer-events-none"
             style={{ width: ZONE_W, height: canvasH, zIndex: 15, overflow: 'visible' }}
@@ -786,6 +793,7 @@ const WorldMapScene = React.memo(function WorldMapScene({
               </div>
             );
           })}
+        </div>
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { Star, Zap, Flame, ShoppingBag, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Stat = ({ icon: Icon, value, label, color }) => (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 shrink-0">
         <Icon size={14} className={color} />
         <motion.span
             key={value}
@@ -18,7 +18,7 @@ const Stat = ({ icon: Icon, value, label, color }) => (
         >
             {value}
         </motion.span>
-        <span className="text-gray-600 text-[10px] hidden sm:inline">{label}</span>
+        <span className="text-gray-600 text-[10px]">{label}</span>
     </div>
 );
 
@@ -29,7 +29,7 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
     const solved = progress?.completedNodes?.length ?? 0;
 
     return (
-        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-3 py-2.5 bg-white/80 dark:bg-[#07090f]/95 border-b border-gray-200 dark:border-gray-800/40 backdrop-blur-md shrink-0 z-20 transition-colors duration-300 sm:px-5 sm:py-2">
+        <div className="relative flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5 bg-white/80 dark:bg-[#07090f]/95 border-b border-gray-200 dark:border-gray-800/40 backdrop-blur-md shrink-0 z-20 transition-colors duration-300 sm:px-5 sm:py-2">
             {/* Brand */}
             <div className="flex min-w-0 items-center gap-2">
                 <span className="text-xl select-none">🗺️</span>
@@ -41,11 +41,11 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
             </div>
 
             {/* Stats */}
-            <div className="order-3 flex w-full items-center justify-between gap-3 overflow-x-auto pt-0.5 sm:order-2 sm:w-auto sm:justify-start sm:gap-5 sm:pt-0">
+            <div className="order-3 flex w-full items-center justify-center gap-5 overflow-x-auto pt-0.5 sm:order-2 sm:w-auto sm:pt-0 sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2" style={{scrollbarWidth:'none'}}>
                 <Stat icon={Star}   value={stars}  label="stars"  color="text-amber-400" />
                 <Stat icon={Zap}    value={kp}     label="KP"     color="text-cyan-400"  />
                 {streak > 0 && <Stat icon={Flame} value={streak} label="streak" color="text-orange-400" />}
-                <div className="hidden md:flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                     <Trophy size={13} className="text-purple-400" />
                     <span className="font-mono font-black text-sm text-purple-400 tabular-nums">{solved}</span>
                     <span className="text-gray-600 text-[10px]">solved</span>
@@ -68,4 +68,3 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
 };
 
 export default CampaignHUD;
-// V 1.5

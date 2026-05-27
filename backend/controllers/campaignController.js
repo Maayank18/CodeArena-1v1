@@ -306,6 +306,20 @@ export const getNodeDetails = async (req, res) => {
         const { nodeId } = req.params;
         const userId = req.user._id;
 
+        const userPlan = req.user?.subscriptionPlan || 'free';
+        const userTier = userPlan === 'free' ? 0 : userPlan === 'plus' ? 1 : userPlan === 'pro' ? 2 : 3;
+        const isAdmin = req.user?.role === 'admin';
+
+        if (!isAdmin && userTier < 2) {
+            if (req.user.usageStats?.campaignTrialUsed) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Campaign mode trial consumed. Upgrade to Pro to unlock unlimited campaigns!",
+                    code: 'TRIAL_EXPIRED'
+                });
+            }
+        }
+
         // Verify node is unlocked for this user
         let progress = req.campaignProgress || await CampaignProgress.findOne({ userId }).lean();
         if (!progress) {
@@ -336,6 +350,8 @@ export const getNodeDetails = async (req, res) => {
 
         // Check if user has already completed this node
         const existingCompletion = progress?.completedNodes?.find(n => n.nodeId === nodeId);
+        const sageEntryLoad = progress?.sageUsage?.find(s => s.nodeId === nodeId);
+        const currentAttempt = (sageEntryLoad?.failCount || 0) + 1;
 
         return res.json({
             success: true,
@@ -345,7 +361,8 @@ export const getNodeDetails = async (req, res) => {
                 problemId: problem
             },
             existingCompletion: existingCompletion || null,
-            userBestStars: existingCompletion?.starsAwarded || 0
+            userBestStars: existingCompletion?.starsAwarded || 0,
+            currentAttempt
         });
     } catch (err) {
         console.error('[NODE DETAILS]', err);
@@ -438,10 +455,10 @@ export const submitCampaignSolution = async (req, res) => {
         }
 
         // 6. Calculate Stars
-        const stars = calculateStars(
-            executionResult.avgTimeMs,
-            node.starThresholds ?? { twoStarTimeMs: Number.POSITIVE_INFINITY, threeStarTimeMs: Number.POSITIVE_INFINITY }
-        );
+        const sageEntryBeforeReset = progress.sageUsage?.find(s => s.nodeId === nodeId);
+        const currentAttempt = (sageEntryBeforeReset?.failCount || 0) + 1;
+        
+        const stars = calculateStars(currentAttempt);
         const safeRewards = node.rewards ?? { oneStarKP: 0, twoStarKP: 0, threeStarKP: 0 };
         const kpEarned = calculateKP(stars, safeRewards);
 
@@ -545,12 +562,18 @@ export const submitCampaignSolution = async (req, res) => {
 
         const solvedIncrement = existingNode ? 0 : 1;
         const minutesSpent = Number(((executionResult.avgTimeMs || 0) / 60000).toFixed(2));
-        await User.findByIdAndUpdate(userId, {
+        
+        const userUpdateData = {
             $inc: {
                 totalTimeSpent: minutesSpent,
                 totalSolved: solvedIncrement,
             }
-        });
+        };
+        if (!isAdmin && userTier < 2) {
+            userUpdateData.$set = { "usageStats.campaignTrialUsed": true };
+        }
+        
+        await User.findByIdAndUpdate(userId, userUpdateData);
 
         // Badge Events
         const badgePromises = [];
