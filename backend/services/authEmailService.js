@@ -106,7 +106,7 @@ const makeEmailError = (message, code, status = 502, retryable = true) => {
 const classifyError = (err) => {
     const msg = err.message || '';
     if (msg.includes('invalid_grant') || msg.includes('token')) {
-        return makeEmailError('Gmail Auth Failed (Invalid Token)', 'AUTH_FAILED', 500, false);
+        return makeEmailError('Gmail Auth Failed (Invalid Token)', 'AUTH_FAILED', 503, false);
     }
     if (msg.includes('quota') || msg.includes('rateLimit')) {
         return makeEmailError('Gmail API Quota Exceeded', 'QUOTA_EXCEEDED', 502, true);
