@@ -41,8 +41,8 @@ const callGroq = async (client, messages) => {
         const completion = await client.chat.completions.create({
             model: 'llama-3.3-70b-versatile',
             messages,
-            max_tokens: 300,
-            temperature: 0.2,
+            max_tokens: 150,
+            temperature: 0.1,
         });
         return completion.choices[0]?.message?.content;
     } catch (error) {
@@ -83,9 +83,9 @@ const handleAIHelpUsage = async (req, problemTitle, type, code = null) => {
 
     let systemPrompt = "";
     if (type === 'hint') {
-        systemPrompt = `You are Cody AI, an elite coding mentor. The user is solving ${problemTitle}. Provide ONE conceptual hint or algorithmic approach. DO NOT write code. DO NOT give the direct answer. Maximum 3 short sentences.`;
+        systemPrompt = `You are Cody AI, an elite Senior AI Architect and coding mentor for CodeArena 1v1. The user is solving ${problemTitle}. Provide ONE conceptual hint or optimal algorithmic approach with Time/Space complexity. DO NOT write code. Keep it highly professional and extremely concise (max 3 sentences).`;
     } else {
-        systemPrompt = `You are Cody AI. The user is solving ${problemTitle}. Analyze their code: \n\n${code}\n\nIdentify logical flaws, syntax errors, or missed edge cases. Give a debugging suggestion. DO NOT write the corrected code for them. Guide them to find the bug themselves.`;
+        systemPrompt = `You are Cody AI, an elite Senior AI Architect for CodeArena 1v1. The user is solving ${problemTitle}. Analyze their code: \n\n${code}\n\nIdentify logical flaws or edge cases professionally. Give a precise debugging suggestion. DO NOT write the corrected code. Guide them to optimal DSA patterns. Be extremely concise.`;
     }
 
     const messages = [

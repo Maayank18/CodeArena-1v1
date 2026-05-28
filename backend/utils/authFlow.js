@@ -142,8 +142,8 @@ export const buildAuthUserPayload = (user, token, extra = {}) => ({
     subscriptionExpiry: user.subscriptionExpiry || null,
     rating: user.rating ?? 1000,
     seasonScore: user.seasonScore ?? 0,
-    stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
-    usageStats: user.usageStats || {
+    stats: (user.stats && typeof user.stats.toObject === 'function') ? user.stats.toObject() : (user.stats || { wins: 0, losses: 0, matchesPlayed: 0 }),
+    usageStats: (user.usageStats && typeof user.usageStats.toObject === 'function') ? user.usageStats.toObject() : (user.usageStats || {
         chatQueriesToday: 0,
         matchesToday: 0,
         customMatchesToday: 0,
@@ -151,7 +151,7 @@ export const buildAuthUserPayload = (user, token, extra = {}) => ({
         visualizerTrialUsed: false,
         aiHelpToday: 0,
         lastResetDate: null,
-    },
+    }),
     badges: user.badges || [],
     customization: user.customization || {
         avatarFrame: 'none',

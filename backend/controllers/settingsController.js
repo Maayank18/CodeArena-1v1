@@ -56,8 +56,8 @@ const buildSettingsPayload = async (user) => {
         },
         rating: user.rating,
         seasonScore: user.seasonScore,
-        stats: user.stats || { wins: 0, losses: 0, matchesPlayed: 0 },
-        usageStats: user.usageStats || {
+        stats: (user.stats && typeof user.stats.toObject === 'function') ? user.stats.toObject() : (user.stats || { wins: 0, losses: 0, matchesPlayed: 0 }),
+        usageStats: (user.usageStats && typeof user.usageStats.toObject === 'function') ? user.usageStats.toObject() : (user.usageStats || {
             chatQueriesToday: 0,
             matchesToday: 0,
             customMatchesToday: 0,
@@ -65,7 +65,7 @@ const buildSettingsPayload = async (user) => {
             visualizerTrialUsed: false,
             aiHelpToday: 0,
             lastResetDate: null,
-        },
+        }),
         subscriptionPlan: user.subscriptionPlan || 'free',
         badges: user.badges || [],
         customization: user.customization || { avatarFrame: 'none', tagline: 'Novice', signatureStack: [], entranceBanner: 'default-dark', advancedTheme: '' },
