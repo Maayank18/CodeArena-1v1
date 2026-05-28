@@ -65,7 +65,8 @@ const restoreOtpRequestState = async (otpRequestId, snapshot) => {
 };
 
 export const forgotPassword = async (req, res) => {
-    const email = normalizeEmail(req.body.email);
+    const body = req.body || {};
+    const email = normalizeEmail(body.email);
     const trace = createAuthTrace('forgot-password', req, { email });
 
     try {
@@ -187,8 +188,9 @@ export const forgotPassword = async (req, res) => {
 };
 
 export const verifyPasswordResetOtp = async (req, res) => {
-    const email = normalizeEmail(req.body.email);
-    const otp = normalizeOtp(req.body.otp);
+    const body = req.body || {};
+    const email = normalizeEmail(body.email);
+    const otp = normalizeOtp(body.otp);
     const trace = createAuthTrace('verify-password-reset-otp', req, { email });
 
     try {
@@ -256,7 +258,8 @@ export const resetPasswordWithOtp = async (req, res) => {
     const trace = createAuthTrace('reset-password', req);
 
     try {
-        const { resetToken, password } = req.body;
+        const body = req.body || {};
+        const { resetToken, password } = body;
         trace.info('request.received', {
             hasResetToken: Boolean(resetToken),
             hasPassword: Boolean(password),

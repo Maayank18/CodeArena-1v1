@@ -58,7 +58,8 @@ const buildVerificationDeliveryPayload = (delivery = {}) => ({
 });
 
 export const registerUser = async (req, res) => {
-    const { fullName, username, email, phone, password } = req.body;
+    const body = req.body || {};
+    const { fullName, username, email, phone, password } = body;
     const trace = createAuthTrace('register', req, { username, email });
 
     try {
@@ -123,6 +124,15 @@ export const registerUser = async (req, res) => {
             emailVerified: user.emailVerified,
         });
 
+        const rank = await User.countDocuments({
+            $or: [
+                { seasonScore: { $gt: user.seasonScore || 0 } },
+                { seasonScore: user.seasonScore || 0, rating: { $gt: user.rating || 1000 } }
+            ]
+        }) + 1;
+        user.stats = user.stats || { wins: 0, losses: 0, matchesPlayed: 0 };
+        user.stats.rank = rank;
+
         // Seamless Auto-login after registration
         const token = generateToken(user._id);
         attachAccessCookie(res, token);
@@ -153,7 +163,8 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-    const { email, password, rememberMe } = req.body;
+    const body = req.body || {};
+    const { email, password, rememberMe } = body;
     const trace = createAuthTrace('login', req, { email });
 
     try {
@@ -236,6 +247,15 @@ export const loginUser = async (req, res) => {
 
         attachAccessCookie(res, token, { rememberMe });
         trace.info('login.succeeded', { userId: user._id });
+
+        const rank = await User.countDocuments({
+            $or: [
+                { seasonScore: { $gt: user.seasonScore || 0 } },
+                { seasonScore: user.seasonScore || 0, rating: { $gt: user.rating || 1000 } }
+            ]
+        }) + 1;
+        user.stats = user.stats || { wins: 0, losses: 0, matchesPlayed: 0 };
+        user.stats.rank = rank;
 
         return res.json(buildAuthUserPayload(user, token, {
             message: `Welcome, ${user.username}!`,

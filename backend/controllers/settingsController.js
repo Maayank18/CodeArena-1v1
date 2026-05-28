@@ -139,13 +139,14 @@ export const getSettingsProfile = async (req, res) => {
 
 export const updateProfileSettings = async (req, res) => {
     try {
-        const fullName = sanitizeString(req.body.fullName);
-        const username = sanitizeString(req.body.username);
-        const bio = sanitizeString(req.body.bio);
-        const avatar = typeof req.body.avatar === 'string' ? req.body.avatar.trim() : '';
+        const body = req.body || {};
+        const fullName = sanitizeString(body.fullName);
+        const username = sanitizeString(body.username);
+        const bio = sanitizeString(body.bio);
+        const avatar = typeof body.avatar === 'string' ? body.avatar.trim() : '';
         const preferences = {
-            emailNotifications: parseBoolean(req.body.preferences?.emailNotifications, true),
-            marketingUpdates: parseBoolean(req.body.preferences?.marketingUpdates, false),
+            emailNotifications: parseBoolean(body.preferences?.emailNotifications, true),
+            marketingUpdates: parseBoolean(body.preferences?.marketingUpdates, false),
         };
 
         const validationError = validateProfileInput({ fullName, username, bio, avatar });
@@ -198,7 +199,8 @@ export const updateProfileSettings = async (req, res) => {
 
 export const requestSettingsOtp = async (req, res) => {
     try {
-        const newPassword = req.body.password === undefined ? '' : String(req.body.password);
+        const body = req.body || {};
+        const newPassword = body.password === undefined ? '' : String(body.password);
 
         console.log('[SETTINGS OTP] Request started', {
             userId: req.user?._id,
@@ -303,7 +305,8 @@ export const requestSettingsOtp = async (req, res) => {
 
 export const verifySettingsOtp = async (req, res) => {
     try {
-        const otp = sanitizeString(req.body.otp);
+        const body = req.body || {};
+        const otp = sanitizeString(body.otp);
 
         if (!otp || otp.length !== 6) {
             return res.status(400).json({ success: false, message: 'Enter the 6 digit verification code' });
@@ -388,7 +391,7 @@ export const verifySettingsOtp = async (req, res) => {
 
 export const requestEmailVerificationOtp = async (req, res) => {
     try {
-        const { newEmail } = req.body;
+        const { newEmail } = req.body || {};
         const user = await User.findById(req.user._id).select('+otpCode +otpExpiry +otpAttemptCount username fullName email');
         
         if (!user) {
@@ -464,7 +467,8 @@ export const requestEmailVerificationOtp = async (req, res) => {
 
 export const verifyEmailAddress = async (req, res) => {
     try {
-        const otp = sanitizeString(req.body.otp);
+        const body = req.body || {};
+        const otp = sanitizeString(body.otp);
         if (!otp || otp.length !== 6) {
             return res.status(400).json({ success: false, message: 'Enter the 6 digit verification code' });
         }
@@ -560,7 +564,8 @@ const VALID_ADVANCED_THEMES = ['', 'frostbyte', 'matrix', 'cyberpunk', 'inferno'
 export const updateCustomization = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { avatarFrame, tagline, signatureStack, entranceBanner, equippedBadge, advancedTheme } = req.body;
+        const body = req.body || {};
+        const { avatarFrame, tagline, signatureStack, entranceBanner, equippedBadge, advancedTheme } = body;
 
         const update = {};
         let userDoc = null;

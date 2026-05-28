@@ -107,7 +107,7 @@ import {
 
 // ✅ CONFIGURATION
 const CONFIG = {
-    timeout: 15000,
+    timeout: 60000,
     retryAttempts: 2,
     retryDelay: 1000,
     cacheEnabled: true,
