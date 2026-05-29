@@ -140,11 +140,29 @@ const sanitizeProgressData = (progressLike, validNodeIds, entryNodeIds) => {
         (entry) => !entry?.nodeId || validNodeIdSet.has(entry.nodeId)
     );
 
+    // Calculate dynamic/true totalStars from completed nodes to recover from DB inconsistencies
+    const calculatedTotalStars = completedNodes.reduce((sum, n) => sum + (n.starsAwarded || 0), 0);
+
+    // CLASSIC STREAK VALIDATION: Reset to 0 if last active date is before yesterday
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const lastActiveStr = plainProgress.lastActiveDate ? new Date(plainProgress.lastActiveDate).toISOString().split('T')[0] : null;
+    let validatedStreak = plainProgress.currentStreak || 0;
+    if (lastActiveStr && lastActiveStr !== todayStr && lastActiveStr !== yesterdayStr) {
+        validatedStreak = 0;
+    }
+
     const sanitizedProgress = {
         ...plainProgress,
         completedNodes,
         unlockedNodes,
         sageUsage,
+        totalStars: calculatedTotalStars,
+        currentStreak: validatedStreak,
     };
 
     const repaired = ensureEntryNodesUnlocked(sanitizedProgress, canonicalEntryNodeIds);
@@ -153,7 +171,9 @@ const sanitizeProgressData = (progressLike, validNodeIds, entryNodeIds) => {
     const changed =
         JSON.stringify(plainProgress.completedNodes ?? []) !== JSON.stringify(completedNodes) ||
         JSON.stringify(plainProgress.unlockedNodes ?? []) !== JSON.stringify(repaired.unlockedNodes) ||
-        JSON.stringify(plainProgress.sageUsage ?? []) !== JSON.stringify(sageUsage);
+        JSON.stringify(plainProgress.sageUsage ?? []) !== JSON.stringify(sageUsage) ||
+        plainProgress.totalStars !== calculatedTotalStars ||
+        plainProgress.currentStreak !== validatedStreak;
 
     return {
         progress: sanitizedProgress,
@@ -162,6 +182,8 @@ const sanitizeProgressData = (progressLike, validNodeIds, entryNodeIds) => {
             completedNodes,
             unlockedNodes: repaired.unlockedNodes,
             sageUsage,
+            totalStars: calculatedTotalStars,
+            currentStreak: validatedStreak,
         },
     };
 };

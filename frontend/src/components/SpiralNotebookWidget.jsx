@@ -128,15 +128,21 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
         }, NOTE_RETRY_DELAY_MS);
     }, []);
 
-    const syncEditorContent = useCallback((html) => {
-        if (editorRef.current && editorRef.current.innerHTML !== html) {
-            editorRef.current.innerHTML = html;
+    const syncEditorContent = useCallback((html, force = false) => {
+        if (editorRef.current) {
+            if (force || document.activeElement !== editorRef.current) {
+                const normalizedHtml = normalizeEditorHtml(html);
+                const currentHtml = normalizeEditorHtml(editorRef.current.innerHTML);
+                if (currentHtml !== normalizedHtml) {
+                    editorRef.current.innerHTML = html;
+                }
+            }
         }
     }, []);
 
     useEffect(() => {
         if (!isOpen || isLoading) return;
-        syncEditorContent(content);
+        syncEditorContent(content, false);
     }, [content, isLoading, isOpen, syncEditorContent]);
 
     const saveNote = useCallback(async (html, { showToast = false } = {}) => {
@@ -163,12 +169,13 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
             if (data.success) {
                 clearRetryTimer();
                 lastSavedContentRef.current = normalizedContent;
-                latestContentRef.current = normalizedContent;
-                setContent(normalizedContent);
+                const hasMoreRecentChanges = latestContentRef.current !== normalizedContent;
+                setHasUnsavedChanges(hasMoreRecentChanges);
+                if (!hasMoreRecentChanges) {
+                    setHasLocalDraft(false);
+                    clearDraft(type, contextKey, contextTitle);
+                }
                 setLastSaved(data?.note?.updatedAt ? new Date(data.note.updatedAt) : new Date());
-                setHasUnsavedChanges(false);
-                setHasLocalDraft(false);
-                clearDraft(type, contextKey, contextTitle);
                 if (showToast) toast.success('Note saved');
                 return true;
             }
@@ -212,7 +219,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
         const fetchNote = async () => {
             const isSameNoteSession = hydratedNoteKeyRef.current === noteIdentity;
             if (isSameNoteSession && (hasUnsavedChanges || hasLocalDraft || Boolean(saveError))) {
-                syncEditorContent(content);
+                syncEditorContent(content, true);
                 return;
             }
 
@@ -229,7 +236,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                 latestContentRef.current = draftContent;
                 setHasUnsavedChanges(true);
                 setHasLocalDraft(true);
-                syncEditorContent(draftContent);
+                syncEditorContent(draftContent, true);
             }
 
             try {
@@ -253,7 +260,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                 setHasUnsavedChanges(shouldUseLocalDraft);
                 setHasLocalDraft(shouldUseLocalDraft);
                 hydratedNoteKeyRef.current = noteIdentity;
-                syncEditorContent(nextContent);
+                syncEditorContent(nextContent, true);
             } catch (error) {
                 if (!isMounted) return;
                 if (error.response?.status !== 404) {
@@ -267,7 +274,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                     setLastSaved(null);
                     setHasUnsavedChanges(false);
                     setHasLocalDraft(false);
-                    syncEditorContent('');
+                    syncEditorContent('', true);
                 }
 
                 if (localDraft?.content) {
@@ -504,7 +511,7 @@ const SpiralNotebookWidget = ({ isOpen, onClose, type, contextKey = '', contextT
                                             spellCheck={false}
                                             onInput={updateContentFromEditor}
                                             onBlur={flushPendingSave}
-                                            className="h-full overflow-y-auto overflow-x-hidden outline-none custom-scrollbar px-12 py-[5px] text-gray-800 break-words"
+                                            className="notebook-editor h-full overflow-y-auto overflow-x-hidden outline-none custom-scrollbar px-12 py-[5px] text-gray-800 break-words"
                                             style={{
                                                 lineHeight: '32px',
                                                 fontSize: '16px',

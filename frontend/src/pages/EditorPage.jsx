@@ -272,6 +272,8 @@ const EditorPage = () => {
 
     const { theme, toggleTheme, advancedTheme } = useTheme();
 
+    const [notesSessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+
     const storedCustomJoin = useMemo(() => {
         try {
             return safeParseJson(localStorage.getItem(buildCustomRoomAuthKey(roomId)), {}) || {};
@@ -1285,7 +1287,7 @@ const EditorPage = () => {
                 isOpen={isNotesOpen} 
                 onClose={() => setIsNotesOpen(false)} 
                 type="battle_arena" 
-                contextKey={roomId}
+                contextKey={`${roomId}:${notesSessionId}`}
                 contextTitle={sessionNoteTitle}
                 desktopSide={notebookSide}
             />

@@ -286,6 +286,8 @@ const CampaignEditor = () => {
   const location   = useLocation();
   const { isDark, toggleTheme } = useTheme();
 
+  const [notesSessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
+
   const [node,         setNode]         = useState(null);
   const [existingBest, setExistingBest] = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -699,7 +701,7 @@ const CampaignEditor = () => {
           isOpen={isNotesOpen} 
           onClose={() => setIsNotesOpen(false)} 
           type="campaign_editor" 
-          contextKey={node?.campaignNodeId || nodeId}
+          contextKey={`${node?.campaignNodeId || nodeId}:${notesSessionId}`}
           contextTitle={buildCampaignNoteTitle(problem, node, nodeId)}
       />
     </div>

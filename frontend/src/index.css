@@ -984,6 +984,69 @@ input:focus-visible {
   border-color: rgba(34, 211, 238, 0.1) !important;
 }
 
+
+/* ── 26. YELLOW/UPGRADE BUTTONS — Icy Override ─────────────────────────────── */
+.theme-frostbyte .text-yellow-400 {
+  color: #38bdf8 !important;
+}
+
+.theme-frostbyte .text-yellow-500 {
+  color: #38bdf8 !important;
+}
+
+.theme-frostbyte .border-yellow-500\/20 {
+  border-color: rgba(56, 189, 248, 0.2) !important;
+}
+
+.theme-frostbyte .bg-yellow-500\/10 {
+  background: rgba(56, 189, 248, 0.08) !important;
+}
+
+/* ── 24. SNOWFLAKE FLOAT ANIMATION ─────────────────────────────────────────── */
+@keyframes snowflake-float {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes frost-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(34, 211, 238, 0.4);
+  }
+}
+
+.animate-frost-pulse {
+  animation: frost-pulse 3s ease-in-out infinite;
+}
+
+/* ── 25. MOBILE BOTTOM NAV FROSTBYTE ───────────────────────────────────────── */
+.theme-frostbyte nav.fixed.bottom-0 {
+  background: rgba(6, 11, 25, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(34, 211, 238, 0.12) !important;
+}
+
+.theme-frostbyte .fixed.bottom-16 {
+  background: rgba(6, 11, 25, 0.8) !important;
+  backdrop-filter: blur(12px);
+  border-color: rgba(34, 211, 238, 0.1) !important;
+}
+
 /* ── 26. YELLOW/UPGRADE BUTTONS — Icy Override ─────────────────────────────── */
 .theme-frostbyte .text-yellow-400 {
   color: #38bdf8 !important;
@@ -1013,4 +1076,33 @@ input:focus-visible {
 
 .theme-frostbyte .rounded-2xl:hover {
   transition: all 0.3s ease;
+}
+
+/* ── 28. SPIRAL NOTEBOOK EDITOR LIST STYLES ───────────────────────────────── */
+.notebook-editor ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.notebook-editor ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.notebook-editor li {
+  display: list-item !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.notebook-editor pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
