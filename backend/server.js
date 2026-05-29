@@ -1109,7 +1109,7 @@ const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmit
 
     // 5. LOSER OUTCOME
     if (matchOutcome.status === "Loser") {
-        if (!hasSubmitted) return 0;
+        if (pScore === 0 || !hasSubmitted) return -10;
         const baseLoss = 5; // Baseline participation points to avoid 0
         const scoreBonus = hasSubmitted ? Math.min(10, Math.round(pScore / 4)) : 0;
         return baseLoss + scoreBonus;
@@ -1208,6 +1208,8 @@ const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seaso
     hasSubmitted: Boolean(playerData?.hasSubmitted),
     code: playerData?.code || '',
     language: playerData?.language || '',
+    roundCodes: playerData?.roundCodes || {},
+    roundLanguages: playerData?.roundLanguages || {},
 });
 
 const logMatchResolutionError = (roomId, stage, error, context = {}) => {
@@ -1278,7 +1280,7 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
 
     if (p1IsWinner) {
         p1SeasonPoints = winnerPoints;
-        p2SeasonPoints = isLobbyDodge ? -10 : (p2Attempted ? 5 : 0); // -10 for dodge, +5 for benefit of doubt if attempted, else 0
+        p2SeasonPoints = isLobbyDodge ? -10 : (p2Attempted ? 5 : -10); // -10 for dodge, +5 for benefit of doubt if attempted, else -10
 
         if (!p1Attempted) {
             // Winner p1 did not attempt: scale down their ELO gain by 50%
@@ -1290,7 +1292,7 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
         }
     } else {
         p2SeasonPoints = winnerPoints;
-        p1SeasonPoints = isLobbyDodge ? -10 : (p1Attempted ? 5 : 0);
+        p1SeasonPoints = isLobbyDodge ? -10 : (p1Attempted ? 5 : -10);
 
         if (!p2Attempted) {
             // Winner p2 did not attempt: scale down their ELO gain by 50%
@@ -1398,8 +1400,10 @@ const handleGameEnd = async (roomId, room) => {
             score: Number(room.scores[playerNames[0]]) || 0,
             isCheater: room.cheaters.has(playerNames[0]),
             hasSubmitted: room.submissionAttempts.has(playerNames[0]),
-            code: room.players?.find(p => p.username === playerNames[0])?.code || "",
-            language: room.players?.find(p => p.username === playerNames[0])?.language || ""
+            code: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.code || "",
+            language: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.language || "",
+            roundCodes: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.roundCodes || {},
+            roundLanguages: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.roundLanguages || {}
         };
 
         const p2Data = isSoloMatch
@@ -1410,8 +1414,10 @@ const handleGameEnd = async (roomId, room) => {
                 score: Number(room.scores[playerNames[1]]) || 0,
                 isCheater: room.cheaters.has(playerNames[1]),
                 hasSubmitted: room.submissionAttempts.has(playerNames[1]),
-                code: room.players?.find(p => p.username === playerNames[1])?.code || "",
-                language: room.players?.find(p => p.username === playerNames[1])?.language || ""
+                code: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.code || "",
+                language: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.language || "",
+                roundCodes: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.roundCodes || {},
+                roundLanguages: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.roundLanguages || {}
             };
 
         let matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
@@ -1484,7 +1490,7 @@ const handleGameEnd = async (roomId, room) => {
         }
 
         winnerName = officialWinner;
-        winnerId = officialWinner ? room.players.find((player) => player.username === officialWinner)?.userId || null : null;
+        winnerId = officialWinner ? room.players.find((player) => player.username.toLowerCase() === officialWinner.toLowerCase())?.userId || null : null;
         playerResults = Object.fromEntries(
             resolvedPlayers.map((player) => [
                 toSafeUsername(player.data.username),
@@ -1612,7 +1618,7 @@ const handleGameEnd = async (roomId, room) => {
             };
         }
         winnerName = officialWinner;
-        winnerId = room.players.find((player) => player.username === officialWinner)?.userId || null;
+        winnerId = room.players.find((player) => player.username.toLowerCase() === officialWinner.toLowerCase())?.userId || null;
         playerResults = {
             [p1Data.username]: {
                 username: p1Data.username,
@@ -2292,6 +2298,12 @@ io.on('connection', async (socket) => {
           if (playerObj) {
               playerObj.code = code || "";
               playerObj.language = language || "";
+              
+              if (!playerObj.roundCodes) playerObj.roundCodes = {};
+              if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
+              
+              playerObj.roundCodes[String(room.round)] = code || "";
+              playerObj.roundLanguages[String(room.round)] = language || "";
           }
 
           const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;

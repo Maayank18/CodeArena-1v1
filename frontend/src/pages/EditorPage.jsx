@@ -154,15 +154,15 @@ const normalizeGameOverPayload = (data, currentUsername) => {
 
     return {
         winner: inferredWinnerName || (data?.message ? '' : 'Draw'),
-        winnerName: inferredWinnerName || (currentUsername ? currentUsername : 'Player'),
+        winnerName: inferredWinnerName || '',
         winnerId: data?.winnerId || null,
         isDisqualified: Boolean(data?.isDisqualified),
         disqualifiedPlayer: data?.disqualifiedPlayer || null,
         scores,
         eloChanges: data?.eloChanges && typeof data.eloChanges === 'object' ? data.eloChanges : {},
         playerResults,
-        pointsEarned: Number(currentPlayerResult?.seasonPoints ?? data?.pointsEarned ?? 0) || 0,
-        newElo: currentPlayerResult?.newElo ?? data?.newElo ?? null,
+        pointsEarned: Number(currentPlayerResult?.seasonPoints ?? 0),
+        newElo: currentPlayerResult?.newElo ?? null,
         message: data?.message || '',
     };
 };
@@ -952,7 +952,7 @@ const EditorPage = () => {
             setRunResults(response.data.results || []);
             if (response.data.allPassed) {
                 toast.success("✅ Correct! +10 Points", { icon: '🏆' });
-                socketRef.current.emit('level_completed', { roomId, username });
+                socketRef.current.emit('level_completed', { roomId, username, code, language });
             } else {
                 toast.error(`❌ Incorrect Solution`);
             }
@@ -1160,8 +1160,8 @@ const EditorPage = () => {
                     </button>
                 </div>
             ) : (
-                <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3">
-                <div className={`${activeTab === 'left' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 relative ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'} ${clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3 relative">
+                <div className={`${activeTab === 'left' ? 'flex' : 'absolute w-full pointer-events-none opacity-0 -translate-x-[9999px] md:relative md:pointer-events-auto md:opacity-100 md:translate-x-0 md:flex'} flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 relative ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'} ${clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
                     {clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' && (
                         <FrostbyteParticles forceActive={true} containerId="tsparticles-left" className="absolute inset-0 pointer-events-none z-[0] mix-blend-screen opacity-60" />
                     )}
@@ -1265,7 +1265,7 @@ const EditorPage = () => {
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'right' ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 overflow-hidden h-full order-3 relative ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'} ${clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
+                <div className={`${activeTab === 'right' ? 'flex' : 'absolute w-full pointer-events-none opacity-0 -translate-x-[9999px] md:relative md:pointer-events-auto md:opacity-100 md:translate-x-0 md:flex'} flex-1 flex-col min-h-0 overflow-hidden h-full order-3 relative ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'} ${clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
                     {clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' && (
                         <FrostbyteParticles forceActive={true} containerId="tsparticles-right" className="absolute inset-0 pointer-events-none z-[0] mix-blend-screen opacity-60" />
                     )}

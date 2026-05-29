@@ -21,11 +21,13 @@ const History = () => {
     const [loading, setLoading] = useState(true);
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeRound, setActiveRound] = useState(1);
 
     const navigate = useNavigate();
 
     const openAnalysisModal = useCallback((match) => {
         setSelectedMatch(match);
+        setActiveRound(1);
         setIsModalOpen(true);
     }, []);
 
@@ -257,7 +259,9 @@ const History = () => {
                     const opponentData = selectedMatch.players.find(p => 
                         p.username.toLowerCase() !== user.username.toLowerCase()
                     );
-                    const problem = selectedMatch.problemIds?.[0] || {};
+                    
+                    const totalRounds = selectedMatch.problemIds?.length || 1;
+                    const problem = selectedMatch.problemIds?.[activeRound - 1] || {};
                     const mySolveTimeMs = selectedMatch.fastestSolveMsByUser?.[user.username];
                     
                     let timeStr = "N/A";
@@ -270,6 +274,10 @@ const History = () => {
                     } else {
                         timeStr = "No Attempt";
                     }
+
+                    // Dynamically extract code and language for the active round (with backward compatibility fallbacks)
+                    const submissionCode = myData?.roundCodes?.[String(activeRound)] || (activeRound === 1 ? myData?.code : '') || "// No submission code recorded for this round.";
+                    const submissionLanguage = myData?.roundLanguages?.[String(activeRound)] || (activeRound === 1 ? myData?.language : '') || "N/A";
 
                     return (
                         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
@@ -284,23 +292,27 @@ const History = () => {
                                 <div className="flex items-start justify-between border-b border-[var(--border-color)] px-6 py-5 text-left">
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Match Analysis</p>
-                                        <h3 className="mt-1 text-xl font-black text-[var(--text-primary)]">{problem.title || "Arena Practice"}</h3>
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            {problem.difficulty && (
-                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                                                    problem.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                                                    problem.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                    'bg-red-500/10 text-red-400 border-red-500/20'
-                                                }`}>
-                                                    {problem.difficulty}
-                                                </span>
-                                            )}
-                                            {(problem.topics || []).map((topic, idx) => (
-                                                <span key={idx} className="inline-flex items-center rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
-                                                    {topic}
-                                                </span>
-                                            ))}
-                                        </div>
+                                        <h3 className="mt-1 text-xl font-black text-[var(--text-primary)]">
+                                            {typeof problem === 'string' ? `Problem ${activeRound}` : (problem.title || "Arena Practice")}
+                                        </h3>
+                                        {typeof problem !== 'string' && (
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {problem.difficulty && (
+                                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                                                        problem.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                                                        problem.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                        'bg-red-500/10 text-red-400 border-red-500/20'
+                                                    }`}>
+                                                        {problem.difficulty}
+                                                    </span>
+                                                )}
+                                                {(problem.topics || []).map((topic, idx) => (
+                                                    <span key={idx} className="inline-flex items-center rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+                                                        {topic}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                     <button
                                         type="button"
@@ -315,6 +327,30 @@ const History = () => {
 
                                 {/* Body */}
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-left">
+                                    {/* Round Selector Tabs (Visible when more than 1 round) */}
+                                    {totalRounds > 1 && (
+                                        <div className="flex gap-2 pb-3 overflow-x-auto custom-scrollbar border-b border-[var(--border-color)]">
+                                            {selectedMatch.problemIds.map((p, idx) => {
+                                                const roundNum = idx + 1;
+                                                const isActive = activeRound === roundNum;
+                                                const tabTitle = typeof p === 'string' ? `Round ${roundNum}` : (p.title || `Round ${roundNum}`);
+                                                return (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setActiveRound(roundNum)}
+                                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                                                            isActive 
+                                                                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25 scale-105' 
+                                                                : 'bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-color)]'
+                                                        }`}
+                                                    >
+                                                        {tabTitle}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
                                     {/* Stats Grid */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
@@ -323,7 +359,7 @@ const History = () => {
                                         </div>
                                         <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Language Used</p>
-                                            <p className="mt-1.5 text-lg font-black text-blue-400">{myData?.language?.toUpperCase() || "N/A"}</p>
+                                            <p className="mt-1.5 text-lg font-black text-blue-400">{submissionLanguage.toUpperCase()}</p>
                                         </div>
                                     </div>
 
@@ -331,7 +367,7 @@ const History = () => {
                                     <div className="space-y-2">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Problem Description</h4>
                                         <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 p-4 text-xs leading-relaxed text-[var(--text-secondary)] max-h-[120px] overflow-y-auto custom-scrollbar">
-                                            {problem.description || "No problem details available."}
+                                            {typeof problem === 'string' ? "No problem details available." : (problem.description || "No problem details available.")}
                                         </div>
                                     </div>
 
@@ -340,7 +376,7 @@ const History = () => {
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Your Solution Code</h4>
                                         <div className="relative">
                                             <pre className="rounded-2xl border border-[var(--border-color)] bg-[#0d0d0d] p-4 text-xs font-mono text-emerald-300 overflow-x-auto max-h-[220px] custom-scrollbar">
-                                                <code>{myData?.code || "// No submission code recorded for this match."}</code>
+                                                <code>{submissionCode}</code>
                                             </pre>
                                         </div>
                                     </div>

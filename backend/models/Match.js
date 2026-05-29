@@ -50,6 +50,16 @@ const matchPlayerSchema = new mongoose.Schema({
   language: {
     type: String,
     default: ''
+  },
+  roundCodes: {
+    type: Map,
+    of: String,
+    default: undefined
+  },
+  roundLanguages: {
+    type: Map,
+    of: String,
+    default: undefined
   }
 }, { _id: false });
 
