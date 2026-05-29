@@ -247,10 +247,10 @@ const Login = () => {
 
             if (import.meta.env.DEV) {
                 console.log('[AUTH UI] submit response', {
-                //     endpoint,
-                //     status: isRegister ? 'register' : 'login',
-                //     data,
-                // });
+                    endpoint,
+                    status: isRegister ? 'register' : 'login',
+                    data,
+                });
             }
 
 

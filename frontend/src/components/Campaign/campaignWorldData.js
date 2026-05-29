@@ -381,11 +381,8 @@ export const getZoneConfig = (zoneId) =>
   CAMPAIGN_REGIONS.find((z) => z.key === zoneId || z.id === zoneId) || CAMPAIGN_REGIONS[0];
 
 // ── Data stitching ────────────────────────────────────────────────────────────
-import * as batch1 from '../../data/campaignData';
-import * as batch2 from '../../data/campaignDataBatch2';
-
-const ZONES_BATCH_1 = batch1.ZONES || batch1.default || [];
-const ZONES_BATCH_2 = batch2.BATCH_2_ZONES || batch2.ZONES || batch2.default || [];
+import { ZONES as ZONES_BATCH_1 } from '../../data/campaignData';
+import { BATCH_2_ZONES as ZONES_BATCH_2 } from '../../data/campaignDataBatch2';
 
 export const ALL_ZONES = [
   ...(Array.isArray(ZONES_BATCH_1) ? ZONES_BATCH_1 : []),
