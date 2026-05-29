@@ -71,6 +71,7 @@
 
 import express from 'express';
 import Match from '../models/Match.js';
+import Problem from '../models/Problem.js'; // Ensure model registration for populate
 import { verifyToken } from '../middleware/auth.js';
 import { requirePlus } from '../middleware/subscriptionAuth.js';
 

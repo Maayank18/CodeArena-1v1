@@ -22,6 +22,10 @@ const History = () => {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeRound, setActiveRound] = useState(1);
+    
+    // Self-healing problem loaders for production fallback
+    const [fetchedProblems, setFetchedProblems] = useState({});
+    const [loadingProblems, setLoadingProblems] = useState(false);
 
     const navigate = useNavigate();
 
@@ -93,6 +97,46 @@ const History = () => {
         
         fetchData();
     }, [navigate]);
+
+    // ✅ SELF-HEALING: Fetch unpopulated problem details dynamically in production
+    useEffect(() => {
+        if (!selectedMatch) return;
+        
+        const unpopulatedIds = (selectedMatch.problemIds || []).filter(
+            id => typeof id === 'string' && !fetchedProblems[id]
+        );
+        
+        if (unpopulatedIds.length === 0) return;
+        
+        const fetchUnpopulatedProblems = async () => {
+            setLoadingProblems(true);
+            const newFetched = { ...fetchedProblems };
+            let hasNew = false;
+            
+            try {
+                await Promise.all(
+                    unpopulatedIds.map(async (id) => {
+                        try {
+                            const { data } = await api.get(`/problems/${id}`);
+                            newFetched[id] = data;
+                            hasNew = true;
+                        } catch (err) {
+                            console.error(`[HISTORY] Failed to fetch problem details for ${id}:`, err);
+                        }
+                    })
+                );
+                if (hasNew) {
+                    setFetchedProblems(newFetched);
+                }
+            } catch (err) {
+                console.error("[HISTORY] Error batch fetching problems:", err);
+            } finally {
+                setLoadingProblems(false);
+            }
+        };
+        
+        fetchUnpopulatedProblems();
+    }, [selectedMatch]);
 
     // ✅ OPTIMIZED: Memoized match rendering
     const matchElements = useMemo(() => {
@@ -261,7 +305,10 @@ const History = () => {
                     );
                     
                     const totalRounds = selectedMatch.problemIds?.length || 1;
-                    const problem = selectedMatch.problemIds?.[activeRound - 1] || {};
+                    const rawProblem = selectedMatch.problemIds?.[activeRound - 1];
+                    const problem = typeof rawProblem === 'string'
+                        ? (fetchedProblems[rawProblem] || rawProblem)
+                        : (rawProblem || {});
                     const mySolveTimeMs = selectedMatch.fastestSolveMsByUser?.[user.username];
                     
                     let timeStr = "N/A";
@@ -293,7 +340,9 @@ const History = () => {
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Match Analysis</p>
                                         <h3 className="mt-1 text-xl font-black text-[var(--text-primary)]">
-                                            {typeof problem === 'string' ? `Problem ${activeRound}` : (problem.title || "Arena Practice")}
+                                            {typeof problem === 'string' 
+                                                ? (loadingProblems ? "Loading Problem Details..." : `Problem ${activeRound}`) 
+                                                : (problem.title || "Arena Practice")}
                                         </h3>
                                         {typeof problem !== 'string' && (
                                             <div className="mt-2 flex flex-wrap gap-2">
@@ -333,7 +382,9 @@ const History = () => {
                                             {selectedMatch.problemIds.map((p, idx) => {
                                                 const roundNum = idx + 1;
                                                 const isActive = activeRound === roundNum;
-                                                const tabTitle = typeof p === 'string' ? `Round ${roundNum}` : (p.title || `Round ${roundNum}`);
+                                                const tabTitle = typeof p === 'string' 
+                                                    ? (fetchedProblems[p]?.title || `Round ${roundNum}`) 
+                                                    : (p.title || `Round ${roundNum}`);
                                                 return (
                                                     <button
                                                         key={idx}
@@ -364,10 +415,13 @@ const History = () => {
                                     </div>
 
                                     {/* Problem Description */}
+                                    {/* Problem Description */}
                                     <div className="space-y-2">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Problem Description</h4>
                                         <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 p-4 text-xs leading-relaxed text-[var(--text-secondary)] max-h-[120px] overflow-y-auto custom-scrollbar">
-                                            {typeof problem === 'string' ? "No problem details available." : (problem.description || "No problem details available.")}
+                                            {typeof problem === 'string' 
+                                                ? (loadingProblems ? "Fetching description..." : "No problem details available.") 
+                                                : (problem.description || "No problem details available.")}
                                         </div>
                                     </div>
 
