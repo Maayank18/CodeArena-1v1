@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { HISTORY_CACHE_KEY, readStoredUser } from '../utils/authSessionStorage.js';
 import { useTheme } from '../context/ThemeContext';
+import { AnimatePresence } from 'framer-motion';
 
 const CACHE_DURATION = 60000; // 60 seconds
 
@@ -18,8 +19,15 @@ const History = () => {
     const [history, setHistory] = useState([]);
     const [user, setUser] = useState(() => readStoredUser());
     const [loading, setLoading] = useState(true);
+    const [selectedMatch, setSelectedMatch] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const navigate = useNavigate();
+
+    const openAnalysisModal = useCallback((match) => {
+        setSelectedMatch(match);
+        setIsModalOpen(true);
+    }, []);
 
     // ✅ OPTIMIZED: Memoized logout handler
     const handleLogout = useCallback(() => {
@@ -161,36 +169,45 @@ const History = () => {
                         </div>
                     </div>
 
-                    {/* Score & ELO */}
-                    <div className="text-right pl-4 flex flex-col items-end justify-center">
-                        <div className="flex items-baseline gap-1">
-                            <span className={`font-mono font-bold text-lg md:text-xl ${
-                                myData.seasonPointsGained > 0 ? 'text-green-400' : (myData.seasonPointsGained < 0 ? 'text-red-500' : 'text-[var(--text-primary)]')
-                            }`}>
-                                {myData.seasonPointsGained > 0 ? '+' : ''}{myData.seasonPointsGained}
-                            </span>
-                            <span className="text-[10px] md:text-xs text-[var(--text-secondary)] uppercase tracking-wide">
-                                pts
-                            </span>
-                        </div>
+                    {/* Score, ELO & Analyse */}
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => openAnalysisModal(match)}
+                            className="px-3 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-tertiary)] text-[10px] md:text-xs font-bold text-[var(--text-secondary)] hover:text-accent hover:border-accent hover:scale-105 active:scale-95 transition-all shrink-0"
+                        >
+                            Analyse
+                        </button>
 
-                        {eloChange !== 0 ? (
-                            <div className={`text-xs font-bold flex items-center gap-1 ${
-                                eloChange > 0 ? 'text-green-500' : 'text-red-500'
-                            }`}>
-                                {eloChange > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                {eloChange > 0 ? '+' : ''}{eloChange} ELO
+                        <div className="text-right pl-2 flex flex-col items-end justify-center">
+                            <div className="flex items-baseline gap-1">
+                                <span className={`font-mono font-bold text-lg md:text-xl ${
+                                    myData.seasonPointsGained > 0 ? 'text-green-400' : (myData.seasonPointsGained < 0 ? 'text-red-500' : 'text-[var(--text-primary)]')
+                                }`}>
+                                    {myData.seasonPointsGained > 0 ? '+' : ''}{myData.seasonPointsGained}
+                                </span>
+                                <span className="text-[10px] md:text-xs text-[var(--text-secondary)] uppercase tracking-wide">
+                                    pts
+                                </span>
                             </div>
-                        ) : (
-                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
-                                No Change
-                            </div>
-                        )}
+
+                            {eloChange !== 0 ? (
+                                <div className={`text-xs font-bold flex items-center gap-1 ${
+                                    eloChange > 0 ? 'text-green-500' : 'text-red-500'
+                                }`}>
+                                    {eloChange > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                    {eloChange > 0 ? '+' : ''}{eloChange} ELO
+                                </div>
+                            ) : (
+                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
+                                    No Change
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
         });
-    }, [history, user, advancedTheme]);
+    }, [history, user, advancedTheme, openAnalysisModal]);
 
     return (
         <div className="flex h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden font-sans">
@@ -229,9 +246,112 @@ const History = () => {
                             </div>
                         )}
                     </div>
-                </div>
             </div>
+
+            {/* Analysis Modal */}
+            <AnimatePresence>
+                {isModalOpen && selectedMatch && (() => {
+                    const myData = selectedMatch.players.find(p => 
+                        p.username.toLowerCase() === user.username.toLowerCase()
+                    );
+                    const opponentData = selectedMatch.players.find(p => 
+                        p.username.toLowerCase() !== user.username.toLowerCase()
+                    );
+                    const problem = selectedMatch.problemIds?.[0] || {};
+                    const mySolveTimeMs = selectedMatch.fastestSolveMsByUser?.[user.username];
+                    
+                    let timeStr = "N/A";
+                    if (mySolveTimeMs) {
+                        const minutes = Math.floor(mySolveTimeMs / 60000);
+                        const seconds = Math.round((mySolveTimeMs % 60000) / 1000);
+                        timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                    } else if (myData?.hasSubmitted) {
+                        timeStr = "Attempted (Not Solved)";
+                    } else {
+                        timeStr = "No Attempt";
+                    }
+
+                    return (
+                        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                            />
+                            
+                            <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--bg-primary)] shadow-[0_24px_80px_rgba(0,0,0,0.5)] flex flex-col h-[580px] max-h-[90dvh]">
+                                {/* Header */}
+                                <div className="flex items-start justify-between border-b border-[var(--border-color)] px-6 py-5 text-left">
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Match Analysis</p>
+                                        <h3 className="mt-1 text-xl font-black text-[var(--text-primary)]">{problem.title || "Arena Practice"}</h3>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {problem.difficulty && (
+                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                                                    problem.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                                                    problem.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                    'bg-red-500/10 text-red-400 border-red-500/20'
+                                                }`}>
+                                                    {problem.difficulty}
+                                                </span>
+                                            )}
+                                            {(problem.topics || []).map((topic, idx) => (
+                                                <span key={idx} className="inline-flex items-center rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+                                                    {topic}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-2 text-[var(--text-secondary)] transition-colors hover:border-[var(--border-color)] hover:text-[var(--text-primary)]"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {/* Body */}
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar text-left">
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Your Solve Time</p>
+                                            <p className="mt-1.5 text-lg font-black text-emerald-400">{timeStr}</p>
+                                        </div>
+                                        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Language Used</p>
+                                            <p className="mt-1.5 text-lg font-black text-blue-400">{myData?.language?.toUpperCase() || "N/A"}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Problem Description */}
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Problem Description</h4>
+                                        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 p-4 text-xs leading-relaxed text-[var(--text-secondary)] max-h-[120px] overflow-y-auto custom-scrollbar">
+                                            {problem.description || "No problem details available."}
+                                        </div>
+                                    </div>
+
+                                    {/* Submission Code */}
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Your Solution Code</h4>
+                                        <div className="relative">
+                                            <pre className="rounded-2xl border border-[var(--border-color)] bg-[#0d0d0d] p-4 text-xs font-mono text-emerald-300 overflow-x-auto max-h-[220px] custom-scrollbar">
+                                                <code>{myData?.code || "// No submission code recorded for this match."}</code>
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+            </AnimatePresence>
         </div>
+    </div>
     );
 };
 

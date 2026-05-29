@@ -88,6 +88,10 @@ router.get('/user/:username', verifyToken, requirePlus, async (req, res) => {
     const history = await Match.find({
       "players.username": username
     })
+    .populate({
+      path: 'problemIds',
+      select: 'title description difficulty topics constraints starterCode goldenSolution'
+    })
     .sort({ createdAt: -1 })
     .limit(20) // Only fetch last 20 for performance
     .lean();

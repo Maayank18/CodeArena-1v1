@@ -1206,6 +1206,8 @@ const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seaso
     statusText: outcome?.status || 'Draw',
     seasonPointsGained: toFiniteNumber(seasonPoints, 0),
     hasSubmitted: Boolean(playerData?.hasSubmitted),
+    code: playerData?.code || '',
+    language: playerData?.language || '',
 });
 
 const logMatchResolutionError = (roomId, stage, error, context = {}) => {
@@ -1395,7 +1397,9 @@ const handleGameEnd = async (roomId, room) => {
             rating: user1Doc?.rating || 1000,
             score: Number(room.scores[playerNames[0]]) || 0,
             isCheater: room.cheaters.has(playerNames[0]),
-            hasSubmitted: room.submissionAttempts.has(playerNames[0])
+            hasSubmitted: room.submissionAttempts.has(playerNames[0]),
+            code: room.players?.find(p => p.username === playerNames[0])?.code || "",
+            language: room.players?.find(p => p.username === playerNames[0])?.language || ""
         };
 
         const p2Data = isSoloMatch
@@ -1405,7 +1409,9 @@ const handleGameEnd = async (roomId, room) => {
                 rating: user2Doc?.rating || 1000,
                 score: Number(room.scores[playerNames[1]]) || 0,
                 isCheater: room.cheaters.has(playerNames[1]),
-                hasSubmitted: room.submissionAttempts.has(playerNames[1])
+                hasSubmitted: room.submissionAttempts.has(playerNames[1]),
+                code: room.players?.find(p => p.username === playerNames[1])?.code || "",
+                language: room.players?.find(p => p.username === playerNames[1])?.language || ""
             };
 
         let matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
@@ -2269,7 +2275,7 @@ io.on('connection', async (socket) => {
   });
 
   // ✅ LEVEL COMPLETED EVENT
-  socket.on('level_completed', async ({ roomId, username }) => {
+  socket.on('level_completed', async ({ roomId, username, code, language }) => {
       try {
           const resolvedUsername = socket.data.user?.username || username;
           const room = rooms.get(roomId);
@@ -2279,6 +2285,13 @@ io.on('connection', async (socket) => {
           // Rate limiting
           if (!checkRateLimit(socket.id, 'level_completed')) {
             return;
+          }
+
+          // Save player code and language inside the room players
+          const playerObj = room.players?.find(p => p.username === resolvedUsername);
+          if (playerObj) {
+              playerObj.code = code || "";
+              playerObj.language = language || "";
           }
 
           const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;

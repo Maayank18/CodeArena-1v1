@@ -42,6 +42,14 @@ const matchPlayerSchema = new mongoose.Schema({
   hasSubmitted: {
     type: Boolean,
     default: false
+  },
+  code: {
+    type: String,
+    default: ''
+  },
+  language: {
+    type: String,
+    default: ''
   }
 }, { _id: false });
 
