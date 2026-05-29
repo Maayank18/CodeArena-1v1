@@ -294,7 +294,7 @@ api.interceptors.request.use(
             const cached = requestCache.get(cacheKey);
             
             if (cached && (Date.now() - cached.timestamp) < CONFIG.cacheDuration) {
-                console.log(`[API] Cache HIT: ${config.url}`);
+                // console.log(`[API] Cache HIT: ${config.url}`);
                 // Return cached response
                 config.adapter = () => Promise.resolve({
                     data: cached.data,
@@ -332,7 +332,7 @@ api.interceptors.request.use(
         const requestKey = buildRequestKey(config);
 
         if (shouldDedupeRequest(config) && pendingRequests.has(requestKey)) {
-            console.log(`[API] Duplicate request prevented: ${config.url}`);
+            // console.log(`[API] Duplicate request prevented: ${config.url}`);
             const source = axios.CancelToken.source();
             config.cancelToken = source.token;
             source.cancel('Duplicate request');
@@ -411,7 +411,7 @@ api.interceptors.response.use(
 
         // ✅ HANDLE CANCELLED REQUESTS
         if (axios.isCancel(error)) {
-            console.log('[API] Request cancelled:', error.message);
+            // console.log('[API] Request cancelled:', error.message);
             return Promise.reject(error);
         }
 
@@ -423,7 +423,7 @@ api.interceptors.response.use(
                 message: error.response?.data?.message,
             });
             if (!isAuthFlowRequest(config)) {
-                console.log('[API] 401 Unauthorized - clearing auth');
+                // console.log('[API] 401 Unauthorized - clearing auth');
                 clearStoredUser({
                     clearDerived: true,
                     dispatch: true,
@@ -459,7 +459,7 @@ api.interceptors.response.use(
             config._retryCount += 1;
             
             const delay = CONFIG.retryDelay * config._retryCount;
-            console.log(`[API] Retry ${config._retryCount}/${CONFIG.retryAttempts} after ${delay}ms: ${config.url}`);
+            // console.log(`[API] Retry ${config._retryCount}/${CONFIG.retryAttempts} after ${delay}ms: ${config.url}`);
             
             await new Promise(resolve => setTimeout(resolve, delay));
             
@@ -482,7 +482,7 @@ api.interceptors.response.use(
 // ✅ UTILITY: Clear cache manually
 api.clearCache = () => {
     requestCache.clear();
-    console.log('[API] Cache cleared');
+    // console.log('[API] Cache cleared');
 };
 
 // ✅ UTILITY: Get cache size

@@ -623,7 +623,7 @@ app.use(express.json({ limit: '1mb' }));
 // ✅ REQUEST LOGGER (excluding health checks)
 app.use((req, res, next) => {
   if (req.originalUrl !== '/health') {
-     console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+     // console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
   }
   next();
 });
@@ -686,13 +686,13 @@ app.get('/health', (req, res) => {
 cron.schedule('*/14 * * * *', async () => {
     try {
         const backendURL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
-        console.log(`[CRON] 🏓 Pinging self: ${backendURL}/health`);
+        // console.log(`[CRON] 🏓 Pinging self: ${backendURL}/health`);
         
         await axios.get(`${backendURL}/health`, { 
             timeout: 5000,
             headers: { 'User-Agent': 'KeepAlive-Cron' }
         });
-        console.log(`[CRON] ✅ Keep-alive success`);
+        // console.log(`[CRON] ✅ Keep-alive success`);
     } catch (error) {
         console.error(`[CRON] ⚠️ Keep-alive failed:`, error.message);
     }

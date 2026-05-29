@@ -202,10 +202,10 @@ export const requestSettingsOtp = async (req, res) => {
         const body = req.body || {};
         const newPassword = body.password === undefined ? '' : String(body.password);
 
-        console.log('[SETTINGS OTP] Request started', {
-            userId: req.user?._id,
-            hasPasswordChange: Boolean(newPassword),
-        });
+        // console.log('[SETTINGS OTP] Request started', {
+        //     userId: req.user?._id,
+        //     hasPasswordChange: Boolean(newPassword),
+        // });
 
         if (!newPassword) {
             return res.status(400).json({ success: false, message: 'Provide a new password before requesting a verification code' });
@@ -243,11 +243,11 @@ export const requestSettingsOtp = async (req, res) => {
         };
         await user.save();
 
-        console.log('[SETTINGS OTP] OTP persisted', {
-            userId: req.user?._id,
-            deliveryTarget: user.email,
-            expiresAt: user.otpExpiry,
-        });
+        // console.log('[SETTINGS OTP] OTP persisted', {
+        //     userId: req.user?._id,
+        //     deliveryTarget: user.email,
+        //     expiresAt: user.otpExpiry,
+        // });
 
         let emailResult;
         try {
@@ -277,10 +277,10 @@ export const requestSettingsOtp = async (req, res) => {
             });
         }
 
-        console.log('[SETTINGS OTP] Verification email sent', {
-            userId: req.user?._id,
-            delivered: emailResult?.delivered,
-        });
+        // console.log('[SETTINGS OTP] Verification email sent', {
+        //     userId: req.user?._id,
+        //     delivered: emailResult?.delivered,
+        // });
 
         return res.json({
             success: true,

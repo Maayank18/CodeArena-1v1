@@ -367,7 +367,7 @@ const CampaignEditor = () => {
           setLoadError('Problem not found. Return to Campaign.');
         }
       } catch (err) {
-        console.log(err);
+        // console.log(err);
         if (cancelled) return;
 
         if (err?.response?.status === 403 && err?.response?.data?.code === 'TRIAL_EXPIRED') {
@@ -476,7 +476,7 @@ const CampaignEditor = () => {
           isPublic: true
         });
       } catch (err) {
-        console.log(err);
+        // console.log(err);
         const errorMessage = err?.response?.data?.message || 'Execution Error';
         results.push({
           caseNum: i + 1,
@@ -528,7 +528,7 @@ const CampaignEditor = () => {
         if (data.sageShouldTrigger || failCount + 1 >= 3) setSageShouldShow(true);
       }
     } catch (err) {
-        console.log(err);
+        // console.log(err);
       toast.error('Submission failed');
     } finally {
       setIsSubmitting(false);

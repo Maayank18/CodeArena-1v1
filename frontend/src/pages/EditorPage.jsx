@@ -609,7 +609,7 @@ const EditorPage = () => {
                     );
 
                 if (hasCustomEntrance) {
-                    console.log('[ARENA] ✨ Triggering Entrance Banner:', me.customization.entranceBanner);
+                    // console.log('[ARENA] ✨ Triggering Entrance Banner:', me.customization.entranceBanner);
                     setEntranceData(me.customization);
                     setShowEntrance(true);
                     sessionStorage.setItem(`codearena_entrance_shown_${roomId}`, 'true');
