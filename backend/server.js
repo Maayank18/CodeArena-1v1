@@ -1101,6 +1101,7 @@ const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmit
 
     // 4. DRAW OUTCOME
     if (matchOutcome.status === "Draw") {
+        if (!hasSubmitted) return 0;
         const baseDraw = 15;
         const scoreBonus = Math.min(10, Math.round(pScore / 3));
         return baseDraw + scoreBonus;
@@ -1108,6 +1109,7 @@ const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmit
 
     // 5. LOSER OUTCOME
     if (matchOutcome.status === "Loser") {
+        if (!hasSubmitted) return 0;
         const baseLoss = 5; // Baseline participation points to avoid 0
         const scoreBonus = hasSubmitted ? Math.min(10, Math.round(pScore / 4)) : 0;
         return baseLoss + scoreBonus;
@@ -1143,7 +1145,7 @@ const calculateSoloPracticeOutcome = (playerData, reason) => {
     // 2. Forfeit/Leave Scenario (Maya vs undefined case)
     if (reason === 'forfeit') {
         const eloPenalty = Math.min(12, Math.max(4, Math.round(Math.max(0, rating - DEFAULT_PLAYER_RATING) / 100) + 4));
-        const dynamicParticipationPoints = 5 + Math.min(10, Math.round(score / 4));
+        const dynamicParticipationPoints = hasSubmitted ? (5 + Math.min(10, Math.round(score / 4))) : 0;
         
         return {
             p1: {
@@ -1157,13 +1159,12 @@ const calculateSoloPracticeOutcome = (playerData, reason) => {
 
     // 3. Timeout or Quit without submission
     if (!hasSubmitted) {
-        const dynamicParticipationPoints = 5 + Math.min(10, Math.round(score / 4));
         return {
             p1: {
                 newRating: rating,
                 pointsGained: 0,
-                seasonScore: dynamicParticipationPoints, // Dynamic points even on timeout!
-                status: reason === 'timeout' ? 'Draw' : 'Loser',
+                seasonScore: 0, // Since they did not attempt, 0 points
+                status: 'Loser', // Always a Loss (not a Draw) if they didn't attempt
             }
         };
     }
@@ -1275,7 +1276,7 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
 
     if (p1IsWinner) {
         p1SeasonPoints = winnerPoints;
-        p2SeasonPoints = isLobbyDodge ? -10 : 5; // -10 for dodge, +5 for benefit of doubt
+        p2SeasonPoints = isLobbyDodge ? -10 : (p2Attempted ? 5 : 0); // -10 for dodge, +5 for benefit of doubt if attempted, else 0
 
         if (!p1Attempted) {
             // Winner p1 did not attempt: scale down their ELO gain by 50%
@@ -1287,7 +1288,7 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
         }
     } else {
         p2SeasonPoints = winnerPoints;
-        p1SeasonPoints = isLobbyDodge ? -10 : 5;
+        p1SeasonPoints = isLobbyDodge ? -10 : (p1Attempted ? 5 : 0);
 
         if (!p2Attempted) {
             // Winner p2 did not attempt: scale down their ELO gain by 50%

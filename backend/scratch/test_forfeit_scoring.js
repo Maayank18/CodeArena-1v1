@@ -67,7 +67,7 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
 
     if (p1IsWinner) {
         p1SeasonPoints = winnerPoints;
-        p2SeasonPoints = isLobbyDodge ? -10 : 5; // -10 for dodge, +5 for benefit of doubt
+        p2SeasonPoints = isLobbyDodge ? -10 : (p2Attempted ? 5 : 0); // -10 for dodge, +5 for benefit of doubt if attempted, else 0
 
         if (!p1Attempted) {
             // Winner p1 did not attempt: scale down their ELO gain by 50%
@@ -79,7 +79,7 @@ const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSecond
         }
     } else {
         p2SeasonPoints = winnerPoints;
-        p1SeasonPoints = isLobbyDodge ? -10 : 5;
+        p1SeasonPoints = isLobbyDodge ? -10 : (p1Attempted ? 5 : 0);
 
         if (!p2Attempted) {
             // Winner p2 did not attempt: scale down their ELO gain by 50%
@@ -131,7 +131,7 @@ try {
     
     assert(outcome.p1.seasonScore === 30, 'Winner who attempted gets +30 season points');
     assert(outcome.p1.pointsGained === 16, 'Winner who attempted gets full Elo gain (+16)');
-    assert(outcome.p2.seasonScore === 5, 'Loser gets standard +5 points');
+    assert(outcome.p2.seasonScore === 0, 'Loser who did not attempt gets 0 season points');
     assert(outcome.p2.pointsGained === -16, 'Loser loses full Elo (-16)');
 } catch (error) {
     assert(false, `Test Case 1 failed: ${error.stack}`);
@@ -146,7 +146,7 @@ try {
     
     assert(outcome.p1.seasonScore === 10, 'Winner who did not attempt gets reduced +10 season points');
     assert(outcome.p1.pointsGained === 8, 'Winner who did not attempt gets scaled down Elo gain (16 * 0.5 = 8)');
-    assert(outcome.p2.seasonScore === 5, 'Loser still gets standard +5 points');
+    assert(outcome.p2.seasonScore === 0, 'Loser who did not attempt gets 0 season points');
     assert(outcome.p2.pointsGained === -16, 'Loser still loses full Elo (-16)');
 } catch (error) {
     assert(false, `Test Case 2 failed: ${error.stack}`);
