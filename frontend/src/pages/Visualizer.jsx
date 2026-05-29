@@ -188,6 +188,11 @@ const VISUALIZER_STYLES = `
         to { opacity: 1; transform: translateY(0); }
     }
 
+    .viz-root {
+        height: 100vh;
+        height: 100dvh;
+    }
+
     .viz-root[data-theme='dark'] {
         --vz-bg-primary: #0d1117;
         --vz-bg-secondary: #161b22;
@@ -469,7 +474,7 @@ const Visualizer = () => {
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div
-            className="viz-root h-screen flex flex-col overflow-hidden font-sans transition-colors duration-300"
+            className="viz-root h-screen h-[100dvh] flex flex-col overflow-hidden font-sans transition-colors duration-300"
             data-theme={theme}
         >
             <TeaserModal 
@@ -482,7 +487,9 @@ const Visualizer = () => {
             <style>{VISUALIZER_STYLES}</style>
 
             {/* ── NAVBAR (from parent project) ───────────────────────────── */}
-            <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
+            <div className="hidden md:block shrink-0">
+                <Navbar user={user} onLogout={handleLogout} onUserUpdate={updateSession} />
+            </div>
 
             {/* ── TOP BAR ────────────────────────────────────────────────── */}
             <TopBar
@@ -558,7 +565,7 @@ const Visualizer = () => {
 
             {/* ── CONTROL BAR ────────────────────────────────────────────── */}
             <div
-                className="border-t vz-border vz-bg-s px-3 sm:px-5 py-3 shrink-0 z-20"
+                className="border-t vz-border vz-bg-s px-3 sm:px-5 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] shrink-0 z-20"
                 style={{ boxShadow: '0 -4px 24px rgba(0,0,0,0.18)' }}
             >
                 <ControlBar theme={theme}
