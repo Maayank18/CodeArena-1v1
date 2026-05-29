@@ -686,13 +686,13 @@ app.get('/health', (req, res) => {
 cron.schedule('*/14 * * * *', async () => {
     try {
         const backendURL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
-        // console.log(`[CRON] 🏓 Pinging self: ${backendURL}/health`);
+        console.log(`[CRON] 🏓 Pinging self: ${backendURL}/health`);
         
         await axios.get(`${backendURL}/health`, { 
             timeout: 5000,
             headers: { 'User-Agent': 'KeepAlive-Cron' }
         });
-        // console.log(`[CRON] ✅ Keep-alive success`);
+        console.log(`[CRON] ✅ Keep-alive success`);
     } catch (error) {
         console.error(`[CRON] ⚠️ Keep-alive failed:`, error.message);
     }
@@ -2280,46 +2280,83 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // ✅ LEVEL COMPLETED EVENT
-  socket.on('level_completed', async ({ roomId, username, code, language }) => {
+  socket.on('code_submitted', async ({ roomId, username, code, language }) => {
       try {
           const resolvedUsername = socket.data.user?.username || username;
           const room = rooms.get(roomId);
           if (!room || !room.isGameActive) return;
-          if(room.roundCompletions.has(resolvedUsername)) return;
+
+          const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
+          if (playerObj) {
+              playerObj.code = code || playerObj.code || "";
+              playerObj.language = language || playerObj.language || "";
+              if (!playerObj.roundCodes) playerObj.roundCodes = {};
+              if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
+              playerObj.roundCodes[String(room.round)] = code || playerObj.roundCodes[String(room.round)] || "";
+              playerObj.roundLanguages[String(room.round)] = language || playerObj.roundLanguages[String(room.round)] || "";
+          }
+      } catch (err) {
+          console.error('[SOCKET] Error in code_submitted:', err);
+      }
+  });
+
+  // ✅ LEVEL COMPLETED EVENT
+  socket.on('level_completed', async ({ roomId, username, code, language }) => {
+      try {
+          const resolvedUsername = socket.data.user?.username || username;
+          console.log(`[GAME] Socket level_completed received: roomId=${roomId}, username=${username}, resolvedUsername=${resolvedUsername}`);
+          const room = rooms.get(roomId);
+          if (!room || !room.isGameActive) {
+              console.warn(`[GAME] Level completion ignored: room is missing or inactive for ID ${roomId}`);
+              return;
+          }
 
           // Rate limiting
           if (!checkRateLimit(socket.id, 'level_completed')) {
+            console.warn(`[GAME] Rate limit triggered for level_completed: socket=${socket.id}`);
             return;
           }
 
           // Save player code and language inside the room players
-          const playerObj = room.players?.find(p => p.username === resolvedUsername);
-          if (playerObj) {
-              playerObj.code = code || "";
-              playerObj.language = language || "";
-              
-              if (!playerObj.roundCodes) playerObj.roundCodes = {};
-              if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
-              
-              playerObj.roundCodes[String(room.round)] = code || "";
-              playerObj.roundLanguages[String(room.round)] = language || "";
+          const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
+          if (!playerObj) {
+              console.warn(`[GAME] Casing match lookup failed: resolvedUsername "${resolvedUsername}" not found in players of room ${roomId}`);
+              return;
           }
 
+          // Use the canonical casing from the room players list to prevent dynamic key conflicts
+          const normalizedUsername = playerObj.username;
+          console.log(`[GAME] Username casing normalized: "${resolvedUsername}" -> "${normalizedUsername}"`);
+
+          if (room.roundCompletions.has(normalizedUsername)) {
+              console.log(`[GAME] Player "${normalizedUsername}" already marked completed for round ${room.round}`);
+              return;
+          }
+
+          playerObj.code = code || "";
+          playerObj.language = language || "";
+          
+          if (!playerObj.roundCodes) playerObj.roundCodes = {};
+          if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
+          
+          playerObj.roundCodes[String(room.round)] = code || "";
+          playerObj.roundLanguages[String(room.round)] = language || "";
+          console.log(`[GAME] Captured solution code for player "${normalizedUsername}" on round ${room.round}`);
+
           const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;
-          room.submissionAttempts.add(resolvedUsername);
-          room.scores[resolvedUsername] = (room.scores[resolvedUsername] || 0) + 10;
-          room.roundCompletions.add(resolvedUsername);
+          room.submissionAttempts.add(normalizedUsername);
+          room.scores[normalizedUsername] = (room.scores[normalizedUsername] || 0) + 10;
+          room.roundCompletions.add(normalizedUsername);
           if (solveTimeMs !== null) {
-            const currentFastest = room.fastestSolveMsByUser?.[resolvedUsername];
+            const currentFastest = room.fastestSolveMsByUser?.[normalizedUsername];
             if (!currentFastest || solveTimeMs < currentFastest) {
-              room.fastestSolveMsByUser[resolvedUsername] = solveTimeMs;
+              room.fastestSolveMsByUser[normalizedUsername] = solveTimeMs;
             }
           }
           if (room.round === 1 && !room.firstRoundFirstSolverUsername) {
-            room.firstRoundFirstSolverUsername = resolvedUsername;
-            const opponentName = room.players.find((player) => player.username !== resolvedUsername)?.username;
-            room.firstRoundOpponentSubmissionCounts[resolvedUsername] = opponentName
+            room.firstRoundFirstSolverUsername = normalizedUsername;
+            const opponentName = room.players.find((player) => player.username.toLowerCase() !== normalizedUsername.toLowerCase())?.username;
+            room.firstRoundOpponentSubmissionCounts[normalizedUsername] = opponentName
               ? (room.submissionCountByUser?.[opponentName] || 0)
               : 0;
           }
@@ -2407,7 +2444,10 @@ io.on('connection', async (socket) => {
       const room = rooms.get(roomId);
       if (!room || !room.isGameActive) return;
       
-      room.cheaters.add(resolvedUsername);
+      const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
+      const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
+
+      room.cheaters.add(normalizedUsername);
       socket.emit('cheat_warning', { reason });
       
       console.log(`[ANTI-CHEAT] 🚨 ${username} in ${roomId}: ${reason}`);
@@ -2417,14 +2457,29 @@ io.on('connection', async (socket) => {
   });
 
   // ✅ CODE SUBMITTED EVENT
-  socket.on('code_submitted', ({ roomId, username }) => {
+  socket.on('code_submitted', ({ roomId, username, code, language }) => {
     try {
         const resolvedUsername = socket.data.user?.username || username;
         const room = rooms.get(roomId);
         if (!room || !room.isGameActive) return;
-        room.submissionAttempts.add(resolvedUsername);
-        room.submissionCountByUser[resolvedUsername] = (room.submissionCountByUser[resolvedUsername] || 0) + 1;
-        console.log(`[GAME] 📝 ${username} submitted code in ${roomId}`);
+
+        const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
+        const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
+
+        if (playerObj) {
+            playerObj.code = code || playerObj.code;
+            playerObj.language = language || playerObj.language;
+            
+            if (!playerObj.roundCodes) playerObj.roundCodes = {};
+            if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
+            
+            playerObj.roundCodes[room.round] = code || playerObj.code;
+            playerObj.roundLanguages[room.round] = language || playerObj.language;
+        }
+
+        room.submissionAttempts.add(normalizedUsername);
+        room.submissionCountByUser[normalizedUsername] = (room.submissionCountByUser[normalizedUsername] || 0) + 1;
+        console.log(`[GAME] 📝 ${normalizedUsername} submitted code in ${roomId}`);
     } catch (err) { 
       console.error("[SOCKET] Code submission error:", err); 
     }

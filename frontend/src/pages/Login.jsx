@@ -246,7 +246,7 @@ const Login = () => {
             const { data } = await api.post(endpoint, payload);
 
             if (import.meta.env.DEV) {
-                // console.log('[AUTH UI] submit response', {
+                console.log('[AUTH UI] submit response', {
                 //     endpoint,
                 //     status: isRegister ? 'register' : 'login',
                 //     data,
@@ -260,7 +260,7 @@ const Login = () => {
         } catch (error) {
             if (isApiRequestCancelled(error)) {
                 if (import.meta.env.DEV) {
-                    // console.log('[AUTH UI] submit request cancelled', { endpoint });
+                    console.log('[AUTH UI] submit request cancelled', { endpoint });
                 }
                 return;
             }
@@ -288,7 +288,7 @@ const Login = () => {
             });
 
             if (import.meta.env.DEV) {
-                // console.log('[AUTH UI] forgot-password response', data);
+                console.log('[AUTH UI] forgot-password response', data);
             }
 
             setRecoveryData((prev) => ({
@@ -321,7 +321,7 @@ const Login = () => {
             });
 
             if (import.meta.env.DEV) {
-                // console.log('[AUTH UI] verify-otp response', data);
+                console.log('[AUTH UI] verify-otp response', data);
             }
 
             setRecoveryData((prev) => ({
@@ -365,7 +365,7 @@ const Login = () => {
             });
 
             if (import.meta.env.DEV) {
-                // console.log('[AUTH UI] reset-password response', data);
+                console.log('[AUTH UI] reset-password response', data);
             }
 
             clearSession({
@@ -399,7 +399,7 @@ const Login = () => {
             });
 
             if (import.meta.env.DEV) {
-                // console.log('[AUTH UI] resend forgot-password response', data);
+                console.log('[AUTH UI] resend forgot-password response', data);
             }
 
             setRecoveryData((prev) => ({

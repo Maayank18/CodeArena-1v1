@@ -72,6 +72,7 @@
 import express from 'express';
 import Match from '../models/Match.js';
 import Problem from '../models/Problem.js'; // Ensure model registration for populate
+import User from '../models/User.js'; // Resolve canonical casing for queries
 import { verifyToken } from '../middleware/auth.js';
 import { requirePlus } from '../middleware/subscriptionAuth.js';
 
@@ -80,14 +81,24 @@ const router = express.Router();
 router.get('/user/:username', verifyToken, requirePlus, async (req, res) => {
   try {
     const { username } = req.params;
+    console.log(`[HISTORY] Match history requested for username: "${username}"`);
     
     // Validate that username exists
     if (!username || username === 'undefined') {
+        console.warn(`[HISTORY] Validation failed: invalid username "${username}"`);
         return res.status(400).json({ message: "Username is required" });
     }
 
+    // Resolve the canonical username casing from User model to prevent indexed key conflicts
+    const userDoc = await User.findOne({
+      username: { $regex: new RegExp(`^${username}$`, 'i') }
+    }).select('username').lean();
+    
+    const canonicalUsername = userDoc ? userDoc.username : username;
+    console.log(`[HISTORY] Casing resolution: "${username}" -> "${canonicalUsername}"`);
+
     const history = await Match.find({
-      "players.username": username
+      "players.username": canonicalUsername
     })
     .populate({
       path: 'problemIds',
@@ -96,6 +107,8 @@ router.get('/user/:username', verifyToken, requirePlus, async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(20) // Only fetch last 20 for performance
     .lean();
+
+    console.log(`[HISTORY] Query successful. Found ${history.length} matches for canonical username "${canonicalUsername}"`);
 
     // If no history, return empty array instead of error
     return res.json(history || []);

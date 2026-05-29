@@ -875,8 +875,12 @@ const EditorPage = () => {
         setIsRunning(true);
         const requestId = ++runRequestIdRef.current;
         const code = ydocRef.current.getText(`code-${mySide}`).toString();
-        if (!code.trim()) { 
-            toast.error("Code is empty!"); setIsRunning(false); return; 
+        if (!code.trim()) {
+            toast.error("Code is empty!"); setIsRunning(false); return;
+        }
+        socketRef.current.emit('code_submitted', { roomId, username, code, language });
+        if (!problem || !problem.testCases) {
+            toast.error("Test cases not loaded."); setIsRunning(false); return;
         }
         const publicCases = problem.testCases.filter(tc => tc.isPublic) || [];
         const newResults = [];
@@ -942,7 +946,7 @@ const EditorPage = () => {
         if (!code.trim()) {
             toast.error("Code is empty!"); setIsRunning(false); return;
         }
-        socketRef.current.emit('code_submitted', { roomId, username });
+        socketRef.current.emit('code_submitted', { roomId, username, code, language });
         debounceTimerRef.current = setTimeout(() => { debounceTimerRef.current = null; }, 3000);
         try {
             const response = await api.post('/run/submit', { language, code, problemId: problem._id, isArena: true });
@@ -1068,7 +1072,7 @@ const EditorPage = () => {
     };
 
     return (
-        <div className="arena-shell relative h-screen w-full overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]" data-theme={theme}>
+        <div className="arena-shell fixed inset-0 w-full overflow-hidden font-sans flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]" data-theme={theme}>
             
             {/* ✅ PREMIUM MATCH ENTRANCE BANNER (Framer Motion) */}
             <AnimatePresence>
@@ -1277,10 +1281,10 @@ const EditorPage = () => {
             </div>
             )}
 
-            <div className={`md:hidden flex h-14 border-t ${isDark ? 'border-[#3e3e42] bg-[#1e1e1e]' : 'border-stone-300 bg-stone-100'}`}>
-                <button onClick={() => setActiveTab('left')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'left' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Code2 size={18} /><span className="text-[10px] font-bold">Left</span></button>
+            <div className={`md:hidden flex h-14 border-t pb-[env(safe-area-inset-bottom)] box-content ${isDark ? 'border-[#3e3e42] bg-[#1e1e1e]' : 'border-stone-300 bg-stone-100'}`}>
+                <button onClick={() => setActiveTab('left')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'left' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Code2 size={18} /><span className="text-[10px] font-bold">{mySide === 'left' ? 'You' : 'Opponent'}</span></button>
                 <button onClick={() => setActiveTab('problem')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'problem' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><FileText size={18} /><span className="text-[10px] font-bold">Problem</span></button>
-                <button onClick={() => setActiveTab('right')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'right' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Terminal size={18} /><span className="text-[10px] font-bold">Right</span></button>
+                <button onClick={() => setActiveTab('right')} className={`flex-1 flex flex-col items-center justify-center gap-1 ${activeTab === 'right' ? (isDark ? 'text-accent bg-[#2d2d2d]' : 'text-accent bg-white') : (isDark ? 'text-gray-500' : 'text-slate-500')}`}><Terminal size={18} /><span className="text-[10px] font-bold">{mySide === 'right' ? 'You' : 'Opponent'}</span></button>
             </div>
 
             <SpiralNotebookWidget 

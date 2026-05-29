@@ -11,7 +11,12 @@ import toast from 'react-hot-toast';
 import { HISTORY_CACHE_KEY, readStoredUser } from '../utils/authSessionStorage.js';
 import { useTheme } from '../context/ThemeContext';
 import { AnimatePresence } from 'framer-motion';
-
+import CodeMirror from '@uiw/react-codemirror';
+import { vscodeDark } from '@uiw/codemirror-theme-vscode';
+import { cpp } from '@codemirror/lang-cpp';
+import { javascript } from '@codemirror/lang-javascript';
+import { java } from '@codemirror/lang-java';
+import { python } from '@codemirror/lang-python';
 const CACHE_DURATION = 60000; // 60 seconds
 
 const History = () => {
@@ -108,6 +113,8 @@ const History = () => {
         
         if (unpopulatedIds.length === 0) return;
         
+        console.log(`[HISTORY] Unpopulated string IDs detected inside selected match:`, unpopulatedIds);
+        
         const fetchUnpopulatedProblems = async () => {
             setLoadingProblems(true);
             const newFetched = { ...fetchedProblems };
@@ -117,9 +124,11 @@ const History = () => {
                 await Promise.all(
                     unpopulatedIds.map(async (id) => {
                         try {
+                            console.log(`[HISTORY] Initiating dynamic problem fetch for ID: "${id}"`);
                             const { data } = await api.get(`/problems/${id}`);
                             newFetched[id] = data;
                             hasNew = true;
+                            console.log(`[HISTORY] Dynamic problem fetch successful for "${id}":`, data.title);
                         } catch (err) {
                             console.error(`[HISTORY] Failed to fetch problem details for ${id}:`, err);
                         }
@@ -307,8 +316,8 @@ const History = () => {
                     const totalRounds = selectedMatch.problemIds?.length || 1;
                     const rawProblem = selectedMatch.problemIds?.[activeRound - 1];
                     const problem = typeof rawProblem === 'string'
-                        ? (fetchedProblems[rawProblem] || rawProblem)
-                        : (rawProblem || {});
+                        ? (fetchedProblems[rawProblem] || { title: `Problem ${activeRound}` })
+                        : (rawProblem || { title: `Problem ${activeRound}` });
                     const mySolveTimeMs = selectedMatch.fastestSolveMsByUser?.[user.username];
                     
                     let timeStr = "N/A";
@@ -340,21 +349,17 @@ const History = () => {
                                     <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Match Analysis</p>
                                         <h3 className="mt-1 text-xl font-black text-[var(--text-primary)]">
-                                            {typeof problem === 'string' 
-                                                ? (loadingProblems ? "Loading Problem Details..." : `Problem ${activeRound}`) 
-                                                : (problem.title || "Arena Practice")}
+                                            {problem?.title || "Problem Unavailable"}
                                         </h3>
-                                        {typeof problem !== 'string' && (
+                                        {problem?.difficulty && (
                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                {problem.difficulty && (
-                                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                                                        problem.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                                                        problem.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                        'bg-red-500/10 text-red-400 border-red-500/20'
-                                                    }`}>
-                                                        {problem.difficulty}
-                                                    </span>
-                                                )}
+                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                                                    problem.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                                                    problem.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                    'bg-red-500/10 text-red-400 border-red-500/20'
+                                                }`}>
+                                                    {problem.difficulty}
+                                                </span>
                                                 {(problem.topics || []).map((topic, idx) => (
                                                     <span key={idx} className="inline-flex items-center rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
                                                         {topic}
@@ -382,9 +387,7 @@ const History = () => {
                                             {selectedMatch.problemIds.map((p, idx) => {
                                                 const roundNum = idx + 1;
                                                 const isActive = activeRound === roundNum;
-                                                const tabTitle = typeof p === 'string' 
-                                                    ? (fetchedProblems[p]?.title || `Round ${roundNum}`) 
-                                                    : (p.title || `Round ${roundNum}`);
+                                                const tabTitle = p?.title || fetchedProblems[typeof p === 'string' ? p : p?._id]?.title || `Round ${roundNum}`;
                                                 return (
                                                     <button
                                                         key={idx}
@@ -419,19 +422,34 @@ const History = () => {
                                     <div className="space-y-2">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Problem Description</h4>
                                         <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]/30 p-4 text-xs leading-relaxed text-[var(--text-secondary)] max-h-[120px] overflow-y-auto custom-scrollbar">
-                                            {typeof problem === 'string' 
-                                                ? (loadingProblems ? "Fetching description..." : "No problem details available.") 
-                                                : (problem.description || "No problem details available.")}
+                                            {problem?.description || (loadingProblems ? "Fetching description..." : "No problem details available.")}
                                         </div>
                                     </div>
 
                                     {/* Submission Code */}
                                     <div className="space-y-2">
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Your Solution Code</h4>
-                                        <div className="relative">
-                                            <pre className="rounded-2xl border border-[var(--border-color)] bg-[#0d0d0d] p-4 text-xs font-mono text-emerald-300 overflow-x-auto max-h-[220px] custom-scrollbar">
-                                                <code>{submissionCode}</code>
-                                            </pre>
+                                        <div className="relative overflow-hidden rounded-2xl border border-[var(--border-color)]">
+                                            <CodeMirror
+                                                value={submissionCode}
+                                                height="auto"
+                                                maxHeight="300px"
+                                                theme={vscodeDark}
+                                                extensions={[
+                                                    submissionLanguage?.toLowerCase() === 'javascript' ? javascript() :
+                                                    submissionLanguage?.toLowerCase() === 'python' ? python() :
+                                                    submissionLanguage?.toLowerCase() === 'java' ? java() :
+                                                    cpp()
+                                                ]}
+                                                editable={false}
+                                                readOnly={true}
+                                                basicSetup={{
+                                                    lineNumbers: true,
+                                                    foldGutter: false,
+                                                    highlightActiveLine: false,
+                                                }}
+                                                className="text-[11px] sm:text-xs text-left"
+                                            />
                                         </div>
                                     </div>
                                 </div>

@@ -70,7 +70,7 @@ const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, languag
         height="100%"
         theme={editorTheme}
         extensions={extensions}
-        readOnly={isReadOnly}
+        editable={!isReadOnly}
         basicSetup={{
           lineNumbers: true,
           highlightActiveLineGutter: true,
