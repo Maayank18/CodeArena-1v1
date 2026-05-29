@@ -171,19 +171,27 @@ const AnalyticsTab = () => {
 
   const downloadWeeklyReport = async () => {
     try {
-      const { data } = await api.get('/stats/weekly-report');
-      if (data.success) {
-        const report = data.report;
-        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `CodeArena_Weekly_Report_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        toast.success('Weekly report generated!');
-      }
+      const response = await api.get('/stats/weekly-report', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CodeArena_Weekly_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      toast.success('Weekly report generated.');
+      URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to generate report');
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const parsed = JSON.parse(text);
+          toast.error(parsed.message || 'Failed to generate report.');
+        } catch {
+          toast.error('Failed to generate report.');
+        }
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to generate report.');
+      }
     }
   };
 
