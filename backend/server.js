@@ -1195,22 +1195,26 @@ const buildPlayerStatsUpdate = ({ newRating, seasonPoints, outcomeStatus }) => (
     }
 });
 
-const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seasonPoints }) => ({
-    userId: userDoc?._id || null,
-    username: toSafeUsername(playerData?.username),
-    avatar: typeof userDoc?.avatar === 'string' ? userDoc.avatar : '',
-    isWinner: Boolean(outcome?.status?.includes('Winner')),
-    score: toFiniteNumber(playerData?.score, 0),
-    oldElo: toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING),
-    newElo: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
-    statusText: outcome?.status || 'Draw',
-    seasonPointsGained: toFiniteNumber(seasonPoints, 0),
-    hasSubmitted: Boolean(playerData?.hasSubmitted),
-    code: playerData?.code || '',
-    language: playerData?.language || '',
-    roundCodes: playerData?.roundCodes || {},
-    roundLanguages: playerData?.roundLanguages || {},
-});
+const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seasonPoints }) => {
+    const record = {
+        userId: userDoc?._id || null,
+        username: toSafeUsername(playerData?.username),
+        avatar: typeof userDoc?.avatar === 'string' ? userDoc.avatar : '',
+        isWinner: Boolean(outcome?.status?.includes('Winner')),
+        score: toFiniteNumber(playerData?.score, 0),
+        oldElo: toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING),
+        newElo: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
+        statusText: outcome?.status || 'Draw',
+        seasonPointsGained: toFiniteNumber(seasonPoints, 0),
+        hasSubmitted: Boolean(playerData?.hasSubmitted),
+        code: playerData?.code || '',
+        language: playerData?.language || '',
+        roundCodes: (playerData?.roundCodes && typeof playerData.roundCodes === 'object' && Object.keys(playerData.roundCodes).length > 0) ? playerData.roundCodes : {},
+        roundLanguages: (playerData?.roundLanguages && typeof playerData.roundLanguages === 'object' && Object.keys(playerData.roundLanguages).length > 0) ? playerData.roundLanguages : {},
+    };
+    console.log(`[MATCH SAVE] buildMatchPlayerRecord for "${record.username}": code=${record.code ? `${record.code.length} chars` : 'EMPTY'}, roundCodes keys=${JSON.stringify(Object.keys(record.roundCodes))}, language=${record.language}`);
+    return record;
+};
 
 const logMatchResolutionError = (roomId, stage, error, context = {}) => {
     console.error(`[MATCH RESOLUTION] ${stage} failed for room ${roomId}:`, {
@@ -1394,16 +1398,22 @@ const handleGameEnd = async (roomId, room) => {
         );
         const [user1Doc, user2Doc] = userDocs;
 
+        // Extract player objects once (avoid repeated find calls)
+        const p1PlayerObj = room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase());
+        const p2PlayerObj = !isSoloMatch ? room.players?.find(p => p.username.toLowerCase() === (playerNames[1] || '').toLowerCase()) : null;
+
+        console.log(`[GAME END] Player code state at save time: P1="${playerNames[0]}" code=${p1PlayerObj?.code ? p1PlayerObj.code.length + ' chars' : 'EMPTY'}, roundCodes=${JSON.stringify(Object.keys(p1PlayerObj?.roundCodes || {}))}, language=${p1PlayerObj?.language || 'N/A'}${p2PlayerObj ? `, P2="${playerNames[1]}" code=${p2PlayerObj?.code ? p2PlayerObj.code.length + ' chars' : 'EMPTY'}, roundCodes=${JSON.stringify(Object.keys(p2PlayerObj?.roundCodes || {}))}, language=${p2PlayerObj?.language || 'N/A'}` : ''}`);
+
         const p1Data = {
             username: playerNames[0],
             rating: user1Doc?.rating || 1000,
             score: Number(room.scores[playerNames[0]]) || 0,
             isCheater: room.cheaters.has(playerNames[0]),
             hasSubmitted: room.submissionAttempts.has(playerNames[0]),
-            code: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.code || "",
-            language: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.language || "",
-            roundCodes: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.roundCodes || {},
-            roundLanguages: room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase())?.roundLanguages || {}
+            code: p1PlayerObj?.code || "",
+            language: p1PlayerObj?.language || "",
+            roundCodes: p1PlayerObj?.roundCodes || {},
+            roundLanguages: p1PlayerObj?.roundLanguages || {}
         };
 
         const p2Data = isSoloMatch
@@ -1414,10 +1424,10 @@ const handleGameEnd = async (roomId, room) => {
                 score: Number(room.scores[playerNames[1]]) || 0,
                 isCheater: room.cheaters.has(playerNames[1]),
                 hasSubmitted: room.submissionAttempts.has(playerNames[1]),
-                code: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.code || "",
-                language: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.language || "",
-                roundCodes: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.roundCodes || {},
-                roundLanguages: room.players?.find(p => p.username.toLowerCase() === playerNames[1].toLowerCase())?.roundLanguages || {}
+                code: p2PlayerObj?.code || "",
+                language: p2PlayerObj?.language || "",
+                roundCodes: p2PlayerObj?.roundCodes || {},
+                roundLanguages: p2PlayerObj?.roundLanguages || {}
             };
 
         let matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
@@ -2280,25 +2290,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('code_submitted', async ({ roomId, username, code, language }) => {
-      try {
-          const resolvedUsername = socket.data.user?.username || username;
-          const room = rooms.get(roomId);
-          if (!room || !room.isGameActive) return;
-
-          const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
-          if (playerObj) {
-              playerObj.code = code || playerObj.code || "";
-              playerObj.language = language || playerObj.language || "";
-              if (!playerObj.roundCodes) playerObj.roundCodes = {};
-              if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
-              playerObj.roundCodes[String(room.round)] = code || playerObj.roundCodes[String(room.round)] || "";
-              playerObj.roundLanguages[String(room.round)] = language || playerObj.roundLanguages[String(room.round)] || "";
-          }
-      } catch (err) {
-          console.error('[SOCKET] Error in code_submitted:', err);
-      }
-  });
+  // NOTE: code_submitted handler is consolidated below (single handler) to avoid duplicate event processing
 
   // ✅ LEVEL COMPLETED EVENT
   socket.on('level_completed', async ({ roomId, username, code, language }) => {
@@ -2456,7 +2448,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // ✅ CODE SUBMITTED EVENT
+  // ✅ CODE SUBMITTED EVENT (single consolidated handler)
   socket.on('code_submitted', ({ roomId, username, code, language }) => {
     try {
         const resolvedUsername = socket.data.user?.username || username;
@@ -2467,19 +2459,19 @@ io.on('connection', async (socket) => {
         const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
 
         if (playerObj) {
-            playerObj.code = code || playerObj.code;
-            playerObj.language = language || playerObj.language;
+            playerObj.code = code || playerObj.code || "";
+            playerObj.language = language || playerObj.language || "";
             
             if (!playerObj.roundCodes) playerObj.roundCodes = {};
             if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
             
-            playerObj.roundCodes[room.round] = code || playerObj.code;
-            playerObj.roundLanguages[room.round] = language || playerObj.language;
+            playerObj.roundCodes[String(room.round)] = code || playerObj.roundCodes[String(room.round)] || "";
+            playerObj.roundLanguages[String(room.round)] = language || playerObj.roundLanguages[String(room.round)] || "";
         }
 
         room.submissionAttempts.add(normalizedUsername);
         room.submissionCountByUser[normalizedUsername] = (room.submissionCountByUser[normalizedUsername] || 0) + 1;
-        console.log(`[GAME] 📝 ${normalizedUsername} submitted code in ${roomId}`);
+        console.log(`[GAME] 📝 ${normalizedUsername} submitted code in ${roomId} (round ${room.round}, ${code ? code.length + ' chars' : 'no code'})`);
     } catch (err) { 
       console.error("[SOCKET] Code submission error:", err); 
     }

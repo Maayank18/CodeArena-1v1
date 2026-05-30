@@ -333,13 +333,17 @@ const History = () => {
                     }
 
                     // Dynamically extract code and language for the active round (with backward compatibility fallbacks)
-                    const submissionCode = myData?.roundCodes?.[String(activeRound)] || myData?.code || "// No submission code recorded for this round.";
-                    const submissionLanguage = myData?.roundLanguages?.[String(activeRound)] || myData?.language || "N/A";
+                    // Check both string and numeric keys since MongoDB/Mongoose may serialize differently
+                    const roundKey = String(activeRound);
+                    const rc = myData?.roundCodes;
+                    const rl = myData?.roundLanguages;
+                    const submissionCode = rc?.[roundKey] || rc?.[activeRound] || myData?.code || "// No submission code recorded for this round.";
+                    const submissionLanguage = rl?.[roundKey] || rl?.[activeRound] || myData?.language || "N/A";
                     
                     console.log(`[HISTORY MODAL] Active Round: ${activeRound}`, {
                         roundCodes: myData?.roundCodes,
                         code: myData?.code,
-                        extractedCode: submissionCode,
+                        extractedCode: submissionCode?.substring(0, 80),
                         language: submissionLanguage
                     });
 

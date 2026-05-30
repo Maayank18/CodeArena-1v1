@@ -59,7 +59,7 @@ const matchPlayerSchema = new mongoose.Schema({
     type: Object,
     default: {}
   }
-}, { _id: false });
+}, { _id: false, minimize: false });
 
 const matchSchema = new mongoose.Schema({
   roomId: {
@@ -133,7 +133,8 @@ const matchSchema = new mongoose.Schema({
     default: undefined
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  minimize: false
 });
 
 matchSchema.index({ 'players.username': 1 });
