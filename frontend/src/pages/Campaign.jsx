@@ -9,6 +9,7 @@ import SkillTreeModal from '../components/Campaign/SkillTreeModal';
 import CampaignGuideModal from '../components/Campaign/CampaignGuideModal';
 import api from '../api';
 import toast from 'react-hot-toast';
+import ChatWidget from '../components/ChatWIdget';
 import { useAuthSession } from '../context/AuthSessionContext.jsx';
 import {
   ROOT_CAMPAIGN_NODE_ID,
@@ -233,6 +234,8 @@ const Campaign = () => {
           "
           title="How to Play"
         >
+
+
           <BookOpen size={14} />
           <span className="hidden sm:inline">Guide</span>
         </button>
@@ -261,6 +264,8 @@ const Campaign = () => {
         isOpen={showGuide}
         onClose={() => setShowGuide(false)}
       />
+
+      <ChatWidget user={user} />
     </div>
   );
 };

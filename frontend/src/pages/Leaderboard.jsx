@@ -11,6 +11,7 @@ import BadgeArtwork from '../components/badges/BadgeArtwork.jsx';
 import Avatar from '../components/Avatar'; 
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import ChatWidget from '../components/ChatWIdget';
 import { LEADERBOARD_CACHE_KEY, readStoredUser } from '../utils/authSessionStorage.js';
 import { useTheme } from '../context/ThemeContext';
 
@@ -222,6 +223,7 @@ const Leaderboard = () => {
             <div className="text-center text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-[0.2em] pt-4 pb-20 md:pb-0">Leaderboard refreshes every 60 seconds</div>
           </div>
         </div>
+        <ChatWidget user={user} />
       </div>
     </div>
   );

@@ -294,12 +294,12 @@ const ChatWidget = ({ user }) => {
             <button
                 onClick={isOpen ? handleClose : handleOpen}
                 aria-label="Toggle AI assistant"
-                className="fixed bottom-24 right-2 md:bottom-12 md:right-6 z-50 w-16 h-16 md:w-24 md:h-24 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none"
             >
                 <div className={`transition-all duration-200 ${isOpen ? 'rotate-90 scale-90' : 'rotate-0 scale-100'} w-full h-full flex items-center justify-center`}>
                     {isOpen ? (
-                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-[#121212] border border-white/10 flex items-center justify-center shadow-2xl">
-                             <X className="text-white w-6 h-6 md:w-8 md:h-8" />
+                        <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-[#121212] border border-white/10 flex items-center justify-center shadow-2xl">
+                             <X className="text-white w-5 h-5 md:w-6 md:h-6" />
                         </div>
                     ) : (
                         <AnimatedCodyAvatar size="w-full h-full" />
