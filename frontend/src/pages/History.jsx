@@ -332,8 +332,15 @@ const History = () => {
                     }
 
                     // Dynamically extract code and language for the active round (with backward compatibility fallbacks)
-                    const submissionCode = myData?.roundCodes?.[String(activeRound)] || (activeRound === 1 ? myData?.code : '') || "// No submission code recorded for this round.";
-                    const submissionLanguage = myData?.roundLanguages?.[String(activeRound)] || (activeRound === 1 ? myData?.language : '') || "N/A";
+                    const submissionCode = myData?.roundCodes?.[String(activeRound)] || myData?.code || "// No submission code recorded for this round.";
+                    const submissionLanguage = myData?.roundLanguages?.[String(activeRound)] || myData?.language || "N/A";
+                    
+                    console.log(`[HISTORY MODAL] Active Round: ${activeRound}`, {
+                        roundCodes: myData?.roundCodes,
+                        code: myData?.code,
+                        extractedCode: submissionCode,
+                        language: submissionLanguage
+                    });
 
                     return (
                         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">

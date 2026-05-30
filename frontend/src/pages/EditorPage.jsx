@@ -1165,7 +1165,7 @@ const EditorPage = () => {
                 </div>
             ) : (
                 <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:grid md:grid-cols-3 relative">
-                <div className={`${activeTab === 'left' ? 'flex' : 'absolute w-full pointer-events-none opacity-0 -translate-x-[9999px] md:relative md:pointer-events-auto md:opacity-100 md:translate-x-0 md:flex'} flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 relative ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'} ${clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
+                <div className={`${activeTab === 'left' ? 'flex relative' : 'absolute top-0 left-0 w-full pointer-events-none opacity-0 -translate-x-[9999px] md:relative md:pointer-events-auto md:opacity-100 md:translate-x-0 md:flex'} flex-1 flex-col min-h-0 overflow-hidden h-full order-2 md:order-1 ${isDark ? 'border-r border-[#3e3e42]' : 'border-r border-stone-300'} ${clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
                     {clients.find(c => c.side === 'left')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' && (
                         <FrostbyteParticles forceActive={true} containerId="tsparticles-left" className="absolute inset-0 pointer-events-none z-[0] mix-blend-screen opacity-60" />
                     )}
@@ -1269,7 +1269,7 @@ const EditorPage = () => {
                     </div>
                 </div>
 
-                <div className={`${activeTab === 'right' ? 'flex' : 'absolute w-full pointer-events-none opacity-0 -translate-x-[9999px] md:relative md:pointer-events-auto md:opacity-100 md:translate-x-0 md:flex'} flex-1 flex-col min-h-0 overflow-hidden h-full order-3 relative ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'} ${clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
+                <div className={`${activeTab === 'right' ? 'flex relative' : 'absolute top-0 left-0 w-full pointer-events-none opacity-0 -translate-x-[9999px] md:relative md:pointer-events-auto md:opacity-100 md:translate-x-0 md:flex'} flex-1 flex-col min-h-0 overflow-hidden h-full order-3 ${isDark ? 'border-l border-[#3e3e42]' : 'border-l border-stone-300'} ${clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' ? 'theme-frostbyte bg-[var(--bg-primary)]' : ''}`}>
                     {clients.find(c => c.side === 'right')?.customization?.advancedTheme === 'frostbyte' && advancedTheme !== 'frostbyte' && (
                         <FrostbyteParticles forceActive={true} containerId="tsparticles-right" className="absolute inset-0 pointer-events-none z-[0] mix-blend-screen opacity-60" />
                     )}

@@ -52,14 +52,12 @@ const matchPlayerSchema = new mongoose.Schema({
     default: ''
   },
   roundCodes: {
-    type: Map,
-    of: String,
-    default: undefined
+    type: Object,
+    default: {}
   },
   roundLanguages: {
-    type: Map,
-    of: String,
-    default: undefined
+    type: Object,
+    default: {}
   }
 }, { _id: false });
 
