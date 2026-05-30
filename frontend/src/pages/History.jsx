@@ -82,6 +82,12 @@ const History = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeRound, setActiveRound] = useState(1);
     
+    // Pagination State
+    const [skip, setSkip] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const LIMIT = 10;
+    
     // Self-healing problem loaders for production fallback
     const [fetchedProblems, setFetchedProblems] = useState({});
     const [loadingProblems, setLoadingProblems] = useState(false);
@@ -124,6 +130,7 @@ const History = () => {
                     // Use cached data if valid and for same user
                     if (age < CACHE_DURATION && username === u.username) {
                         setHistory(data);
+                        setHasMore(data.length === LIMIT);
                         setLoading(false);
                         return;
                     }
@@ -134,11 +141,12 @@ const History = () => {
             }
 
             try {
-                const response = await api.get(`/matches/user/${u.username}`, {
+                const response = await api.get(`/matches/user/${u.username}?skip=0&limit=${LIMIT}`, {
                     meta: { skipCache: true },
                 });
                 const matchData = response.data;
                 setHistory(matchData);
+                setHasMore(matchData.length === LIMIT);
                 writeHistoryCache(matchData, u.username);
             } catch (error) {
                 console.error("[HISTORY] Fetch error:", error);
@@ -150,6 +158,29 @@ const History = () => {
         
         fetchData();
     }, [navigate]);
+
+    // ✅ NEW: Load More Functionality
+    const loadMoreHistory = async () => {
+        if (!hasMore || loadingMore || !user) return;
+        setLoadingMore(true);
+        const newSkip = skip + LIMIT;
+        try {
+            const response = await api.get(`/matches/user/${user.username}?skip=${newSkip}&limit=${LIMIT}`, {
+                meta: { skipCache: true },
+            });
+            const newData = response.data;
+            if (newData.length < LIMIT) {
+                setHasMore(false);
+            }
+            setHistory(prev => [...prev, ...newData]);
+            setSkip(newSkip);
+        } catch (error) {
+            console.error("[HISTORY] Load more error:", error);
+            toast.error("Failed to load more battle logs");
+        } finally {
+            setLoadingMore(false);
+        }
+    };
 
     // ✅ SELF-HEALING: Fetch unpopulated problem details dynamically in production
     useEffect(() => {
@@ -346,6 +377,22 @@ const History = () => {
                         ) : (
                             <div className={`space-y-3 md:space-y-4 ${advancedTheme === 'frostbyte' ? 'snow-cap' : ''}`}>
                                 {matchElements}
+                                
+                                {hasMore && (
+                                    <div className="flex justify-center mt-6 pt-4">
+                                        <button 
+                                            onClick={loadMoreHistory} 
+                                            disabled={loadingMore}
+                                            className="px-6 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-accent hover:bg-[var(--bg-tertiary)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                        >
+                                            {loadingMore ? (
+                                                <><Loader2 className="animate-spin" size={16} /> Loading...</>
+                                            ) : (
+                                                "Load More"
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

@@ -97,6 +97,9 @@ router.get('/user/:username', verifyToken, requirePlus, async (req, res) => {
     const canonicalUsername = userDoc ? userDoc.username : username;
     console.log(`[HISTORY] Casing resolution: "${username}" -> "${canonicalUsername}"`);
 
+    const skip = parseInt(req.query.skip) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+
     const history = await Match.find({
       "players.username": canonicalUsername
     })
@@ -105,10 +108,11 @@ router.get('/user/:username', verifyToken, requirePlus, async (req, res) => {
       select: 'title description difficulty topics constraints starterCode goldenSolution'
     })
     .sort({ createdAt: -1 })
-    .limit(20) // Only fetch last 20 for performance
+    .skip(skip)
+    .limit(limit) // Fetch based on requested limit
     .lean();
 
-    console.log(`[HISTORY] Query successful. Found ${history.length} matches for canonical username "${canonicalUsername}"`);
+    console.log(`[HISTORY] Query successful. Found ${history.length} matches for canonical username "${canonicalUsername}" (skip: ${skip}, limit: ${limit})`);
 
     // If no history, return empty array instead of error
     return res.json(history || []);
