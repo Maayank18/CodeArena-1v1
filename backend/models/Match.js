@@ -53,11 +53,11 @@ const matchPlayerSchema = new mongoose.Schema({
   },
   roundCodes: {
     type: Object,
-    default: {}
+    default: () => ({})
   },
   roundLanguages: {
     type: Object,
-    default: {}
+    default: () => ({})
   }
 }, { _id: false, minimize: false });
 

@@ -1195,7 +1195,56 @@ const buildPlayerStatsUpdate = ({ newRating, seasonPoints, outcomeStatus }) => (
     }
 });
 
+const normalizeRoundSnapshot = (snapshot) => {
+    if (!snapshot || typeof snapshot !== 'object') return {};
+
+    return Object.entries(snapshot).reduce((normalized, [round, value]) => {
+        if (value === undefined || value === null) return normalized;
+        normalized[String(round)] = typeof value === 'string' ? value : String(value);
+        return normalized;
+    }, {});
+};
+
+const capturePlayerSubmission = ({ room, playerObj, code, language, markSubmitted = false }) => {
+    if (!room || !playerObj) return null;
+
+    const roundKey = String(room.round || 1);
+    const submittedCode = typeof code === 'string' ? code : '';
+    const submittedLanguage = typeof language === 'string' ? language : '';
+
+    playerObj.roundCodes = normalizeRoundSnapshot(playerObj.roundCodes);
+    playerObj.roundLanguages = normalizeRoundSnapshot(playerObj.roundLanguages);
+
+    if (submittedCode || !playerObj.roundCodes[roundKey]) {
+        playerObj.roundCodes[roundKey] = submittedCode;
+    }
+
+    if (submittedLanguage || !playerObj.roundLanguages[roundKey]) {
+        playerObj.roundLanguages[roundKey] = submittedLanguage;
+    }
+
+    if (submittedCode || !playerObj.code) {
+        playerObj.code = submittedCode;
+    }
+
+    if (submittedLanguage || !playerObj.language) {
+        playerObj.language = submittedLanguage;
+    }
+
+    if (markSubmitted) {
+        playerObj.hasSubmitted = true;
+    }
+
+    return {
+        roundKey,
+        codeLength: submittedCode.length,
+        language: submittedLanguage || playerObj.language || 'N/A',
+    };
+};
+
 const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seasonPoints }) => {
+    const roundCodes = normalizeRoundSnapshot(playerData?.roundCodes);
+    const roundLanguages = normalizeRoundSnapshot(playerData?.roundLanguages);
     const record = {
         userId: userDoc?._id || null,
         username: toSafeUsername(playerData?.username),
@@ -1209,8 +1258,8 @@ const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seaso
         hasSubmitted: Boolean(playerData?.hasSubmitted),
         code: playerData?.code || '',
         language: playerData?.language || '',
-        roundCodes: (playerData?.roundCodes && typeof playerData.roundCodes === 'object' && Object.keys(playerData.roundCodes).length > 0) ? playerData.roundCodes : {},
-        roundLanguages: (playerData?.roundLanguages && typeof playerData.roundLanguages === 'object' && Object.keys(playerData.roundLanguages).length > 0) ? playerData.roundLanguages : {},
+        roundCodes,
+        roundLanguages,
     };
     console.log(`[MATCH SAVE] buildMatchPlayerRecord for "${record.username}": code=${record.code ? `${record.code.length} chars` : 'EMPTY'}, roundCodes keys=${JSON.stringify(Object.keys(record.roundCodes))}, language=${record.language}`);
     return record;
@@ -2325,15 +2374,14 @@ io.on('connection', async (socket) => {
               return;
           }
 
-          playerObj.code = code || "";
-          playerObj.language = language || "";
-          
-          if (!playerObj.roundCodes) playerObj.roundCodes = {};
-          if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
-          
-          playerObj.roundCodes[String(room.round)] = code || "";
-          playerObj.roundLanguages[String(room.round)] = language || "";
-          console.log(`[GAME] Captured solution code for player "${normalizedUsername}" on round ${room.round}`);
+          const capturedSubmission = capturePlayerSubmission({
+            room,
+            playerObj,
+            code,
+            language,
+            markSubmitted: true,
+          });
+          console.log(`[GAME] Captured solution code for player "${normalizedUsername}" on round ${capturedSubmission?.roundKey || room.round} (${capturedSubmission?.codeLength || 0} chars)`);
 
           const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;
           room.submissionAttempts.add(normalizedUsername);
@@ -2458,16 +2506,13 @@ io.on('connection', async (socket) => {
         const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
         const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
 
-        if (playerObj) {
-            playerObj.code = code || playerObj.code || "";
-            playerObj.language = language || playerObj.language || "";
-            
-            if (!playerObj.roundCodes) playerObj.roundCodes = {};
-            if (!playerObj.roundLanguages) playerObj.roundLanguages = {};
-            
-            playerObj.roundCodes[String(room.round)] = code || playerObj.roundCodes[String(room.round)] || "";
-            playerObj.roundLanguages[String(room.round)] = language || playerObj.roundLanguages[String(room.round)] || "";
-        }
+        const capturedSubmission = capturePlayerSubmission({
+            room,
+            playerObj,
+            code,
+            language,
+            markSubmitted: true,
+        });
 
         room.submissionAttempts.add(normalizedUsername);
         room.submissionCountByUser[normalizedUsername] = (room.submissionCountByUser[normalizedUsername] || 0) + 1;

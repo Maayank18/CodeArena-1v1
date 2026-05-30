@@ -19,6 +19,59 @@ import { javascript } from '@codemirror/lang-javascript';
 import { java } from '@codemirror/lang-java';
 import { python } from '@codemirror/lang-python';
 const CACHE_DURATION = 60000; // 60 seconds
+const HISTORY_CACHE_MAX_CHARS = 2_000_000;
+
+const isStorageQuotaError = (error) => (
+    error?.name === 'QuotaExceededError'
+    || error?.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    || error?.code === 22
+    || error?.code === 1014
+);
+
+const compactProblemForCache = (problem) => {
+    if (!problem || typeof problem === 'string') return problem;
+
+    return {
+        _id: problem._id,
+        title: problem.title,
+        difficulty: problem.difficulty,
+        topics: problem.topics,
+        description: problem.description,
+    };
+};
+
+const compactMatchForCache = (match) => ({
+    ...match,
+    problemIds: (match.problemIds || []).map(compactProblemForCache),
+});
+
+const writeHistoryCache = (data, username) => {
+    try {
+        const payload = JSON.stringify({
+            data: data.map(compactMatchForCache),
+            timestamp: Date.now(),
+            username,
+        });
+
+        if (payload.length > HISTORY_CACHE_MAX_CHARS) {
+            localStorage.removeItem(HISTORY_CACHE_KEY);
+            console.warn("[HISTORY] Cache skipped because payload is too large.");
+            return;
+        }
+
+        localStorage.setItem(HISTORY_CACHE_KEY, payload);
+    } catch (cacheErr) {
+        localStorage.removeItem(HISTORY_CACHE_KEY);
+        localStorage.removeItem('codearena_history');
+
+        if (isStorageQuotaError(cacheErr)) {
+            console.warn("[HISTORY] Cache quota exceeded; continuing without local cache.", cacheErr);
+            return;
+        }
+
+        console.warn("[HISTORY] Failed to write history cache; continuing without local cache.", cacheErr);
+    }
+};
 
 const History = () => {
     const { advancedTheme } = useTheme();
@@ -61,10 +114,10 @@ const History = () => {
             setUser(u);
 
             // Check cache first
-            const cache = localStorage.getItem(HISTORY_CACHE_KEY);
-            
-            if (cache) {
-                try {
+            try {
+                const cache = localStorage.getItem(HISTORY_CACHE_KEY);
+
+                if (cache) {
                     const { data, timestamp, username } = JSON.parse(cache);
                     const age = Date.now() - timestamp;
                     
@@ -74,25 +127,19 @@ const History = () => {
                         setLoading(false);
                         return;
                     }
-                } catch (e) {
-                    console.error("[CACHE] Parse error:", e);
                 }
+            } catch (e) {
+                console.warn("[CACHE] Failed to read history cache:", e);
+                localStorage.removeItem(HISTORY_CACHE_KEY);
             }
 
-            // Fetch fresh data
             try {
                 const response = await api.get(`/matches/user/${u.username}`, {
                     meta: { skipCache: true },
                 });
                 const matchData = response.data;
                 setHistory(matchData);
-                
-                // Update cache
-                localStorage.setItem(HISTORY_CACHE_KEY, JSON.stringify({
-                    data: matchData,
-                    timestamp: Date.now(),
-                    username: u.username
-                }));
+                writeHistoryCache(matchData, u.username);
             } catch (error) {
                 console.error("[HISTORY] Fetch error:", error);
                 toast.error("Failed to load battle logs");
