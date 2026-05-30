@@ -9,9 +9,9 @@ import CodyIcon from '../assets/CodyAI.png';
 import api from '../api.js';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const MAX_FREE_MESSAGES = 7;
 const MAX_CHARS = 300;
 const MAX_STORED_MESSAGES = 30;
 const getStorageKey = (username) => `codearena_chat_${username}`;
@@ -98,11 +98,36 @@ const MessageBubble = ({ msg }) => {
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 const ChatWidget = ({ user }) => {
     const { isDark } = useTheme();
+    const navigate = useNavigate();
+
+    // Compute limits
+    const plan = user?.plan || 'free';
+    const isMaya = user?.username?.toLowerCase() === 'maya';
+    const isAdmin = isMaya || user?.role === 'admin';
+
+    let maxMessages = 1;
+    let resetIntervalMs = 48 * 60 * 60 * 1000; // 2 days
+
+    if (isAdmin || plan === 'premium') {
+        maxMessages = Infinity;
+    } else if (plan === 'pro') {
+        maxMessages = 6;
+        resetIntervalMs = 24 * 60 * 60 * 1000; // 1 day
+    } else if (plan === 'plus') {
+        maxMessages = 3;
+        resetIntervalMs = 24 * 60 * 60 * 1000; // 1 day
+    } else {
+        // free
+        maxMessages = 1;
+        resetIntervalMs = 48 * 60 * 60 * 1000; // 2 days
+    }
+
     const [isOpen, setIsOpen]             = useState(false);
     const [messages, setMessages]         = useState([]);
     const [inputValue, setInputValue]     = useState('');
     const [isTyping, setIsTyping]         = useState(false);
     const [messageCount, setMessageCount] = useState(0);
+    const [lastResetTime, setLastResetTime] = useState(Date.now());
     const [hasBadge, setHasBadge]         = useState(false);
 
     const messagesEndRef = useRef(null);
@@ -117,17 +142,28 @@ const ChatWidget = ({ user }) => {
             const stored = JSON.parse(localStorage.getItem(storageKey) || 'null');
             if (!stored) return;
             if (Array.isArray(stored.messages)) setMessages(stored.messages);
-            if (typeof stored.count === 'number') setMessageCount(stored.count);
+            
+            const now = Date.now();
+            const storedResetTime = stored.lastResetTime || now;
+            
+            if (now - storedResetTime >= resetIntervalMs) {
+                setMessageCount(0);
+                setLastResetTime(now);
+            } else {
+                if (typeof stored.count === 'number') setMessageCount(stored.count);
+                setLastResetTime(storedResetTime);
+            }
         } catch (_) { /* corrupted storage — start fresh */ }
-    }, [storageKey]);
+    }, [storageKey, resetIntervalMs]);
 
     // ── Persist chat ──────────────────────────────────────────────────────────
-    const persist = useCallback((msgs, count) => {
+    const persist = useCallback((msgs, count, resetTime) => {
         if (!storageKey) return;
         try {
             localStorage.setItem(storageKey, JSON.stringify({
                 messages: msgs.slice(-MAX_STORED_MESSAGES),
                 count,
+                lastResetTime: resetTime
             }));
         } catch (_) { /* storage full — silently ignore */ }
     }, [storageKey]);
@@ -152,7 +188,7 @@ const ChatWidget = ({ user }) => {
 
     const handleClearChat = () => {
         setMessages([]);
-        persist([], messageCount);
+        persist([], messageCount, lastResetTime);
     };
 
     const handleInputChange = (e) => {
@@ -164,7 +200,7 @@ const ChatWidget = ({ user }) => {
 
     const sendMessage = useCallback(async (text) => {
         const trimmed = text.trim();
-        if (!trimmed || isTyping || messageCount >= MAX_FREE_MESSAGES) return;
+        if (!trimmed || isTyping || messageCount >= maxMessages) return;
 
         const userMsg = {
             id: `u_${Date.now()}`,
@@ -214,7 +250,7 @@ const ChatWidget = ({ user }) => {
 
             const finalMessages = [...withUser, aiMsg];
             setMessages(finalMessages);
-            persist(finalMessages, newCount);
+            persist(finalMessages, newCount, lastResetTime);
 
             if (!isOpen) setHasBadge(true);
 
@@ -228,11 +264,11 @@ const ChatWidget = ({ user }) => {
             };
             const finalMessages = [...withUser, errMsg];
             setMessages(finalMessages);
-            persist(finalMessages, newCount);
+            persist(finalMessages, newCount, lastResetTime);
         } finally {
             setIsTyping(false);
         }
-    }, [messages, messageCount, isTyping, user, isOpen, persist]);
+    }, [messages, messageCount, isTyping, user, isOpen, persist, maxMessages, lastResetTime]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -247,8 +283,8 @@ const ChatWidget = ({ user }) => {
     };
 
     // ── Derived state ─────────────────────────────────────────────────────────
-    const isLimitReached = messageCount >= MAX_FREE_MESSAGES;
-    const remaining      = Math.max(0, MAX_FREE_MESSAGES - messageCount);
+    const isLimitReached = messageCount >= maxMessages;
+    const remaining      = Math.max(0, maxMessages - messageCount);
     const showFAQ        = messages.length === 0;
     const charsLeft      = MAX_CHARS - inputValue.length;
 
@@ -375,7 +411,7 @@ const ChatWidget = ({ user }) => {
                                     Upgrade to Pro for unlimited AI assistance.
                                 </p>
                                 <button
-                                    onClick={() => toast('Pro Plan coming soon! 🚀', { icon: '⚡' })}
+                                    onClick={() => { handleClose(); navigate('/pricing'); }}
                                     className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-[#121212] text-xs font-bold rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                                 >
                                     Upgrade to Pro
