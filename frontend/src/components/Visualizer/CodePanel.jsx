@@ -94,7 +94,7 @@ const CodePanel = ({ code, setCode, activeLine, theme = 'dark' }) => {
           scrollBeyondLastLine: false,
           readOnly: false,
           automaticLayout: true,
-          tabSize: 2,
+          tabSize: 4,
           wordWrap: 'on',
           padding: { top: 16, bottom: 16 },
           lineDecorationsWidth: 8,

@@ -8,6 +8,8 @@ import { vscodeDark, vscodeLightInit } from '@uiw/codemirror-theme-vscode';
 import { yCollab } from 'y-codemirror.next';
 import * as Y from 'yjs';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { indentUnit } from '@codemirror/language';
+import { EditorState } from '@codemirror/state';
 
 const softLightEditorTheme = vscodeLightInit({
   settings: {
@@ -51,6 +53,8 @@ const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, languag
   const extensions = useMemo(() => ([
     languageExtension,
     yCollab(ytext, provider?.awareness, { undoManager }),
+    EditorState.tabSize.of(4),
+    indentUnit.of("    "),
   ]), [languageExtension, provider?.awareness, undoManager, ytext]);
 
   useEffect(() => () => {
