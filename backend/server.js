@@ -560,11 +560,13 @@ const isDatabaseReady = () => mongoose.connection.readyState === 1;
 const toPublicProblem = (problem) => {
   if (!problem) return problem;
 
+  const rawProblem = typeof problem.toObject === 'function' ? problem.toObject() : problem;
+
   return {
-    ...problem,
-    boilerplates: problem.boilerplates || problem.starterCode || {},
-    testCases: Array.isArray(problem.testCases)
-      ? problem.testCases.filter((testCase) => testCase?.isPublic)
+    ...rawProblem,
+    boilerplates: rawProblem.boilerplates || rawProblem.starterCode || {},
+    testCases: Array.isArray(rawProblem.testCases)
+      ? rawProblem.testCases.filter((testCase) => testCase?.isPublic)
       : [],
   };
 };

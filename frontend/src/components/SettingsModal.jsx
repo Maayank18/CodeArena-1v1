@@ -248,7 +248,7 @@ const AnalyticsTab = () => {
                         itemStyle={{ color: '#fff', fontSize: '12px' }}
                         cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                       />
-                      <Bar dataKey="solved" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={(data) => data.attempted ? 1 : 0} fill="#10b981" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
