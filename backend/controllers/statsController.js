@@ -5,6 +5,7 @@ import Room from '../models/Room.js';
 import Match from '../models/Match.js';
 import Problem from '../models/Problem.js';
 import CampaignProgress from '../models/CampaignProgress.js';
+import Metadata from '../models/Metadata.js';
 import PDFDocument from 'pdfkit';
 import path from 'path';
 import fs from 'fs';
@@ -187,7 +188,7 @@ export const getUserAnalytics = async (req, res) => {
                 .filter(Boolean)
         )];
 
-        const [battleProblems, campaignProblems, totalTopicAgg] = await Promise.all([
+        const [battleProblems, campaignProblems, topicMetadata] = await Promise.all([
             uniqueBattleProblemIds.length > 0
                 ? Problem.find({ _id: { $in: uniqueBattleProblemIds } })
                     .select('topics')
@@ -198,10 +199,7 @@ export const getUserAnalytics = async (req, res) => {
                     .select('topics campaignNodeId')
                     .lean()
                 : [],
-            Problem.aggregate([
-                { $unwind: { path: '$topics', preserveNullAndEmptyArrays: false } },
-                { $group: { _id: '$topics', total: { $sum: 1 } } }
-            ])
+            Metadata.findOne({ key: 'topicCounts' }).lean()
         ]);
 
         const solvedTopicCounts = {};
@@ -213,10 +211,29 @@ export const getUserAnalytics = async (req, res) => {
             }
         }
 
-        const totalTopicCounts = totalTopicAgg.reduce((acc, item) => {
-            acc[item._id] = item.total;
-            return acc;
-        }, {});
+        let totalTopicCounts = {};
+        if (topicMetadata && topicMetadata.data) {
+            totalTopicCounts = topicMetadata.data;
+        } else {
+            // SILENT FALLBACK: Calculate dynamically if cron hasn't run yet
+            const totalTopicAgg = await Problem.aggregate([
+                { $unwind: { path: '$topics', preserveNullAndEmptyArrays: false } },
+                { $group: { _id: '$topics', total: { $sum: 1 } } }
+            ]);
+            totalTopicCounts = totalTopicAgg.reduce((acc, item) => {
+                if (item._id && typeof item._id === 'string') {
+                    acc[item._id.trim().toLowerCase()] = item.total;
+                }
+                return acc;
+            }, {});
+            
+            // Background save for next requests
+            Metadata.findOneAndUpdate(
+                { key: 'topicCounts' },
+                { data: totalTopicCounts, lastUpdated: new Date() },
+                { upsert: true }
+            ).catch(err => console.error('[STATS] Failed to save topic metadata fallback:', err));
+        }
 
         let topicBreakdown = Object.entries(solvedTopicCounts)
             .sort((a, b) => b[1] - a[1])

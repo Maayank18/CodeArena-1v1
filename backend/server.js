@@ -535,6 +535,7 @@ import Problem from './models/Problem.js';
 import User from './models/User.js';
 import Match from './models/Match.js';
 import Room from './models/Room.js';
+import Metadata from './models/Metadata.js';
 import { ensurePaymentTransactionIndexes } from './models/PaymentTransaction.js';
 
 // ✅ UTILS
@@ -721,6 +722,40 @@ cron.schedule('0 0 * * *', async () => {
         }
     } catch (error) {
         console.error(`[CRON] ⚠️ Downgrade CRON failed:`, error.message);
+    }
+});
+
+// ✅ CRON JOB: Pre-compute heavy analytics
+// Runs at 01:00 every day
+cron.schedule('0 1 * * *', async () => {
+    try {
+        console.log(`[CRON] 📊 Pre-computing heavy topic analytics...`);
+        const totalTopicAgg = await Problem.aggregate([
+            { $unwind: { path: '$topics', preserveNullAndEmptyArrays: false } },
+            { $group: { _id: '$topics', total: { $sum: 1 } } }
+        ]);
+        
+        const totalTopicCounts = totalTopicAgg.reduce((acc, item) => {
+            if (item._id && typeof item._id === 'string') {
+                const normalizedTopic = item._id.trim().toLowerCase();
+                if (normalizedTopic) {
+                    acc[normalizedTopic] = item.total;
+                }
+            }
+            return acc;
+        }, {});
+
+        await Metadata.findOneAndUpdate(
+            { key: 'topicCounts' },
+            { 
+                data: totalTopicCounts,
+                lastUpdated: new Date()
+            },
+            { upsert: true, new: true }
+        );
+        console.log(`[CRON] ✅ Topic analytics pre-computed successfully!`);
+    } catch (error) {
+        console.error(`[CRON] ⚠️ Topic analytics pre-computation failed:`, error.message);
     }
 });
 
