@@ -595,6 +595,8 @@ app.set('trust proxy', 1);
 const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/+$/, '');
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'https://code-arena-1v1.vercel.app',
+  'https://codearena-1v1.vercel.app',
   ...(process.env.FRONTEND_URL || '')
     .split(',')
     .map(normalizeOrigin)
