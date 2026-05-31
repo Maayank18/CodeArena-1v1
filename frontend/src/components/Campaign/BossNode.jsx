@@ -4,8 +4,8 @@ import { useTheme } from '../../context/ThemeContext';
 
 const CFG = {
   mid: {
-    base: 72,
-    mobile: 54,
+    base: 76,
+    mobile: 58,
     icon: '⚔️',
     doneIcon: '✅',
     badge: 'MID BOSS',
@@ -18,8 +18,8 @@ const CFG = {
     badgeBg: '#6b21a8',
   },
   main: {
-    base: 88,
-    mobile: 64,
+    base: 100,
+    mobile: 74,
     icon: '💀',
     doneIcon: '👑',
     badge: 'ZONE BOSS',

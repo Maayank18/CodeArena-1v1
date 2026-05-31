@@ -11,7 +11,7 @@ import {
   ZONE_H,
   ZONE_GAP,
   NODE_RADIUS,
-  MID_BOSS_IDX,
+  MID_BOSS_INDICES,
   MAIN_BOSS_IDX,
   getLocalNodePos,
   generateMockWorld,
@@ -539,14 +539,26 @@ const WorldMapScene = React.memo(function WorldMapScene({
           zoneNodes.find((node) => matchesCampaignSlot(node, currentRegionId, currentNodeId)) ??
           zoneNodes.find((node) => node?.nodeNum === nodeIndex + 1 || node?.localIndex === nodeIndex);
 
-        return found ?? {
+        if (found) {
+          const isMidBoss = MID_BOSS_INDICES.includes(nodeIndex);
+          const isMainBoss = nodeIndex === MAIN_BOSS_IDX;
+          const isBoss = isMidBoss || isMainBoss || found.isBoss || found.nodeType === 'boss';
+
+          return {
+            ...found,
+            nodeType: isBoss ? 'boss' : (found.nodeType || 'standard'),
+            bossType: isMainBoss ? 'main' : (isMidBoss ? 'mid' : (found.bossType || (isBoss ? 'mid' : null))),
+          };
+        }
+
+        return {
           nodeId: `${zone.key}_${nodeIndex + 1}_locked`,
           campaignNodeId: currentNodeId,
           nodeNum: nodeIndex + 1,
           nodeOrder: nodeIndex + 1,
           localIndex: nodeIndex,
-          nodeType: nodeIndex === MID_BOSS_IDX || nodeIndex === MAIN_BOSS_IDX ? 'boss' : 'standard',
-          bossType: nodeIndex === MID_BOSS_IDX ? 'mid' : nodeIndex === MAIN_BOSS_IDX ? 'main' : null,
+          nodeType: MID_BOSS_INDICES.includes(nodeIndex) || nodeIndex === MAIN_BOSS_IDX ? 'boss' : 'standard',
+          bossType: MID_BOSS_INDICES.includes(nodeIndex) ? 'mid' : nodeIndex === MAIN_BOSS_IDX ? 'main' : null,
           region: zone.key,
           campaignRegion: currentRegionId,
           regionOrder: currentRegionId,

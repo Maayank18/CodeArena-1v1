@@ -330,7 +330,7 @@ export const ZONE_H        = 680;
 export const ZONE_GAP      = 60;
 export const NODE_RADIUS   = 28;
 export const BOSS_RADIUS   = 38;
-export const MID_BOSS_IDX  = 7;   // 0-indexed → node 8
+export const MID_BOSS_INDICES = [4, 9]; // 0-indexed → nodes 5 and 10
 export const MAIN_BOSS_IDX = 14;  // 0-indexed → node 15
 
 // ── Snake-path layout: 3 rows × 5 cols ───────────────────────────────────────
@@ -347,9 +347,9 @@ export const getLocalNodePos = (idx) => {
   return { x: COL_XS[col], y: ROW_Y[row] };
 };
 
-export const isBossNode  = (i) => i === MID_BOSS_IDX || i === MAIN_BOSS_IDX;
+export const isBossNode  = (i) => MID_BOSS_INDICES.includes(i) || i === MAIN_BOSS_IDX;
 export const getBossType = (i) =>
-  i === MID_BOSS_IDX ? 'mid' : i === MAIN_BOSS_IDX ? 'main' : null;
+  MID_BOSS_INDICES.includes(i) ? 'mid' : i === MAIN_BOSS_IDX ? 'main' : null;
 
 // ── buildZonePath — BUG 1 FIX ─────────────────────────────────────────────────
 export const buildZonePath = () => {
@@ -425,7 +425,7 @@ export const generateMockWorld = () => {
 
         // Type
         nodeType:   node.nodeType  || (isBossNode(nIdx) ? 'boss' : 'standard'),
-        bossType:   node.bossType  || (node.isBoss ? (nIdx === MID_BOSS_IDX ? 'mid' : 'main') : getBossType(nIdx)),
+        bossType:   node.bossType  || (node.isBoss ? (MID_BOSS_INDICES.includes(nIdx) ? 'mid' : 'main') : getBossType(nIdx)),
 
         // Local SVG position
         localPos: node.localPos || getLocalNodePos(nIdx),
