@@ -85,3 +85,5 @@ const TeaserModal = ({ isOpen, onClose, title, message }) => {
 };
 
 export default TeaserModal;
+
+// Version-2.0

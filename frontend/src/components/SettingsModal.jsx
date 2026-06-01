@@ -1125,3 +1125,5 @@ const SettingsModal = ({ isOpen, onClose, user, onUserUpdate, onRequireReauth, i
 
 export default SettingsModal;
 // fixer
+
+// Version-2.0

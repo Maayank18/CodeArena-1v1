@@ -100,3 +100,5 @@ const CodeEditor = ({ roomId: _roomId, side, isReadOnly, ydoc, provider, languag
 };
 
 export default CodeEditor;
+
+// Version-2.0

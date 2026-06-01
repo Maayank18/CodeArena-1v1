@@ -35,3 +35,5 @@ export const normalizeForComparison = (raw) => tokenizeOutput(raw).join(' ');
 
 export const outputsMatch = (actual, expected) =>
   normalizeForComparison(actual) === normalizeForComparison(expected);
+
+// Version-2.0

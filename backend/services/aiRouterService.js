@@ -28,3 +28,5 @@ export const getGroqClient = (userTier, featureType) => {
   
   return clients.chat; // Safe fallback
 };
+
+// Version-2.0

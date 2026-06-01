@@ -729,3 +729,5 @@ export const getUserCustomization = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Unable to load customization.' });
     }
 };
+
+// Version-2.0

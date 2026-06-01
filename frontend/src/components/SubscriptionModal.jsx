@@ -749,3 +749,5 @@ const SubscriptionModal = ({ isOpen, onClose, plan }) => {
 };
 
 export default SubscriptionModal;
+
+// Version-2.0

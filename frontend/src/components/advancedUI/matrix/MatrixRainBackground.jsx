@@ -84,3 +84,5 @@ const MatrixRainBackground = ({ className = '', forceActive = false }) => {
 };
 
 export default MatrixRainBackground;
+
+// Version-2.0

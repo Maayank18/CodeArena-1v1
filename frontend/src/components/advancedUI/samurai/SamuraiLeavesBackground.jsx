@@ -156,3 +156,5 @@ export default function SamuraiLeavesBackground({ forceActive = false, container
     </>
   );
 }
+
+// Version-2.0

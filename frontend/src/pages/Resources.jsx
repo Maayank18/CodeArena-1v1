@@ -45,3 +45,5 @@ const Resources = () => {
 
 export default Resources;
 // V 1.5
+
+// Version-2.0

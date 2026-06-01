@@ -77,3 +77,5 @@ campaignMapSchema.index({ problemId: 1 });
 
 export default mongoose.model('CampaignMap', campaignMapSchema);
 // V 1.5
+
+// Version-2.0

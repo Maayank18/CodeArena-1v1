@@ -68,3 +68,5 @@ const CampaignHUD = ({ progress, onOpenSkillTree, children }) => {
 };
 
 export default CampaignHUD;
+
+// Version-2.0

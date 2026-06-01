@@ -162,3 +162,5 @@ export const buildAuthUserPayload = (user, token, extra = {}) => ({
     createdAt: user.createdAt || null,
     token,
 });
+
+// Version-2.0

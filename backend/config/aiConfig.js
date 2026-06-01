@@ -22,3 +22,5 @@ export const AI_RESPONSE_MESSAGES = {
     RATE_LIMIT_ERROR: "Cody AI is currently analyzing too many requests. Please try again in a moment.",
     UNAVAILABLE: "Cody AI is currently resting. Please try again later."
 };
+
+// Version-2.0

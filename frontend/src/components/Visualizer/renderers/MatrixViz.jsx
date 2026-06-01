@@ -379,3 +379,5 @@ const MatrixCell = memo(({
 });
 
 export default MatrixViz;
+
+// Version-2.0

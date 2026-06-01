@@ -75,3 +75,5 @@ export const ensurePaymentTransactionIndexes = async () => {
 };
 
 export default PaymentTransaction;
+
+// Version-2.0

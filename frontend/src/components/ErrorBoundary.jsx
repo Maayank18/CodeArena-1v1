@@ -69,3 +69,5 @@ class ErrorBoundary extends React.Component {
 }
 
 export default ErrorBoundary;
+
+// Version-2.0

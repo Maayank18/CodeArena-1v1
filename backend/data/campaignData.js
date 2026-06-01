@@ -653,3 +653,5 @@ export const getNodeById    = (nodeId) => ZONES.flatMap(z => z.nodes).find(n => 
 export const getZoneForNode = (nodeId) => ZONES.find(z => z.nodes.some(n => n.nodeId === nodeId)) ?? null;
 export const ALL_NODES      = ZONES.flatMap(z => z.nodes);
 // V 1.5
+
+// Version-2.0

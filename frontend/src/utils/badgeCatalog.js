@@ -86,3 +86,5 @@ export const GLOW_MAP = {
 };
 
 export const CATEGORIES = ['Speed', 'Consistency', 'Combat', 'Mastery', 'Campaign'];
+
+// Version-2.0

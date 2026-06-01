@@ -165,3 +165,5 @@ const DLLNodeBlock = memo(({ val, index }) => (
 
 export default DoublyLinkedListViz;
 // V 1.5
+
+// Version-2.0

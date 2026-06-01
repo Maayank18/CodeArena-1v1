@@ -57,3 +57,5 @@ export const recordActivity = async (userId) => {
         console.error('[ACTIVITY_TRACKER] Error recording activity:', error);
     }
 };
+
+// Version-2.0

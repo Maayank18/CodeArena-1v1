@@ -321,3 +321,5 @@ const CampaignGuideModal = ({ isOpen, onClose }) => {
 };
 
 export default CampaignGuideModal;
+
+// Version-2.0

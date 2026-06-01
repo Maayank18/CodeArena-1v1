@@ -35,3 +35,5 @@ noteSchema.index({ user: 1, type: 1, contextTitle: 1 });
 
 const Note = mongoose.model('Note', noteSchema);
 export default Note;
+
+// Version-2.0

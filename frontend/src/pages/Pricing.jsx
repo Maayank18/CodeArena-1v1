@@ -432,3 +432,5 @@ const Pricing = () => {
 };
 
 export default Pricing;
+
+// Version-2.0

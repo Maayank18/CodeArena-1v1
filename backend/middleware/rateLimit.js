@@ -63,3 +63,5 @@ export const createRateLimiter = ({ keyPrefix, limit, windowMs, message, getKey 
         return next();
     };
 };
+
+// Version-2.0

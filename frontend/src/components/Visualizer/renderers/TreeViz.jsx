@@ -282,3 +282,5 @@ const MaxDepthNode = memo(({ sizing, isLight }) => (
 ));
 
 export default TreeViz;
+
+// Version-2.0

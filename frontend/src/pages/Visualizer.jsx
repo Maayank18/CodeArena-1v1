@@ -779,3 +779,5 @@ const ErrorDisplay = ({ error, onReset }) => (
 
 export default Visualizer;
 // V 1.5
+
+// Version-2.0

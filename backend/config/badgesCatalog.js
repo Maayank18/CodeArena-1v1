@@ -433,3 +433,5 @@ export const getBadgeConfig = (keyOrAlias) => {
         (b.aliases && b.aliases.includes(keyOrAlias))
     );
 };
+
+// Version-2.0

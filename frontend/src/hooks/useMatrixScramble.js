@@ -54,3 +54,5 @@ export const useMatrixScramble = (text, options = {}) => {
 
     return displayText;
 };
+
+// Version-2.0

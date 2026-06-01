@@ -44,3 +44,5 @@ const passwordResetOtpSchema = new mongoose.Schema({
 });
 
 export default mongoose.model('PasswordResetOtp', passwordResetOtpSchema);
+
+// Version-2.0

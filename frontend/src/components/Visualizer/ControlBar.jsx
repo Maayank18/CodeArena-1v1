@@ -355,3 +355,5 @@ const StepBtn = ({ onClick, disabled, title, children }) => (
 
 export default ControlBar;
 // V 1.5
+
+// Version-2.0

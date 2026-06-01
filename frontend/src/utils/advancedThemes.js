@@ -74,3 +74,5 @@ export const getAdvancedThemeId = (themeId) => (
 );
 
 export const getAdvancedThemeIdFromUser = (user) => getAdvancedThemeId(user?.customization?.advancedTheme);
+
+// Version-2.0

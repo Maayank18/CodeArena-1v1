@@ -1301,3 +1301,5 @@ const EditorPage = () => {
 };
 
 export default EditorPage;
+
+// Version-2.0

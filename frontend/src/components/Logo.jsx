@@ -19,3 +19,5 @@ export const Logo = ({ className }) => (
   </div>
 );
 // V 1.5
+
+// Version-2.0

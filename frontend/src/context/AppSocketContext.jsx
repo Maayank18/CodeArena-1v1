@@ -186,3 +186,5 @@ export const AppSocketProvider = ({ children }) => {
 };
 
 export const useAppSocket = () => useContext(AppSocketContext);
+
+// Version-2.0

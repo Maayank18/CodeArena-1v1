@@ -38,3 +38,5 @@ router.get('/customization', requirePro, getUserCustomization);
 router.put('/customization', requirePro, updateCustomization);
 
 export default router;
+
+// Version-2.0

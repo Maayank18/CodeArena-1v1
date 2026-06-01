@@ -534,3 +534,5 @@ const BadgesTab = () => {
 };
 
 export default BadgesTab;
+
+// Version-2.0

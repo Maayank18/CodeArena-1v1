@@ -286,3 +286,5 @@ const Navbar = ({ user, onLogout, onUserUpdate }) => {
 };
 
 export default React.memo(Navbar);
+
+// Version-2.0

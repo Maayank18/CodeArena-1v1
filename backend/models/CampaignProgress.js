@@ -64,3 +64,5 @@ campaignProgressSchema.virtual('completedNodeIds').get(function() {
 
 export default mongoose.model('CampaignProgress', campaignProgressSchema);
 // V 1.5
+
+// Version-2.0

@@ -34,3 +34,5 @@ export const hasCompletedRootCampaignNode = (progress) =>
 
 export const shouldLockCampaignAfterTrial = (user, progress) =>
     !hasPremiumCampaignAccess(user) && hasCompletedRootCampaignNode(progress);
+
+// Version-2.0

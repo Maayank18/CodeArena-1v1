@@ -8,3 +8,5 @@ router.post('/hint', verifyToken, getHint);
 router.post('/check-code', verifyToken, checkCode);
 
 export default router;
+
+// Version-2.0

@@ -98,3 +98,5 @@ export const deleteNote = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to delete note' });
     }
 };
+
+// Version-2.0

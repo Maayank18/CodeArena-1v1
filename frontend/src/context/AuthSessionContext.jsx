@@ -125,3 +125,5 @@ export const AuthSessionProvider = ({ children }) => {
 };
 
 export const useAuthSession = () => useContext(AuthSessionContext);
+
+// Version-2.0

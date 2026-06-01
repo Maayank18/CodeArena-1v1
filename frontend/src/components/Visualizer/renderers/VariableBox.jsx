@@ -99,3 +99,5 @@ const VariableBox = ({ name, value }) => {
 
 export default VariableBox;
 // V 1.5
+
+// Version-2.0

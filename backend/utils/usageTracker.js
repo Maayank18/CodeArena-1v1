@@ -129,3 +129,5 @@ export const getUsageLimits = (planOrUser) => {
 
     return limits;
 };
+
+// Version-2.0

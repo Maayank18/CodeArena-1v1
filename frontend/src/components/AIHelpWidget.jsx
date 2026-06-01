@@ -191,3 +191,5 @@ const AIHelpWidget = ({ problemTitle, currentCode, userTier }) => {
 };
 
 export default AIHelpWidget;
+
+// Version-2.0

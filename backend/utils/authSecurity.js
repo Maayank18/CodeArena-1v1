@@ -60,3 +60,5 @@ export const validatePasswordStrength = (password) => {
 export const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
 
 export const secondsFromNow = (seconds) => new Date(Date.now() + seconds * 1000);
+
+// Version-2.0

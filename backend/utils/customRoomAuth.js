@@ -38,3 +38,5 @@ export const verifyCustomRoomJoinToken = (token) => {
     };
 };
 
+
+// Version-2.0

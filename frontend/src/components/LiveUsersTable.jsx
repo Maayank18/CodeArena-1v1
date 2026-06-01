@@ -221,3 +221,5 @@ const LiveUsersTable = () => {
 };
 
 export default LiveUsersTable;
+
+// Version-2.0

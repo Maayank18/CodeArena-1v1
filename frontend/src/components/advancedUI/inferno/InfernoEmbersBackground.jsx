@@ -129,3 +129,5 @@ export default function InfernoEmbersBackground({ forceActive = false, container
     </>
   );
 }
+
+// Version-2.0

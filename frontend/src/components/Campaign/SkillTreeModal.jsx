@@ -285,3 +285,5 @@ const SkillTreeModal = ({ isOpen, onClose, progress, onProgressUpdate }) => {
 
 export default SkillTreeModal;
 // V 1.5
+
+// Version-2.0

@@ -80,3 +80,5 @@ function getActiveUsers() {
 }
 
 export { attachPresenceTracking, getActiveUsers };
+
+// Version-2.0

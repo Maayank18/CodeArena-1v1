@@ -29,3 +29,5 @@ const flushNotes = async () => {
 };
 
 flushNotes();
+
+// Version-2.0

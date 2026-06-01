@@ -58,3 +58,5 @@ export const refreshCurrentUserProfile = async () => {
 
     return mergedUser;
 };
+
+// Version-2.0

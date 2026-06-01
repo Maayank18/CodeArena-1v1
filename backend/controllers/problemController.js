@@ -1,82 +1,3 @@
-// import Problem from '../models/Problem.js';
-
-// // @desc    Get a random problem (Secured)
-// // @route   GET /api/problems/random
-// export const getRandomProblem = async (req, res) => {
-//     try {
-//         const problems = await Problem.aggregate([
-//             { $sample: { size: 1 } }, 
-//             { 
-//                 $project: { 
-//                     // 🛡️ SECURITY: Only send 'isPublic: true' test cases
-//                     testCases: {
-//                         $filter: {
-//                             input: "$testCases",
-//                             as: "tc",
-//                             cond: { $eq: ["$$tc.isPublic", true] }
-//                         }
-//                     },
-//                     title: 1,
-//                     slug: 1,
-//                     description: 1,
-//                     difficulty: 1,
-//                     constraints: 1,
-//                     starterCode: 1,
-                    
-//                     // ✅ NEW: Include the new limits we added to the Schema
-//                     timeLimit: 1,   
-//                     memoryLimit: 1  
-//                 } 
-//             }
-//         ]);
-        
-//         if (!problems || problems.length === 0) {
-//             return res.status(404).json({ message: "No problems found in DB" });
-//         }
-
-//         res.json(problems[0]);
-
-//     } catch (error) {
-//         console.error("Get Random Problem Error:", error);
-//         res.status(500).json({ message: "Server Error" });
-//     }
-// };
-
-// // ... getProblemById remains the same (it automatically includes new fields)
-// export const getProblemById = async (req, res) => {
-//     try {
-//         const problem = await Problem.findById(req.params.id);
-
-//         if (!problem) {
-//             return res.status(404).json({ message: "Problem not found" });
-//         }
-
-//         // 🛡️ SECURITY: Filter out non-public test cases manually
-//         const securedProblem = problem.toObject();
-//         securedProblem.testCases = securedProblem.testCases.filter(tc => tc.isPublic);
-
-//         res.json(securedProblem);
-
-//     } catch (error) {
-//         if (error.kind === 'ObjectId') {
-//             return res.status(404).json({ message: "Problem not found (Invalid ID)" });
-//         }
-//         res.status(500).json({ message: error.message });
-//     }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-
 // FILE: backend/controllers/problemController.js
 // HEAVILY OPTIMIZED VERSION
 import Problem from '../models/Problem.js';
@@ -187,3 +108,5 @@ export const clearProblemCache = () => {
     cacheTimestamp = 0;
 };
 // V 1.5
+
+// Version-2.0

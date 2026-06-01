@@ -50,3 +50,5 @@ export const ensureEntryNodesUnlocked = (progressLike, entryNodeIds) => {
 
 export const isEntryNode = (node) =>
     isAbsoluteCampaignRoot(node);
+
+// Version-2.0

@@ -150,3 +150,5 @@ const CodePanel = ({ code, setCode, activeLine, theme = 'dark' }) => {
 };
 
 export default CodePanel;
+
+// Version-2.0

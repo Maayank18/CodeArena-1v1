@@ -266,3 +266,5 @@ const QueueViz = memo(({ data, pointers, capacity = null, front = null, rear = n
 });
 
 export default QueueViz;
+
+// Version-2.0

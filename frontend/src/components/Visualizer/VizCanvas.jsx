@@ -315,3 +315,5 @@ const VizCanvas = memo(({ variables }) => {
 });
 
 export default VizCanvas;
+
+// Version-2.0

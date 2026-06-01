@@ -111,3 +111,5 @@ export const clearStoredUser = ({
 
   return null;
 };
+
+// Version-2.0

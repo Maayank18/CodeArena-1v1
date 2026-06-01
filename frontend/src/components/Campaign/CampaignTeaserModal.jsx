@@ -117,3 +117,5 @@ const CampaignTeaserModal = ({ isOpen }) => {
 };
 
 export default CampaignTeaserModal;
+
+// Version-2.0

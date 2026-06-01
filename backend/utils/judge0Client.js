@@ -243,3 +243,5 @@ export async function executeCode(language, sourceCode, stdin = '', timeLimit = 
 export async function getAvailableLanguages() {
   return getLanguages();
 }
+
+// Version-2.0

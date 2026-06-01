@@ -198,3 +198,5 @@ export const getBadgeImage = (badgeKey) => {
 
   return buildGeneratedBadgeSvg(normalized);
 };
+
+// Version-2.0

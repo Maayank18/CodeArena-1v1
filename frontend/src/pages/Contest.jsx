@@ -89,3 +89,5 @@ const Contest = () => {
 };
 
 export default Contest;
+
+// Version-2.0

@@ -316,3 +316,5 @@ export const BATCH_2_ZONES = [
 
 export default BATCH_2_ZONES;
 // V 1.5
+
+// Version-2.0

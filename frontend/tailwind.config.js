@@ -55,3 +55,5 @@ export default {
 
   plugins: [typography],
 };
+
+// Version-2.0

@@ -226,3 +226,5 @@ const StackViz = memo(({ data, pointers, capacity = null, isFull = false }) => {
 });
 
 export default StackViz;
+
+// Version-2.0

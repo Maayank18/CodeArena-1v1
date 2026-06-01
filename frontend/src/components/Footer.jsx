@@ -62,3 +62,5 @@ const Footer = () => {
 };
 
 export default Footer;
+
+// Version-2.0

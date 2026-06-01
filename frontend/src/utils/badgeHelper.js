@@ -21,3 +21,5 @@ const BADGE_LOOKUP = BADGE_DEFINITIONS.reduce((lookup, badge) => {
 export const getBadgeIconData = (badgeId) => {
   return BADGE_LOOKUP.get(normalizeBadgeKey(badgeId)) || null;
 };
+
+// Version-2.0

@@ -23,3 +23,5 @@ export const normalizeForComparison = (raw) => {
 
 export const outputsMatch = (actual, expected) =>
   normalizeForComparison(actual) === normalizeForComparison(expected);
+
+// Version-2.0

@@ -271,3 +271,5 @@ const NodeDetailPanel = ({ node, progress, onClose, onStartChallenge }) => {
 };
 
 export default React.memo(NodeDetailPanel);
+
+// Version-2.0

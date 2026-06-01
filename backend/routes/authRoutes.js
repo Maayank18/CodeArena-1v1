@@ -107,3 +107,5 @@ router.post('/verify-otp', verifyOtpLimiter, verifyPasswordResetOtp);
 router.post('/reset-password', resetPasswordLimiter, resetPasswordWithOtp);
 
 export default router;
+
+// Version-2.0

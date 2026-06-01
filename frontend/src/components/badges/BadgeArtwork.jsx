@@ -50,3 +50,5 @@ const BadgeArtwork = ({
 };
 
 export default BadgeArtwork;
+
+// Version-2.0

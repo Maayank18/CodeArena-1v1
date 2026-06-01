@@ -248,3 +248,5 @@ export const CAMPAIGN_REGIONS = [
     decorations: ['🏔️', '🦅', '❄️', '⚡'],
   },
 ];
+
+// Version-2.0

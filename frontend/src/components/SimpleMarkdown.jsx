@@ -48,3 +48,5 @@ const SimpleMarkdown = ({ content, className = '' }) => {
 };
 
 export default SimpleMarkdown;
+
+// Version-2.0

@@ -230,3 +230,5 @@ const Leaderboard = () => {
 };
 
 export default Leaderboard;
+
+// Version-2.0

@@ -634,3 +634,5 @@ export const sendEmailVerificationOtp = async (email, name, otpCode, expiresInMi
         text: buildOtpEmailText({ title, otp: otpCode, bodyText, expiresInMinutes })
     });
 };
+
+// Version-2.0

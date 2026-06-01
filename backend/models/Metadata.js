@@ -22,3 +22,5 @@ metadataSchema.index({ key: 1 });
 
 const Metadata = mongoose.model('Metadata', metadataSchema);
 export default Metadata;
+
+// Version-2.0

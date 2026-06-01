@@ -108,3 +108,5 @@ export const calculateMatchOutcome = (p1, p2) => {
         }
     };
 };
+
+// Version-2.0

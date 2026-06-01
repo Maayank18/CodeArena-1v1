@@ -41,3 +41,5 @@ async function verifySmtp() {
 }
 
 verifySmtp();
+
+// Version-2.0

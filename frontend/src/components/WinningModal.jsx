@@ -125,3 +125,5 @@ const WinningModal = ({ result, currentUsername, onHomeClick, onClose }) => {
 };
 
 export default WinningModal;
+
+// Version-2.0

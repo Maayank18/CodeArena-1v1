@@ -334,3 +334,5 @@ export const resetPasswordWithOtp = async (req, res) => {
         });
     }
 };
+
+// Version-2.0

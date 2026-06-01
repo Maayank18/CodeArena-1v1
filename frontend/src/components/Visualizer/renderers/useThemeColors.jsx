@@ -76,3 +76,5 @@ export function useThemeColors() {
     return theme === 'light' ? LIGHT : DARK;
 }
 // V 1.5
+
+// Version-2.0

@@ -76,3 +76,5 @@ const FeatureShowcase = () => {
 };
 
 export default FeatureShowcase;
+
+// Version-2.0

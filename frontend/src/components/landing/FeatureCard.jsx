@@ -87,3 +87,5 @@ const FeatureCard = ({ title, description, imageSrc, videoSrc, index }) => {
 };
 
 export default FeatureCard;
+
+// Version-2.0

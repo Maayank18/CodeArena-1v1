@@ -966,3 +966,5 @@ const WorldMap = ({ nodes = [], progress, onStartChallenge, onTeaserTrigger, use
 };
 
 export default React.memo(WorldMap);
+
+// Version-2.0

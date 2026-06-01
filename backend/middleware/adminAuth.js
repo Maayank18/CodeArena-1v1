@@ -83,3 +83,5 @@ export const isAdmin = async (req, res, next) => {
 };
 
 export const adminAuth = isAdmin;
+
+// Version-2.0
