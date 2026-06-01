@@ -188,7 +188,7 @@ app.get('/health', (req, res) => {
 });
 
 // ✅ CRON JOB: Keep server alive on Render
-cron.schedule('*/18 * * * *', async () => {
+cron.schedule('*/16 * * * *', async () => {
   try {
     let currentISTHour;
     try {
