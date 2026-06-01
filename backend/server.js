@@ -1,503 +1,3 @@
-// import express from 'express';
-// import { createServer } from 'http';
-// import { Server } from 'socket.io';
-// import cors from 'cors';
-// import dotenv from 'dotenv';
-// import connectDB from './config/db.js';
-// import cron from 'node-cron';
-// import axios from 'axios';
-
-// import roomRoutes from './routes/roomRoutes.js';
-// import submissionRoutes from './routes/submissionRoutes.js';
-// import problemRoutes from './routes/problemRoutes.js';
-// import authRoutes from './routes/authRoutes.js';
-// import statsRoutes from './routes/statsRoutes.js';
-// import userRoutes from './routes/userRoutes.js'; 
-// import matchRoutes from './routes/matchRoutes.js';
-// import adminRoutes from './routes/adminRoutes.js';
-// import visualizerRoutes from './routes/visualizerRoutes.js';
-
-// import Problem from './models/Problem.js';
-// import User from './models/User.js';
-// import Match from './models/Match.js';
-// import { calculateMatchOutcome } from './utils/elo.js';
-
-// dotenv.config();
-
-// // Connect DB - Non-blocking
-// connectDB().then(() => console.log('[DB] Connected Successfully')).catch(err => console.error('[DB] Connection Failed:', err));
-
-// const app = express();
-
-// const ALLOWED_ORIGINS = [
-//   "http://localhost:5173",
-//   process.env.FRONTEND_URL
-// ].filter(Boolean);
-
-// app.use(cors({
-//   origin: ALLOWED_ORIGINS,
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//   credentials: true
-// }));
-
-// app.use(express.json());
-
-// // Request Logger - Reduced noise (only logs API calls)
-// app.use((req, res, next) => {
-//   if (req.originalUrl !== '/health') {
-//      console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
-//   }
-//   next();
-// });
-
-// // ✅ REGISTER ROUTES
-// app.use('/api/rooms', roomRoutes);
-// app.use('/api/run', submissionRoutes);
-// app.use('/api/problems', problemRoutes);
-// app.use('/api/auth', authRoutes);
-// app.use('/api/stats', statsRoutes);
-// app.use('/api/users', userRoutes); 
-// app.use('/api/matches', matchRoutes);
-// app.use('/api/admin', adminRoutes);
-// app.use('/api/visualize', visualizerRoutes);
-
-// // ✅ HEALTH CHECK (Lightweight)
-// app.get('/health', (req, res) => {
-//     res.status(200).json({ 
-//         status: 'OK', 
-//         uptime: process.uptime(),
-//         timestamp: new Date().toISOString()
-//     });
-// });
-
-// // ✅ CRON JOB: Keep-Alive Strategy
-// // Runs every 14 minutes (Render sleeps after 15 mins of inactivity)
-// cron.schedule('*/14 * * * *', async () => {
-//     try {
-//         const backendURL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
-//         console.log(`[CRON] Pinging self to stay awake: ${backendURL}/health`);
-        
-//         // Timeout set to 5s to avoid hanging connections
-//         await axios.get(`${backendURL}/health`, { timeout: 5000 });
-//         console.log(`[CRON] ✅ Keep-alive success`);
-//     } catch (error) {
-//         console.error(`[CRON] ⚠️ Keep-alive failed (Server might be sleeping):`, error.message);
-//     }
-// });
-
-// app.get('/', (req, res) => res.send('OK'));
-
-// const server = createServer(app);
-// const io = new Server(server, {
-//   cors: {
-//     origin: ALLOWED_ORIGINS,
-//     methods: ["GET", "POST"],
-//     credentials: true
-//   }
-// });
-
-// app.locals.io = io;
-
-// const rooms = new Map();
-// const roomTimers = new Map();
-
-// const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmitted) => {
-//     if (playerData.isCheater) return -20;
-//     if (opponentData.isCheater) return 50;
-//     if (!hasSubmitted) return 0;
-//     if (matchOutcome.status.includes("Winner")) return 50;
-//     if (matchOutcome.status === "Draw") return 25;
-//     if (matchOutcome.status === "Loser" && hasSubmitted) return 10;
-//     return 0;
-// };
-
-// // ✅ OPTIMIZED: handleGameEnd
-// const handleGameEnd = async (roomId, room) => {
-//     if (!room || !room.isGameActive) return;
-//     room.isGameActive = false;
-
-//     // Clear timer immediately to prevent duplicate calls
-//     if (roomTimers.has(roomId)) {
-//         clearInterval(roomTimers.get(roomId));
-//         roomTimers.delete(roomId);
-//     }
-    
-//     const playerNames = Object.keys(room.scores);
-    
-//     if (playerNames.length < 2) {
-//         console.log(`[GAME END] Room ${roomId}: Cancelled (Insufficient players).`);
-//         io.to(roomId).emit('game_over', { 
-//             winner: null, 
-//             message: "Match cancelled (Waiting for opponent)" 
-//         });
-//         rooms.delete(roomId);
-//         return;
-//     }
-
-//     console.log(`[GAME END] Processing Room: ${roomId}`);
-    
-//     let winnerName = playerNames.reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
-//     let eloChanges = null;
-
-//     try {
-//         const [user1Doc, user2Doc] = await Promise.all([
-//             User.findByUsername(playerNames[0]),
-//             User.findByUsername(playerNames[1])
-//         ]);
-
-//         const p1Data = {
-//             username: playerNames[0],
-//             rating: user1Doc?.rating || 1000,
-//             score: Number(room.scores[playerNames[0]]) || 0,
-//             isCheater: room.cheaters.has(playerNames[0]),
-//             hasSubmitted: room.submissionAttempts.has(playerNames[0])
-//         };
-
-//         const p2Data = {
-//             username: playerNames[1] || "Opponent",
-//             rating: user2Doc?.rating || 1000,
-//             score: Number(room.scores[playerNames[1]]) || 0,
-//             isCheater: room.cheaters.has(playerNames[1]),
-//             hasSubmitted: room.submissionAttempts.has(playerNames[1])
-//         };
-
-//         const outcome = calculateMatchOutcome(p1Data, p2Data);
-//         const p1NewRating = Number(outcome.p1.newRating) || 1000;
-//         const p2NewRating = Number(outcome.p2.newRating) || 1000;
-
-//         const p1SeasonPoints = calculateSeasonPoints(p1Data, p2Data, outcome.p1, p1Data.hasSubmitted);
-//         const p2SeasonPoints = calculateSeasonPoints(p2Data, p1Data, outcome.p2, p2Data.hasSubmitted);
-
-//         const updatePromises = [];
-
-//         if (user1Doc) {
-//             updatePromises.push(
-//                 User.findByIdAndUpdate(user1Doc._id, { 
-//                     $set: { rating: p1NewRating },
-//                     $inc: { 
-//                         seasonScore: p1SeasonPoints,
-//                         "stats.matchesPlayed": 1,
-//                         "stats.wins": outcome.p1.status.includes("Winner") ? 1 : 0,
-//                         "stats.losses": outcome.p1.status === "Loser" ? 1 : 0
-//                     }
-//                 }, { new: true })
-//             );
-//         }
-
-//         if (user2Doc) {
-//             updatePromises.push(
-//                 User.findByIdAndUpdate(user2Doc._id, { 
-//                     $set: { rating: p2NewRating },
-//                     $inc: { 
-//                         seasonScore: p2SeasonPoints,
-//                         "stats.matchesPlayed": 1,
-//                         "stats.wins": outcome.p2.status.includes("Winner") ? 1 : 0,
-//                         "stats.losses": outcome.p2.status === "Loser" ? 1 : 0
-//                     }
-//                 }, { new: true })
-//             );
-//         }
-
-//         await Promise.all(updatePromises);
-
-//         const officialWinner = outcome.p1.status.includes("Winner") ? p1Data.username : 
-//                                (outcome.p2.status.includes("Winner") ? p2Data.username : "Draw");
-
-//         await Match.create({
-//             roomId,
-//             winner: officialWinner, 
-//             isDisqualified: room.cheaters.size > 0,
-//             disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
-//             players: [
-//                 { 
-//                     userId: user1Doc?._id || null, 
-//                     username: p1Data.username, 
-//                     avatar: user1Doc?.avatar || "", 
-//                     isWinner: outcome.p1.status.includes("Winner"), 
-//                     score: p1Data.score, 
-//                     oldElo: p1Data.rating, 
-//                     newElo: p1NewRating, 
-//                     statusText: outcome.p1.status,
-//                     seasonPointsGained: p1SeasonPoints,
-//                     hasSubmitted: p1Data.hasSubmitted
-//                 },
-//                 { 
-//                     userId: user2Doc?._id || null, 
-//                     username: p2Data.username, 
-//                     avatar: user2Doc?.avatar || "", 
-//                     isWinner: outcome.p2.status.includes("Winner"), 
-//                     score: p2Data.score, 
-//                     oldElo: p2Data.rating, 
-//                     newElo: p2NewRating, 
-//                     statusText: outcome.p2.status,
-//                     seasonPointsGained: p2SeasonPoints,
-//                     hasSubmitted: p2Data.hasSubmitted
-//                 }
-//             ]
-//         });
-
-//         eloChanges = {
-//             p1: { username: p1Data.username, newRating: p1NewRating, eloChange: outcome.p1.pointsGained, seasonPoints: p1SeasonPoints },
-//             p2: { username: p2Data.username, newRating: p2NewRating, eloChange: outcome.p2.pointsGained, seasonPoints: p2SeasonPoints }
-//         };
-//         winnerName = officialWinner;
-
-//     } catch (err) {
-//         console.error("❌ CRITICAL DB ERROR in handleGameEnd:", err);
-//     }
-
-//     io.to(roomId).emit('game_over', { 
-//         scores: room.scores, 
-//         winner: winnerName,
-//         isDisqualified: room.cheaters.size > 0,
-//         disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
-//         eloChanges: eloChanges
-//     });
-
-//     setTimeout(() => {
-//         rooms.delete(roomId);
-//         console.log(`[CLEANUP] Room ${roomId} deleted`);
-//     }, 60000);
-// };
-
-// // ✅ TIMER LOGIC: Prevent Interval Leaks
-// const startRoomTimer = (roomId, duration) => {
-//     // 1. Clear existing timer if any (prevents double speed timers)
-//     if (roomTimers.has(roomId)) {
-//         clearInterval(roomTimers.get(roomId));
-//     }
-    
-//     let timeLeft = duration;
-    
-//     const timerId = setInterval(() => {
-//         timeLeft--;
-        
-//         // Sync every 60s OR near end
-//         if(timeLeft % 60 === 0 || timeLeft <= 10) {
-//             io.to(roomId).emit('sync_time', timeLeft);
-//         }
-        
-//         if (timeLeft <= 0) {
-//             clearInterval(timerId); // Stop timer
-//             roomTimers.delete(roomId); // Remove from map
-//             const room = rooms.get(roomId);
-//             if(room) handleGameEnd(roomId, room); 
-//         }
-//     }, 1000);
-    
-//     roomTimers.set(roomId, timerId);
-// };
-
-// io.on('connection', async (socket) => {
-//   // console.log(`User Connected: ${socket.id}`); // Reduce log noise
-
-//   try {
-//     const totalUsers = await User.countDocuments();
-//     const statsData = { live: io.engine.clientsCount, total: totalUsers };
-//     socket.emit('site_stats', statsData);
-//     socket.broadcast.emit('site_stats', statsData);
-//   } catch (err) { console.error(err); }
-
-//   socket.on('join_room', async (data) => {
-//     try {
-//       const { roomId, username } = data;
-//       if (!roomId || !username) return;
-
-//       if (!rooms.has(roomId)) {
-//         // Optimized: Only fetch ID for setup
-//         const problemDocs = await Problem.aggregate([{ $sample: { size: 2 } }]);
-//         const problemIds = problemDocs.map(p => p._id.toString());
-        
-//         rooms.set(roomId, { 
-//             players: [], 
-//             round: 1, 
-//             totalRounds: 2, 
-//             problemIds, 
-//             scores: {}, 
-//             roundCompletions: new Set(), 
-//             isGameActive: true, 
-//             startTime: Date.now(), 
-//             cheaters: new Set(), 
-//             submissionAttempts: new Set()
-//         });
-//         startRoomTimer(roomId, 30 * 60);
-//       }
-
-//       const room = rooms.get(roomId);
-//       const remainingTime = Math.max(0, (30 * 60) - Math.floor((Date.now() - room.startTime) / 1000));
-
-//       let playerIndex = room.players.findIndex((p) => p.username === username);
-//       let side; 
-//       let isReconnect = false;
-
-//       if (playerIndex !== -1) {
-//         room.players[playerIndex].id = socket.id;
-//         side = room.players[playerIndex].side;
-//         isReconnect = true;
-//       } else {
-//         if (room.players.length >= 2) { 
-//             socket.emit('room_full'); 
-//             return; 
-//         }
-//         side = room.players.length === 0 ? 'left' : 'right';
-//         room.players.push({ id: socket.id, username, side });
-//         room.scores[username] = 0;
-//       }
-
-//       socket.join(roomId);
-
-//       // Fetch full problem details ONLY when user joins/reconnects
-//       const currentProblemId = room.problemIds[room.round - 1];
-//       const problem = await Problem.findById(currentProblemId);
-
-//       socket.emit('room_joined', {
-//         roomId, side, username, players: room.players, 
-//         problem, round: room.round, totalRounds: room.totalRounds, 
-//         scores: room.scores, remainingTime 
-//       });
-
-//       if (!isReconnect) {
-//         socket.to(roomId).emit('player_joined', { 
-//             username, side, players: room.players, scores: room.scores 
-//         });
-//       }
-//     } catch (err) { 
-//         console.error('Join Error:', err); 
-//     }
-//   });
-
-//   socket.on('level_completed', async ({ roomId, username }) => {
-//       try {
-//           const room = rooms.get(roomId);
-//           if (!room || !room.isGameActive) return;
-//           if(room.roundCompletions.has(username)) return;
-
-//           room.submissionAttempts.add(username);
-//           room.scores[username] = (room.scores[username] || 0) + 10;
-//           room.roundCompletions.add(username);
-//           io.to(roomId).emit('score_update', room.scores);
-
-//           if (room.roundCompletions.size === 1) { 
-//               if (room.round < room.totalRounds) {
-//                   room.round++;
-//                   room.roundCompletions.clear();
-                  
-//                   const nextProblemId = room.problemIds[room.round - 1];
-//                   const nextProblem = await Problem.findById(nextProblemId);
-                  
-//                   io.to(roomId).emit('new_round', {
-//                       round: room.round, problem: nextProblem, scores: room.scores,
-//                   });
-//               } else {
-//                   await handleGameEnd(roomId, room);
-//               }
-//           }
-//       } catch (err) { 
-//           console.error("Level Complete Error:", err); 
-//       }
-//   });
-
-//   socket.on('cheating_detected', async ({ roomId, username, reason }) => {
-//     try {
-//       const room = rooms.get(roomId);
-//       if (!room || !room.isGameActive) return;
-//       room.cheaters.add(username);
-//       socket.emit('cheat_warning', { reason });
-//     } catch (err) { console.error("Cheating Error:", err); }
-//   });
-
-//   socket.on('disconnect', async () => {
-//     // Only update stats if counts actually change significantly (optional, kept simple here)
-//     try {
-//       const statsData = { live: io.engine.clientsCount }; // Avoid DB call on every disconnect
-//       io.emit('site_stats', statsData);
-//     } catch (e) { console.error("Disconnect Error:", e); }
-//   });
-
-//   socket.on('code_submitted', ({ roomId, username }) => {
-//     try {
-//         const room = rooms.get(roomId);
-//         if (!room || !room.isGameActive) return;
-//         room.submissionAttempts.add(username);
-//       } catch (err) { console.error("Code submission tracking error:", err); }
-//   });
-// });
-
-// // ✅ MONITORING (Reduced frequency to 10 mins to save logs)
-// setInterval(() => {
-//     const memUsage = process.memoryUsage();
-//     console.log(`[HEALTH] Rooms: ${rooms.size} | Sockets: ${io.engine.clientsCount} | Mem: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
-// }, 10 * 60 * 1000);
-
-// const PORT = process.env.PORT || 5000;
-// server.listen(PORT, () => console.log(`SERVER RUNNING ON PORT ${PORT}`));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // FILE: backend/server.js
 // FINAL PRODUCTION VERSION - FULLY OPTIMIZED & TESTED
 import express from 'express';
@@ -518,7 +18,7 @@ import submissionRoutes from './routes/submissionRoutes.js';
 import problemRoutes from './routes/problemRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
-import userRoutes from './routes/userRoutes.js'; 
+import userRoutes from './routes/userRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import visualizerRoutes from './routes/visualizerRoutes.js';
@@ -573,15 +73,15 @@ const toPublicProblem = (problem) => {
 
 // ✅ DATABASE CONNECTION with retry logic
 const waitForDatabase = async () => {
-    try {
-        await connectDB();
-        console.log('[DB] ✅ Connected Successfully');
-    } catch (err) {
-        console.error('[DB] ❌ Connection Failed:', err);
-        console.log('[DB] 🔄 Retrying in 5 seconds...');
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        return waitForDatabase();
-    }
+  try {
+    await connectDB();
+    console.log('[DB] ✅ Connected Successfully');
+  } catch (err) {
+    console.error('[DB] ❌ Connection Failed:', err);
+    console.log('[DB] 🔄 Retrying in 5 seconds...');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    return waitForDatabase();
+  }
 };
 
 // ✅ EXPRESS APP SETUP
@@ -628,7 +128,7 @@ app.use(express.json({ limit: '1mb' }));
 // ✅ REQUEST LOGGER (excluding health checks)
 app.use((req, res, next) => {
   if (req.originalUrl !== '/health') {
-     // console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+    // console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
   }
   next();
 });
@@ -651,7 +151,7 @@ app.use('/api/run', submissionRoutes);
 app.use('/api/problems', problemRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/users', userRoutes); 
+app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/admin', adminRoutes);
@@ -665,102 +165,125 @@ app.use('/uploads', express.static('uploads'));
 
 // ✅ HEALTH CHECK (Enhanced)
 app.get('/health', (req, res) => {
-    const memUsage = process.memoryUsage();
-    const dbReady = isDatabaseReady();
+  const memUsage = process.memoryUsage();
+  const dbReady = isDatabaseReady();
 
-    res.status(dbReady ? 200 : 503).json({ 
-        status: dbReady ? 'OK' : 'DEGRADED',
-        uptime: Math.floor(process.uptime()),
-        timestamp: new Date().toISOString(),
-        database: {
-            ready: dbReady,
-            readyState: mongoose.connection.readyState,
-            host: mongoose.connection.host || null,
-        },
-        smtp: getSmtpDiagnostics(),
-        memory: {
-            heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
-            heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
-        },
-        activeRooms: rooms.size,
-        activeSockets: io ? io.engine.clientsCount : 0
-    });
+  res.status(dbReady ? 200 : 503).json({
+    status: dbReady ? 'OK' : 'DEGRADED',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    database: {
+      ready: dbReady,
+      readyState: mongoose.connection.readyState,
+      host: mongoose.connection.host || null,
+    },
+    smtp: getSmtpDiagnostics(),
+    memory: {
+      heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+      heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+    },
+    activeRooms: rooms.size,
+    activeSockets: io ? io.engine.clientsCount : 0
+  });
 });
 
 // ✅ CRON JOB: Keep server alive on Render
 cron.schedule('*/14 * * * *', async () => {
+  try {
+    let currentISTHour;
     try {
-        const backendURL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
-        console.log(`[CRON] 🏓 Pinging self: ${backendURL}/health`);
-        
-        await axios.get(`${backendURL}/health`, { 
-            timeout: 5000,
-            headers: { 'User-Agent': 'KeepAlive-Cron' }
-        });
-        console.log(`[CRON] ✅ Keep-alive success`);
-    } catch (error) {
-        console.error(`[CRON] ⚠️ Keep-alive failed:`, error.message);
+      // Determine current hour in IST safely (Asia/Kolkata)
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        hourCycle: 'h23'
+      });
+      currentISTHour = parseInt(formatter.format(new Date()), 10);
+    } catch (timeError) {
+      console.error(`[CRON] ⚠️ Failed to determine IST time:`, timeError.message);
+      // Fallback: assume active to be safe and avoid unwanted sleeping
+      currentISTHour = 12; 
     }
+
+    // Sleep Window: 01:00 AM IST to 06:59 AM IST
+    // Why this exists: Reduces Render instance-hour consumption by allowing the instance to sleep naturally during low-traffic hours.
+    // When keep-alive is active: 07:00 AM IST to 00:59 AM IST
+    if (currentISTHour >= 1 && currentISTHour < 7) {
+      console.log(`[CRON] 💤 Sleep window active (${currentISTHour}:00 IST). Skipping keep-alive to save Render instance hours.`);
+      return;
+    }
+
+    const backendURL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
+    console.log(`[CRON] 🏓 Pinging self: ${backendURL}/health`);
+
+    await axios.get(`${backendURL}/health`, {
+      timeout: 5000,
+      headers: { 'User-Agent': 'KeepAlive-Cron' }
+    });
+    console.log(`[CRON] ✅ Keep-alive success`);
+  } catch (error) {
+    console.error(`[CRON] ⚠️ Keep-alive failed:`, error.message);
+  }
 });
 
 // ✅ CRON JOB: Daily Subscription Expiry Downgrade
 // Runs at 00:00 every day
 cron.schedule('0 0 * * *', async () => {
-    try {
-        const now = new Date();
-        const result = await User.updateMany(
-            { 
-                subscriptionExpiry: { $ne: null, $lt: now },
-                isPro: true
-            },
-            {
-                $set: {
-                    isPro: false,
-                    planId: null,
-                    subscriptionPlan: 'free'
-                }
-            }
-        );
-        if (result.modifiedCount > 0) {
-            console.log(`[CRON] 🛡️ Downgraded ${result.modifiedCount} users due to subscription expiry.`);
+  try {
+    const now = new Date();
+    const result = await User.updateMany(
+      {
+        subscriptionExpiry: { $ne: null, $lt: now },
+        isPro: true
+      },
+      {
+        $set: {
+          isPro: false,
+          planId: null,
+          subscriptionPlan: 'free'
         }
-    } catch (error) {
-        console.error(`[CRON] ⚠️ Downgrade CRON failed:`, error.message);
+      }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`[CRON] 🛡️ Downgraded ${result.modifiedCount} users due to subscription expiry.`);
     }
+  } catch (error) {
+    console.error(`[CRON] ⚠️ Downgrade CRON failed:`, error.message);
+  }
 });
 
 // ✅ CRON JOB: Pre-compute heavy analytics
 // Runs at 01:00 every day
 cron.schedule('0 1 * * *', async () => {
-    try {
-        console.log(`[CRON] 📊 Pre-computing heavy topic analytics...`);
-        const totalTopicAgg = await Problem.aggregate([
-            { $unwind: { path: '$topics', preserveNullAndEmptyArrays: false } },
-            { $group: { _id: '$topics', total: { $sum: 1 } } }
-        ]);
-        
-        const totalTopicCounts = totalTopicAgg.reduce((acc, item) => {
-            if (item._id && typeof item._id === 'string') {
-                const normalizedTopic = item._id.trim().toLowerCase();
-                if (normalizedTopic) {
-                    acc[normalizedTopic] = item.total;
-                }
-            }
-            return acc;
-        }, {});
+  try {
+    console.log(`[CRON] 📊 Pre-computing heavy topic analytics...`);
+    const totalTopicAgg = await Problem.aggregate([
+      { $unwind: { path: '$topics', preserveNullAndEmptyArrays: false } },
+      { $group: { _id: '$topics', total: { $sum: 1 } } }
+    ]);
 
-        await Metadata.findOneAndUpdate(
-            { key: 'topicCounts' },
-            { 
-                data: totalTopicCounts,
-                lastUpdated: new Date()
-            },
-            { upsert: true, new: true }
-        );
-        console.log(`[CRON] ✅ Topic analytics pre-computed successfully!`);
-    } catch (error) {
-        console.error(`[CRON] ⚠️ Topic analytics pre-computation failed:`, error.message);
-    }
+    const totalTopicCounts = totalTopicAgg.reduce((acc, item) => {
+      if (item._id && typeof item._id === 'string') {
+        const normalizedTopic = item._id.trim().toLowerCase();
+        if (normalizedTopic) {
+          acc[normalizedTopic] = item.total;
+        }
+      }
+      return acc;
+    }, {});
+
+    await Metadata.findOneAndUpdate(
+      { key: 'topicCounts' },
+      {
+        data: totalTopicCounts,
+        lastUpdated: new Date()
+      },
+      { upsert: true, new: true }
+    );
+    console.log(`[CRON] ✅ Topic analytics pre-computed successfully!`);
+  } catch (error) {
+    console.error(`[CRON] ⚠️ Topic analytics pre-computation failed:`, error.message);
+  }
 });
 
 // ✅ ROOT ROUTE
@@ -1098,797 +621,797 @@ const DEFAULT_PLAYER_RATING = 1000;
 const DEFAULT_PLAYER_USERNAME = 'Unknown Player';
 
 const toFiniteNumber = (value, fallback = 0) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 const toSafeUsername = (value, fallback = DEFAULT_PLAYER_USERNAME) => {
-    const trimmed = typeof value === 'string' ? value.trim() : '';
-    return trimmed || fallback;
+  const trimmed = typeof value === 'string' ? value.trim() : '';
+  return trimmed || fallback;
 };
 
 const calculateSeasonPoints = (playerData, opponentData, matchOutcome, hasSubmitted) => {
-    if (!playerData || !matchOutcome) return 5;
-    
-    const pRating = toFiniteNumber(playerData.rating, DEFAULT_PLAYER_RATING);
-    const oRating = opponentData ? toFiniteNumber(opponentData.rating, DEFAULT_PLAYER_RATING) : DEFAULT_PLAYER_RATING;
-    const pScore = toFiniteNumber(playerData.score, 0);
+  if (!playerData || !matchOutcome) return 5;
 
-    // 1. CHEATER PENALTY
-    if (playerData.isCheater) {
-        const dynamicPenalty = 20 + Math.min(30, Math.max(0, Math.round((pRating - 1000) / 50)));
-        return -dynamicPenalty;
-    }
+  const pRating = toFiniteNumber(playerData.rating, DEFAULT_PLAYER_RATING);
+  const oRating = opponentData ? toFiniteNumber(opponentData.rating, DEFAULT_PLAYER_RATING) : DEFAULT_PLAYER_RATING;
+  const pScore = toFiniteNumber(playerData.score, 0);
 
-    // 2. CHEATER BOUNTY
-    if (opponentData?.isCheater) {
-        const dynamicBounty = 40 + Math.min(20, Math.max(0, Math.round(oRating / 100)));
-        return dynamicBounty;
-    }
+  // 1. CHEATER PENALTY
+  if (playerData.isCheater) {
+    const dynamicPenalty = 20 + Math.min(30, Math.max(0, Math.round((pRating - 1000) / 50)));
+    return -dynamicPenalty;
+  }
 
-    // 3. WINNER OUTCOME
-    if (matchOutcome.status?.includes("Winner")) {
-        const baseWin = 35;
-        // Dynamic ELO Difference Bonus: Reward more points for defeating a stronger player
-        const eloDiff = oRating - pRating;
-        const eloBonus = eloDiff > 0 ? Math.min(20, Math.round(eloDiff / 15)) : 0;
-        // Score/Performance Bonus: reward based on score
-        const scoreBonus = Math.min(15, Math.round(pScore / 2));
-        
-        return baseWin + eloBonus + scoreBonus;
-    }
+  // 2. CHEATER BOUNTY
+  if (opponentData?.isCheater) {
+    const dynamicBounty = 40 + Math.min(20, Math.max(0, Math.round(oRating / 100)));
+    return dynamicBounty;
+  }
 
-    // 4. DRAW OUTCOME
-    if (matchOutcome.status === "Draw") {
-        if (!hasSubmitted) return 0;
-        const baseDraw = 15;
-        const scoreBonus = Math.min(10, Math.round(pScore / 3));
-        return baseDraw + scoreBonus;
-    }
+  // 3. WINNER OUTCOME
+  if (matchOutcome.status?.includes("Winner")) {
+    const baseWin = 35;
+    // Dynamic ELO Difference Bonus: Reward more points for defeating a stronger player
+    const eloDiff = oRating - pRating;
+    const eloBonus = eloDiff > 0 ? Math.min(20, Math.round(eloDiff / 15)) : 0;
+    // Score/Performance Bonus: reward based on score
+    const scoreBonus = Math.min(15, Math.round(pScore / 2));
 
-    // 5. LOSER OUTCOME
-    if (matchOutcome.status === "Loser") {
-        if (pScore === 0 || !hasSubmitted) return -10;
-        const baseLoss = 5; // Baseline participation points to avoid 0
-        const scoreBonus = hasSubmitted ? Math.min(10, Math.round(pScore / 4)) : 0;
-        return baseLoss + scoreBonus;
-    }
+    return baseWin + eloBonus + scoreBonus;
+  }
 
-    return 5;
+  // 4. DRAW OUTCOME
+  if (matchOutcome.status === "Draw") {
+    if (!hasSubmitted) return 0;
+    const baseDraw = 15;
+    const scoreBonus = Math.min(10, Math.round(pScore / 3));
+    return baseDraw + scoreBonus;
+  }
+
+  // 5. LOSER OUTCOME
+  if (matchOutcome.status === "Loser") {
+    if (pScore === 0 || !hasSubmitted) return -10;
+    const baseLoss = 5; // Baseline participation points to avoid 0
+    const scoreBonus = hasSubmitted ? Math.min(10, Math.round(pScore / 4)) : 0;
+    return baseLoss + scoreBonus;
+  }
+
+  return 5;
 };
 
 const FORFEIT_ELO_K = 32;
 const FORFEIT_WIN_POINTS = 25;
 
 const calculateExpectedScore = (playerRating, opponentRating) =>
-    1 / (1 + Math.pow(10, ((opponentRating || DEFAULT_PLAYER_RATING) - (playerRating || DEFAULT_PLAYER_RATING)) / 400));
+  1 / (1 + Math.pow(10, ((opponentRating || DEFAULT_PLAYER_RATING) - (playerRating || DEFAULT_PLAYER_RATING)) / 400));
 
 const calculateSoloPracticeOutcome = (playerData, reason) => {
-    const rating = toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING);
-    const score = Math.max(0, toFiniteNumber(playerData?.score, 0));
-    const hasSubmitted = Boolean(playerData?.hasSubmitted);
+  const rating = toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING);
+  const score = Math.max(0, toFiniteNumber(playerData?.score, 0));
+  const hasSubmitted = Boolean(playerData?.hasSubmitted);
 
-    // 1. Cheater check
-    if (playerData?.isCheater) {
-        const penalty = 15 + Math.min(20, Math.max(0, Math.round((rating - 1000) / 100)));
-        return {
-            p1: {
-                newRating: Math.max(0, rating - penalty),
-                pointsGained: -penalty,
-                seasonScore: -penalty,
-                status: 'Disqualified',
-            }
-        };
-    }
+  // 1. Cheater check
+  if (playerData?.isCheater) {
+    const penalty = 15 + Math.min(20, Math.max(0, Math.round((rating - 1000) / 100)));
+    return {
+      p1: {
+        newRating: Math.max(0, rating - penalty),
+        pointsGained: -penalty,
+        seasonScore: -penalty,
+        status: 'Disqualified',
+      }
+    };
+  }
 
-    // 2. Forfeit/Leave Scenario (Maya vs undefined case)
-    if (reason === 'forfeit') {
-        const eloPenalty = Math.min(12, Math.max(4, Math.round(Math.max(0, rating - DEFAULT_PLAYER_RATING) / 100) + 4));
-        const dynamicParticipationPoints = hasSubmitted ? (5 + Math.min(10, Math.round(score / 4))) : 0;
-        
-        return {
-            p1: {
-                newRating: Math.max(0, rating - eloPenalty),
-                pointsGained: -eloPenalty,
-                seasonScore: dynamicParticipationPoints, // Dynamic points even on forfeit!
-                status: 'Loser',
-            }
-        };
-    }
-
-    // 3. Timeout or Quit without submission
-    if (!hasSubmitted) {
-        return {
-            p1: {
-                newRating: rating,
-                pointsGained: 0,
-                seasonScore: 0, // Since they did not attempt, 0 points
-                status: 'Loser', // Always a Loss (not a Draw) if they didn't attempt
-            }
-        };
-    }
-
-    // 4. Completed Solo Match
-    const eloGain = Math.min(12, Math.max(2, Math.round(score / 4) || 2));
-    const practicePoints = Math.min(30, Math.max(8, Math.round(score / 2) || 8));
+  // 2. Forfeit/Leave Scenario (Maya vs undefined case)
+  if (reason === 'forfeit') {
+    const eloPenalty = Math.min(12, Math.max(4, Math.round(Math.max(0, rating - DEFAULT_PLAYER_RATING) / 100) + 4));
+    const dynamicParticipationPoints = hasSubmitted ? (5 + Math.min(10, Math.round(score / 4))) : 0;
 
     return {
-        p1: {
-            newRating: Math.max(0, rating + eloGain),
-            pointsGained: eloGain,
-            seasonScore: practicePoints,
-            status: 'Winner',
-        }
+      p1: {
+        newRating: Math.max(0, rating - eloPenalty),
+        pointsGained: -eloPenalty,
+        seasonScore: dynamicParticipationPoints, // Dynamic points even on forfeit!
+        status: 'Loser',
+      }
     };
+  }
+
+  // 3. Timeout or Quit without submission
+  if (!hasSubmitted) {
+    return {
+      p1: {
+        newRating: rating,
+        pointsGained: 0,
+        seasonScore: 0, // Since they did not attempt, 0 points
+        status: 'Loser', // Always a Loss (not a Draw) if they didn't attempt
+      }
+    };
+  }
+
+  // 4. Completed Solo Match
+  const eloGain = Math.min(12, Math.max(2, Math.round(score / 4) || 2));
+  const practicePoints = Math.min(30, Math.max(8, Math.round(score / 2) || 8));
+
+  return {
+    p1: {
+      newRating: Math.max(0, rating + eloGain),
+      pointsGained: eloGain,
+      seasonScore: practicePoints,
+      status: 'Winner',
+    }
+  };
 };
 
 const buildPlayerStatsUpdate = ({ newRating, seasonPoints, outcomeStatus }) => ({
-    $set: {
-        rating: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
-    },
-    $inc: {
-        seasonScore: toFiniteNumber(seasonPoints, 0),
-        'stats.matchesPlayed': 1,
-        'stats.wins': outcomeStatus?.includes('Winner') ? 1 : 0,
-        'stats.losses': outcomeStatus === 'Loser' ? 1 : 0,
-    }
+  $set: {
+    rating: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
+  },
+  $inc: {
+    seasonScore: toFiniteNumber(seasonPoints, 0),
+    'stats.matchesPlayed': 1,
+    'stats.wins': outcomeStatus?.includes('Winner') ? 1 : 0,
+    'stats.losses': outcomeStatus === 'Loser' ? 1 : 0,
+  }
 });
 
 const normalizeRoundSnapshot = (snapshot) => {
-    if (!snapshot || typeof snapshot !== 'object') return {};
+  if (!snapshot || typeof snapshot !== 'object') return {};
 
-    return Object.entries(snapshot).reduce((normalized, [round, value]) => {
-        if (value === undefined || value === null) return normalized;
-        normalized[String(round)] = typeof value === 'string' ? value : String(value);
-        return normalized;
-    }, {});
+  return Object.entries(snapshot).reduce((normalized, [round, value]) => {
+    if (value === undefined || value === null) return normalized;
+    normalized[String(round)] = typeof value === 'string' ? value : String(value);
+    return normalized;
+  }, {});
 };
 
 const capturePlayerSubmission = ({ room, playerObj, code, language, markSubmitted = false }) => {
-    if (!room || !playerObj) return null;
+  if (!room || !playerObj) return null;
 
-    const roundKey = String(room.round || 1);
-    const submittedCode = typeof code === 'string' ? code : '';
-    const submittedLanguage = typeof language === 'string' ? language : '';
+  const roundKey = String(room.round || 1);
+  const submittedCode = typeof code === 'string' ? code : '';
+  const submittedLanguage = typeof language === 'string' ? language : '';
 
-    playerObj.roundCodes = normalizeRoundSnapshot(playerObj.roundCodes);
-    playerObj.roundLanguages = normalizeRoundSnapshot(playerObj.roundLanguages);
+  playerObj.roundCodes = normalizeRoundSnapshot(playerObj.roundCodes);
+  playerObj.roundLanguages = normalizeRoundSnapshot(playerObj.roundLanguages);
 
-    if (submittedCode || !playerObj.roundCodes[roundKey]) {
-        playerObj.roundCodes[roundKey] = submittedCode;
-    }
+  if (submittedCode || !playerObj.roundCodes[roundKey]) {
+    playerObj.roundCodes[roundKey] = submittedCode;
+  }
 
-    if (submittedLanguage || !playerObj.roundLanguages[roundKey]) {
-        playerObj.roundLanguages[roundKey] = submittedLanguage;
-    }
+  if (submittedLanguage || !playerObj.roundLanguages[roundKey]) {
+    playerObj.roundLanguages[roundKey] = submittedLanguage;
+  }
 
-    if (submittedCode || !playerObj.code) {
-        playerObj.code = submittedCode;
-    }
+  if (submittedCode || !playerObj.code) {
+    playerObj.code = submittedCode;
+  }
 
-    if (submittedLanguage || !playerObj.language) {
-        playerObj.language = submittedLanguage;
-    }
+  if (submittedLanguage || !playerObj.language) {
+    playerObj.language = submittedLanguage;
+  }
 
-    if (markSubmitted) {
-        playerObj.hasSubmitted = true;
-    }
+  if (markSubmitted) {
+    playerObj.hasSubmitted = true;
+  }
 
-    return {
-        roundKey,
-        codeLength: submittedCode.length,
-        language: submittedLanguage || playerObj.language || 'N/A',
-    };
+  return {
+    roundKey,
+    codeLength: submittedCode.length,
+    language: submittedLanguage || playerObj.language || 'N/A',
+  };
 };
 
 const buildMatchPlayerRecord = ({ userDoc, playerData, outcome, newRating, seasonPoints }) => {
-    const roundCodes = normalizeRoundSnapshot(playerData?.roundCodes);
-    const roundLanguages = normalizeRoundSnapshot(playerData?.roundLanguages);
-    const record = {
-        userId: userDoc?._id || null,
-        username: toSafeUsername(playerData?.username),
-        avatar: typeof userDoc?.avatar === 'string' ? userDoc.avatar : '',
-        isWinner: Boolean(outcome?.status?.includes('Winner')),
-        score: toFiniteNumber(playerData?.score, 0),
-        oldElo: toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING),
-        newElo: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
-        statusText: outcome?.status || 'Draw',
-        seasonPointsGained: toFiniteNumber(seasonPoints, 0),
-        hasSubmitted: Boolean(playerData?.hasSubmitted),
-        code: playerData?.code || '',
-        language: playerData?.language || '',
-        roundCodes,
-        roundLanguages,
-    };
-    console.log(`[MATCH SAVE] buildMatchPlayerRecord for "${record.username}": code=${record.code ? `${record.code.length} chars` : 'EMPTY'}, roundCodes keys=${JSON.stringify(Object.keys(record.roundCodes))}, language=${record.language}`);
-    return record;
+  const roundCodes = normalizeRoundSnapshot(playerData?.roundCodes);
+  const roundLanguages = normalizeRoundSnapshot(playerData?.roundLanguages);
+  const record = {
+    userId: userDoc?._id || null,
+    username: toSafeUsername(playerData?.username),
+    avatar: typeof userDoc?.avatar === 'string' ? userDoc.avatar : '',
+    isWinner: Boolean(outcome?.status?.includes('Winner')),
+    score: toFiniteNumber(playerData?.score, 0),
+    oldElo: toFiniteNumber(playerData?.rating, DEFAULT_PLAYER_RATING),
+    newElo: Math.max(0, toFiniteNumber(newRating, DEFAULT_PLAYER_RATING)),
+    statusText: outcome?.status || 'Draw',
+    seasonPointsGained: toFiniteNumber(seasonPoints, 0),
+    hasSubmitted: Boolean(playerData?.hasSubmitted),
+    code: playerData?.code || '',
+    language: playerData?.language || '',
+    roundCodes,
+    roundLanguages,
+  };
+  console.log(`[MATCH SAVE] buildMatchPlayerRecord for "${record.username}": code=${record.code ? `${record.code.length} chars` : 'EMPTY'}, roundCodes keys=${JSON.stringify(Object.keys(record.roundCodes))}, language=${record.language}`);
+  return record;
 };
 
 const logMatchResolutionError = (roomId, stage, error, context = {}) => {
-    console.error(`[MATCH RESOLUTION] ${stage} failed for room ${roomId}:`, {
-        ...context,
-        message: error?.message,
-        stack: error?.stack,
-    });
+  console.error(`[MATCH RESOLUTION] ${stage} failed for room ${roomId}:`, {
+    ...context,
+    message: error?.message,
+    stack: error?.stack,
+  });
 };
 
 const buildForfeitOutcome = (p1Data, p2Data, winnerUsername, matchDurationSeconds = 60) => {
-    const p1Rating = p1Data?.rating || 1000;
-    const p2Rating = p2Data?.rating || 1000;
-    const expectedP1 = calculateExpectedScore(p1Rating, p2Rating);
-    const expectedP2 = calculateExpectedScore(p2Rating, p1Rating);
-    const p1IsWinner = p1Data?.username === winnerUsername;
-    const p1Actual = p1IsWinner ? 1 : 0;
-    const p2Actual = 1 - p1Actual;
+  const p1Rating = p1Data?.rating || 1000;
+  const p2Rating = p2Data?.rating || 1000;
+  const expectedP1 = calculateExpectedScore(p1Rating, p2Rating);
+  const expectedP2 = calculateExpectedScore(p2Rating, p1Rating);
+  const p1IsWinner = p1Data?.username === winnerUsername;
+  const p1Actual = p1IsWinner ? 1 : 0;
+  const p2Actual = 1 - p1Actual;
 
-    const p1IsCheater = Boolean(p1Data?.isCheater);
-    const p2IsCheater = Boolean(p2Data?.isCheater);
+  const p1IsCheater = Boolean(p1Data?.isCheater);
+  const p2IsCheater = Boolean(p2Data?.isCheater);
 
-    // Scenario A: BOTH ARE CHEATERS
-    if (p1IsCheater && p2IsCheater) {
-        return {
-            p1: { newRating: Math.max(0, p1Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" },
-            p2: { newRating: Math.max(0, p2Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
-        };
-    }
+  // Scenario A: BOTH ARE CHEATERS
+  if (p1IsCheater && p2IsCheater) {
+    return {
+      p1: { newRating: Math.max(0, p1Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" },
+      p2: { newRating: Math.max(0, p2Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
+    };
+  }
 
-    // Scenario B: ONE IS CHEATER
-    if (p1IsCheater || p2IsCheater) {
-        const fairRating = p1IsCheater ? p2Rating : p1Rating;
-        const cheaterRating = p1IsCheater ? p1Rating : p2Rating;
-        const bounty = 40 + Math.min(20, Math.max(0, Math.round(cheaterRating / 100)));
-        const ratingGain = 15 + Math.min(15, Math.max(0, Math.round((cheaterRating - fairRating) / 20)));
-
-        return {
-            p1: p1IsCheater
-                ? { newRating: Math.max(0, p1Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
-                : { newRating: p1Rating + ratingGain, pointsGained: ratingGain, seasonScore: bounty, status: "Winner" },
-            p2: p2IsCheater
-                ? { newRating: Math.max(0, p2Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
-                : { newRating: p2Rating + ratingGain, pointsGained: ratingGain, seasonScore: bounty, status: "Winner" }
-        };
-    }
-
-    // Scenario C: STANDARD FORFEIT / DISCONNECT
-    let p1Delta = Math.round(FORFEIT_ELO_K * (p1Actual - expectedP1));
-    let p2Delta = Math.round(FORFEIT_ELO_K * (p2Actual - expectedP2));
-
-    // Lobby Dodge check: if left in under 20 seconds
-    const isLobbyDodge = matchDurationSeconds < 20;
-
-    // Check if the winner made any submission attempts
-    const p1Attempted = Boolean(p1Data?.hasSubmitted);
-    const p2Attempted = Boolean(p2Data?.hasSubmitted);
-    const winnerAttempted = p1IsWinner ? p1Attempted : p2Attempted;
-
-    // Scale down points and ELO gain if the winner did not even try to attempt the question
-    let winnerPoints = isLobbyDodge ? 25 : 30;
-    if (!winnerAttempted) {
-        winnerPoints = isLobbyDodge ? 5 : 10;
-    }
-
-    let p1SeasonPoints = 0;
-    let p2SeasonPoints = 0;
-
-    if (p1IsWinner) {
-        p1SeasonPoints = winnerPoints;
-        p2SeasonPoints = isLobbyDodge ? -10 : (p2Attempted ? 5 : -10); // -10 for dodge, +5 for benefit of doubt if attempted, else -10
-
-        if (!p1Attempted) {
-            // Winner p1 did not attempt: scale down their ELO gain by 50%
-            p1Delta = Math.round(p1Delta * 0.5);
-        }
-
-        if (isLobbyDodge) {
-            p2Delta = Math.min(p2Delta, -15); // Stiffer Elo drop for dodging
-        }
-    } else {
-        p2SeasonPoints = winnerPoints;
-        p1SeasonPoints = isLobbyDodge ? -10 : (p1Attempted ? 5 : -10);
-
-        if (!p2Attempted) {
-            // Winner p2 did not attempt: scale down their ELO gain by 50%
-            p2Delta = Math.round(p2Delta * 0.5);
-        }
-
-        if (isLobbyDodge) {
-            p1Delta = Math.min(p1Delta, -15);
-        }
-    }
+  // Scenario B: ONE IS CHEATER
+  if (p1IsCheater || p2IsCheater) {
+    const fairRating = p1IsCheater ? p2Rating : p1Rating;
+    const cheaterRating = p1IsCheater ? p1Rating : p2Rating;
+    const bounty = 40 + Math.min(20, Math.max(0, Math.round(cheaterRating / 100)));
+    const ratingGain = 15 + Math.min(15, Math.max(0, Math.round((cheaterRating - fairRating) / 20)));
 
     return {
-        p1: {
-            newRating: Math.max(0, p1Rating + p1Delta),
-            pointsGained: p1Delta,
-            seasonScore: p1SeasonPoints,
-            status: p1IsWinner ? 'Winner' : 'Loser',
-        },
-        p2: {
-            newRating: Math.max(0, p2Rating + p2Delta),
-            pointsGained: p2Delta,
-            seasonScore: p2SeasonPoints,
-            status: p1IsWinner ? 'Loser' : 'Winner',
-        }
+      p1: p1IsCheater
+        ? { newRating: Math.max(0, p1Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
+        : { newRating: p1Rating + ratingGain, pointsGained: ratingGain, seasonScore: bounty, status: "Winner" },
+      p2: p2IsCheater
+        ? { newRating: Math.max(0, p2Rating - 50), pointsGained: -50, seasonScore: -25, status: "Disqualified" }
+        : { newRating: p2Rating + ratingGain, pointsGained: ratingGain, seasonScore: bounty, status: "Winner" }
     };
+  }
+
+  // Scenario C: STANDARD FORFEIT / DISCONNECT
+  let p1Delta = Math.round(FORFEIT_ELO_K * (p1Actual - expectedP1));
+  let p2Delta = Math.round(FORFEIT_ELO_K * (p2Actual - expectedP2));
+
+  // Lobby Dodge check: if left in under 20 seconds
+  const isLobbyDodge = matchDurationSeconds < 20;
+
+  // Check if the winner made any submission attempts
+  const p1Attempted = Boolean(p1Data?.hasSubmitted);
+  const p2Attempted = Boolean(p2Data?.hasSubmitted);
+  const winnerAttempted = p1IsWinner ? p1Attempted : p2Attempted;
+
+  // Scale down points and ELO gain if the winner did not even try to attempt the question
+  let winnerPoints = isLobbyDodge ? 25 : 30;
+  if (!winnerAttempted) {
+    winnerPoints = isLobbyDodge ? 5 : 10;
+  }
+
+  let p1SeasonPoints = 0;
+  let p2SeasonPoints = 0;
+
+  if (p1IsWinner) {
+    p1SeasonPoints = winnerPoints;
+    p2SeasonPoints = isLobbyDodge ? -10 : (p2Attempted ? 5 : -10); // -10 for dodge, +5 for benefit of doubt if attempted, else -10
+
+    if (!p1Attempted) {
+      // Winner p1 did not attempt: scale down their ELO gain by 50%
+      p1Delta = Math.round(p1Delta * 0.5);
+    }
+
+    if (isLobbyDodge) {
+      p2Delta = Math.min(p2Delta, -15); // Stiffer Elo drop for dodging
+    }
+  } else {
+    p2SeasonPoints = winnerPoints;
+    p1SeasonPoints = isLobbyDodge ? -10 : (p1Attempted ? 5 : -10);
+
+    if (!p2Attempted) {
+      // Winner p2 did not attempt: scale down their ELO gain by 50%
+      p2Delta = Math.round(p2Delta * 0.5);
+    }
+
+    if (isLobbyDodge) {
+      p1Delta = Math.min(p1Delta, -15);
+    }
+  }
+
+  return {
+    p1: {
+      newRating: Math.max(0, p1Rating + p1Delta),
+      pointsGained: p1Delta,
+      seasonScore: p1SeasonPoints,
+      status: p1IsWinner ? 'Winner' : 'Loser',
+    },
+    p2: {
+      newRating: Math.max(0, p2Rating + p2Delta),
+      pointsGained: p2Delta,
+      seasonScore: p2SeasonPoints,
+      status: p1IsWinner ? 'Loser' : 'Winner',
+    }
+  };
 };
 
 // ✅ AUTHORITATIVE MATCH RESOLUTION ENGINE
 const handleGameEnd = async (roomId, room) => {
-    if (!room) return null;
-    if (room.resolutionResult || room.isResolving) return room.resolutionResult || null;
-    if (!room.isGameActive) return room.resolutionResult || null;
-    room.isResolving = true;
-    room.isGameActive = false;
+  if (!room) return null;
+  if (room.resolutionResult || room.isResolving) return room.resolutionResult || null;
+  if (!room.isGameActive) return room.resolutionResult || null;
+  room.isResolving = true;
+  room.isGameActive = false;
 
-    // Clear timer immediately
-    if (roomTimers.has(roomId)) {
-        clearInterval(roomTimers.get(roomId));
-        roomTimers.delete(roomId);
+  // Clear timer immediately
+  if (roomTimers.has(roomId)) {
+    clearInterval(roomTimers.get(roomId));
+    roomTimers.delete(roomId);
+  }
+
+  const matchReason = room.matchEndReason || 'submission';
+  const forcedWinnerUsername = room.forcedWinnerUsername || null;
+  if (!room.scores || typeof room.scores !== 'object') {
+    room.scores = {};
+  }
+  room.cheaters = room.cheaters instanceof Set ? room.cheaters : new Set(room.cheaters || []);
+  room.submissionAttempts = room.submissionAttempts instanceof Set
+    ? room.submissionAttempts
+    : new Set(room.submissionAttempts || []);
+  for (const player of room.players || []) {
+    if (player?.username && room.scores[player.username] === undefined) {
+      room.scores[player.username] = 0;
     }
-    
-    const matchReason = room.matchEndReason || 'submission';
-    const forcedWinnerUsername = room.forcedWinnerUsername || null;
-    if (!room.scores || typeof room.scores !== 'object') {
-        room.scores = {};
+  }
+  const playerNames = (room.players || [])
+    .map((player) => player?.username)
+    .filter(Boolean);
+
+  // Check for sufficient players
+  if (playerNames.length === 0) {
+    console.log(`[GAME END] Room ${roomId}: ❌ Cancelled (No scored players)`);
+    const cancelledPayload = {
+      winner: null,
+      winnerName: null,
+      winnerId: null,
+      reason: 'cancelled',
+      scores: room.scores || {},
+      eloChanges: {},
+      playerResults: {},
+      pointsEarned: 0,
+      newElo: null,
+      isDisqualified: false,
+      disqualifiedPlayer: null,
+      message: "Match cancelled (No valid players finished the challenge)."
+    };
+    room.resolutionResult = cancelledPayload;
+    io.to(roomId).emit('game_over', cancelledPayload);
+    io.to(roomId).emit('match_ended', cancelledPayload);
+    room.isResolving = false;
+    rooms.delete(roomId);
+    return cancelledPayload;
+  }
+
+  console.log(`[GAME END] 🏁 Processing Room: ${roomId}`);
+
+  const isSoloMatch = playerNames.length === 1;
+  let winnerName = playerNames.reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
+  let winnerId = null;
+  let eloChanges = null;
+  let playerResults = {};
+
+  try {
+    // ✅ Parallel user fetches (optimized)
+    const userDocs = await Promise.all(
+      playerNames.slice(0, 2).map((playerName) =>
+        User.findByUsername(playerName)
+      )
+    );
+    const [user1Doc, user2Doc] = userDocs;
+
+    // Extract player objects once (avoid repeated find calls)
+    const p1PlayerObj = room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase());
+    const p2PlayerObj = !isSoloMatch ? room.players?.find(p => p.username.toLowerCase() === (playerNames[1] || '').toLowerCase()) : null;
+
+    console.log(`[GAME END] Player code state at save time: P1="${playerNames[0]}" code=${p1PlayerObj?.code ? p1PlayerObj.code.length + ' chars' : 'EMPTY'}, roundCodes=${JSON.stringify(Object.keys(p1PlayerObj?.roundCodes || {}))}, language=${p1PlayerObj?.language || 'N/A'}${p2PlayerObj ? `, P2="${playerNames[1]}" code=${p2PlayerObj?.code ? p2PlayerObj.code.length + ' chars' : 'EMPTY'}, roundCodes=${JSON.stringify(Object.keys(p2PlayerObj?.roundCodes || {}))}, language=${p2PlayerObj?.language || 'N/A'}` : ''}`);
+
+    const p1Data = {
+      username: playerNames[0],
+      rating: user1Doc?.rating || 1000,
+      score: Number(room.scores[playerNames[0]]) || 0,
+      isCheater: room.cheaters.has(playerNames[0]),
+      hasSubmitted: room.submissionAttempts.has(playerNames[0]),
+      code: p1PlayerObj?.code || "",
+      language: p1PlayerObj?.language || "",
+      roundCodes: p1PlayerObj?.roundCodes || {},
+      roundLanguages: p1PlayerObj?.roundLanguages || {}
+    };
+
+    const p2Data = isSoloMatch
+      ? null
+      : {
+        username: playerNames[1] || "Opponent",
+        rating: user2Doc?.rating || 1000,
+        score: Number(room.scores[playerNames[1]]) || 0,
+        isCheater: room.cheaters.has(playerNames[1]),
+        hasSubmitted: room.submissionAttempts.has(playerNames[1]),
+        code: p2PlayerObj?.code || "",
+        language: p2PlayerObj?.language || "",
+        roundCodes: p2PlayerObj?.roundCodes || {},
+        roundLanguages: p2PlayerObj?.roundLanguages || {}
+      };
+
+    let matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+
+    let outcome;
+    let p1NewRating;
+    let p2NewRating;
+    let p1SeasonPoints;
+    let p2SeasonPoints;
+    let officialWinner;
+
+    if (isSoloMatch) {
+      outcome = calculateSoloPracticeOutcome(p1Data, matchReason);
+      p1NewRating = toFiniteNumber(outcome?.p1?.newRating, p1Data.rating);
+      p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
+      officialWinner = outcome?.p1?.status?.includes('Winner') ? p1Data.username : null;
+      p2NewRating = null;
+      p2SeasonPoints = 0;
+    } else if (matchReason === 'forfeit' && forcedWinnerUsername) {
+      outcome = buildForfeitOutcome(p1Data, p2Data, forcedWinnerUsername, matchDurationSeconds);
+      p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
+      p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
+      p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
+      p2SeasonPoints = toFiniteNumber(outcome?.p2?.seasonScore, 0);
+      officialWinner = forcedWinnerUsername;
+    } else {
+      outcome = calculateMatchOutcome(p1Data, p2Data);
+      p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
+      p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
+
+      p1SeasonPoints = calculateSeasonPoints(p1Data, p2Data, outcome?.p1, p1Data.hasSubmitted);
+      p2SeasonPoints = calculateSeasonPoints(p2Data, p1Data, outcome?.p2, p2Data?.hasSubmitted);
+
+      const p1IsWinner = outcome?.p1?.status?.includes("Winner");
+      const p2IsWinner = outcome?.p2?.status?.includes("Winner");
+      officialWinner = p1IsWinner ? p1Data.username : (p2IsWinner ? p2Data?.username : null);
     }
-    room.cheaters = room.cheaters instanceof Set ? room.cheaters : new Set(room.cheaters || []);
-    room.submissionAttempts = room.submissionAttempts instanceof Set
-        ? room.submissionAttempts
-        : new Set(room.submissionAttempts || []);
-    for (const player of room.players || []) {
-        if (player?.username && room.scores[player.username] === undefined) {
-            room.scores[player.username] = 0;
+
+    // ✅ Batch all database operations
+    const resolvedPlayers = [
+      {
+        key: 'p1',
+        userDoc: user1Doc,
+        data: p1Data,
+        outcome: outcome?.p1,
+        newRating: p1NewRating,
+        seasonPoints: p1SeasonPoints,
+      }
+    ];
+
+    if (p2Data && outcome?.p2) {
+      resolvedPlayers.push({
+        key: 'p2',
+        userDoc: user2Doc,
+        data: p2Data,
+        outcome: outcome.p2,
+        newRating: p2NewRating,
+        seasonPoints: p2SeasonPoints,
+      });
+    }
+
+    // Update player 1
+    if (!user1Doc) {
+      console.warn(`[MATCH RESOLUTION] Missing user document for ${p1Data.username} in room ${roomId}`);
+    }
+
+    // Update player 2
+    if (p2Data && !user2Doc) {
+      console.warn(`[MATCH RESOLUTION] Missing user document for ${p2Data.username} in room ${roomId}`);
+    }
+
+    winnerName = officialWinner;
+    winnerId = officialWinner ? room.players.find((player) => player.username.toLowerCase() === officialWinner.toLowerCase())?.userId || null : null;
+    playerResults = Object.fromEntries(
+      resolvedPlayers.map((player) => [
+        toSafeUsername(player.data.username),
+        {
+          username: toSafeUsername(player.data.username),
+          score: toFiniteNumber(player.data.score, 0),
+          seasonPoints: toFiniteNumber(player.seasonPoints, 0),
+          newElo: Math.max(0, toFiniteNumber(player.newRating, DEFAULT_PLAYER_RATING)),
+          eloChange: toFiniteNumber(player.outcome?.pointsGained, 0),
+          isWinner: Boolean(player.outcome?.status?.includes('Winner')),
         }
-    }
-    const playerNames = (room.players || [])
-        .map((player) => player?.username)
-        .filter(Boolean);
-    
-    // Check for sufficient players
-    if (playerNames.length === 0) {
-        console.log(`[GAME END] Room ${roomId}: ❌ Cancelled (No scored players)`);
-        const cancelledPayload = {
-            winner: null,
-            winnerName: null,
-            winnerId: null,
-            reason: 'cancelled',
-            scores: room.scores || {},
-            eloChanges: {},
-            playerResults: {},
-            pointsEarned: 0,
-            newElo: null,
-            isDisqualified: false,
-            disqualifiedPlayer: null,
-            message: "Match cancelled (No valid players finished the challenge)."
-        };
-        room.resolutionResult = cancelledPayload;
-        io.to(roomId).emit('game_over', cancelledPayload);
-        io.to(roomId).emit('match_ended', cancelledPayload);
-        room.isResolving = false;
-        rooms.delete(roomId);
-        return cancelledPayload;
-    }
+      ])
+    );
+    eloChanges = Object.fromEntries(
+      resolvedPlayers.map((player) => [
+        player.key,
+        {
+          username: toSafeUsername(player.data.username),
+          newRating: Math.max(0, toFiniteNumber(player.newRating, DEFAULT_PLAYER_RATING)),
+          eloChange: toFiniteNumber(player.outcome?.pointsGained, 0),
+          seasonPoints: toFiniteNumber(player.seasonPoints, 0),
+        }
+      ])
+    );
 
-    console.log(`[GAME END] 🏁 Processing Room: ${roomId}`);
-    
-    const isSoloMatch = playerNames.length === 1;
-    let winnerName = playerNames.reduce((a, b) => room.scores[a] > room.scores[b] ? a : b);
-    let winnerId = null;
-    let eloChanges = null;
-    let playerResults = {};
+    matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+
+    await Promise.all(
+      resolvedPlayers
+        .filter((player) => player.userDoc?._id)
+        .map(async (player) => {
+          try {
+            await User.findByIdAndUpdate(
+              player.userDoc._id,
+              buildPlayerStatsUpdate({
+                newRating: player.newRating,
+                seasonPoints: player.seasonPoints,
+                outcomeStatus: player.outcome?.status,
+              }),
+              { new: false }
+            );
+          } catch (error) {
+            logMatchResolutionError(roomId, 'user stats update', error, {
+              username: player.data.username,
+            });
+          }
+        })
+    );
 
     try {
-        // ✅ Parallel user fetches (optimized)
-        const userDocs = await Promise.all(
-            playerNames.slice(0, 2).map((playerName) =>
-                User.findByUsername(playerName)
-            )
-        );
-        const [user1Doc, user2Doc] = userDocs;
-
-        // Extract player objects once (avoid repeated find calls)
-        const p1PlayerObj = room.players?.find(p => p.username.toLowerCase() === playerNames[0].toLowerCase());
-        const p2PlayerObj = !isSoloMatch ? room.players?.find(p => p.username.toLowerCase() === (playerNames[1] || '').toLowerCase()) : null;
-
-        console.log(`[GAME END] Player code state at save time: P1="${playerNames[0]}" code=${p1PlayerObj?.code ? p1PlayerObj.code.length + ' chars' : 'EMPTY'}, roundCodes=${JSON.stringify(Object.keys(p1PlayerObj?.roundCodes || {}))}, language=${p1PlayerObj?.language || 'N/A'}${p2PlayerObj ? `, P2="${playerNames[1]}" code=${p2PlayerObj?.code ? p2PlayerObj.code.length + ' chars' : 'EMPTY'}, roundCodes=${JSON.stringify(Object.keys(p2PlayerObj?.roundCodes || {}))}, language=${p2PlayerObj?.language || 'N/A'}` : ''}`);
-
-        const p1Data = {
-            username: playerNames[0],
-            rating: user1Doc?.rating || 1000,
-            score: Number(room.scores[playerNames[0]]) || 0,
-            isCheater: room.cheaters.has(playerNames[0]),
-            hasSubmitted: room.submissionAttempts.has(playerNames[0]),
-            code: p1PlayerObj?.code || "",
-            language: p1PlayerObj?.language || "",
-            roundCodes: p1PlayerObj?.roundCodes || {},
-            roundLanguages: p1PlayerObj?.roundLanguages || {}
-        };
-
-        const p2Data = isSoloMatch
-            ? null
-            : {
-                username: playerNames[1] || "Opponent",
-                rating: user2Doc?.rating || 1000,
-                score: Number(room.scores[playerNames[1]]) || 0,
-                isCheater: room.cheaters.has(playerNames[1]),
-                hasSubmitted: room.submissionAttempts.has(playerNames[1]),
-                code: p2PlayerObj?.code || "",
-                language: p2PlayerObj?.language || "",
-                roundCodes: p2PlayerObj?.roundCodes || {},
-                roundLanguages: p2PlayerObj?.roundLanguages || {}
-            };
-
-        let matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
-
-        let outcome;
-        let p1NewRating;
-        let p2NewRating;
-        let p1SeasonPoints;
-        let p2SeasonPoints;
-        let officialWinner;
-
-        if (isSoloMatch) {
-            outcome = calculateSoloPracticeOutcome(p1Data, matchReason);
-            p1NewRating = toFiniteNumber(outcome?.p1?.newRating, p1Data.rating);
-            p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
-            officialWinner = outcome?.p1?.status?.includes('Winner') ? p1Data.username : null;
-            p2NewRating = null;
-            p2SeasonPoints = 0;
-        } else if (matchReason === 'forfeit' && forcedWinnerUsername) {
-            outcome = buildForfeitOutcome(p1Data, p2Data, forcedWinnerUsername, matchDurationSeconds);
-            p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
-            p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
-            p1SeasonPoints = toFiniteNumber(outcome?.p1?.seasonScore, 0);
-            p2SeasonPoints = toFiniteNumber(outcome?.p2?.seasonScore, 0);
-            officialWinner = forcedWinnerUsername;
-        } else {
-            outcome = calculateMatchOutcome(p1Data, p2Data);
-            p1NewRating = toFiniteNumber(outcome?.p1?.newRating, DEFAULT_PLAYER_RATING);
-            p2NewRating = toFiniteNumber(outcome?.p2?.newRating, DEFAULT_PLAYER_RATING);
-
-            p1SeasonPoints = calculateSeasonPoints(p1Data, p2Data, outcome?.p1, p1Data.hasSubmitted);
-            p2SeasonPoints = calculateSeasonPoints(p2Data, p1Data, outcome?.p2, p2Data?.hasSubmitted);
-            
-            const p1IsWinner = outcome?.p1?.status?.includes("Winner");
-            const p2IsWinner = outcome?.p2?.status?.includes("Winner");
-            officialWinner = p1IsWinner ? p1Data.username : (p2IsWinner ? p2Data?.username : null);
-        }
-
-        // ✅ Batch all database operations
-        const resolvedPlayers = [
-            {
-                key: 'p1',
-                userDoc: user1Doc,
-                data: p1Data,
-                outcome: outcome?.p1,
-                newRating: p1NewRating,
-                seasonPoints: p1SeasonPoints,
-            }
-        ];
-
-        if (p2Data && outcome?.p2) {
-            resolvedPlayers.push({
-                key: 'p2',
-                userDoc: user2Doc,
-                data: p2Data,
-                outcome: outcome.p2,
-                newRating: p2NewRating,
-                seasonPoints: p2SeasonPoints,
-            });
-        }
-
-        // Update player 1
-        if (!user1Doc) {
-            console.warn(`[MATCH RESOLUTION] Missing user document for ${p1Data.username} in room ${roomId}`);
-        }
-
-        // Update player 2
-        if (p2Data && !user2Doc) {
-            console.warn(`[MATCH RESOLUTION] Missing user document for ${p2Data.username} in room ${roomId}`);
-        }
-
-        winnerName = officialWinner;
-        winnerId = officialWinner ? room.players.find((player) => player.username.toLowerCase() === officialWinner.toLowerCase())?.userId || null : null;
-        playerResults = Object.fromEntries(
-            resolvedPlayers.map((player) => [
-                toSafeUsername(player.data.username),
-                {
-                    username: toSafeUsername(player.data.username),
-                    score: toFiniteNumber(player.data.score, 0),
-                    seasonPoints: toFiniteNumber(player.seasonPoints, 0),
-                    newElo: Math.max(0, toFiniteNumber(player.newRating, DEFAULT_PLAYER_RATING)),
-                    eloChange: toFiniteNumber(player.outcome?.pointsGained, 0),
-                    isWinner: Boolean(player.outcome?.status?.includes('Winner')),
-                }
-            ])
-        );
-        eloChanges = Object.fromEntries(
-            resolvedPlayers.map((player) => [
-                player.key,
-                {
-                    username: toSafeUsername(player.data.username),
-                    newRating: Math.max(0, toFiniteNumber(player.newRating, DEFAULT_PLAYER_RATING)),
-                    eloChange: toFiniteNumber(player.outcome?.pointsGained, 0),
-                    seasonPoints: toFiniteNumber(player.seasonPoints, 0),
-                }
-            ])
-        );
-
-        matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
-
-        await Promise.all(
-            resolvedPlayers
-                .filter((player) => player.userDoc?._id)
-                .map(async (player) => {
-                    try {
-                        await User.findByIdAndUpdate(
-                            player.userDoc._id,
-                            buildPlayerStatsUpdate({
-                                newRating: player.newRating,
-                                seasonPoints: player.seasonPoints,
-                                outcomeStatus: player.outcome?.status,
-                            }),
-                            { new: false }
-                        );
-                    } catch (error) {
-                        logMatchResolutionError(roomId, 'user stats update', error, {
-                            username: player.data.username,
-                        });
-                    }
-                })
-        );
-
-        try {
-            await Match.create({
-                roomId,
-                winner: officialWinner || 'Draw',
-                status: 'completed',
-                reason: officialWinner ? matchReason : (matchReason === 'forfeit' ? 'forfeit' : 'draw'),
-                isDisqualified: room.cheaters.size > 0,
-                disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
-                problemIds: room.problemIds || [],
-                isCustom: Boolean(room.isCustom),
-                matchDurationSeconds,
-                timeLimitSeconds: room.durationSeconds || (30 * 60),
-                totalRoundsConfigured: room.totalRounds || 0,
-                fastestSolveMsByUser: room.fastestSolveMsByUser || {},
-                firstRoundFirstSolverUsername: room.firstRoundFirstSolverUsername || null,
-                firstRoundOpponentSubmissionCounts: room.firstRoundOpponentSubmissionCounts || {},
-                players: resolvedPlayers.map((player) => buildMatchPlayerRecord({
-                    userDoc: player.userDoc,
-                    playerData: player.data,
-                    outcome: player.outcome,
-                    newRating: player.newRating,
-                    seasonPoints: player.seasonPoints,
-                })),
-            });
-        } catch (error) {
-            logMatchResolutionError(roomId, 'match record save', error, {
-                players: resolvedPlayers.map((player) => toSafeUsername(player.data.username)),
-                reason: matchReason,
-            });
-        }
-
-        try {
-            await Room.findOneAndUpdate(
-                { roomId, status: { $ne: 'finished' } },
-                { $set: { status: 'finished', winner: officialWinner || 'Draw' } }
-            );
-        } catch (error) {
-            logMatchResolutionError(roomId, 'room finalization', error, {
-                winner: officialWinner || 'Draw',
-            });
-        }
-
-        clearLeaderboardCache();
-        clearStatsCache();
-
-        console.log(`[GAME END] Room ${roomId} | Winner: ${winnerName || 'Draw'}`);
-
-        /*
-            Room.findOneAndUpdate(
-                { roomId, status: { $ne: 'finished' } },
-                { $set: { status: 'finished', winner: officialWinner || 'Draw' } }
-            )
-        );
-
-        // ✅ Execute all DB operations in parallel
-        await Promise.all(dbOperations);
-
-        // ✅ CRITICAL: Invalidate caches after match completion
-        clearLeaderboardCache();
-        clearStatsCache();
-
-        eloChanges = {
-            p1: { 
-                username: p1Data.username, 
-                newRating: p1NewRating, 
-                eloChange: outcome.p1.pointsGained, 
-                seasonPoints: p1SeasonPoints 
-            }
-        };
-        if (p2Data && outcome?.p2) {
-            eloChanges.p2 = { 
-                username: p2Data.username, 
-                newRating: p2NewRating, 
-                eloChange: outcome.p2.pointsGained, 
-                seasonPoints: p2SeasonPoints 
-            };
-        }
-        winnerName = officialWinner;
-        winnerId = room.players.find((player) => player.username.toLowerCase() === officialWinner.toLowerCase())?.userId || null;
-        playerResults = {
-            [p1Data.username]: {
-                username: p1Data.username,
-                score: p1Data.score,
-                seasonPoints: p1SeasonPoints,
-                newElo: p1NewRating,
-                eloChange: outcome.p1.pointsGained,
-                isWinner: outcome.p1.status.includes("Winner"),
-            }
-        };
-        if (p2Data && outcome?.p2) {
-            playerResults[p2Data.username] = {
-                username: p2Data.username,
-                score: p2Data.score,
-                seasonPoints: p2SeasonPoints,
-                newElo: p2NewRating,
-                eloChange: outcome.p2.pointsGained,
-                isWinner: outcome.p2.status.includes("Winner"),
-            };
-        }
-
-        console.log(`[GAME END] ✅ Room ${roomId} | Winner: ${winnerName}`);
-
-        // ✅ Increment analytics tracking fields
-        const matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
-        const matchDurationMinutes = Number((matchDurationSeconds / 60).toFixed(2));
-        const remainingTimeSeconds = Math.max(
-            0,
-            (room.durationSeconds || (30 * 60)) - matchDurationSeconds
-        );
-
-        */
-        await Promise.all(
-            resolvedPlayers
-                .filter((player) => player.userDoc?._id)
-                .map(async (player) => {
-                    try {
-                        await User.findByIdAndUpdate(player.userDoc._id, {
-                            $inc: {
-                                totalTimeSpent: matchDurationMinutes,
-                                totalSolved: player.outcome?.status?.includes('Winner')
-                                    ? (room.totalRounds || room.round || 0)
-                                    : 0
-                            }
-                        });
-                    } catch (error) {
-                        logMatchResolutionError(roomId, 'analytics update', error, {
-                            username: player.data.username,
-                        });
-                    }
-                })
-        );
-
-        // ✅ ACHIEVEMENT ENGINE: Evaluate achievements asynchronously (fire-and-forget)
-        try {
-            if (user1Doc?._id) {
-                processAchievementEvent(user1Doc._id, 'MATCH_COMPLETED', {
-                    isWin: Boolean(outcome?.p1?.status?.includes('Winner')),
-                    isSolo: isSoloMatch,
-                    opponentRating: p2Data?.rating || 1000,
-                    matchDurationSeconds: matchDurationMinutes * 60,
-                    timeRemainingSeconds: remainingTimeSeconds,
-                    isCustom: Boolean(room.isCustom),
-                    myScore: p1Data.score,
-                    opponentSubmissions: room.firstRoundFirstSolverUsername === p1Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p1Data.username] || 0) === 0) ? 0 : 1,
-                    allSolvedCorrectly: p1Data.score === 10 * (room.totalRounds || 0)
-                }).then(res => {
-                    if (res && res.newlyUnlocked?.length > 0) {
-                        io.to(roomId).emit('badges_unlocked', { userId: user1Doc._id, badges: res.newlyUnlocked });
-                    }
-                }).catch(e => console.error('[ACHIEVEMENT] P1 eval error:', e.message));
-            }
-            if (user2Doc?._id && p2Data && outcome?.p2) {
-                processAchievementEvent(user2Doc._id, 'MATCH_COMPLETED', {
-                    isWin: Boolean(outcome?.p2?.status?.includes('Winner')),
-                    isSolo: isSoloMatch,
-                    opponentRating: p1Data?.rating || 1000,
-                    matchDurationSeconds: matchDurationMinutes * 60,
-                    timeRemainingSeconds: remainingTimeSeconds,
-                    isCustom: Boolean(room.isCustom),
-                    myScore: p2Data.score,
-                    opponentSubmissions: room.firstRoundFirstSolverUsername === p2Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p2Data.username] || 0) === 0) ? 0 : 1,
-                    allSolvedCorrectly: p2Data.score === 10 * (room.totalRounds || 0)
-                }).then(res => {
-                    if (res && res.newlyUnlocked?.length > 0) {
-                        io.to(roomId).emit('badges_unlocked', { userId: user2Doc._id, badges: res.newlyUnlocked });
-                    }
-                }).catch(e => console.error('[ACHIEVEMENT] P2 eval error:', e.message));
-            }
-        } catch (badgeErr) {
-            console.error('[ACHIEVEMENT] Non-critical error:', badgeErr.message);
-        }
-
-    } catch (err) {
-        console.error("❌ CRITICAL DB ERROR in handleGameEnd:", err);
-        // Continue to notify clients even if DB fails
-    }
-
-    // ✅ Emit game over event to all players in room
-    const payload = { 
-        scores: room.scores || {},
-        winner: winnerName || 'Draw',
-        winnerName: winnerName || 'Draw',
-        winnerId,
-        pointsEarned: winnerName ? (playerResults?.[winnerName]?.seasonPoints ?? 0) : 0,
-        newElo: winnerName ? (playerResults?.[winnerName]?.newElo ?? null) : null,
+      await Match.create({
+        roomId,
+        winner: officialWinner || 'Draw',
+        status: 'completed',
+        reason: officialWinner ? matchReason : (matchReason === 'forfeit' ? 'forfeit' : 'draw'),
         isDisqualified: room.cheaters.size > 0,
         disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
-        eloChanges: eloChanges || {},
-        playerResults,
+        problemIds: room.problemIds || [],
+        isCustom: Boolean(room.isCustom),
+        matchDurationSeconds,
+        timeLimitSeconds: room.durationSeconds || (30 * 60),
+        totalRoundsConfigured: room.totalRounds || 0,
+        fastestSolveMsByUser: room.fastestSolveMsByUser || {},
+        firstRoundFirstSolverUsername: room.firstRoundFirstSolverUsername || null,
+        firstRoundOpponentSubmissionCounts: room.firstRoundOpponentSubmissionCounts || {},
+        players: resolvedPlayers.map((player) => buildMatchPlayerRecord({
+          userDoc: player.userDoc,
+          playerData: player.data,
+          outcome: player.outcome,
+          newRating: player.newRating,
+          seasonPoints: player.seasonPoints,
+        })),
+      });
+    } catch (error) {
+      logMatchResolutionError(roomId, 'match record save', error, {
+        players: resolvedPlayers.map((player) => toSafeUsername(player.data.username)),
         reason: matchReason,
-        message: matchReason === 'forfeit'
-            ? (winnerName ? `${winnerName} wins by forfeit.` : 'Match ended by forfeit.')
-            : matchReason === 'timeout'
-                ? 'Time ran out. Final standings locked in.'
-                : '',
-    };
-    room.resolutionResult = payload;
-    room.status = 'finished';
-    io.to(roomId).emit('game_over', payload);
-    io.to(roomId).emit('match_ended', payload);
-    if (room.isCustom) {
-        await persistCustomRoomPlayers(roomId, room.players, {
-            status: 'finished',
-            winner: winnerName || 'Draw',
-        });
+      });
     }
 
-    // ✅ Delayed cleanup (1 minute delay for reconnections)
-    setTimeout(() => {
-        rooms.delete(roomId);
-        console.log(`[CLEANUP] 🗑️ Room ${roomId} deleted from memory`);
-    }, 60000);
-    room.isResolving = false;
-    return payload;
+    try {
+      await Room.findOneAndUpdate(
+        { roomId, status: { $ne: 'finished' } },
+        { $set: { status: 'finished', winner: officialWinner || 'Draw' } }
+      );
+    } catch (error) {
+      logMatchResolutionError(roomId, 'room finalization', error, {
+        winner: officialWinner || 'Draw',
+      });
+    }
+
+    clearLeaderboardCache();
+    clearStatsCache();
+
+    console.log(`[GAME END] Room ${roomId} | Winner: ${winnerName || 'Draw'}`);
+
+    /*
+        Room.findOneAndUpdate(
+            { roomId, status: { $ne: 'finished' } },
+            { $set: { status: 'finished', winner: officialWinner || 'Draw' } }
+        )
+    );
+
+    // ✅ Execute all DB operations in parallel
+    await Promise.all(dbOperations);
+
+    // ✅ CRITICAL: Invalidate caches after match completion
+    clearLeaderboardCache();
+    clearStatsCache();
+
+    eloChanges = {
+        p1: { 
+            username: p1Data.username, 
+            newRating: p1NewRating, 
+            eloChange: outcome.p1.pointsGained, 
+            seasonPoints: p1SeasonPoints 
+        }
+    };
+    if (p2Data && outcome?.p2) {
+        eloChanges.p2 = { 
+            username: p2Data.username, 
+            newRating: p2NewRating, 
+            eloChange: outcome.p2.pointsGained, 
+            seasonPoints: p2SeasonPoints 
+        };
+    }
+    winnerName = officialWinner;
+    winnerId = room.players.find((player) => player.username.toLowerCase() === officialWinner.toLowerCase())?.userId || null;
+    playerResults = {
+        [p1Data.username]: {
+            username: p1Data.username,
+            score: p1Data.score,
+            seasonPoints: p1SeasonPoints,
+            newElo: p1NewRating,
+            eloChange: outcome.p1.pointsGained,
+            isWinner: outcome.p1.status.includes("Winner"),
+        }
+    };
+    if (p2Data && outcome?.p2) {
+        playerResults[p2Data.username] = {
+            username: p2Data.username,
+            score: p2Data.score,
+            seasonPoints: p2SeasonPoints,
+            newElo: p2NewRating,
+            eloChange: outcome.p2.pointsGained,
+            isWinner: outcome.p2.status.includes("Winner"),
+        };
+    }
+
+    console.log(`[GAME END] ✅ Room ${roomId} | Winner: ${winnerName}`);
+
+    // ✅ Increment analytics tracking fields
+    const matchDurationSeconds = Math.max(0, Math.floor((Date.now() - (room.startTime || Date.now())) / 1000));
+    const matchDurationMinutes = Number((matchDurationSeconds / 60).toFixed(2));
+    const remainingTimeSeconds = Math.max(
+        0,
+        (room.durationSeconds || (30 * 60)) - matchDurationSeconds
+    );
+
+    */
+    await Promise.all(
+      resolvedPlayers
+        .filter((player) => player.userDoc?._id)
+        .map(async (player) => {
+          try {
+            await User.findByIdAndUpdate(player.userDoc._id, {
+              $inc: {
+                totalTimeSpent: matchDurationMinutes,
+                totalSolved: player.outcome?.status?.includes('Winner')
+                  ? (room.totalRounds || room.round || 0)
+                  : 0
+              }
+            });
+          } catch (error) {
+            logMatchResolutionError(roomId, 'analytics update', error, {
+              username: player.data.username,
+            });
+          }
+        })
+    );
+
+    // ✅ ACHIEVEMENT ENGINE: Evaluate achievements asynchronously (fire-and-forget)
+    try {
+      if (user1Doc?._id) {
+        processAchievementEvent(user1Doc._id, 'MATCH_COMPLETED', {
+          isWin: Boolean(outcome?.p1?.status?.includes('Winner')),
+          isSolo: isSoloMatch,
+          opponentRating: p2Data?.rating || 1000,
+          matchDurationSeconds: matchDurationMinutes * 60,
+          timeRemainingSeconds: remainingTimeSeconds,
+          isCustom: Boolean(room.isCustom),
+          myScore: p1Data.score,
+          opponentSubmissions: room.firstRoundFirstSolverUsername === p1Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p1Data.username] || 0) === 0) ? 0 : 1,
+          allSolvedCorrectly: p1Data.score === 10 * (room.totalRounds || 0)
+        }).then(res => {
+          if (res && res.newlyUnlocked?.length > 0) {
+            io.to(roomId).emit('badges_unlocked', { userId: user1Doc._id, badges: res.newlyUnlocked });
+          }
+        }).catch(e => console.error('[ACHIEVEMENT] P1 eval error:', e.message));
+      }
+      if (user2Doc?._id && p2Data && outcome?.p2) {
+        processAchievementEvent(user2Doc._id, 'MATCH_COMPLETED', {
+          isWin: Boolean(outcome?.p2?.status?.includes('Winner')),
+          isSolo: isSoloMatch,
+          opponentRating: p1Data?.rating || 1000,
+          matchDurationSeconds: matchDurationMinutes * 60,
+          timeRemainingSeconds: remainingTimeSeconds,
+          isCustom: Boolean(room.isCustom),
+          myScore: p2Data.score,
+          opponentSubmissions: room.firstRoundFirstSolverUsername === p2Data.username && ((room.firstRoundOpponentSubmissionCounts?.[p2Data.username] || 0) === 0) ? 0 : 1,
+          allSolvedCorrectly: p2Data.score === 10 * (room.totalRounds || 0)
+        }).then(res => {
+          if (res && res.newlyUnlocked?.length > 0) {
+            io.to(roomId).emit('badges_unlocked', { userId: user2Doc._id, badges: res.newlyUnlocked });
+          }
+        }).catch(e => console.error('[ACHIEVEMENT] P2 eval error:', e.message));
+      }
+    } catch (badgeErr) {
+      console.error('[ACHIEVEMENT] Non-critical error:', badgeErr.message);
+    }
+
+  } catch (err) {
+    console.error("❌ CRITICAL DB ERROR in handleGameEnd:", err);
+    // Continue to notify clients even if DB fails
+  }
+
+  // ✅ Emit game over event to all players in room
+  const payload = {
+    scores: room.scores || {},
+    winner: winnerName || 'Draw',
+    winnerName: winnerName || 'Draw',
+    winnerId,
+    pointsEarned: winnerName ? (playerResults?.[winnerName]?.seasonPoints ?? 0) : 0,
+    newElo: winnerName ? (playerResults?.[winnerName]?.newElo ?? null) : null,
+    isDisqualified: room.cheaters.size > 0,
+    disqualifiedPlayer: room.cheaters.size > 0 ? Array.from(room.cheaters)[0] : null,
+    eloChanges: eloChanges || {},
+    playerResults,
+    reason: matchReason,
+    message: matchReason === 'forfeit'
+      ? (winnerName ? `${winnerName} wins by forfeit.` : 'Match ended by forfeit.')
+      : matchReason === 'timeout'
+        ? 'Time ran out. Final standings locked in.'
+        : '',
+  };
+  room.resolutionResult = payload;
+  room.status = 'finished';
+  io.to(roomId).emit('game_over', payload);
+  io.to(roomId).emit('match_ended', payload);
+  if (room.isCustom) {
+    await persistCustomRoomPlayers(roomId, room.players, {
+      status: 'finished',
+      winner: winnerName || 'Draw',
+    });
+  }
+
+  // ✅ Delayed cleanup (1 minute delay for reconnections)
+  setTimeout(() => {
+    rooms.delete(roomId);
+    console.log(`[CLEANUP] 🗑️ Room ${roomId} deleted from memory`);
+  }, 60000);
+  room.isResolving = false;
+  return payload;
 };
 
 const resolveMatch = async (roomId, winnerUsername = null, reason = 'submission', roomOverride = null) => {
-    const room = roomOverride || rooms.get(roomId);
-    if (!room) return null;
+  const room = roomOverride || rooms.get(roomId);
+  if (!room) return null;
 
-    room.matchEndReason = reason;
-    room.forcedWinnerUsername = winnerUsername || null;
+  room.matchEndReason = reason;
+  room.forcedWinnerUsername = winnerUsername || null;
 
-    return handleGameEnd(roomId, room);
+  return handleGameEnd(roomId, room);
 };
 
 // ✅ TIMER HANDLER (already optimal)
 const startRoomTimer = (roomId, duration) => {
-    if (roomTimers.has(roomId)) {
-        clearInterval(roomTimers.get(roomId));
+  if (roomTimers.has(roomId)) {
+    clearInterval(roomTimers.get(roomId));
+  }
+
+  let timeLeft = duration;
+
+  const timerId = setInterval(() => {
+    timeLeft--;
+
+    // Sync time every 60s or when below 10s
+    if (timeLeft % 60 === 0 || timeLeft <= 10) {
+      io.to(roomId).emit('sync_time', timeLeft);
     }
-    
-    let timeLeft = duration;
-    
-    const timerId = setInterval(() => {
-        timeLeft--;
-        
-        // Sync time every 60s or when below 10s
-        if(timeLeft % 60 === 0 || timeLeft <= 10) {
-            io.to(roomId).emit('sync_time', timeLeft);
-        }
-        
-        if (timeLeft <= 0) {
-            clearInterval(timerId);
-            roomTimers.delete(roomId);
-            const room = rooms.get(roomId);
-            if(room) resolveMatch(roomId, null, 'timeout', room); 
-        }
-    }, 1000);
-    
-    roomTimers.set(roomId, timerId);
+
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      roomTimers.delete(roomId);
+      const room = rooms.get(roomId);
+      if (room) resolveMatch(roomId, null, 'timeout', room);
+    }
+  }, 1000);
+
+  roomTimers.set(roomId, timerId);
 };
 
 // ✅ RATE LIMITING for socket events
@@ -1897,29 +1420,29 @@ const RATE_LIMIT_WINDOW = 5000; // 5 seconds
 const MAX_EVENTS_PER_WINDOW = 10;
 
 function checkRateLimit(socketId, eventName) {
-    const key = `${socketId}:${eventName}`;
-    const now = Date.now();
-    
-    if (!socketRateLimits.has(key)) {
-        socketRateLimits.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-        return true;
-    }
-    
-    const limit = socketRateLimits.get(key);
-    
-    if (now > limit.resetTime) {
-        limit.count = 1;
-        limit.resetTime = now + RATE_LIMIT_WINDOW;
-        return true;
-    }
-    
-    if (limit.count >= MAX_EVENTS_PER_WINDOW) {
-        console.warn(`[RATE LIMIT] ⚠️ ${socketId} exceeded limit for ${eventName}`);
-        return false;
-    }
-    
-    limit.count++;
+  const key = `${socketId}:${eventName}`;
+  const now = Date.now();
+
+  if (!socketRateLimits.has(key)) {
+    socketRateLimits.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return true;
+  }
+
+  const limit = socketRateLimits.get(key);
+
+  if (now > limit.resetTime) {
+    limit.count = 1;
+    limit.resetTime = now + RATE_LIMIT_WINDOW;
+    return true;
+  }
+
+  if (limit.count >= MAX_EVENTS_PER_WINDOW) {
+    console.warn(`[RATE LIMIT] ⚠️ ${socketId} exceeded limit for ${eventName}`);
+    return false;
+  }
+
+  limit.count++;
+  return true;
 }
 
 // ✅ SOCKET EVENT HANDLERS
@@ -1930,8 +1453,8 @@ io.on('connection', async (socket) => {
   try {
     registerConnectedSocket(socket);
     await emitSiteStats();
-  } catch (err) { 
-    console.error('[SOCKET] Stats error:', err); 
+  } catch (err) {
+    console.error('[SOCKET] Stats error:', err);
   }
 
   // ✅ JOIN ROOM EVENT
@@ -1941,7 +1464,7 @@ io.on('connection', async (socket) => {
       const roomId = typeof data?.roomId === 'string' ? data.roomId.trim() : '';
       const joinToken = typeof data?.joinToken === 'string' ? data.joinToken.trim() : '';
       const username = authUser?.username;
-      
+
       // Validation
       if (!roomId || !username) {
         socket.emit('error', { message: 'Authentication and room ID are required' });
@@ -1954,56 +1477,56 @@ io.on('connection', async (socket) => {
       let finishedMatchPayload = null;
 
       if (rooms.has(roomId) && (rooms.get(roomId).status === 'finished' || rooms.get(roomId).resolutionResult)) {
-          isMatchFinished = true;
-          finishedMatchPayload = rooms.get(roomId).resolutionResult;
+        isMatchFinished = true;
+        finishedMatchPayload = rooms.get(roomId).resolutionResult;
       } else {
-          const finishedMatch = await Match.findOne({ roomId }).lean();
-          if (finishedMatch) {
-              isMatchFinished = true;
-              const pResults = {};
-              if (finishedMatch.players) {
-                  for (const p of finishedMatch.players) {
-                      pResults[p.username] = {
-                          username: p.username,
-                          score: p.score || 0,
-                          seasonPoints: p.seasonPoints || 0,
-                          newElo: p.newElo || 1000,
-                          eloChange: p.eloChange || 0,
-                          isWinner: p.username === finishedMatch.winner
-                      };
-                  }
-              }
-              finishedMatchPayload = {
-                  scores: finishedMatch.players?.reduce((acc, p) => { acc[p.username] = p.score || 0; return acc; }, {}) || {},
-                  winner: finishedMatch.winner || 'Draw',
-                  winnerName: finishedMatch.winner || 'Draw',
-                  winnerId: null,
-                  isDisqualified: finishedMatch.status === 'abandoned' || finishedMatch.status === 'cancelled',
-                  eloChanges: finishedMatch.players?.reduce((acc, p) => { 
-                      acc[p.username] = { username: p.username, newRating: p.newElo, eloChange: p.eloChange, seasonPoints: p.seasonPoints };
-                      return acc;
-                  }, {}) || {},
-                  playerResults: pResults,
-                  reason: finishedMatch.reason || 'submission',
-                  message: 'Match ended.'
+        const finishedMatch = await Match.findOne({ roomId }).lean();
+        if (finishedMatch) {
+          isMatchFinished = true;
+          const pResults = {};
+          if (finishedMatch.players) {
+            for (const p of finishedMatch.players) {
+              pResults[p.username] = {
+                username: p.username,
+                score: p.score || 0,
+                seasonPoints: p.seasonPoints || 0,
+                newElo: p.newElo || 1000,
+                eloChange: p.eloChange || 0,
+                isWinner: p.username === finishedMatch.winner
               };
+            }
           }
+          finishedMatchPayload = {
+            scores: finishedMatch.players?.reduce((acc, p) => { acc[p.username] = p.score || 0; return acc; }, {}) || {},
+            winner: finishedMatch.winner || 'Draw',
+            winnerName: finishedMatch.winner || 'Draw',
+            winnerId: null,
+            isDisqualified: finishedMatch.status === 'abandoned' || finishedMatch.status === 'cancelled',
+            eloChanges: finishedMatch.players?.reduce((acc, p) => {
+              acc[p.username] = { username: p.username, newRating: p.newElo, eloChange: p.eloChange, seasonPoints: p.seasonPoints };
+              return acc;
+            }, {}) || {},
+            playerResults: pResults,
+            reason: finishedMatch.reason || 'submission',
+            message: 'Match ended.'
+          };
+        }
       }
 
       if (isMatchFinished) {
-          socket.join(roomId);
-          socket.emit('room_joined', {
-              roomId,
-              players: finishedMatchPayload?.playerResults ? Object.keys(finishedMatchPayload.playerResults).map(username => ({ username, side: 'left' })) : [],
-              problem: null,
-              round: 1,
-              totalRounds: 1,
-              scores: finishedMatchPayload?.scores || {},
-              remainingTime: 0,
-              gameOverData: finishedMatchPayload,
-              isFinished: true
-          });
-          return;
+        socket.join(roomId);
+        socket.emit('room_joined', {
+          roomId,
+          players: finishedMatchPayload?.playerResults ? Object.keys(finishedMatchPayload.playerResults).map(username => ({ username, side: 'left' })) : [],
+          problem: null,
+          round: 1,
+          totalRounds: 1,
+          scores: finishedMatchPayload?.scores || {},
+          remainingTime: 0,
+          gameOverData: finishedMatchPayload,
+          isFinished: true
+        });
+        return;
       }
 
       if (!checkRateLimit(socket.id, 'join_room')) {
@@ -2021,74 +1544,74 @@ io.on('connection', async (socket) => {
       const isActuallyCustom = roomId.startsWith('C-') || (rooms.has(roomId) && rooms.get(roomId).isCustom) || Boolean(persistentCustomRoom);
       const userDoc = await User.findById(authUser._id);
       let shouldChargeUsage = false;
-      
+
       if (userDoc) {
-          if (typeof userDoc.checkAndResetDailyStats === 'function') {
-              await userDoc.checkAndResetDailyStats();
-          } else {
-              // Defensive bulletproof fallback in case instance method is not loaded on this document
-              const now = new Date();
-              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-              if (!userDoc.usageStats) {
-                  userDoc.usageStats = {
-                      chatQueriesToday: 0,
-                      matchesToday: 0,
-                      customMatchesToday: 0,
-                      visualizationsToday: 0,
-                      visualizerTrialUsed: false,
-                      aiHelpToday: 0,
-                      lastResetDate: today
-                  };
-              }
-              const lastReset = userDoc.usageStats.lastResetDate ? new Date(userDoc.usageStats.lastResetDate) : today;
-              const lastResetDay = new Date(lastReset.getFullYear(), lastReset.getMonth(), lastReset.getDate());
-              if (today.getTime() > lastResetDay.getTime()) {
-                  userDoc.usageStats.chatQueriesToday = 0;
-                  userDoc.usageStats.matchesToday = 0;
-                  userDoc.usageStats.customMatchesToday = 0;
-                  userDoc.usageStats.visualizationsToday = 0;
-                  userDoc.usageStats.aiHelpToday = 0;
-                  userDoc.usageStats.lastResetDate = today;
-                  await User.updateOne({ _id: userDoc._id }, { $set: { usageStats: userDoc.usageStats } });
-              }
+        if (typeof userDoc.checkAndResetDailyStats === 'function') {
+          await userDoc.checkAndResetDailyStats();
+        } else {
+          // Defensive bulletproof fallback in case instance method is not loaded on this document
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (!userDoc.usageStats) {
+            userDoc.usageStats = {
+              chatQueriesToday: 0,
+              matchesToday: 0,
+              customMatchesToday: 0,
+              visualizationsToday: 0,
+              visualizerTrialUsed: false,
+              aiHelpToday: 0,
+              lastResetDate: today
+            };
           }
-          const plan = userDoc.subscriptionPlan || 'free';
-          const userTier = AI_TIER_MAP[plan] || 0;
-          const limits = getUsageLimits(userDoc);
+          const lastReset = userDoc.usageStats.lastResetDate ? new Date(userDoc.usageStats.lastResetDate) : today;
+          const lastResetDay = new Date(lastReset.getFullYear(), lastReset.getMonth(), lastReset.getDate());
+          if (today.getTime() > lastResetDay.getTime()) {
+            userDoc.usageStats.chatQueriesToday = 0;
+            userDoc.usageStats.matchesToday = 0;
+            userDoc.usageStats.customMatchesToday = 0;
+            userDoc.usageStats.visualizationsToday = 0;
+            userDoc.usageStats.aiHelpToday = 0;
+            userDoc.usageStats.lastResetDate = today;
+            await User.updateOne({ _id: userDoc._id }, { $set: { usageStats: userDoc.usageStats } });
+          }
+        }
+        const plan = userDoc.subscriptionPlan || 'free';
+        const userTier = AI_TIER_MAP[plan] || 0;
+        const limits = getUsageLimits(userDoc);
 
-          // We check for re-join to avoid double-charging
-          let playerAlreadyIn = false;
-          if (rooms.has(roomId)) {
-             playerAlreadyIn = rooms.get(roomId).players.some(p => p.username === username);
-          } else if (persistentCustomRoom) {
-             playerAlreadyIn = (persistentCustomRoom.players || []).some((player) =>
-               String(player.userId) === String(authUser._id) ||
-               String(player.username || '').toLowerCase() === String(username || '').toLowerCase()
-             );
+        // We check for re-join to avoid double-charging
+        let playerAlreadyIn = false;
+        if (rooms.has(roomId)) {
+          playerAlreadyIn = rooms.get(roomId).players.some(p => p.username === username);
+        } else if (persistentCustomRoom) {
+          playerAlreadyIn = (persistentCustomRoom.players || []).some((player) =>
+            String(player.userId) === String(authUser._id) ||
+            String(player.username || '').toLowerCase() === String(username || '').toLowerCase()
+          );
+        }
+
+        if (!playerAlreadyIn) {
+          const customUsage = userDoc.usageStats.customMatchesToday || 0;
+          const totalUsage = (userDoc.usageStats.matchesToday || 0) + customUsage;
+
+          if (limits.matches !== Infinity && totalUsage >= limits.matches) {
+            socket.emit('error', { message: `Daily total match limit reached (${limits.matches}/day). Upgrade for more!`, code: 'LIMIT_REACHED' });
+            return;
           }
 
-          if (!playerAlreadyIn) {
-              const customUsage = userDoc.usageStats.customMatchesToday || 0;
-              const totalUsage = (userDoc.usageStats.matchesToday || 0) + customUsage;
-
-              if (limits.matches !== Infinity && totalUsage >= limits.matches) {
-                  socket.emit('error', { message: `Daily total match limit reached (${limits.matches}/day). Upgrade for more!`, code: 'LIMIT_REACHED' });
-                  return;
-              }
-
-              if (isActuallyCustom) {
-                  if (plan === 'free') {
-                      socket.emit('error', { message: 'Custom matches require Plus tier or higher. Upgrade to unlock!', code: 'PREMIUM_REQUIRED' });
-                      return;
-                  }
-                  const limit = limits.customMatches;
-                  if (limit !== Infinity && customUsage >= limit) {
-                      socket.emit('error', { message: 'Daily custom match limit reached.', code: 'LIMIT_REACHED' });
-                      return;
-                  }
-              }
-              shouldChargeUsage = true;
+          if (isActuallyCustom) {
+            if (plan === 'free') {
+              socket.emit('error', { message: 'Custom matches require Plus tier or higher. Upgrade to unlock!', code: 'PREMIUM_REQUIRED' });
+              return;
+            }
+            const limit = limits.customMatches;
+            if (limit !== Infinity && customUsage >= limit) {
+              socket.emit('error', { message: 'Daily custom match limit reached.', code: 'LIMIT_REACHED' });
+              return;
+            }
           }
+          shouldChargeUsage = true;
+        }
       }
 
       if (!rooms.has(roomId)) {
@@ -2114,17 +1637,17 @@ io.on('connection', async (socket) => {
 
           // Hydrate the in-memory room map with existing database fields (to support re-connection / page refreshes)
           const hydratedPlayers = (persistentCustomRoom.players || []).map(p => ({
-              id: p.socketId || '',
-              username: p.username,
-              side: p.side,
-              avatar: '', 
-              userId: p.userId,
-              customization: {} 
+            id: p.socketId || '',
+            username: p.username,
+            side: p.side,
+            avatar: '',
+            userId: p.userId,
+            customization: {}
           }));
 
           const hydratedScores = (persistentCustomRoom.players || []).reduce((acc, p) => {
-              acc[p.username] = p.currentScore || 0;
-              return acc;
+            acc[p.username] = p.currentScore || 0;
+            return acc;
           }, {});
 
           const problemIdsMapped = (persistentCustomRoom.problems || []).map(id => id.toString());
@@ -2161,7 +1684,7 @@ io.on('connection', async (socket) => {
             return;
           }
 
-        rooms.set(roomId, {
+          rooms.set(roomId, {
             players: [],
             round: 1,
             totalRounds: problemIds.length,
@@ -2180,15 +1703,15 @@ io.on('connection', async (socket) => {
             isCustom: false,
             durationSeconds: 30 * 60,
             aiHelpsUsed: {}
-        });
-        
-        startRoomTimer(roomId, 30 * 60);
+          });
+
+          startRoomTimer(roomId, 30 * 60);
         }
         console.log(`[ROOM] ✨ Created: ${roomId}`);
       }
 
       const room = rooms.get(roomId);
-      
+
       if (persistentCustomRoom?.aiHelpsUsed) {
         room.aiHelpsUsed = persistentCustomRoom.aiHelpsUsed;
       } else {
@@ -2218,7 +1741,7 @@ io.on('connection', async (socket) => {
       }
 
       let playerIndex = room.players.findIndex((p) => p.username.toLowerCase() === username.toLowerCase());
-      let side; 
+      let side;
       let isReconnect = false;
 
       if (playerIndex !== -1) {
@@ -2241,17 +1764,17 @@ io.on('connection', async (socket) => {
         console.log(`[ROOM] 🔄 ${username} reconnected to ${roomId}`);
       } else {
         // New player
-        if (room.players.length >= 2) { 
-            socket.emit('room_full'); 
-            return; 
+        if (room.players.length >= 2) {
+          socket.emit('room_full');
+          return;
         }
       }
 
       // ✅ SYNC AI USAGE STATS TO ROOM
       if (userDoc) {
-          // Sync daily AI usage to room data for this user
-          if (!room.aiHelpsUsed) room.aiHelpsUsed = {};
-          room.aiHelpsUsed[authUser._id.toString()] = userDoc.usageStats.aiHelpToday || 0;
+        // Sync daily AI usage to room data for this user
+        if (!room.aiHelpsUsed) room.aiHelpsUsed = {};
+        room.aiHelpsUsed[authUser._id.toString()] = userDoc.usageStats.aiHelpToday || 0;
       }
 
       if (!isReconnect) {
@@ -2356,9 +1879,9 @@ io.on('connection', async (socket) => {
 
       if (!isReconnect) {
         socket.to(roomId).emit('player_joined', {
-            username, side,
-            players: room.players,
-            scores: room.scores
+          username, side,
+          players: room.players,
+          scores: room.scores
         });
 
         if (room.isGameActive && room.players.length === 2) {
@@ -2372,9 +1895,9 @@ io.on('connection', async (socket) => {
         }
       }
 
-    } catch (err) { 
-        console.error('[SOCKET] Join Error:', err);
-        socket.emit('error', { message: err.message || 'Failed to join room' });
+    } catch (err) {
+      console.error('[SOCKET] Join Error:', err);
+      socket.emit('error', { message: err.message || 'Failed to join room' });
     }
   });
 
@@ -2382,138 +1905,138 @@ io.on('connection', async (socket) => {
 
   // ✅ LEVEL COMPLETED EVENT
   socket.on('level_completed', async ({ roomId, username, code, language }) => {
+    try {
+      const resolvedUsername = socket.data.user?.username || username;
+      console.log(`[GAME] Socket level_completed received: roomId=${roomId}, username=${username}, resolvedUsername=${resolvedUsername}`);
+      const room = rooms.get(roomId);
+      if (!room || !room.isGameActive) {
+        console.warn(`[GAME] Level completion ignored: room is missing or inactive for ID ${roomId}`);
+        return;
+      }
+
+      // Rate limiting
+      if (!checkRateLimit(socket.id, 'level_completed')) {
+        console.warn(`[GAME] Rate limit triggered for level_completed: socket=${socket.id}`);
+        return;
+      }
+
+      // Save player code and language inside the room players
+      const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
+      if (!playerObj) {
+        console.warn(`[GAME] Casing match lookup failed: resolvedUsername "${resolvedUsername}" not found in players of room ${roomId}`);
+        return;
+      }
+
+      // Use the canonical casing from the room players list to prevent dynamic key conflicts
+      const normalizedUsername = playerObj.username;
+      console.log(`[GAME] Username casing normalized: "${resolvedUsername}" -> "${normalizedUsername}"`);
+
+      if (room.roundCompletions.has(normalizedUsername)) {
+        console.log(`[GAME] Player "${normalizedUsername}" already marked completed for round ${room.round}`);
+        return;
+      }
+
+      const capturedSubmission = capturePlayerSubmission({
+        room,
+        playerObj,
+        code,
+        language,
+        markSubmitted: true,
+      });
+      console.log(`[GAME] Captured solution code for player "${normalizedUsername}" on round ${capturedSubmission?.roundKey || room.round} (${capturedSubmission?.codeLength || 0} chars)`);
+
+      const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;
+      room.submissionAttempts.add(normalizedUsername);
+      room.scores[normalizedUsername] = (room.scores[normalizedUsername] || 0) + 10;
+      room.roundCompletions.add(normalizedUsername);
+      if (solveTimeMs !== null) {
+        const currentFastest = room.fastestSolveMsByUser?.[normalizedUsername];
+        if (!currentFastest || solveTimeMs < currentFastest) {
+          room.fastestSolveMsByUser[normalizedUsername] = solveTimeMs;
+        }
+      }
+      if (room.round === 1 && !room.firstRoundFirstSolverUsername) {
+        room.firstRoundFirstSolverUsername = normalizedUsername;
+        const opponentName = room.players.find((player) => player.username.toLowerCase() !== normalizedUsername.toLowerCase())?.username;
+        room.firstRoundOpponentSubmissionCounts[normalizedUsername] = opponentName
+          ? (room.submissionCountByUser?.[opponentName] || 0)
+          : 0;
+      }
+
+      io.to(roomId).emit('score_update', room.scores);
+      console.log(`[GAME] 🎯 ${username} completed round ${room.round} in ${roomId}`);
+
+      // Evaluate PROBLEM_SOLVED achievement
       try {
-          const resolvedUsername = socket.data.user?.username || username;
-          console.log(`[GAME] Socket level_completed received: roomId=${roomId}, username=${username}, resolvedUsername=${resolvedUsername}`);
-          const room = rooms.get(roomId);
-          if (!room || !room.isGameActive) {
-              console.warn(`[GAME] Level completion ignored: room is missing or inactive for ID ${roomId}`);
+        const currentProblemId = room.problemIds[room.round - 1];
+        const solvedProblem = room.currentProblem || await getCachedPublicProblem(currentProblemId);
+        if (solvedProblem && socket.data.user?._id) {
+          processAchievementEvent(socket.data.user._id, 'PROBLEM_SOLVED', {
+            solveTimeSeconds: (solveTimeMs || 0) / 1000,
+            tags: solvedProblem.topics || [],
+            problemId: currentProblemId
+          }).then(res => {
+            if (res && res.newlyUnlocked?.length > 0) {
+              io.to(roomId).emit('badges_unlocked', { userId: socket.data.user._id, badges: res.newlyUnlocked });
+            }
+          }).catch(e => console.error('[ACHIEVEMENT] PROBLEM_SOLVED eval error:', e.message));
+        }
+      } catch (badgeErr) {
+        console.error('[ACHIEVEMENT] Non-critical error fetching problem for badges:', badgeErr.message);
+      }
+
+      // First player to complete
+      if (room.roundCompletions.size === 1) {
+        if (room.round < room.totalRounds) {
+          // Advance to next round
+          room.round++;
+          room.roundCompletions.clear();
+          room.roundStartAt = Date.now();
+
+          const nextProblemId = room.problemIds[room.round - 1];
+          let nextProblem = await getCachedPublicProblem(nextProblemId);
+
+          if (!nextProblem) {
+            const fallbackProblemIds = await loadBattleProblemIdsForRoom({
+              count: room.totalRounds || 2,
+              topics: room.customSettings?.topics || []
+            });
+            if (fallbackProblemIds.length === 0) {
+              io.to(roomId).emit('error', {
+                message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
+              });
               return;
+            }
+
+            room.problemIds = fallbackProblemIds;
+            nextProblem = await getCachedPublicProblem(room.problemIds[room.round - 1]);
           }
 
-          // Rate limiting
-          if (!checkRateLimit(socket.id, 'level_completed')) {
-            console.warn(`[GAME] Rate limit triggered for level_completed: socket=${socket.id}`);
+          if (!nextProblem) {
+            io.to(roomId).emit('error', { message: 'Failed to load the next Battle Arena problem.' });
             return;
           }
+          room.currentProblem = nextProblem;
 
-          // Save player code and language inside the room players
-          const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
-          if (!playerObj) {
-              console.warn(`[GAME] Casing match lookup failed: resolvedUsername "${resolvedUsername}" not found in players of room ${roomId}`);
-              return;
-          }
-
-          // Use the canonical casing from the room players list to prevent dynamic key conflicts
-          const normalizedUsername = playerObj.username;
-          console.log(`[GAME] Username casing normalized: "${resolvedUsername}" -> "${normalizedUsername}"`);
-
-          if (room.roundCompletions.has(normalizedUsername)) {
-              console.log(`[GAME] Player "${normalizedUsername}" already marked completed for round ${room.round}`);
-              return;
-          }
-
-          const capturedSubmission = capturePlayerSubmission({
-            room,
-            playerObj,
-            code,
-            language,
-            markSubmitted: true,
+          io.to(roomId).emit('new_round', {
+            round: room.round,
+            problem: nextProblem,
+            scores: room.scores,
+            totalRounds: room.totalRounds,
+            remainingTime: room.startTime
+              ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
+              : (room.durationSeconds || (30 * 60)),
           });
-          console.log(`[GAME] Captured solution code for player "${normalizedUsername}" on round ${capturedSubmission?.roundKey || room.round} (${capturedSubmission?.codeLength || 0} chars)`);
 
-          const solveTimeMs = room.roundStartAt ? Math.max(0, Date.now() - room.roundStartAt) : null;
-          room.submissionAttempts.add(normalizedUsername);
-          room.scores[normalizedUsername] = (room.scores[normalizedUsername] || 0) + 10;
-          room.roundCompletions.add(normalizedUsername);
-          if (solveTimeMs !== null) {
-            const currentFastest = room.fastestSolveMsByUser?.[normalizedUsername];
-            if (!currentFastest || solveTimeMs < currentFastest) {
-              room.fastestSolveMsByUser[normalizedUsername] = solveTimeMs;
-            }
-          }
-          if (room.round === 1 && !room.firstRoundFirstSolverUsername) {
-            room.firstRoundFirstSolverUsername = normalizedUsername;
-            const opponentName = room.players.find((player) => player.username.toLowerCase() !== normalizedUsername.toLowerCase())?.username;
-            room.firstRoundOpponentSubmissionCounts[normalizedUsername] = opponentName
-              ? (room.submissionCountByUser?.[opponentName] || 0)
-              : 0;
-          }
-          
-          io.to(roomId).emit('score_update', room.scores);
-          console.log(`[GAME] 🎯 ${username} completed round ${room.round} in ${roomId}`);
-
-          // Evaluate PROBLEM_SOLVED achievement
-          try {
-              const currentProblemId = room.problemIds[room.round - 1];
-              const solvedProblem = room.currentProblem || await getCachedPublicProblem(currentProblemId);
-              if (solvedProblem && socket.data.user?._id) {
-                  processAchievementEvent(socket.data.user._id, 'PROBLEM_SOLVED', {
-                      solveTimeSeconds: (solveTimeMs || 0) / 1000,
-                      tags: solvedProblem.topics || [],
-                      problemId: currentProblemId
-                  }).then(res => {
-                      if (res && res.newlyUnlocked?.length > 0) {
-                          io.to(roomId).emit('badges_unlocked', { userId: socket.data.user._id, badges: res.newlyUnlocked });
-                      }
-                  }).catch(e => console.error('[ACHIEVEMENT] PROBLEM_SOLVED eval error:', e.message));
-              }
-          } catch (badgeErr) {
-              console.error('[ACHIEVEMENT] Non-critical error fetching problem for badges:', badgeErr.message);
-          }
-
-          // First player to complete
-          if (room.roundCompletions.size === 1) { 
-              if (room.round < room.totalRounds) {
-                  // Advance to next round
-                  room.round++;
-                  room.roundCompletions.clear();
-                  room.roundStartAt = Date.now();
-                  
-                  const nextProblemId = room.problemIds[room.round - 1];
-                  let nextProblem = await getCachedPublicProblem(nextProblemId);
-
-                  if (!nextProblem) {
-                    const fallbackProblemIds = await loadBattleProblemIdsForRoom({
-                      count: room.totalRounds || 2,
-                      topics: room.customSettings?.topics || []
-                    });
-                    if (fallbackProblemIds.length === 0) {
-                      io.to(roomId).emit('error', {
-                        message: 'No Battle Arena problems available. Please add one via the Admin Panel.'
-                      });
-                      return;
-                    }
-
-                    room.problemIds = fallbackProblemIds;
-                    nextProblem = await getCachedPublicProblem(room.problemIds[room.round - 1]);
-                  }
-
-                  if (!nextProblem) {
-                    io.to(roomId).emit('error', { message: 'Failed to load the next Battle Arena problem.' });
-                    return;
-                  }
-                  room.currentProblem = nextProblem;
-                  
-                  io.to(roomId).emit('new_round', {
-                      round: room.round, 
-                      problem: nextProblem, 
-                      scores: room.scores,
-                      totalRounds: room.totalRounds,
-                      remainingTime: room.startTime
-                        ? Math.max(0, (room.durationSeconds || (30 * 60)) - Math.floor((Date.now() - room.startTime) / 1000))
-                        : (room.durationSeconds || (30 * 60)),
-                  });
-                  
-                  console.log(`[GAME] ⏭️ Room ${roomId} → Round ${room.round}`);
-              } else {
-                  // Game complete
-                  await handleGameEnd(roomId, room);
-              }
-          }
-      } catch (err) { 
-          console.error("[SOCKET] Level Complete Error:", err); 
+          console.log(`[GAME] ⏭️ Room ${roomId} → Round ${room.round}`);
+        } else {
+          // Game complete
+          await handleGameEnd(roomId, room);
+        }
       }
+    } catch (err) {
+      console.error("[SOCKET] Level Complete Error:", err);
+    }
   });
 
   // ✅ CHEATING DETECTED EVENT
@@ -2522,42 +2045,42 @@ io.on('connection', async (socket) => {
       const resolvedUsername = socket.data.user?.username || username;
       const room = rooms.get(roomId);
       if (!room || !room.isGameActive) return;
-      
+
       const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
       const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
 
       room.cheaters.add(normalizedUsername);
       socket.emit('cheat_warning', { reason });
-      
+
       console.log(`[ANTI-CHEAT] 🚨 ${username} in ${roomId}: ${reason}`);
-    } catch (err) { 
-      console.error("[SOCKET] Cheating Error:", err); 
+    } catch (err) {
+      console.error("[SOCKET] Cheating Error:", err);
     }
   });
 
   // ✅ CODE SUBMITTED EVENT (single consolidated handler)
   socket.on('code_submitted', ({ roomId, username, code, language }) => {
     try {
-        const resolvedUsername = socket.data.user?.username || username;
-        const room = rooms.get(roomId);
-        if (!room || !room.isGameActive) return;
+      const resolvedUsername = socket.data.user?.username || username;
+      const room = rooms.get(roomId);
+      if (!room || !room.isGameActive) return;
 
-        const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
-        const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
+      const playerObj = room.players?.find(p => p.username.toLowerCase() === resolvedUsername.toLowerCase());
+      const normalizedUsername = playerObj ? playerObj.username : resolvedUsername;
 
-        const capturedSubmission = capturePlayerSubmission({
-            room,
-            playerObj,
-            code,
-            language,
-            markSubmitted: true,
-        });
+      const capturedSubmission = capturePlayerSubmission({
+        room,
+        playerObj,
+        code,
+        language,
+        markSubmitted: true,
+      });
 
-        room.submissionAttempts.add(normalizedUsername);
-        room.submissionCountByUser[normalizedUsername] = (room.submissionCountByUser[normalizedUsername] || 0) + 1;
-        console.log(`[GAME] 📝 ${normalizedUsername} submitted code in ${roomId} (round ${room.round}, ${code ? code.length + ' chars' : 'no code'})`);
-    } catch (err) { 
-      console.error("[SOCKET] Code submission error:", err); 
+      room.submissionAttempts.add(normalizedUsername);
+      room.submissionCountByUser[normalizedUsername] = (room.submissionCountByUser[normalizedUsername] || 0) + 1;
+      console.log(`[GAME] 📝 ${normalizedUsername} submitted code in ${roomId} (round ${room.round}, ${code ? code.length + ' chars' : 'no code'})`);
+    } catch (err) {
+      console.error("[SOCKET] Code submission error:", err);
     }
   });
 
@@ -2568,40 +2091,40 @@ io.on('connection', async (socket) => {
       for (const [roomId, room] of rooms.entries()) {
         const playerIndex = room.players.findIndex(p => p.id === socket.id);
         if (playerIndex !== -1) {
-            const player = room.players[playerIndex];
-            console.log(`[DISCONNECT] Player ${player.username} left room ${roomId} (socket: ${socket.id})`);
-            
-            if (room.isGameActive && !room.resolutionResult && !room.isResolving) {
-                const graceKey = getDisconnectGraceKey(roomId, player.username);
-                io.to(roomId).emit('player_connection_state', {
-                    roomId,
-                    username: player.username,
-                    connected: false,
-                });
+          const player = room.players[playerIndex];
+          console.log(`[DISCONNECT] Player ${player.username} left room ${roomId} (socket: ${socket.id})`);
 
-                if (disconnectGraceTimers.has(graceKey)) {
-                    clearTimeout(disconnectGraceTimers.get(graceKey));
-                }
+          if (room.isGameActive && !room.resolutionResult && !room.isResolving) {
+            const graceKey = getDisconnectGraceKey(roomId, player.username);
+            io.to(roomId).emit('player_connection_state', {
+              roomId,
+              username: player.username,
+              connected: false,
+            });
 
-                disconnectGraceTimers.set(graceKey, setTimeout(async () => {
-                    disconnectGraceTimers.delete(graceKey);
-                    const latestRoom = rooms.get(roomId);
-                    if (!latestRoom || latestRoom.resolutionResult || latestRoom.isResolving || !latestRoom.isGameActive) {
-                        return;
-                    }
-
-                    const disconnectedPlayer = latestRoom.players.find((entry) => entry.username === player.username);
-                    if (disconnectedPlayer?.id && disconnectedPlayer.id !== socket.id) {
-                        return;
-                    }
-
-                    const opponent = latestRoom.players.find((entry) => entry.username !== player.username);
-                    const winnerUsername = opponent ? opponent.username : null;
-                    console.log(`[DISCONNECT] Active game in room ${roomId}. Winner by default: ${winnerUsername || 'Draw'}`);
-                    await resolveMatch(roomId, winnerUsername, 'forfeit', latestRoom);
-                }, 10000));
+            if (disconnectGraceTimers.has(graceKey)) {
+              clearTimeout(disconnectGraceTimers.get(graceKey));
             }
-            break;
+
+            disconnectGraceTimers.set(graceKey, setTimeout(async () => {
+              disconnectGraceTimers.delete(graceKey);
+              const latestRoom = rooms.get(roomId);
+              if (!latestRoom || latestRoom.resolutionResult || latestRoom.isResolving || !latestRoom.isGameActive) {
+                return;
+              }
+
+              const disconnectedPlayer = latestRoom.players.find((entry) => entry.username === player.username);
+              if (disconnectedPlayer?.id && disconnectedPlayer.id !== socket.id) {
+                return;
+              }
+
+              const opponent = latestRoom.players.find((entry) => entry.username !== player.username);
+              const winnerUsername = opponent ? opponent.username : null;
+              console.log(`[DISCONNECT] Active game in room ${roomId}. Winner by default: ${winnerUsername || 'Draw'}`);
+              await resolveMatch(roomId, winnerUsername, 'forfeit', latestRoom);
+            }, 10000));
+          }
+          break;
         }
       }
     } catch (e) {
@@ -2609,102 +2132,102 @@ io.on('connection', async (socket) => {
     }
     try {
       console.log(`[SOCKET] ❌ Disconnected: ${socket.id} (${reason})`);
-      
+
       unregisterConnectedSocket(socket);
       await emitSiteStats();
-      
+
       // Cleanup rate limits for this socket
       for (const key of socketRateLimits.keys()) {
         if (key.startsWith(socket.id)) {
           socketRateLimits.delete(key);
         }
       }
-    } catch (e) { 
-      console.error("[SOCKET] Disconnect Error:", e); 
+    } catch (e) {
+      console.error("[SOCKET] Disconnect Error:", e);
     }
   });
 });
 
 // ✅ MONITORING & CLEANUP (every 10 minutes)
 setInterval(() => {
-    const memUsage = process.memoryUsage();
-    const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
-    const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
-    
-    console.log(`[HEALTH] Rooms: ${rooms.size} | Sockets: ${io.engine.clientsCount} | Mem: ${heapUsedMB}MB/${heapTotalMB}MB`);
-    
-    // Memory warning
-    if (heapUsedMB > 400) {
-        console.warn(`⚠️ [MEMORY] High usage: ${heapUsedMB}MB`);
+  const memUsage = process.memoryUsage();
+  const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+  const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
+
+  console.log(`[HEALTH] Rooms: ${rooms.size} | Sockets: ${io.engine.clientsCount} | Mem: ${heapUsedMB}MB/${heapTotalMB}MB`);
+
+  // Memory warning
+  if (heapUsedMB > 400) {
+    console.warn(`⚠️ [MEMORY] High usage: ${heapUsedMB}MB`);
+  }
+
+  // Cleanup stale rooms (>2 hours old)
+  const now = Date.now();
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+
+  for (const [roomId, room] of rooms.entries()) {
+    if (now - room.startTime > TWO_HOURS) {
+      rooms.delete(roomId);
+      if (roomTimers.has(roomId)) {
+        clearInterval(roomTimers.get(roomId));
+        roomTimers.delete(roomId);
+      }
+      console.log(`[CLEANUP] 🗑️ Removed stale room: ${roomId}`);
     }
-    
-    // Cleanup stale rooms (>2 hours old)
-    const now = Date.now();
-    const TWO_HOURS = 2 * 60 * 60 * 1000;
-    
-    for (const [roomId, room] of rooms.entries()) {
-        if (now - room.startTime > TWO_HOURS) {
-            rooms.delete(roomId);
-            if (roomTimers.has(roomId)) {
-                clearInterval(roomTimers.get(roomId));
-                roomTimers.delete(roomId);
-            }
-            console.log(`[CLEANUP] 🗑️ Removed stale room: ${roomId}`);
-        }
+  }
+
+  // Cleanup old rate limit entries
+  for (const [key, value] of socketRateLimits.entries()) {
+    if (now > value.resetTime + 60000) {
+      socketRateLimits.delete(key);
     }
-    
-    // Cleanup old rate limit entries
-    for (const [key, value] of socketRateLimits.entries()) {
-        if (now > value.resetTime + 60000) {
-            socketRateLimits.delete(key);
-        }
-    }
-    
+  }
+
 }, 10 * 60 * 1000);
 
 // ✅ GRACEFUL SHUTDOWN
 process.on('SIGTERM', () => {
-    console.log('[SERVER] 🛑 SIGTERM received. Shutting down gracefully...');
-    
-    server.close(() => {
-        console.log('[SERVER] ✅ HTTP server closed');
-        
-        // Clear all room timers
-        for (const timerId of roomTimers.values()) {
-            clearInterval(timerId);
-        }
-        
-        // Close all socket connections
-        io.close(() => {
-            console.log('[SOCKET] ✅ All connections closed');
-            process.exit(0);
-        });
+  console.log('[SERVER] 🛑 SIGTERM received. Shutting down gracefully...');
+
+  server.close(() => {
+    console.log('[SERVER] ✅ HTTP server closed');
+
+    // Clear all room timers
+    for (const timerId of roomTimers.values()) {
+      clearInterval(timerId);
+    }
+
+    // Close all socket connections
+    io.close(() => {
+      console.log('[SOCKET] ✅ All connections closed');
+      process.exit(0);
     });
-    
-    // Force shutdown after 30 seconds
-    setTimeout(() => {
-        console.error('[SERVER] ⏰ Forced shutdown after timeout');
-        process.exit(1);
-    }, 30000);
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('[SERVER] ⏰ Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
 });
 
 // ✅ START SERVER
 const PORT = process.env.PORT || 5000;
 const startServer = async () => {
-    await waitForDatabase();
-    await ensurePaymentTransactionIndexes();
-    await verifySmtpConnection();
+  await waitForDatabase();
+  await ensurePaymentTransactionIndexes();
+  await verifySmtpConnection();
 
-    console.log('[BOOT] Runtime configuration', {
-        nodeEnv: process.env.NODE_ENV || 'development',
-        port: PORT,
-        frontendOrigins: ALLOWED_ORIGINS,
-        apiBaseHint: process.env.RENDER_EXTERNAL_URL || 'local-only',
-        smtp: getSmtpDiagnostics(),
-    });
+  console.log('[BOOT] Runtime configuration', {
+    nodeEnv: process.env.NODE_ENV || 'development',
+    port: PORT,
+    frontendOrigins: ALLOWED_ORIGINS,
+    apiBaseHint: process.env.RENDER_EXTERNAL_URL || 'local-only',
+    smtp: getSmtpDiagnostics(),
+  });
 
-    server.listen(PORT, () => {
-        console.log(`
+  server.listen(PORT, () => {
+    console.log(`
     ╔═══════════════════════════════════════════╗
     ║     CodeArena 1v1 Server Started! 🚀     ║
     ╠═══════════════════════════════════════════╣
@@ -2713,11 +2236,11 @@ const startServer = async () => {
     ║   Max Concurrent Matches: 150-200         ║
     ╚═══════════════════════════════════════════╝
     `);
-    });
+  });
 };
 
 startServer().catch((error) => {
-    console.error('[SERVER] ❌ Failed to start:', error);
-    process.exit(1);
+  console.error('[SERVER] ❌ Failed to start:', error);
+  process.exit(1);
 });
 // V 1.5
