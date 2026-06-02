@@ -96,7 +96,6 @@ const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/+$/, 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'https://code-arena-1v1.vercel.app',
-  'https://codearena-1v1.vercel.app',
   ...(process.env.FRONTEND_URL || '')
     .split(',')
     .map(normalizeOrigin)
@@ -188,7 +187,7 @@ app.get('/health', (req, res) => {
 });
 
 // ✅ CRON JOB: Keep server alive on Render
-cron.schedule('*/16 * * * *', async () => {
+cron.schedule('*/15 * * * *', async () => {
   try {
     let currentISTHour;
     try {
