@@ -187,28 +187,36 @@ app.get('/health', (req, res) => {
 });
 
 // ✅ CRON JOB: Keep server alive on Render
-cron.schedule('*/15 * * * *', async () => {
+cron.schedule('*/14 * * * *', async () => {
   try {
     let currentISTHour;
+    let currentISTMinute;
     try {
-      // Determine current hour in IST safely (Asia/Kolkata)
-      const formatter = new Intl.DateTimeFormat('en-US', {
+      // Determine current time in IST safely (Asia/Kolkata)
+      const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Kolkata',
         hour: 'numeric',
+        minute: 'numeric',
         hourCycle: 'h23'
-      });
-      currentISTHour = parseInt(formatter.format(new Date()), 10);
+      }).formatToParts(new Date());
+      
+      currentISTHour = parseInt(parts.find(p => p.type === 'hour').value, 10);
+      currentISTMinute = parseInt(parts.find(p => p.type === 'minute').value, 10);
     } catch (timeError) {
       console.error(`[CRON] ⚠️ Failed to determine IST time:`, timeError.message);
       // Fallback: assume active to be safe and avoid unwanted sleeping
       currentISTHour = 12; 
+      currentISTMinute = 0;
     }
 
-    // Sleep Window: 01:00 AM IST to 06:59 AM IST
+    // Sleep Window: 12:00 AM IST (00:00) to 07:29 AM IST
     // Why this exists: Reduces Render instance-hour consumption by allowing the instance to sleep naturally during low-traffic hours.
-    // When keep-alive is active: 07:00 AM IST to 00:59 AM IST
-    if (currentISTHour >= 1 && currentISTHour < 7) {
-      console.log(`[CRON] 💤 Sleep window active (${currentISTHour}:00 IST). Skipping keep-alive to save Render instance hours.`);
+    // When keep-alive is active: 07:30 AM IST to 11:59 PM IST
+    const isSleepWindow = (currentISTHour >= 0 && currentISTHour < 7) || (currentISTHour === 7 && currentISTMinute < 30);
+    
+    if (isSleepWindow) {
+      const formattedMinute = currentISTMinute.toString().padStart(2, '0');
+      console.log(`[CRON] 💤 Sleep window active (${currentISTHour}:${formattedMinute} IST). Skipping keep-alive to save Render instance hours.`);
       return;
     }
 
